@@ -150,6 +150,13 @@ export default function ProjectForm({
       console.log("Creating new project with data:", JSON.stringify(data));
       // Try with manual fetch first for debugging
       try {
+        console.log("Creating project with data:", {
+          name: data.name,
+          description: data.description,
+          status: data.status,
+          createdById: user?.id
+        });
+        
         const response = await fetch('/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -157,7 +164,6 @@ export default function ProjectForm({
             name: data.name,
             description: data.description || null,
             status: data.status,
-            createdById: user?.id || 1
           }),
           credentials: 'include'
         });
