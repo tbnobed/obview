@@ -17,11 +17,16 @@ export async function apiRequest(
   console.log(`API Request: ${method} ${url}`, data ? JSON.stringify(data) : "no data");
   
   try {
+    const headers: Record<string, string> = {};
+    if (data) {
+      headers["Content-Type"] = "application/json";
+    }
+    
     const fetchOptions = {
       method,
-      headers: data ? { "Content-Type": "application/json" } : {},
+      headers,
       body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
+      credentials: "include" as RequestCredentials,
     };
     
     console.log("Fetch options:", JSON.stringify(fetchOptions));
@@ -54,7 +59,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
+      credentials: "include" as RequestCredentials,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

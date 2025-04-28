@@ -57,7 +57,13 @@ export default function ProjectForm({
   // Create project mutation
   const createMutation = useMutation({
     mutationFn: async (data: InsertProject) => {
-      const res = await apiRequest("POST", "/api/projects", data);
+      // We don't need to send createdById, the server will add it from the authenticated user
+      const projectData = {
+        name: data.name,
+        description: data.description,
+        status: data.status
+      };
+      const res = await apiRequest("POST", "/api/projects", projectData);
       return await res.json();
     },
     onSuccess: (data) => {
