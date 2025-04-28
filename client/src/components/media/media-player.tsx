@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { File } from "@shared/schema";
+import { File, Comment } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, Share, DownloadCloud, Play, Pause, Volume2, Maximize, Type, Layers, Check, AlertCircle } from "lucide-react";
 import TimelineComments from "./timeline-comments";
-import { useApprovals } from "@/hooks/use-comments";
+import { useApprovals, useComments } from "@/hooks/use-comments";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -33,9 +33,10 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
   const [showCommentsTab, setShowCommentsTab] = useState(true);
   
   const { data: approvals } = useApprovals(file?.id);
+  const { data: comments } = useComments(file?.id);
   
   // Get user's approval status for this file
-  const userApproval = approvals?.find(approval => approval.userId === user?.id);
+  const userApproval = approvals?.find((approval: any) => approval.userId === user?.id);
 
   useEffect(() => {
     // Reset player state when file changes
@@ -231,20 +232,33 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
               
               <div
                 ref={progressRef}
-                className="video-progress flex-grow mx-4 relative rounded-full"
+                className="video-progress flex-grow mx-4 relative h-2 bg-neutral-200 hover:bg-neutral-300 cursor-pointer rounded-full group"
                 onClick={handleProgressClick}
+                onMouseMove={(e) => {
+                  if (e.buttons === 1 && progressRef.current) {
+                    // Handle dragging (mouse down + move)
+                    handleProgressClick(e);
+                  }
+                }}
               >
                 <div
-                  className="video-progress-fill rounded-full"
+                  className="video-progress-fill absolute top-0 left-0 h-full bg-primary rounded-full"
                   style={{ width: `${(currentTime / duration) * 100}%` }}
                 ></div>
                 <div
-                  className="playhead absolute top-1/2 -translate-y-1/2"
+                  className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
                   style={{ left: `${(currentTime / duration) * 100}%` }}
                 ></div>
                 
-                {/* This would be timeline markers for comments */}
-                {/* Implemented in the TimelineComments component */}
+                {/* Timeline markers for comments */}
+                {comments && comments.length > 0 && comments.map((comment: Comment) => (
+                  <div 
+                    key={comment.id}
+                    className="absolute top-0 h-full w-1 bg-yellow-400 z-10"
+                    style={{ left: `${(comment.timestamp / duration) * 100}%` }}
+                    title={`${comment.content} (${formatTime(comment.timestamp)})`}
+                  />
+                ))}
               </div>
               
               <div className="flex items-center">
