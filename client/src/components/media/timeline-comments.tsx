@@ -44,10 +44,10 @@ export default function TimelineComments({
   useEffect(() => {
     if (comments && duration > 0) {
       // Get all top-level comments with timestamps
-      const topLevelComments = comments.filter(c => !c.parentId && c.timestamp !== null);
+      const topLevelComments = comments.filter((c: Comment) => !c.parentId && c.timestamp !== null);
       
       // Calculate marker positions
-      const newMarkers = topLevelComments.map(comment => {
+      const newMarkers = topLevelComments.map((comment: Comment) => {
         const time = comment.timestamp || 0;
         const percentage = (time / duration) * 100;
         return {
@@ -62,14 +62,14 @@ export default function TimelineComments({
   }, [comments, duration]);
 
   // Filter comments
-  const filteredComments = comments?.filter(comment => {
+  const filteredComments = comments?.filter((comment: Comment) => {
     if (filter === "unresolved") return !comment.isResolved;
     if (filter === "resolved") return comment.isResolved;
     return true;
   });
 
   // Group top-level comments (no parent)
-  const topLevelComments = filteredComments?.filter(c => !c.parentId) || [];
+  const topLevelComments = filteredComments?.filter((c: Comment) => !c.parentId) || [];
 
   return (
     <div>
@@ -142,6 +142,7 @@ export default function TimelineComments({
               comment={comment} 
               comments={comments || []}
               onTimeClick={onTimeClick}
+              isActive={activeCommentId === comment.id}
             />
           ))}
         </div>

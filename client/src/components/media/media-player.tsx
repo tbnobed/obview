@@ -252,14 +252,32 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
                 ></div>
                 
                 {/* Timeline markers for comments */}
-                {comments && comments.length > 0 && comments.map((comment: Comment) => (
-                  <div 
-                    key={comment.id}
-                    className="absolute top-0 h-full w-1 bg-yellow-400 z-10"
-                    style={{ left: `${(comment.timestamp / duration) * 100}%` }}
-                    title={`${comment.content} (${formatTime(comment.timestamp)})`}
-                  />
-                ))}
+                {comments && comments.length > 0 && comments.map((comment: Comment) => {
+                  // Only show markers for comments with timestamps (not replies)
+                  if (comment.timestamp === null || comment.parentId !== null) return null;
+                  
+                  // Calculate percentage position
+                  const timestamp = comment.timestamp || 0;
+                  const position = (timestamp / duration) * 100;
+                  
+                  return (
+                    <div 
+                      key={comment.id}
+                      className={`absolute top-0 h-full w-1.5 ${activeCommentId === comment.id ? 'bg-secondary' : 'bg-yellow-400'} z-10 cursor-pointer`}
+                      style={{ left: `${position}%` }}
+                      title={`${comment.content} (${formatTime(comment.timestamp)})`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Set active comment and jump to timestamp
+                        setActiveCommentId(comment.id);
+                        if (videoRef.current && comment.timestamp !== null) {
+                          videoRef.current.currentTime = comment.timestamp;
+                          setCurrentTime(comment.timestamp);
+                        }
+                      }}
+                    />
+                  );
+                })}
               </div>
               
               <div className="flex items-center">
@@ -390,6 +408,8 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
                 fileId={file.id} 
                 duration={duration} 
                 currentTime={currentTime}
+                activeCommentId={activeCommentId}
+                onCommentSelect={(commentId) => setActiveCommentId(commentId)}
                 onTimeClick={(time) => {
                   if (videoRef.current) {
                     videoRef.current.currentTime = time;
