@@ -59,7 +59,8 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
   // Function to navigate to file with timestamp
   const navigateToComment = (comment: Comment & { file?: any }) => {
     if (comment.timestamp !== null && comment.file?.id) {
-      navigate(`/projects/${projectId}/media/${comment.file.id}?time=${comment.timestamp}`);
+      // Update URL to include time parameter for the specific file
+      navigate(`/projects/${projectId}?time=${comment.timestamp}&media=${comment.file.id}`);
     }
   };
   

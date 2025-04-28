@@ -59,6 +59,35 @@ export default function ProjectPage() {
       setSelectedFileId(files[0].id);
     }
   }, [files, selectedFileId]);
+  
+  // Parse URL parameters for file ID and timestamp
+  useEffect(() => {
+    // Parse the URL for potential media ID and timestamp parameters
+    if (location) {
+      const url = new URL(window.location.href);
+      const searchParams = new URLSearchParams(url.search);
+      
+      // Check for time parameter
+      const timeParam = searchParams.get('time');
+      if (timeParam) {
+        const time = parseFloat(timeParam);
+        if (!isNaN(time)) {
+          setInitialTime(time);
+          setActiveTab("media");
+        }
+      }
+      
+      // Check for media ID parameter
+      const mediaParam = searchParams.get('media');
+      if (mediaParam && files && files.length > 0) {
+        const mediaId = parseInt(mediaParam);
+        if (!isNaN(mediaId) && files.some(file => file.id === mediaId)) {
+          setSelectedFileId(mediaId);
+          setActiveTab("media");
+        }
+      }
+    }
+  }, [location, files]);
 
   const selectedFile = files?.find(file => file.id === selectedFileId);
 
@@ -211,6 +240,7 @@ export default function ProjectPage() {
                 projectId={projectId}
                 onSelectFile={setSelectedFileId}
                 files={files}
+                initialTime={initialTime}
               />
             ) : (
               <div className="flex flex-col items-center justify-center py-20">

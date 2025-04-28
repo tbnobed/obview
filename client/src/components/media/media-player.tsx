@@ -19,9 +19,10 @@ interface MediaPlayerProps {
   projectId: number;
   files: File[];
   onSelectFile: (fileId: number) => void;
+  initialTime?: number | null;
 }
 
-export default function MediaPlayer({ file, projectId, files, onSelectFile }: MediaPlayerProps) {
+export default function MediaPlayer({ file, projectId, files, onSelectFile, initialTime = null }: MediaPlayerProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -48,11 +49,25 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
       setDuration(0);
     }
   }, [file]);
+  
+  // Effect to handle initialTime changes
+  useEffect(() => {
+    if (videoRef.current && initialTime !== null && initialTime !== undefined) {
+      videoRef.current.currentTime = initialTime;
+      setCurrentTime(initialTime);
+    }
+  }, [initialTime]);
 
   // Handle metadata loaded
   const handleMetadataLoaded = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      
+      // If initialTime is provided, set the video to that time
+      if (initialTime !== null && initialTime !== undefined) {
+        videoRef.current.currentTime = initialTime;
+        setCurrentTime(initialTime);
+      }
     }
   };
 
