@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import type { Comment } from "@shared/schema";
+import { useLocation } from "wouter";
 
 // Format time (seconds to MM:SS)
 const formatTime = (time: number | null) => {
@@ -15,6 +16,7 @@ const formatTime = (time: number | null) => {
 
 export function ProjectCommentsTab({ projectId }: { projectId: number }) {
   const { data: comments, isLoading, error } = useProjectComments(projectId);
+  const [_, navigate] = useLocation();
   
   if (isLoading) {
     return (
@@ -40,10 +42,35 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
     );
   }
   
+  // Sort comments by timestamp (null timestamps at the end)
+  const sortedComments = [...comments].sort((a, b) => {
+    // If both have timestamps, sort by timestamp
+    if (a.timestamp !== null && b.timestamp !== null) {
+      return a.timestamp - b.timestamp;
+    }
+    // If only a has timestamp, a comes first
+    if (a.timestamp !== null) return -1;
+    // If only b has timestamp, b comes first
+    if (b.timestamp !== null) return 1;
+    // If neither has timestamp, maintain original order
+    return 0;
+  });
+  
+  // Function to navigate to file with timestamp
+  const navigateToComment = (comment: Comment & { file?: any }) => {
+    if (comment.timestamp !== null && comment.file?.id) {
+      navigate(`/projects/${projectId}/media/${comment.file.id}?time=${comment.timestamp}`);
+    }
+  };
+  
   return (
     <div className="space-y-4">
-      {comments.map((comment: Comment & { user?: any, file?: any }) => (
-        <div key={comment.id} className="border rounded-lg p-4">
+      {sortedComments.map((comment: Comment & { user?: any, file?: any }) => (
+        <div 
+          key={comment.id} 
+          className={`border rounded-lg p-4 ${comment.timestamp !== null && comment.file?.id ? 'cursor-pointer hover:bg-neutral-50' : ''}`}
+          onClick={() => navigateToComment(comment)}
+        >
           <div className="flex items-start gap-4">
             <Avatar>
               <AvatarFallback>

@@ -80,8 +80,22 @@ export default function TimelineComments({
     return true;
   });
 
-  // Group top-level comments (no parent)
+  // Group top-level comments (no parent) and sort by timestamp
   const topLevelComments = filteredComments?.filter((c: any) => !c.parentId) || [];
+  
+  // Sort comments by timestamp (null timestamps at the end)
+  topLevelComments.sort((a: any, b: any) => {
+    // If both have timestamps, sort by timestamp
+    if (a.timestamp !== null && b.timestamp !== null) {
+      return a.timestamp - b.timestamp;
+    }
+    // If only a has timestamp, a comes first
+    if (a.timestamp !== null) return -1;
+    // If only b has timestamp, b comes first
+    if (b.timestamp !== null) return 1;
+    // If neither has timestamp, maintain original order
+    return 0;
+  });
 
   return (
     <div>

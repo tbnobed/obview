@@ -107,8 +107,14 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
         "mb-5 pb-5",
         comment.isResolved ? "opacity-60" : "",
         isActive ? "bg-yellow-50 -mx-4 px-4 py-3 rounded-md transition-all duration-300" : "",
+        comment.timestamp !== null ? "cursor-pointer hover:bg-neutral-50" : "",
         comments.indexOf(comment) < comments.length - 1 ? "border-b border-neutral-200" : ""
       )}
+      onClick={() => {
+        if (comment.timestamp !== null && onTimeClick) {
+          onTimeClick(comment.timestamp);
+        }
+      }}
       ref={isActive ? commentsRef : undefined}>
       <div className="flex space-x-2">
         <Avatar className="h-7 w-7 mt-0.5 hidden sm:block">

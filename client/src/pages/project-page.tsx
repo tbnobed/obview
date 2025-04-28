@@ -28,9 +28,10 @@ import { ProjectActivityTab } from "@/components/project/project-activity-tab";
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const projectId = parseInt(id);
-  const [_, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { user } = useAuth();
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
+  const [initialTime, setInitialTime] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("media");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   
