@@ -59,15 +59,20 @@ export default function ProjectForm({
   // Create project mutation
   const createMutation = useMutation({
     mutationFn: async (data: InsertProject) => {
-      // We need to include createdById in the data for validation
+      console.log("Creating project with Mutation:", data);
+      
+      // We only need to send the necessary fields - backend will handle the createdById
       const projectData = {
         name: data.name,
-        description: data.description,
-        status: data.status,
-        createdById: user?.id || 1 // Use the current user's id or fallback to 1 for testing
+        description: data.description || null,
+        status: data.status
       };
+      
+      console.log("Sending project data:", projectData);
       const res = await apiRequest("POST", "/api/projects", projectData);
-      return await res.json();
+      const result = await res.json();
+      console.log("Project creation response:", result);
+      return result;
     },
     onSuccess: (data) => {
       toast({
@@ -114,30 +119,7 @@ export default function ProjectForm({
   const onSubmit = async (data: InsertProject) => {
     console.log("Submitting project data:", data);
     
-    // Check if user is authenticated first
-    try {
-      const userCheckResponse = await fetch('/api/user', { credentials: 'include' });
-      if (!userCheckResponse.ok) {
-        console.error("User not authenticated");
-        toast({
-          title: "Authentication error",
-          description: "You must be logged in to create a project",
-          variant: "destructive"
-        });
-        return;
-      }
-      console.log("User authenticated, proceeding with submission");
-    } catch (error) {
-      console.error("Error checking authentication:", error);
-      toast({
-        title: "Error",
-        description: "Failed to verify authentication status",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Add user validation check and more detailed logging
+    // Add user validation check
     if (!form.formState.isValid) {
       console.error("Form is not valid:", form.formState.errors);
       return;
@@ -147,54 +129,8 @@ export default function ProjectForm({
       console.log("Updating existing project:", projectId);
       updateMutation.mutate(data);
     } else {
-      console.log("Creating new project with data:", JSON.stringify(data));
-      // Try with manual fetch first for debugging
-      try {
-        console.log("Creating project with data:", {
-          name: data.name,
-          description: data.description,
-          status: data.status,
-          createdById: user?.id
-        });
-        
-        const response = await fetch('/api/projects', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: data.name,
-            description: data.description || null,
-            status: data.status,
-          }),
-          credentials: 'include'
-        });
-        
-        console.log("Project creation response status:", response.status);
-        const responseText = await response.text();
-        console.log("Project creation response:", responseText);
-        
-        if (response.ok) {
-          const responseData = JSON.parse(responseText);
-          toast({
-            title: "Project created",
-            description: "Your new project has been created successfully"
-          });
-          queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-          if (onSuccess) onSuccess(responseData.id);
-        } else {
-          toast({
-            title: "Failed to create project",
-            description: responseText,
-            variant: "destructive"
-          });
-        }
-      } catch (error) {
-        console.error("Error creating project:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive"
-        });
-      }
+      console.log("Creating new project with data:", data);
+      createMutation.mutate(data);
     }
   };
 
