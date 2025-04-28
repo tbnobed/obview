@@ -672,7 +672,7 @@ export default function ProjectPage() {
                                 'bg-gray-100 text-gray-800'
                               }`}
                             >
-                              {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                              {member.role && (member.role.charAt(0).toUpperCase() + member.role.slice(1))}
                             </Badge>
                             {isEditor && (
                               <Button 
