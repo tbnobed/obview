@@ -240,15 +240,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new project
   app.post("/api/projects", isAuthenticated, async (req, res, next) => {
     try {
+      console.log("POST /api/projects received", {
+        body: req.body,
+        user: req.user.id,
+        authenticated: req.isAuthenticated()
+      });
+      
       // Validate the request body
       const validationResult = insertProjectSchema.safeParse(req.body);
       
       if (!validationResult.success) {
+        console.error("Project validation failed:", validationResult.error.errors);
         return res.status(400).json({ 
           message: "Invalid project data", 
           errors: validationResult.error.errors 
         });
       }
+      
+      console.log("Project validation passed, creating project");
       
       // Create the project
       const project = await storage.createProject({
@@ -256,12 +265,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdById: req.user.id,
       });
       
+      console.log("Project created:", project);
+      
       // Add creator as a project admin
       await storage.addUserToProject({
         projectId: project.id,
         userId: req.user.id,
         role: "editor", // Creator is an editor
       });
+      
+      console.log("User added to project");
       
       // Log activity
       await storage.logActivity({
@@ -272,8 +285,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { projectName: project.name },
       });
       
+      console.log("Activity logged, sending response");
       res.status(201).json(project);
     } catch (error) {
+      console.error("Error creating project:", error);
       next(error);
     }
   });

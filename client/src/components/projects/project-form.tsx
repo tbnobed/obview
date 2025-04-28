@@ -103,9 +103,12 @@ export default function ProjectForm({
   });
 
   const onSubmit = (data: InsertProject) => {
+    console.log("Submitting project data:", data);
     if (isEditMode) {
+      console.log("Updating existing project:", projectId);
       updateMutation.mutate(data);
     } else {
+      console.log("Creating new project");
       createMutation.mutate(data);
     }
   };

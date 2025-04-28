@@ -62,8 +62,14 @@ export default function ProjectsPage() {
                 </DialogHeader>
                 <ProjectForm 
                   onSuccess={(projectId) => {
+                    console.log("Project created with ID:", projectId);
                     setCreateDialogOpen(false);
-                    navigate(`/project/${projectId}`);
+                    
+                    // Delay navigation to ensure state updates
+                    setTimeout(() => {
+                      console.log("Navigating to:", `/project/${projectId}`);
+                      navigate(`/project/${projectId}`);
+                    }, 500);
                   }} 
                 />
               </DialogContent>
