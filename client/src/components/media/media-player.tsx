@@ -59,7 +59,28 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
   // Handle time update
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
+      const newTime = videoRef.current.currentTime;
+      setCurrentTime(newTime);
+      
+      // Find if we're at or near a comment's timestamp to highlight it
+      if (comments && comments.length > 0) {
+        // Find comments with timestamps that are close to current time (within 0.5 second)
+        const nearbyComment = comments.find((comment: any) => 
+          comment.timestamp !== null && 
+          comment.parentId === null && // Only top-level comments
+          Math.abs(comment.timestamp - newTime) < 0.5
+        );
+        
+        if (nearbyComment) {
+          setActiveCommentId(nearbyComment.id);
+        } else if (activeCommentId && comments.every((c: any) => 
+          c.id !== activeCommentId || 
+          Math.abs((c.timestamp || 0) - newTime) >= 0.5
+        )) {
+          // Clear active comment if we've moved away from all comment timestamps
+          setActiveCommentId(undefined);
+        }
+      }
     }
   };
 
