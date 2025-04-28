@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Project Creation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    input, textarea, button {
+      margin: 5px 0;
+      padding: 8px;
+      width: 100%;
+    }
+    #response {
+      white-space: pre-wrap;
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Login Form</h1>
+  <form id="loginForm">
+    <div>
+      <input type="text" id="username" placeholder="Username" value="obedtest">
+    </div>
+    <div>
+      <input type="password" id="password" placeholder="Password" value="obedtest123">
+    </div>
+    <button type="submit">Login</button>
+  </form>
+
+  <h1>Create Project</h1>
+  <form id="projectForm">
+    <div>
+      <input type="text" id="projectName" placeholder="Project Name" required>
+    </div>
+    <div>
+      <textarea id="projectDescription" placeholder="Project Description" rows="3"></textarea>
+    </div>
+    <div>
+      <select id="projectStatus">
+        <option value="in_progress">In Progress</option>
+        <option value="in_review">In Review</option>
+        <option value="approved">Approved</option>
+      </select>
+    </div>
+    <button type="submit">Create Project</button>
+  </form>
+
+  <h2>Response:</h2>
+  <div id="response"></div>
+
+  <script>
+    const responseEl = document.getElementById('response');
+    
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      responseEl.innerText = 'Logging in...';
+      
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+          }),
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        responseEl.innerText = 'Login Result:\n' + JSON.stringify(data, null, 2);
+        
+        // Check current user
+        const userResponse = await fetch('/api/user', {
+          credentials: 'include'
+        });
+        const userData = await userResponse.json();
+        responseEl.innerText += '\n\nCurrent User:\n' + JSON.stringify(userData, null, 2);
+      } catch (error) {
+        responseEl.innerText = 'Error: ' + error.message;
+      }
+    });
+    
+    document.getElementById('projectForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      responseEl.innerText = 'Creating project...';
+      
+      try {
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: document.getElementById('projectName').value,
+            description: document.getElementById('projectDescription').value,
+            status: document.getElementById('projectStatus').value
+          }),
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        responseEl.innerText = 'Project Creation Result:\n' + JSON.stringify(data, null, 2);
+      } catch (error) {
+        responseEl.innerText = 'Error: ' + error.message;
+      }
+    });
+    
+    // Check if already logged in on page load
+    (async () => {
+      try {
+        const response = await fetch('/api/user', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          responseEl.innerText = 'Already logged in as:\n' + JSON.stringify(data, null, 2);
+        } else {
+          responseEl.innerText = 'Not logged in. Please log in first.';
+        }
+      } catch (error) {
+        responseEl.innerText = 'Error checking login status: ' + error.message;
+      }
+    })();
+  </script>
+</body>
+</html>

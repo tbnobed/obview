@@ -1123,6 +1123,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add a debug test page for project creation
+  app.get("/test-project", (req, res) => {
+    res.sendFile(path.resolve("./test-project.html"));
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
