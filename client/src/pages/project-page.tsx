@@ -40,6 +40,12 @@ export default function ProjectPage() {
   const { data: allUsers } = useQuery<any[]>({
     queryKey: ["/api/users"],
   });
+  
+  // Fetch project members to filter out from invite dropdown
+  const { data: projectMembers } = useQuery<any[]>({
+    queryKey: ["/api/projects", projectId, "users"],
+    enabled: !!projectId,
+  });
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
   const [initialTime, setInitialTime] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("media");
@@ -48,6 +54,7 @@ export default function ProjectPage() {
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [showUsersDropdown, setShowUsersDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   
   const { 
     data: project, 
@@ -363,20 +370,35 @@ export default function ProjectPage() {
                         id="email"
                         name="email"
                         type="email"
-                        placeholder="teammate@example.com"
+                        placeholder="Search by name or email..."
                         onFocus={() => setShowUsersDropdown(true)}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         onBlur={() => {
                           // Delay hiding dropdown to allow click to register
                           setTimeout(() => setShowUsersDropdown(false), 200);
                         }}
                         required
                       />
-                      {showUsersDropdown && allUsers && allUsers.length > 0 && (
-                        <div className="absolute w-full max-h-60 overflow-auto mt-1 border border-gray-200 rounded-md bg-white z-10 shadow-lg">
-                          {allUsers.map((existingUser) => (
+                      {showUsersDropdown && allUsers && (
+                        <div className="absolute w-full max-h-64 overflow-auto mt-1 border border-gray-100 rounded-md bg-white z-10 shadow-lg ring-1 ring-black ring-opacity-5">
+                          {/* Filter out users who are already members of the project and match search term */}
+                          {allUsers
+                            .filter((existingUser) => {
+                              // Skip filtering if project members aren't loaded yet
+                              const notMember = !projectMembers || 
+                                !projectMembers.some(member => member.userId === existingUser.id);
+                              
+                              // Filter by search term if provided
+                              const matchesSearch = searchTerm.trim() === '' || 
+                                existingUser.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                existingUser.email.toLowerCase().includes(searchTerm.toLowerCase());
+                              
+                              return notMember && matchesSearch;
+                            })
+                            .map((existingUser) => (
                             <div 
                               key={existingUser.id}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center space-x-3 border-b border-gray-100 last:border-b-0"
                               onClick={() => {
                                 // Set the email input value to the selected user's email
                                 const emailInput = document.getElementById('email') as HTMLInputElement;
@@ -387,15 +409,32 @@ export default function ProjectPage() {
                                 }
                               }}
                             >
-                              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center text-primary font-medium">
+                              <div className="flex-shrink-0 h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
                                 {existingUser.name.charAt(0).toUpperCase()}
                               </div>
-                              <div>
-                                <div className="text-sm font-medium">{existingUser.name}</div>
-                                <div className="text-xs text-gray-500">{existingUser.email}</div>
+                              <div className="flex-grow min-w-0">
+                                <div className="text-sm font-medium truncate">{existingUser.name}</div>
+                                <div className="text-xs text-gray-500 truncate">{existingUser.email}</div>
                               </div>
                             </div>
                           ))}
+                          {/* Show a message when no users match the search or filter criteria */}
+                          {allUsers.filter((existingUser) => {
+                            // Skip filtering if project members aren't loaded yet
+                            const notMember = !projectMembers || 
+                              !projectMembers.some(member => member.userId === existingUser.id);
+                            
+                            // Filter by search term if provided
+                            const matchesSearch = searchTerm.trim() === '' || 
+                              existingUser.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              existingUser.email.toLowerCase().includes(searchTerm.toLowerCase());
+                            
+                            return notMember && matchesSearch;
+                          }).length === 0 && (
+                            <div className="px-4 py-3 text-center text-sm text-gray-500">
+                              {searchTerm ? 'No matching users found' : 'No available users to invite'}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
