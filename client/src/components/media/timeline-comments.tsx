@@ -10,15 +10,20 @@ interface TimelineCommentsProps {
   duration: number;
   currentTime: number;
   onTimeClick: (time: number) => void;
+  activeCommentId?: number;
+  onCommentSelect?: (commentId: number) => void;
 }
 
 export default function TimelineComments({ 
   fileId, 
   duration, 
   currentTime,
-  onTimeClick
+  onTimeClick,
+  activeCommentId,
+  onCommentSelect
 }: TimelineCommentsProps) {
   const timelineRef = useRef<HTMLDivElement>(null);
+  const commentsRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<string>("all");
   const [markers, setMarkers] = useState<{ time: number, left: string, commentId: number }[]>([]);
   

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Comment } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -16,12 +16,14 @@ interface CommentThreadProps {
   comment: Comment & { user?: any };
   comments: (Comment & { user?: any })[];
   onTimeClick?: (time: number) => void;
+  isActive?: boolean;
 }
 
-export default function CommentThread({ comment, comments, onTimeClick }: CommentThreadProps) {
+export default function CommentThread({ comment, comments, onTimeClick, isActive = false }: CommentThreadProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const commentsRef = useRef<HTMLDivElement>(null);
   
   // Delete comment mutation
   const deleteCommentMutation = useDeleteComment(comment.fileId);
@@ -91,12 +93,21 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
     ? comment.user.name.charAt(0).toUpperCase() 
     : 'U';
 
+  // Effect to scroll to this comment when it's active
+  useEffect(() => {
+    if (isActive && commentsRef.current) {
+      commentsRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isActive]);
+
   return (
     <div className={cn(
       "mb-5 pb-5",
       comment.isResolved ? "opacity-60" : "",
+      isActive ? "bg-yellow-50 -mx-4 px-4 py-3 rounded-md transition-all duration-300" : "",
       comments.indexOf(comment) < comments.length - 1 ? "border-b border-neutral-200" : ""
-    )}>
+    )}
+    ref={isActive ? commentsRef : undefined}>
       <div className="flex space-x-2">
         <Avatar className="h-7 w-7 mt-0.5 hidden sm:block">
           <AvatarFallback className="bg-primary-100 text-primary-700 text-xs">

@@ -31,6 +31,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showCommentsTab, setShowCommentsTab] = useState(true);
+  const [activeCommentId, setActiveCommentId] = useState<number | undefined>(undefined);
   
   const { data: approvals } = useApprovals(file?.id);
   const { data: comments } = useComments(file?.id);
