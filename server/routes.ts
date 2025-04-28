@@ -38,9 +38,15 @@ const upload = multer({
 
 // Middleware to check authentication
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  console.log("Auth check - isAuthenticated:", req.isAuthenticated());
+  console.log("Auth check - session:", req.session);
+  console.log("Auth check - user:", req.user);
+  
   if (req.isAuthenticated()) {
+    console.log("User is authenticated, proceeding");
     return next();
   }
+  console.log("Authentication failed, returning 401");
   res.status(401).json({ message: "Unauthorized" });
 }
 
@@ -1126,6 +1132,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add a debug test page for project creation
   app.get("/test-project", (req, res) => {
     res.sendFile(path.resolve("./test-project.html"));
+  });
+  
+  // Add a test route to check session/auth status
+  app.get("/api/auth-test", (req, res) => {
+    res.json({
+      isAuthenticated: req.isAuthenticated(),
+      session: req.session,
+      user: req.user || null
+    });
   });
 
   const httpServer = createServer(app);

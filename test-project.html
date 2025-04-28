@@ -1,136 +1,265 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Test Project Creation</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth Debug</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
     }
-    form {
-      margin-bottom: 20px;
-    }
-    input, textarea, button {
-      margin: 5px 0;
-      padding: 8px;
-      width: 100%;
-    }
-    #response {
+    #results {
       white-space: pre-wrap;
       background-color: #f5f5f5;
-      padding: 10px;
+      padding: 15px;
       border-radius: 5px;
+      overflow-x: auto;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    input, textarea {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 15px;
     }
   </style>
 </head>
 <body>
-  <h1>Login Form</h1>
-  <form id="loginForm">
-    <div>
-      <input type="text" id="username" placeholder="Username" value="obedtest">
-    </div>
-    <div>
-      <input type="password" id="password" placeholder="Password" value="obedtest123">
-    </div>
-    <button type="submit">Login</button>
-  </form>
+  <h1>Authentication & Project Creation Debug</h1>
+  
+  <div class="card">
+    <div class="card-title">Authentication Status</div>
+    <button id="checkAuth">Check Authentication</button>
+    <div id="authStatus">Not checked yet</div>
+  </div>
 
-  <h1>Create Project</h1>
-  <form id="projectForm">
-    <div>
-      <input type="text" id="projectName" placeholder="Project Name" required>
+  <div class="card">
+    <div class="card-title">Auth API calls</div>
+    <div class="form-group">
+      <button id="getUser">Get Current User</button>
+      <button id="logout">Logout</button>
     </div>
-    <div>
-      <textarea id="projectDescription" placeholder="Project Description" rows="3"></textarea>
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" id="username" value="testuser">
+      <label for="password">Password</label>
+      <input type="password" id="password" value="password123">
+      <button id="login">Login</button>
+      <button id="register">Register</button>
     </div>
-    <div>
-      <select id="projectStatus">
-        <option value="in_progress">In Progress</option>
-        <option value="in_review">In Review</option>
-        <option value="approved">Approved</option>
-      </select>
-    </div>
-    <button type="submit">Create Project</button>
-  </form>
+  </div>
 
-  <h2>Response:</h2>
-  <div id="response"></div>
+  <div class="card">
+    <div class="card-title">Create Project</div>
+    <div class="form-group">
+      <label for="projectName">Project Name</label>
+      <input type="text" id="projectName" value="Test Project">
+      <label for="projectDescription">Description</label>
+      <textarea id="projectDescription" rows="3">This is a test project</textarea>
+      <button id="createProject">Create Project</button>
+    </div>
+    <pre id="results">Results will appear here</pre>
+  </div>
 
   <script>
-    const responseEl = document.getElementById('response');
-    
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      responseEl.innerText = 'Logging in...';
+    // Helper function to display results
+    function showResult(data) {
+      document.getElementById('results').textContent = JSON.stringify(data, null, 2);
+    }
+
+    // Check authentication status
+    document.getElementById('checkAuth').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/auth-test');
+        const data = await response.json();
+        document.getElementById('authStatus').textContent = 
+          `Authenticated: ${data.isAuthenticated}, User: ${data.user ? data.user.username : 'None'}`;
+        showResult(data);
+      } catch (error) {
+        showResult({ error: error.message });
+      }
+    });
+
+    // Get current user
+    document.getElementById('getUser').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/user');
+        if (response.ok) {
+          const data = await response.json();
+          showResult(data);
+        } else {
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Failed to get user' 
+          });
+        }
+      } catch (error) {
+        showResult({ error: error.message });
+      }
+    });
+
+    // Login
+    document.getElementById('login').addEventListener('click', async () => {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
       
       try {
         const response = await fetch('/api/login', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            username: document.getElementById('username').value,
-            password: document.getElementById('password').value
-          }),
-          credentials: 'include'
+          body: JSON.stringify({ username, password }),
         });
         
-        const data = await response.json();
-        responseEl.innerText = 'Login Result:\n' + JSON.stringify(data, null, 2);
-        
-        // Check current user
-        const userResponse = await fetch('/api/user', {
-          credentials: 'include'
-        });
-        const userData = await userResponse.json();
-        responseEl.innerText += '\n\nCurrent User:\n' + JSON.stringify(userData, null, 2);
+        if (response.ok) {
+          const data = await response.json();
+          showResult(data);
+          document.getElementById('authStatus').textContent = 
+            `Authenticated: true, User: ${data.username}`;
+        } else {
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Login failed' 
+          });
+        }
       } catch (error) {
-        responseEl.innerText = 'Error: ' + error.message;
+        showResult({ error: error.message });
       }
     });
-    
-    document.getElementById('projectForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      responseEl.innerText = 'Creating project...';
+
+    // Register
+    document.getElementById('register').addEventListener('click', async () => {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            username, 
+            password,
+            email: `${username}@example.com`,
+            name: username,
+            role: 'user'
+          }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          showResult(data);
+          document.getElementById('authStatus').textContent = 
+            `Authenticated: true, User: ${data.username}`;
+        } else {
+          const errorText = await response.text();
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Registration failed',
+            error: errorText
+          });
+        }
+      } catch (error) {
+        showResult({ error: error.message });
+      }
+    });
+
+    // Logout
+    document.getElementById('logout').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/logout', {
+          method: 'POST',
+        });
+        
+        if (response.ok) {
+          showResult({ message: 'Logged out successfully' });
+          document.getElementById('authStatus').textContent = 'Authenticated: false, User: None';
+        } else {
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Logout failed' 
+          });
+        }
+      } catch (error) {
+        showResult({ error: error.message });
+      }
+    });
+
+    // Create Project
+    document.getElementById('createProject').addEventListener('click', async () => {
+      const name = document.getElementById('projectName').value;
+      const description = document.getElementById('projectDescription').value;
       
       try {
         const response = await fetch('/api/projects', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            name: document.getElementById('projectName').value,
-            description: document.getElementById('projectDescription').value,
-            status: document.getElementById('projectStatus').value
+          body: JSON.stringify({ 
+            name,
+            description,
+            status: 'active'
           }),
-          credentials: 'include'
         });
         
-        const data = await response.json();
-        responseEl.innerText = 'Project Creation Result:\n' + JSON.stringify(data, null, 2);
-      } catch (error) {
-        responseEl.innerText = 'Error: ' + error.message;
-      }
-    });
-    
-    // Check if already logged in on page load
-    (async () => {
-      try {
-        const response = await fetch('/api/user', {
-          credentials: 'include'
-        });
         if (response.ok) {
           const data = await response.json();
-          responseEl.innerText = 'Already logged in as:\n' + JSON.stringify(data, null, 2);
+          showResult(data);
         } else {
-          responseEl.innerText = 'Not logged in. Please log in first.';
+          const errorData = await response.json().catch(() => ({ message: 'No error details' }));
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Project creation failed',
+            error: errorData
+          });
         }
       } catch (error) {
-        responseEl.innerText = 'Error checking login status: ' + error.message;
+        showResult({ error: error.message });
       }
-    })();
+    });
   </script>
 </body>
 </html>
