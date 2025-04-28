@@ -55,8 +55,10 @@ export const useToggleCommentResolution = (fileId: number) => {
       return apiRequest('PATCH', `/api/comments/${commentId}`, { isResolved });
     },
     onSuccess: () => {
-      // Invalidate and refetch
+      // Invalidate and refetch with the array format query key
       queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
+      // Also invalidate the project comments to show updates there
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', null, 'comments'] });
       toast({
         title: "Comment updated",
         description: "Comment resolution status updated successfully"
@@ -81,8 +83,10 @@ export const useDeleteComment = (fileId: number) => {
       return apiRequest('DELETE', `/api/comments/${commentId}`);
     },
     onSuccess: () => {
-      // Invalidate and refetch
+      // Invalidate and refetch with the array format query key
       queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
+      // Also invalidate the project comments to show updates there
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', null, 'comments'] });
       toast({
         title: "Comment deleted",
         description: "Comment has been deleted successfully"

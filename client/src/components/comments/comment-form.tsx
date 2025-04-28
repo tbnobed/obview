@@ -72,7 +72,10 @@ export default function CommentForm({
         title: "Comment added",
         description: "Your comment has been added successfully",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/files/${fileId}/comments`] });
+      // Invalidate the array-format query key we're using in useComments
+      queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
+      // Also invalidate project comments to update the project page
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', null, 'comments'] });
       if (onSuccess) onSuccess();
     },
     onError: (error: Error) => {
