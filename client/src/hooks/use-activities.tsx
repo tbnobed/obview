@@ -1,18 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
-import { ActivityLog } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
-// Hook to fetch all activities for a project
+// Hook to get all activities for a specific project
 export const useProjectActivities = (projectId?: number) => {
-  return useQuery<(ActivityLog & { user?: any })[]>({
-    queryKey: [`/api/projects/${projectId}/activities`],
-    enabled: !!projectId,
+  return useQuery({
+    queryKey: ['/api/projects', projectId, 'activities'],
+    queryFn: ({ signal }) => apiRequest('GET', `/api/projects/${projectId}/activities`, undefined, { signal }),
+    enabled: !!projectId
   });
 };
 
-// Hook to fetch all activities for a user
+// Hook to get all activities for a specific user
 export const useUserActivities = (userId?: number) => {
-  return useQuery<ActivityLog[]>({
-    queryKey: [`/api/users/${userId}/activities`],
-    enabled: !!userId,
+  return useQuery({
+    queryKey: ['/api/users', userId, 'activities'],
+    queryFn: ({ signal }) => apiRequest('GET', `/api/users/${userId}/activities`, undefined, { signal }),
+    enabled: !!userId
   });
 };

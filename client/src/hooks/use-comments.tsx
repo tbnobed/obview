@@ -1,140 +1,134 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Comment } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
-// Get all comments for a project (across all files)
-export const useProjectComments = (projectId?: number) => {
-  return useQuery<(Comment & { user?: any; file?: any })[]>({
-    queryKey: [`/api/projects/${projectId}/comments`],
-    enabled: !!projectId,
-  });
-};
-
-// Get all comments for a file
+// Hook to fetch all comments for a specific file
 export const useComments = (fileId?: number) => {
-  return useQuery<(Comment & { user?: any })[]>({
-    queryKey: [`/api/files/${fileId}/comments`],
+  return useQuery({
+    queryKey: ['/api/files', fileId, 'comments'],
+    queryFn: ({ signal }) => apiRequest('GET', `/api/files/${fileId}/comments`, undefined, { signal }),
     enabled: !!fileId,
   });
 };
 
-// Create a new comment
+// Hook to fetch all comments across all files in a project
+export const useProjectComments = (projectId?: number) => {
+  return useQuery({
+    queryKey: ['/api/projects', projectId, 'comments'],
+    queryFn: ({ signal }) => apiRequest('GET', `/api/projects/${projectId}/comments`, undefined, { signal }),
+    enabled: !!projectId,
+  });
+};
+
+// Hook to create a new comment on a file
 export const useCreateComment = (fileId: number) => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", `/api/files/${fileId}/comments`, {
-        ...data,
-        fileId,
-      });
-      return await res.json();
+    mutationFn: (data: { content: string; timestamp?: number | null; parentId?: number | null }) => {
+      return apiRequest('POST', `/api/files/${fileId}/comments`, data);
     },
     onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
       toast({
         title: "Comment added",
-        description: "Your comment has been added successfully",
+        description: "Your comment has been added successfully"
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/files/${fileId}/comments`] });
     },
     onError: (error: Error) => {
       toast({
         title: "Failed to add comment",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
-    },
+    }
   });
 };
 
-// Toggle comment resolved status
+// Hook to toggle comment resolution status
 export const useToggleCommentResolution = (fileId: number) => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async ({ commentId, isResolved }: { commentId: number, isResolved: boolean }) => {
-      const res = await apiRequest("PATCH", `/api/comments/${commentId}`, {
-        isResolved,
-      });
-      return await res.json();
+    mutationFn: ({ commentId, isResolved }: { commentId: number, isResolved: boolean }) => {
+      return apiRequest('PATCH', `/api/comments/${commentId}`, { isResolved });
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
       toast({
-        title: variables.isResolved ? "Comment resolved" : "Comment unresolved",
-        description: variables.isResolved 
-          ? "The comment has been marked as resolved" 
-          : "The comment has been marked as unresolved",
+        title: "Comment updated",
+        description: "Comment resolution status updated successfully"
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/files/${fileId}/comments`] });
     },
     onError: (error: Error) => {
       toast({
         title: "Failed to update comment",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
-    },
+    }
   });
 };
 
-// Delete a comment
+// Hook to delete a comment
 export const useDeleteComment = (fileId: number) => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async (commentId: number) => {
-      await apiRequest("DELETE", `/api/comments/${commentId}`);
+    mutationFn: (commentId: number) => {
+      return apiRequest('DELETE', `/api/comments/${commentId}`);
     },
     onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
       toast({
         title: "Comment deleted",
-        description: "The comment has been deleted successfully",
+        description: "Comment has been deleted successfully"
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/files/${fileId}/comments`] });
     },
     onError: (error: Error) => {
       toast({
         title: "Failed to delete comment",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
-    },
+    }
   });
 };
 
-// Get approvals for a file
+// Hook to get file approvals
 export const useApprovals = (fileId?: number) => {
-  return useQuery<any[]>({
-    queryKey: [`/api/files/${fileId}/approvals`],
+  return useQuery({
+    queryKey: ['/api/files', fileId, 'approvals'],
+    queryFn: ({ signal }) => apiRequest('GET', `/api/files/${fileId}/approvals`, undefined, { signal }),
     enabled: !!fileId,
   });
 };
 
-// Submit an approval for a file
+// Hook to approve/request changes on a file
 export const useApproveFile = (fileId: number) => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async (data: { status: string, feedback?: string }) => {
-      const res = await apiRequest("POST", `/api/files/${fileId}/approvals`, data);
-      return await res.json();
+    mutationFn: (data: { status: string; feedback?: string }) => {
+      return apiRequest('POST', `/api/files/${fileId}/approvals`, data);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'approvals'] });
       toast({
-        title: variables.status === "approved" ? "File approved" : "Changes requested",
-        description: variables.status === "approved" 
-          ? "You have approved this file" 
-          : "You have requested changes to this file",
+        title: "Review submitted",
+        description: "Your feedback has been submitted successfully"
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/files/${fileId}/approvals`] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to submit approval",
+        title: "Failed to submit review",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
-    },
+    }
   });
 };

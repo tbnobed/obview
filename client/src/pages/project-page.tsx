@@ -17,161 +17,13 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import ProjectForm from "@/components/projects/project-form";
-import { useProjectComments } from "@/hooks/use-comments";
-import { useProjectActivities } from "@/hooks/use-activities";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProjectCommentsTab } from "@/components/project/project-comments-tab";
+import { ProjectActivityTab } from "@/components/project/project-activity-tab";
 
-// Component for displaying project comments
-function CommentsTab({ projectId }: { projectId: number }) {
-  const { data: comments, isLoading, error } = useProjectComments(projectId);
-  
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  if (error) {
-    return (
-      <div className="text-center py-8 text-neutral-500">
-        Error loading comments. Please try again.
-      </div>
-    );
-  }
-  
-  if (!comments || comments.length === 0) {
-    return (
-      <div className="text-center py-8 text-neutral-500">
-        No comments found for this project.
-      </div>
-    );
-  }
-  
-  return (
-    <div className="space-y-4">
-      {comments.map(comment => (
-        <div key={comment.id} className="border rounded-lg p-4">
-          <div className="flex items-start gap-4">
-            <Avatar>
-              <AvatarFallback>
-                {comment.user?.name ? comment.user.name.substring(0, 2).toUpperCase() : 'U'}
-              </AvatarFallback>
-              {comment.user?.avatarUrl && <AvatarImage src={comment.user.avatarUrl} />}
-            </Avatar>
-            
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <div className="font-medium">{comment.user?.name || 'Unknown User'}</div>
-                <div className="text-sm text-neutral-500">{formatTimeAgo(new Date(comment.createdAt))}</div>
-              </div>
-              
-              <div className="text-neutral-700">{comment.content}</div>
-              
-              <div className="mt-2 flex items-center text-sm">
-                <div className="bg-neutral-100 px-2 py-1 rounded text-neutral-600 flex items-center">
-                  <FileVideo className="h-3 w-3 mr-1" />
-                  {comment.file?.filename || 'Unknown file'}
-                </div>
-                
-                {comment.isResolved && (
-                  <Badge className="ml-2 bg-green-100 text-green-800 hover:bg-green-100">Resolved</Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
-// Component for displaying project activity
-function ActivityTab({ projectId }: { projectId: number }) {
-  const { data: activities, isLoading, error } = useProjectActivities(projectId);
-  
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  if (error) {
-    return (
-      <div className="text-center py-8 text-neutral-500">
-        Error loading activities. Please try again.
-      </div>
-    );
-  }
-  
-  if (!activities || activities.length === 0) {
-    return (
-      <div className="text-center py-8 text-neutral-500">
-        No activities found for this project.
-      </div>
-    );
-  }
-
-  // Helper to render readable action text
-  const getActivityText = (activity: any) => {
-    const actor = activity.user?.name || 'Someone';
-    
-    switch (activity.action) {
-      case 'create':
-        return `${actor} created a ${activity.entityType}`;
-      case 'update':
-        return `${actor} updated a ${activity.entityType}`;
-      case 'delete':
-        return `${actor} deleted a ${activity.entityType}`;
-      case 'comment':
-        return `${actor} commented on a file`;
-      case 'resolve_comment':
-        return `${actor} resolved a comment`;
-      case 'unresolve_comment':
-        return `${actor} reopened a comment`;
-      case 'approve':
-        return `${actor} approved a file`;
-      case 'request_changes':
-        return `${actor} requested changes on a file`;
-      default:
-        return `${actor} performed an action on ${activity.entityType}`;
-    }
-  };
-  
-  return (
-    <div className="border rounded-lg bg-white">
-      <div className="p-4 border-b">
-        <h3 className="font-medium">Recent Activity</h3>
-      </div>
-      <div className="divide-y">
-        {activities.map(activity => (
-          <div key={activity.id} className="p-4 flex items-start gap-4">
-            <Avatar className="mt-0.5">
-              <AvatarFallback>
-                {activity.user?.name ? activity.user.name.substring(0, 2).toUpperCase() : 'U'}
-              </AvatarFallback>
-              {activity.user?.avatarUrl && <AvatarImage src={activity.user.avatarUrl} />}
-            </Avatar>
-            
-            <div className="flex-1">
-              <p className="text-sm text-neutral-700">
-                {getActivityText(activity)}
-              </p>
-              <p className="text-xs text-neutral-500 mt-1">
-                {formatTimeAgo(new Date(activity.createdAt))}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
@@ -385,7 +237,7 @@ export default function ProjectPage() {
               All Comments
             </h2>
             
-            <CommentsTab projectId={projectId} />
+            <ProjectCommentsTab projectId={projectId} />
           </div>
         )}
 
@@ -396,7 +248,7 @@ export default function ProjectPage() {
               Activity Log
             </h2>
             
-            <ActivityTab projectId={projectId} />
+            <ProjectActivityTab projectId={projectId} />
           </div>
         )}
 
