@@ -1,152 +1,110 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { InsertProject, insertProjectSchema } from "@shared/schema";
+import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { useProject } from "@/hooks/use-projects";
 import { cn } from "@/lib/utils";
 
 interface ProjectFormProps {
-  projectId?: number;
   onSuccess?: (projectId: number) => void;
   className?: string;
 }
 
+// Define a simple schema for project creation
+const createProjectSchema = z.object({
+  name: z.string().min(1, "Project name is required"),
+  description: z.string().nullable().optional(),
+  status: z.string().default("in_progress")
+});
+
+type CreateProjectInput = z.infer<typeof createProjectSchema>;
+
 export default function ProjectForm({ 
-  projectId, 
   onSuccess,
   className
 }: ProjectFormProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
-  const [isEditMode] = useState(!!projectId);
+  const [isLoading, setIsLoading] = useState(false);
   
-  const { data: existingProject, isLoading: projectLoading } = useProject(
-    projectId || 0, 
-    { enabled: isEditMode }
-  );
-
-  // Form setup
-  const form = useForm<InsertProject>({
-    resolver: zodResolver(insertProjectSchema),
+  // Form setup with our schema
+  const form = useForm<CreateProjectInput>({
+    resolver: zodResolver(createProjectSchema),
     defaultValues: {
       name: "",
       description: "",
       status: "in_progress",
-    },
-  });
-
-  // Load existing project data if in edit mode
-  useEffect(() => {
-    if (isEditMode && existingProject) {
-      form.reset({
-        name: existingProject.name,
-        description: existingProject.description || "",
-        status: existingProject.status,
-      });
     }
-  }, [isEditMode, existingProject, form]);
-
-  // Create project mutation
-  const createMutation = useMutation({
-    mutationFn: async (data: InsertProject) => {
-      console.log("Creating project with Mutation:", data);
-      
-      // We only need to send the necessary fields - backend will handle the createdById
-      const projectData = {
-        name: data.name,
-        description: data.description || null,
-        status: data.status
-      };
-      
-      console.log("Sending project data:", projectData);
-      const res = await apiRequest("POST", "/api/projects", projectData);
-      const result = await res.json();
-      console.log("Project creation response:", result);
-      return result;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Project created",
-        description: "Your new project has been created successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      if (onSuccess) onSuccess(data.id);
-    },
-    onError: (error: Error) => {
-      console.error("Failed to create project:", error);
-      toast({
-        title: "Failed to create project",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
   });
-
-  // Update project mutation
-  const updateMutation = useMutation({
-    mutationFn: async (data: InsertProject) => {
-      const res = await apiRequest("PATCH", `/api/projects/${projectId}`, data);
-      return await res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Project updated",
-        description: "Your project has been updated successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
-      if (onSuccess && projectId) onSuccess(projectId);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to update project",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = async (data: InsertProject) => {
-    console.log("Submitting project data:", data);
+  
+  // Handle form submission
+  const handleSubmit = form.handleSubmit(async (data) => {
+    setIsLoading(true);
+    console.log("Creating project with data:", data);
     
-    // Add user validation check
-    if (!form.formState.isValid) {
-      console.error("Form is not valid:", form.formState.errors);
-      return;
+    try {
+      // Create project with direct API call
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description || null,
+          status: data.status
+        }),
+        credentials: 'include'
+      });
+      
+      const responseText = await response.text();
+      console.log("Response status:", response.status);
+      console.log("Response text:", responseText);
+      
+      if (response.ok) {
+        try {
+          const responseData = JSON.parse(responseText);
+          toast({
+            title: "Project created",
+            description: "Project created successfully"
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+          if (onSuccess) onSuccess(responseData.id);
+        } catch (parseError) {
+          console.error("Error parsing response:", parseError);
+          toast({
+            title: "Error parsing response",
+            description: "Could not parse server response",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Error creating project",
+          description: responseText,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error in form submission:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-    
-    if (isEditMode) {
-      console.log("Updating existing project:", projectId);
-      updateMutation.mutate(data);
-    } else {
-      console.log("Creating new project with data:", data);
-      createMutation.mutate(data);
-    }
-  };
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
-
-  if (isEditMode && projectLoading) {
-    return (
-      <div className="flex justify-center py-4">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
-  }
+  });
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className={cn("space-y-6", className)}>
+      <form onSubmit={handleSubmit} className={cn("space-y-6", className)}>
         <FormField
           control={form.control}
           name="name"
@@ -173,6 +131,7 @@ export default function ProjectForm({
                   className="resize-none" 
                   rows={4}
                   {...field} 
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormDescription>
@@ -210,9 +169,13 @@ export default function ProjectForm({
           )}
         />
         
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditMode ? "Update Project" : "Create Project"}
+        <Button 
+          type="submit" 
+          disabled={isLoading} 
+          className="w-full"
+        >
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Create Project
         </Button>
       </form>
     </Form>
