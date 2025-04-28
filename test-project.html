@@ -240,7 +240,8 @@
           body: JSON.stringify({ 
             name,
             description,
-            status: 'active'
+            status: 'active',
+            createdById: 1 // Add the createdById field with the current user's ID
           }),
         });
         

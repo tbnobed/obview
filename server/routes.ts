@@ -252,8 +252,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authenticated: req.isAuthenticated()
       });
       
+      // Make sure createdById exists in the request
+      const projectData = {
+        ...req.body,
+        createdById: req.body.createdById || req.user.id,
+      };
+      
       // Validate the request body
-      const validationResult = insertProjectSchema.safeParse(req.body);
+      const validationResult = insertProjectSchema.safeParse(projectData);
       
       if (!validationResult.success) {
         console.error("Project validation failed:", validationResult.error.errors);
@@ -266,10 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Project validation passed, creating project");
       
       // Create the project
-      const project = await storage.createProject({
-        ...validationResult.data,
-        createdById: req.user.id,
-      });
+      const project = await storage.createProject(validationResult.data);
       
       console.log("Project created:", project);
       

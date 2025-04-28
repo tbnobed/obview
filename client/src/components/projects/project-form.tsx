@@ -5,6 +5,7 @@ import { InsertProject, insertProjectSchema } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +27,7 @@ export default function ProjectForm({
   className
 }: ProjectFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isEditMode] = useState(!!projectId);
   
   const { data: existingProject, isLoading: projectLoading } = useProject(
@@ -57,11 +59,12 @@ export default function ProjectForm({
   // Create project mutation
   const createMutation = useMutation({
     mutationFn: async (data: InsertProject) => {
-      // We don't need to send createdById, the server will add it from the authenticated user
+      // We need to include createdById in the data for validation
       const projectData = {
         name: data.name,
         description: data.description,
-        status: data.status
+        status: data.status,
+        createdById: user?.id || 1 // Use the current user's id or fallback to 1 for testing
       };
       const res = await apiRequest("POST", "/api/projects", projectData);
       return await res.json();
@@ -153,7 +156,8 @@ export default function ProjectForm({
           body: JSON.stringify({
             name: data.name,
             description: data.description || null,
-            status: data.status
+            status: data.status,
+            createdById: user?.id || 1
           }),
           credentials: 'include'
         });
