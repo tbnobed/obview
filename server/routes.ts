@@ -1158,6 +1158,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Get all comments for a project
+  app.get("/api/projects/:projectId/comments", hasProjectAccess, async (req, res, next) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      // Get all files for this project
+      const files = await storage.getFilesByProject(projectId);
+      
+      if (!files || files.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get all comments for all files in project
+      const allComments = [];
+      
+      for (const file of files) {
+        const fileComments = await storage.getCommentsByFile(file.id);
+        
+        if (fileComments && fileComments.length > 0) {
+          // Enrich each comment with user and file info
+          const commentsWithUserAndFile = await Promise.all(
+            fileComments.map(async (comment) => {
+              const user = await storage.getUser(comment.userId);
+              
+              // Add file info and user info (without password)
+              let enrichedComment = {
+                ...comment,
+                file: {
+                  id: file.id,
+                  filename: file.filename,
+                  fileType: file.fileType
+                }
+              };
+              
+              if (user) {
+                const { password, ...userWithoutPassword } = user;
+                enrichedComment.user = userWithoutPassword;
+              }
+              
+              return enrichedComment;
+            })
+          );
+          
+          allComments.push(...commentsWithUserAndFile);
+        }
+      }
+      
+      // Sort comments by date (newest first)
+      const sortedComments = allComments.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      res.json(sortedComments);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Add a debug test page for project creation
   app.get("/test-project", (req, res) => {
