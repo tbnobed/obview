@@ -589,8 +589,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload a file to a project
-  app.post("/api/projects/:projectId/files", hasProjectEditAccess, upload.single('file'), async (req, res, next) => {
+  // Upload a file to a project (support both endpoints for compatibility)
+  app.post(["/api/projects/:projectId/files", "/api/projects/:projectId/upload"], hasProjectEditAccess, upload.single('file'), async (req, res, next) => {
     try {
       const projectId = parseInt(req.params.projectId);
       

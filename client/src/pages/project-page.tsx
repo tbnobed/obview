@@ -127,9 +127,9 @@ export default function ProjectPage() {
                     />
                   </DialogContent>
                 </Dialog>
-                <Button className="flex items-center" onClick={() => navigate(`/project/${projectId}/upload`)}>
+                <Button className="flex items-center" onClick={() => navigate(`/projects/${projectId}/upload`)}>
                   <Plus className="h-4 w-4 mr-1.5" />
-                  New Version
+                  Upload Media
                 </Button>
               </>
             )}
@@ -214,7 +214,7 @@ export default function ProjectPage() {
                   Upload your first media file to start the review process
                 </p>
                 {isEditor && (
-                  <Button onClick={() => navigate(`/project/${projectId}/upload`)}>
+                  <Button onClick={() => navigate(`/projects/${projectId}/upload`)}>
                     Upload Media
                   </Button>
                 )}
