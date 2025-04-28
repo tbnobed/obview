@@ -25,6 +25,8 @@ export const useFileUpload = (projectId: number) => {
   
   return useMutation({
     mutationFn: async (formData: FormData) => {
+      // For file uploads, we need to use the native fetch API
+      // as our apiRequest doesn't support FormData
       const res = await fetch(`/api/projects/${projectId}/files`, {
         method: "POST",
         body: formData,
@@ -36,7 +38,8 @@ export const useFileUpload = (projectId: number) => {
         throw new Error(errorText || res.statusText);
       }
       
-      return await res.json();
+      const responseText = await res.text();
+      return responseText ? JSON.parse(responseText) : null;
     },
     onSuccess: () => {
       toast({

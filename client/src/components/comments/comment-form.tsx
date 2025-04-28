@@ -64,8 +64,7 @@ export default function CommentForm({
         timestamp: includeTimestamp && currentTime ? Math.floor(currentTime) : null,
       };
       
-      const res = await apiRequest("POST", `/api/files/${fileId}/comments`, commentData);
-      return await res.json();
+      return apiRequest("POST", `/api/files/${fileId}/comments`, commentData);
     },
     onSuccess: () => {
       form.reset();
