@@ -201,174 +201,176 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
   };
 
   return (
-    <div>
-      {/* Media Viewer */}
-      <div className="relative">
-        <div className="max-h-[500px] aspect-w-16 aspect-h-9 bg-neutral-900 rounded-t-lg overflow-hidden">
-          {renderMediaContent()}
-        </div>
-        
-        {/* Video Controls */}
-        <div className="bg-white p-4 border-t border-neutral-100">
-          <div className="flex items-center mb-2 space-x-2">
-            <Button
-              onClick={togglePlay}
-              variant="ghost"
-              size="icon"
-              className="text-neutral-600 hover:text-neutral-900"
-            >
-              {isPlaying ? (
-                <Pause className="h-6 w-6" />
-              ) : (
-                <Play className="h-6 w-6" />
-              )}
-            </Button>
-            
-            <span className="font-mono text-sm text-neutral-600">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
-            
-            <div
-              ref={progressRef}
-              className="video-progress flex-grow mx-4 relative rounded-full"
-              onClick={handleProgressClick}
-            >
-              <div
-                className="video-progress-fill rounded-full"
-                style={{ width: `${(currentTime / duration) * 100}%` }}
-              ></div>
-              <div
-                className="playhead absolute top-1/2 -translate-y-1/2"
-                style={{ left: `${(currentTime / duration) * 100}%` }}
-              ></div>
-              
-              {/* This would be timeline markers for comments */}
-              {/* Implemented in the TimelineComments component */}
-            </div>
-            
-            <div className="flex items-center">
-              <Volume2 className="h-5 w-5 text-neutral-600 mr-2" />
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={volume}
-                onChange={(e) => handleVolumeChange(e.target.value)}
-                className="w-20"
-              />
-            </div>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-neutral-600 hover:text-neutral-900"
-            >
-              <Maximize className="h-5 w-5" />
-            </Button>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+      {/* Media Viewer - Takes 2/3 of the space on large screens */}
+      <div className="lg:col-span-2">
+        <div className="relative">
+          <div className="max-h-[600px] aspect-w-16 aspect-h-9 bg-neutral-900 rounded-t-lg overflow-hidden">
+            {renderMediaContent()}
           </div>
           
-          {/* File selector and actions */}
-          <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-100">
-            <div className="flex space-x-2 items-center">
-              <Select 
-                value={file?.id.toString()} 
-                onValueChange={(value) => onSelectFile(parseInt(value))}
+          {/* Video Controls */}
+          <div className="bg-white p-4 border-t border-neutral-100">
+            <div className="flex items-center mb-2 space-x-2">
+              <Button
+                onClick={togglePlay}
+                variant="ghost"
+                size="icon"
+                className="text-neutral-600 hover:text-neutral-900"
               >
-                <SelectTrigger className="w-auto min-w-[180px]">
-                  <SelectValue placeholder="Select file" />
-                </SelectTrigger>
-                <SelectContent>
-                  {files.map((f) => (
-                    <SelectItem key={f.id} value={f.id.toString()}>
-                      {f.filename} {f.isLatestVersion && "(Latest)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {isPlaying ? (
+                  <Pause className="h-6 w-6" />
+                ) : (
+                  <Play className="h-6 w-6" />
+                )}
+              </Button>
               
-              {file && (
-                <div className="text-xs text-neutral-500">
-                  Version {file.version}
-                </div>
-              )}
+              <span className="font-mono text-sm text-neutral-600">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+              
+              <div
+                ref={progressRef}
+                className="video-progress flex-grow mx-4 relative rounded-full"
+                onClick={handleProgressClick}
+              >
+                <div
+                  className="video-progress-fill rounded-full"
+                  style={{ width: `${(currentTime / duration) * 100}%` }}
+                ></div>
+                <div
+                  className="playhead absolute top-1/2 -translate-y-1/2"
+                  style={{ left: `${(currentTime / duration) * 100}%` }}
+                ></div>
+                
+                {/* This would be timeline markers for comments */}
+                {/* Implemented in the TimelineComments component */}
+              </div>
+              
+              <div className="flex items-center">
+                <Volume2 className="h-5 w-5 text-neutral-600 mr-2" />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={volume}
+                  onChange={(e) => handleVolumeChange(e.target.value)}
+                  className="w-20"
+                />
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-neutral-600 hover:text-neutral-900"
+              >
+                <Maximize className="h-5 w-5" />
+              </Button>
             </div>
             
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" className="flex items-center">
-                <Download className="h-4 w-4 mr-1.5" />
-                Download
-              </Button>
-              <Button variant="outline" size="sm" className="flex items-center">
-                <Share className="h-4 w-4 mr-1.5" />
-                Share
-              </Button>
-            </div>
-          </div>
-          
-          {/* Approval actions */}
-          {file && (
-            <div className="flex justify-between items-center mt-4 pt-4 border-t border-neutral-100">
-              <div className="flex items-center text-sm">
-                {userApproval && (
-                  <div className={cn(
-                    "flex items-center px-2 py-1 rounded-full",
-                    userApproval.status === "approved" 
-                      ? "bg-green-50 text-green-700" 
-                      : "bg-amber-50 text-amber-700"
-                  )}>
-                    {userApproval.status === "approved" ? (
-                      <>
-                        <Check className="h-4 w-4 mr-1" />
-                        <span>You approved this file</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="h-4 w-4 mr-1" />
-                        <span>You requested changes</span>
-                      </>
-                    )}
+            {/* File selector and actions */}
+            <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-100">
+              <div className="flex space-x-2 items-center">
+                <Select 
+                  value={file?.id.toString()} 
+                  onValueChange={(value) => onSelectFile(parseInt(value))}
+                >
+                  <SelectTrigger className="w-auto min-w-[180px]">
+                    <SelectValue placeholder="Select file" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {files.map((f) => (
+                      <SelectItem key={f.id} value={f.id.toString()}>
+                        {f.filename} {f.isLatestVersion && "(Latest)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {file && (
+                  <div className="text-xs text-neutral-500">
+                    Version {file.version}
                   </div>
                 )}
               </div>
+              
               <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center"
-                  onClick={handleRequestChanges}
-                  disabled={approveMutation.isPending}
-                >
-                  <AlertCircle className="h-4 w-4 mr-1.5" />
-                  Request Changes
+                <Button variant="outline" size="sm" className="flex items-center">
+                  <Download className="h-4 w-4 mr-1.5" />
+                  Download
                 </Button>
-                <Button 
-                  size="sm" 
-                  className="flex items-center bg-green-600 hover:bg-green-700"
-                  onClick={handleApprove}
-                  disabled={approveMutation.isPending}
-                >
-                  <Check className="h-4 w-4 mr-1.5" />
-                  Approve
+                <Button variant="outline" size="sm" className="flex items-center">
+                  <Share className="h-4 w-4 mr-1.5" />
+                  Share
                 </Button>
               </div>
             </div>
-          )}
+            
+            {/* Approval actions */}
+            {file && (
+              <div className="flex justify-between items-center mt-4 pt-4 border-t border-neutral-100">
+                <div className="flex items-center text-sm">
+                  {userApproval && (
+                    <div className={cn(
+                      "flex items-center px-2 py-1 rounded-full",
+                      userApproval.status === "approved" 
+                        ? "bg-green-50 text-green-700" 
+                        : "bg-amber-50 text-amber-700"
+                    )}>
+                      {userApproval.status === "approved" ? (
+                        <>
+                          <Check className="h-4 w-4 mr-1" />
+                          <span>You approved this file</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="h-4 w-4 mr-1" />
+                          <span>You requested changes</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center"
+                    onClick={handleRequestChanges}
+                    disabled={approveMutation.isPending}
+                  >
+                    <AlertCircle className="h-4 w-4 mr-1.5" />
+                    Request Changes
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="flex items-center bg-green-600 hover:bg-green-700"
+                    onClick={handleApprove}
+                    disabled={approveMutation.isPending}
+                  >
+                    <Check className="h-4 w-4 mr-1.5" />
+                    Approve
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
-      {/* Comments Section */}
+      {/* Comments Section - Takes 1/3 of the space on large screens */}
       {file && (
-        <div className="border-t border-neutral-200 px-4 sm:px-6 py-4">
-          <Tabs defaultValue="comments">
-            <div className="flex items-center justify-between mb-4">
+        <div className="border border-neutral-200 rounded-lg h-full">
+          <Tabs defaultValue="comments" className="h-full flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200">
               <TabsList>
                 <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
                 <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
               </TabsList>
             </div>
             
-            <TabsContent value="comments">
+            <TabsContent value="comments" className="flex-grow overflow-auto px-4 py-3">
               <TimelineComments 
                 fileId={file.id} 
                 duration={duration} 
@@ -382,7 +384,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
               />
             </TabsContent>
             
-            <TabsContent value="versions">
+            <TabsContent value="versions" className="flex-grow overflow-auto px-4 py-3">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium">File Versions</h3>

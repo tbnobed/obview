@@ -69,7 +69,7 @@ export default function TimelineComments({
   return (
     <div>
       {/* Timeline markers visualization */}
-      <div className="mb-6 bg-neutral-100 h-8 relative rounded-md" ref={timelineRef}>
+      <div className="mb-4 bg-neutral-100 h-6 relative rounded-md" ref={timelineRef}>
         {/* Current time indicator */}
         <div 
           className="absolute top-0 h-full w-px bg-primary-500 z-10"
@@ -80,7 +80,7 @@ export default function TimelineComments({
         {markers.map((marker, index) => (
           <div
             key={index}
-            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-secondary-500 rounded-full cursor-pointer transform hover:scale-150 transition-transform"
+            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-secondary-500 rounded-full cursor-pointer transform hover:scale-150 transition-transform"
             style={{ left: marker.left }}
             title={`Comment at ${formatTime(marker.time)}`}
             onClick={() => onTimeClick(marker.time)}
@@ -89,19 +89,19 @@ export default function TimelineComments({
         
         {/* Time labels */}
         <div className="absolute top-0 left-0 w-full h-full flex justify-between px-2 text-xs text-neutral-500">
-          <span className="self-center">0:00</span>
-          <span className="self-center">{formatTime(duration)}</span>
+          <span className="self-center text-[10px]">0:00</span>
+          <span className="self-center text-[10px]">{formatTime(duration)}</span>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-neutral-900">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <h3 className="text-base font-medium text-neutral-900">
           Comments ({comments?.length || 0})
         </h3>
         <div className="flex items-center">
-          <span className="text-sm text-neutral-500 mr-3">Filter:</span>
+          <span className="text-sm text-neutral-500 mr-2">Filter:</span>
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full max-w-[160px] h-8 text-xs">
               <SelectValue placeholder="Filter comments" />
             </SelectTrigger>
             <SelectContent>

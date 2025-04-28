@@ -93,50 +93,50 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
 
   return (
     <div className={cn(
-      "mb-6 pb-6",
+      "mb-5 pb-5",
       comment.isResolved ? "opacity-60" : "",
       comments.indexOf(comment) < comments.length - 1 ? "border-b border-neutral-200" : ""
     )}>
-      <div className="flex space-x-3">
-        <Avatar className="h-9 w-9">
-          <AvatarFallback className="bg-primary-100 text-primary-700">
+      <div className="flex space-x-2">
+        <Avatar className="h-7 w-7 mt-0.5 hidden sm:block">
+          <AvatarFallback className="bg-primary-100 text-primary-700 text-xs">
             {userInitial}
           </AvatarFallback>
         </Avatar>
         
         <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-neutral-900">
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1">
+            <h4 className="text-xs font-medium text-neutral-900">
               {comment.user?.name || "Unknown User"}
             </h4>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               {comment.timestamp !== null && (
                 <button 
-                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-800"
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 text-neutral-800"
                   onClick={() => onTimeClick && onTimeClick(comment.timestamp || 0)}
                 >
                   <span className="font-mono">{formatTime(comment.timestamp)}</span>
                 </button>
               )}
-              <span className="text-sm text-neutral-500">
+              <span className="text-[10px] text-neutral-500">
                 {formatTimeAgo(new Date(comment.createdAt))}
               </span>
               {comment.isResolved && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success bg-opacity-10 text-success">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success bg-opacity-10 text-success">
                   Resolved
                 </span>
               )}
             </div>
           </div>
           
-          <div className="mt-1 text-sm text-neutral-700">
+          <div className="mt-1 text-xs text-neutral-700">
             <p>{comment.content}</p>
           </div>
           
-          <div className="mt-2 flex space-x-4">
+          <div className="mt-2 flex flex-wrap gap-3">
             <Button 
               variant="link" 
-              className="text-xs p-0 h-auto"
+              className="text-[10px] p-0 h-auto"
               onClick={() => setShowReplyForm(!showReplyForm)}
             >
               {showReplyForm ? "Cancel" : "Reply"}
@@ -146,7 +146,7 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
               <Button 
                 variant="link" 
                 className={cn(
-                  "text-xs p-0 h-auto",
+                  "text-[10px] p-0 h-auto",
                   comment.isResolved ? "text-neutral-500" : "text-success"
                 )}
                 onClick={handleToggleResolution}
@@ -159,18 +159,18 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
             {canDelete && (
               <Button
                 variant="link"
-                className="text-xs p-0 h-auto text-destructive"
+                className="text-[10px] p-0 h-auto text-destructive"
                 onClick={handleDeleteComment}
                 disabled={deleteCommentMutation.isPending}
               >
-                <Trash2 className="h-3 w-3 mr-1 inline" />
+                <Trash2 className="h-2.5 w-2.5 mr-1 inline" />
                 Delete
               </Button>
             )}
           </div>
           
           {showReplyForm && (
-            <div className="mt-4">
+            <div className="mt-3">
               <CommentForm 
                 fileId={comment.fileId}
                 parentId={comment.id}
@@ -181,28 +181,28 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
           
           {/* Comment Replies */}
           {replies.length > 0 && (
-            <div className="mt-4 space-y-4 pl-6 border-l-2 border-neutral-200">
+            <div className="mt-3 space-y-3 pl-3 border-l border-neutral-200">
               {replies.map(reply => (
-                <div key={reply.id} className="flex space-x-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary-100 text-primary-700 text-xs">
+                <div key={reply.id} className="flex space-x-2">
+                  <Avatar className="h-5 w-5 mt-0.5 hidden sm:block">
+                    <AvatarFallback className="bg-primary-100 text-primary-700 text-[10px]">
                       {reply.user?.name ? reply.user.name.charAt(0).toUpperCase() : 'U'}
                     </AvatarFallback>
                   </Avatar>
                   
                   <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-neutral-900">
+                    <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1">
+                      <h4 className="text-xs font-medium text-neutral-900">
                         {reply.user?.name || "Unknown User"}
                       </h4>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-neutral-500">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-neutral-500">
                           {formatTimeAgo(new Date(reply.createdAt))}
                         </span>
                         {canDelete && (
                           <Button
                             variant="link"
-                            className="text-xs p-0 h-auto text-destructive"
+                            className="text-[10px] p-0 h-auto text-destructive"
                             onClick={() => {
                               if (window.confirm("Are you sure you want to delete this reply?")) {
                                 deleteCommentMutation.mutate(reply.id);
@@ -210,13 +210,13 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
                             }}
                             disabled={deleteCommentMutation.isPending}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-2.5 w-2.5" />
                           </Button>
                         )}
                       </div>
                     </div>
                     
-                    <div className="mt-1 text-sm text-neutral-700">
+                    <div className="mt-0.5 text-xs text-neutral-700">
                       <p>{reply.content}</p>
                     </div>
                   </div>

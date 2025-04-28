@@ -97,9 +97,9 @@ export default function CommentForm({
   const userInitial = user.name.charAt(0).toUpperCase();
 
   return (
-    <div className={cn("flex items-start space-x-3", className)}>
-      <Avatar className="h-9 w-9">
-        <AvatarFallback className="bg-primary-100 text-primary-700">
+    <div className={cn("flex items-start space-x-2", className)}>
+      <Avatar className="h-7 w-7 mt-1 hidden sm:block">
+        <AvatarFallback className="bg-primary-100 text-primary-700 text-xs">
           {userInitial}
         </AvatarFallback>
       </Avatar>
@@ -110,7 +110,7 @@ export default function CommentForm({
             <Textarea 
               {...form.register("content")}
               rows={2} 
-              className="block w-full px-3 py-2 border-0 resize-none focus:ring-0 sm:text-sm" 
+              className="block w-full px-3 py-2 border-0 resize-none focus:ring-0 text-xs sm:text-sm" 
               placeholder={
                 parentId 
                   ? "Add a reply..." 
@@ -122,15 +122,18 @@ export default function CommentForm({
             
             <div className="p-2 bg-neutral-50 border-t border-neutral-200 flex justify-between items-center">
               <div className="flex space-x-1">
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100">
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100">
-                  <Image className="h-4 w-4" />
-                </Button>
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100">
-                  <Smile className="h-4 w-4" />
-                </Button>
+                {/* Show only timestamp button on small screens */}
+                <div className="hidden sm:flex space-x-1">
+                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100">
+                    <Paperclip className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100">
+                    <Image className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100">
+                    <Smile className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
                 
                 {!parentId && currentTime !== undefined && (
                   <Button
@@ -138,12 +141,12 @@ export default function CommentForm({
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "text-xs",
+                      "h-7 text-xs px-2",
                       includeTimestamp ? "text-primary-600" : "text-neutral-500"
                     )}
                     onClick={() => setIncludeTimestamp(!includeTimestamp)}
                   >
-                    {includeTimestamp ? `At ${formatTime(currentTime)}` : "Add timestamp"}
+                    {includeTimestamp ? `${formatTime(currentTime)}` : "Add time"}
                   </Button>
                 )}
               </div>
@@ -151,10 +154,11 @@ export default function CommentForm({
               <Button 
                 type="submit" 
                 size="sm"
+                className="h-7 px-3 text-xs"
                 disabled={createCommentMutation.isPending || !form.formState.isValid}
               >
                 {createCommentMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 )}
                 {parentId ? "Reply" : "Submit"}
               </Button>
