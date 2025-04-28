@@ -85,20 +85,10 @@ export default function AdminPage() {
               </DialogContent>
             </Dialog>
             
-            <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add User
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New User</DialogTitle>
-                </DialogHeader>
-                <UserForm onSuccess={() => setCreateUserDialogOpen(false)} />
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => navigate("/projects")}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
           </div>
         </div>
 

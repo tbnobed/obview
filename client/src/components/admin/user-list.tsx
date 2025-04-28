@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -25,6 +25,7 @@ export default function UserList() {
   const { user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [editUserId, setEditUserId] = useState<number | null>(null);
+  const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
   
   const { 
     data: users, 
@@ -110,10 +111,20 @@ export default function UserList() {
           </svg>
         </div>
 
-        <Button className="flex items-center">
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add User
-        </Button>
+        <Dialog open={createUserDialogOpen} onOpenChange={setCreateUserDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add User
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New User</DialogTitle>
+            </DialogHeader>
+            <UserForm onSuccess={() => setCreateUserDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="border rounded-md">
