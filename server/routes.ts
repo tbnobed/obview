@@ -119,6 +119,33 @@ async function hasProjectEditAccess(req: Request, res: Response, next: NextFunct
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
+  
+  // Test authentication endpoint
+  app.get('/api/test-auth', (req, res) => {
+    console.log('Test auth endpoint called');
+    console.log('Is authenticated:', req.isAuthenticated());
+    console.log('Session ID:', req.sessionID);
+    console.log('User:', req.user);
+    
+    if (req.isAuthenticated()) {
+      res.json({
+        authenticated: true,
+        user: {
+          id: req.user?.id,
+          username: req.user?.username,
+          name: req.user?.name,
+          role: req.user?.role
+        },
+        sessionID: req.sessionID
+      });
+    } else {
+      res.status(401).json({ 
+        authenticated: false,
+        message: 'Not authenticated',
+        sessionID: req.sessionID
+      });
+    }
+  });
 
   // ===== USER ROUTES =====
   // Get all users (admin only)
