@@ -26,8 +26,12 @@ import {
 } from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { eq, and, desc } from "drizzle-orm";
+import { db, pool } from "./db";
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // User management
@@ -86,7 +90,7 @@ export interface IStorage {
   getApprovalByUserAndFile(userId: number, fileId: number): Promise<Approval | undefined>;
 
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any to avoid type issues
 }
 
 export class MemStorage implements IStorage {
@@ -98,7 +102,7 @@ export class MemStorage implements IStorage {
   private activityLogs: Map<number, ActivityLog>;
   private invitations: Map<number, Invitation>;
   private approvals: Map<number, Approval>;
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any to avoid type issues
 
   currentUserId: number;
   currentProjectId: number;
@@ -434,4 +438,320 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  sessionStore: any; // Using any here to avoid type issues
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
+    });
+  }
+
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning({ deletedId: users.id });
+    return result.length > 0;
+  }
+
+  // Project methods
+  async getProject(id: number): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
+  }
+
+  async getAllProjects(): Promise<Project[]> {
+    return await db.select().from(projects);
+  }
+
+  async getProjectsByUser(userId: number): Promise<Project[]> {
+    const userProjects = await db
+      .select({
+        project: projects
+      })
+      .from(projectUsers)
+      .where(eq(projectUsers.userId, userId))
+      .innerJoin(projects, eq(projectUsers.projectId, projects.id));
+
+    return userProjects.map(up => up.project);
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const [project] = await db.insert(projects).values(insertProject).returning();
+    return project;
+  }
+
+  async updateProject(id: number, data: Partial<InsertProject>): Promise<Project | undefined> {
+    const [updatedProject] = await db
+      .update(projects)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(projects.id, id))
+      .returning();
+    return updatedProject;
+  }
+
+  async deleteProject(id: number): Promise<boolean> {
+    const result = await db
+      .delete(projects)
+      .where(eq(projects.id, id))
+      .returning({ deletedId: projects.id });
+    return result.length > 0;
+  }
+
+  // File methods
+  async getFile(id: number): Promise<File | undefined> {
+    const [file] = await db.select().from(files).where(eq(files.id, id));
+    return file;
+  }
+
+  async getFilesByProject(projectId: number): Promise<File[]> {
+    return await db.select().from(files).where(eq(files.projectId, projectId));
+  }
+
+  async createFile(insertFile: InsertFile): Promise<File> {
+    const [file] = await db.insert(files).values(insertFile).returning();
+    return file;
+  }
+
+  async updateFile(id: number, data: Partial<InsertFile>): Promise<File | undefined> {
+    const [updatedFile] = await db
+      .update(files)
+      .set(data)
+      .where(eq(files.id, id))
+      .returning();
+    return updatedFile;
+  }
+
+  async deleteFile(id: number): Promise<boolean> {
+    const result = await db
+      .delete(files)
+      .where(eq(files.id, id))
+      .returning({ deletedId: files.id });
+    return result.length > 0;
+  }
+
+  // Comment methods
+  async getComment(id: number): Promise<Comment | undefined> {
+    const [comment] = await db.select().from(comments).where(eq(comments.id, id));
+    return comment;
+  }
+
+  async getCommentsByFile(fileId: number): Promise<Comment[]> {
+    return await db.select().from(comments).where(eq(comments.fileId, fileId));
+  }
+
+  async getCommentReplies(commentId: number): Promise<Comment[]> {
+    return await db
+      .select()
+      .from(comments)
+      .where(eq(comments.parentId, commentId));
+  }
+
+  async createComment(insertComment: InsertComment): Promise<Comment> {
+    const [comment] = await db.insert(comments).values(insertComment).returning();
+    return comment;
+  }
+
+  async updateComment(id: number, data: Partial<InsertComment>): Promise<Comment | undefined> {
+    const [updatedComment] = await db
+      .update(comments)
+      .set(data)
+      .where(eq(comments.id, id))
+      .returning();
+    return updatedComment;
+  }
+
+  async deleteComment(id: number): Promise<boolean> {
+    const result = await db
+      .delete(comments)
+      .where(eq(comments.id, id))
+      .returning({ deletedId: comments.id });
+    return result.length > 0;
+  }
+
+  // Project User methods
+  async getProjectUser(projectId: number, userId: number): Promise<ProjectUser | undefined> {
+    const [projectUser] = await db
+      .select()
+      .from(projectUsers)
+      .where(
+        and(
+          eq(projectUsers.projectId, projectId),
+          eq(projectUsers.userId, userId)
+        )
+      );
+    return projectUser;
+  }
+
+  async getProjectUsers(projectId: number): Promise<ProjectUser[]> {
+    return await db
+      .select()
+      .from(projectUsers)
+      .where(eq(projectUsers.projectId, projectId));
+  }
+
+  async getUserProjects(userId: number): Promise<ProjectUser[]> {
+    return await db
+      .select()
+      .from(projectUsers)
+      .where(eq(projectUsers.userId, userId));
+  }
+
+  async addUserToProject(insertProjectUser: InsertProjectUser): Promise<ProjectUser> {
+    const [projectUser] = await db
+      .insert(projectUsers)
+      .values(insertProjectUser)
+      .returning();
+    return projectUser;
+  }
+
+  async updateProjectUserRole(id: number, role: string): Promise<ProjectUser | undefined> {
+    const [updatedProjectUser] = await db
+      .update(projectUsers)
+      .set({ role })
+      .where(eq(projectUsers.id, id))
+      .returning();
+    return updatedProjectUser;
+  }
+
+  async removeUserFromProject(projectId: number, userId: number): Promise<boolean> {
+    const result = await db
+      .delete(projectUsers)
+      .where(
+        and(
+          eq(projectUsers.projectId, projectId),
+          eq(projectUsers.userId, userId)
+        )
+      )
+      .returning({ id: projectUsers.id });
+    return result.length > 0;
+  }
+
+  // Activity Log methods
+  async logActivity(insertActivityLog: InsertActivityLog): Promise<ActivityLog> {
+    const [activity] = await db
+      .insert(activityLogs)
+      .values(insertActivityLog)
+      .returning();
+    return activity;
+  }
+
+  async getActivitiesByProject(projectId: number): Promise<ActivityLog[]> {
+    return await db
+      .select()
+      .from(activityLogs)
+      .where(
+        and(
+          eq(activityLogs.entityType, 'project'),
+          eq(activityLogs.entityId, projectId)
+        )
+      )
+      .orderBy(desc(activityLogs.createdAt));
+  }
+
+  async getActivitiesByUser(userId: number): Promise<ActivityLog[]> {
+    return await db
+      .select()
+      .from(activityLogs)
+      .where(eq(activityLogs.userId, userId))
+      .orderBy(desc(activityLogs.createdAt));
+  }
+
+  // Invitation methods
+  async createInvitation(insertInvitation: InsertInvitation): Promise<Invitation> {
+    const [invitation] = await db
+      .insert(invitations)
+      .values(insertInvitation)
+      .returning();
+    return invitation;
+  }
+
+  async getInvitationByToken(token: string): Promise<Invitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.token, token));
+    return invitation;
+  }
+
+  async updateInvitation(id: number, data: Partial<Invitation>): Promise<Invitation | undefined> {
+    const [updatedInvitation] = await db
+      .update(invitations)
+      .set(data)
+      .where(eq(invitations.id, id))
+      .returning();
+    return updatedInvitation;
+  }
+
+  // Approval methods
+  async createApproval(insertApproval: InsertApproval): Promise<Approval> {
+    const [approval] = await db
+      .insert(approvals)
+      .values(insertApproval)
+      .returning();
+    return approval;
+  }
+
+  async getApprovalsByFile(fileId: number): Promise<Approval[]> {
+    return await db
+      .select()
+      .from(approvals)
+      .where(eq(approvals.fileId, fileId))
+      .orderBy(desc(approvals.createdAt));
+  }
+
+  async getApprovalByUserAndFile(userId: number, fileId: number): Promise<Approval | undefined> {
+    const [approval] = await db
+      .select()
+      .from(approvals)
+      .where(
+        and(
+          eq(approvals.userId, userId),
+          eq(approvals.fileId, fileId)
+        )
+      );
+    return approval;
+  }
+}
+
+// Use the database storage implementation
+export const storage = new DatabaseStorage();
