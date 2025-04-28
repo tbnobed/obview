@@ -48,8 +48,7 @@ export default function UserForm({ userId, onSuccess }: UserFormProps) {
   const createUserMutation = useMutation({
     mutationFn: async (data: Omit<UserFormValues, "confirmPassword">) => {
       const { confirmPassword, ...userData } = data;
-      const res = await apiRequest("POST", "/api/register", userData);
-      return await res.json();
+      return await apiRequest("POST", "/api/users", userData);
     },
     onSuccess: () => {
       form.reset();

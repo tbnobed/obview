@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, generateToken } from "./auth";
+import { setupAuth, generateToken, hashPassword } from "./auth";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
@@ -224,6 +224,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: pwd, ...userWithoutPassword } = updatedUser;
       
       res.json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Create user (admin only)
+  app.post("/api/users", isAdmin, async (req, res, next) => {
+    try {
+      // Validate the input
+      const { username, password, email, name, role } = req.body;
+      
+      if (!username || !password || !email || !name) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check if username or email already exists
+      const existingUsername = await storage.getUserByUsername(username);
+      if (existingUsername) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      
+      const existingEmail = await storage.getUserByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+
+      // Create the user with hashed password
+      const hashedPassword = await hashPassword(password);
+      
+      const user = await storage.createUser({
+        username,
+        password: hashedPassword,
+        email,
+        name,
+        role: role || "viewer", // Default role
+      });
+
+      // Remove sensitive data before returning
+      const userResponse = { ...user };
+      delete userResponse.password;
+
+      // Log activity
+      await storage.logActivity({
+        action: "create",
+        entityType: "user",
+        entityId: user.id,
+        userId: req.user.id,
+        metadata: { createdUsername: user.username },
+      });
+
+      // Return the user without logging them in
+      res.status(201).json(userResponse);
     } catch (error) {
       next(error);
     }
