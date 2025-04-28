@@ -1,0 +1,82 @@
+Build a full-stack web application similar to Frame.io, designed to be easy to deploy on a self-hosted Ubuntu server. The application should meet the following specifications:
+
+Core Requirements:
+Authentication: A secure login page, allowing user account creation, password reset via email, and secure session management (JWT or session cookies).
+
+
+User Management:
+
+Admin panel to manage users (create, edit, delete).
+
+Ability for admins to invite users via email with a signup link.
+
+Project and File Management:
+
+Create "Projects" (each project is a container for uploaded files).
+
+Upload video/audio/image files per project.
+
+File preview inside the browser (HTML5 video player for videos, etc.).
+
+
+Review & Approve:
+
+Allow users to comment directly on the video timeline (timestamped comments).
+
+Allow "approve" or "request changes" actions.
+
+Comment threading (replies to comments).
+
+Mark comments as "resolved".
+
+
+Adobe Premiere Integration:
+
+Export comments and timeline markers as a file that can be imported into Adobe Premiere (e.g., XML format, or a Premiere extension/plugin).
+
+
+
+Exports:
+
+Ability to export comments/notes per project.
+
+Download video along with exportable notes.
+
+
+Email Notifications:
+
+Notify users of project invites, comment replies, approvals, and changes.
+
+
+Deployment:
+
+Should run easily on an Ubuntu 22.04+ server.
+
+Provide a Docker Compose setup for deployment (PostgreSQL or MySQL backend preferred, Nginx reverse proxy optional).
+
+Optionally use gunicorn + Flask/FastAPI backend (or Node.js + Express).
+
+
+Frontend:
+
+Responsive frontend (preferably using React.js or Vue.js).
+
+Drag-and-drop file uploader.
+
+Commenting UI directly on the player timeline.
+
+Other requirements:
+Versioning of uploads (keep older versions of uploaded files).
+
+User roles and permissions (admin, editor, viewer).
+
+Activity logs (who did what, and when).
+
+
+Focus:
+Keep the code modular and clean.
+
+Prioritize stability, easy updates, and secure practices (input validation, file storage security).
+
+Avoid heavy SaaS dependencies (must work offline on-prem if needed).
+
