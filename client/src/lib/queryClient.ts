@@ -13,7 +13,8 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+  options?: { signal?: AbortSignal }
+): Promise<any> {
   console.log(`API Request: ${method} ${url}`, data ? JSON.stringify(data) : "no data");
   
   try {
@@ -27,6 +28,7 @@ export async function apiRequest(
       headers,
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include" as RequestCredentials,
+      signal: options?.signal,
     };
     
     console.log("Fetch options:", JSON.stringify(fetchOptions));
@@ -36,16 +38,28 @@ export async function apiRequest(
     console.log(`API Response: ${res.status} ${res.statusText} for ${method} ${url}`);
     
     // For debugging, try to read the response body
+    let responseText = '';
     try {
       const responseClone = res.clone();
-      const responseText = await responseClone.text();
+      responseText = await responseClone.text();
       console.log(`Response body: ${responseText.substring(0, 200)}${responseText.length > 200 ? '...' : ''}`);
     } catch (readError) {
       console.error("Error reading response:", readError);
     }
     
     await throwIfResNotOk(res);
-    return res;
+    
+    // Parse JSON if the response isn't empty
+    if (responseText) {
+      try {
+        return JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error("Error parsing JSON:", jsonError);
+        return responseText; // Return text if JSON parsing fails
+      }
+    }
+    
+    return null; // Return null for empty responses
   } catch (error) {
     console.error(`API Request failed: ${method} ${url}`, error);
     throw error;
