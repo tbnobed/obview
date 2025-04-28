@@ -44,10 +44,10 @@ export default function TimelineComments({
   useEffect(() => {
     if (comments && duration > 0) {
       // Get all top-level comments with timestamps
-      const topLevelComments = comments.filter((c: Comment) => !c.parentId && c.timestamp !== null);
+      const topLevelComments = comments.filter((c: any) => !c.parentId && c.timestamp !== null);
       
       // Calculate marker positions
-      const newMarkers = topLevelComments.map((comment: Comment) => {
+      const newMarkers = topLevelComments.map((comment: any) => {
         const time = comment.timestamp || 0;
         const percentage = (time / duration) * 100;
         return {
@@ -60,16 +60,28 @@ export default function TimelineComments({
       setMarkers(newMarkers);
     }
   }, [comments, duration]);
+  
+  // Scroll to active comment when it changes
+  useEffect(() => {
+    if (activeCommentId) {
+      // Find the comment element
+      const commentElement = document.getElementById(`comment-${activeCommentId}`);
+      if (commentElement) {
+        // Scroll the comment into view with smooth behavior
+        commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [activeCommentId]);
 
   // Filter comments
-  const filteredComments = comments?.filter((comment: Comment) => {
+  const filteredComments = comments?.filter((comment: any) => {
     if (filter === "unresolved") return !comment.isResolved;
     if (filter === "resolved") return comment.isResolved;
     return true;
   });
 
   // Group top-level comments (no parent)
-  const topLevelComments = filteredComments?.filter((c: Comment) => !c.parentId) || [];
+  const topLevelComments = filteredComments?.filter((c: any) => !c.parentId) || [];
 
   return (
     <div>
@@ -136,7 +148,7 @@ export default function TimelineComments({
         </div>
       ) : topLevelComments.length > 0 ? (
         <div className="space-y-0 divide-y divide-neutral-200">
-          {topLevelComments.map(comment => (
+          {topLevelComments.map((comment: any) => (
             <CommentThread 
               key={comment.id} 
               comment={comment} 
