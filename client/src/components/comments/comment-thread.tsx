@@ -9,6 +9,8 @@ import CommentForm from "./comment-form";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
+import { Trash2 } from "lucide-react";
+import { useDeleteComment } from "@/hooks/use-comments";
 
 interface CommentThreadProps {
   comment: Comment & { user?: any };
@@ -20,6 +22,9 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
   const { user } = useAuth();
   const { toast } = useToast();
   const [showReplyForm, setShowReplyForm] = useState(false);
+  
+  // Delete comment mutation
+  const deleteCommentMutation = useDeleteComment(comment.fileId);
   
   // Find replies to this comment
   const replies = comments.filter(c => c.parentId === comment.id);
@@ -60,12 +65,25 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
   const handleToggleResolution = () => {
     toggleResolutionMutation.mutate();
   };
+  
+  // Handle delete comment
+  const handleDeleteComment = () => {
+    if (window.confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
+      deleteCommentMutation.mutate(comment.id);
+    }
+  };
 
   // Check if the user can resolve this comment (comment author or editor/admin)
   const canResolve = user && (
     user.id === comment.userId || 
     user.role === "admin" || 
     user.role === "editor"
+  );
+  
+  // Check if user can delete this comment (comment author or admin)
+  const canDelete = user && (
+    user.id === comment.userId ||
+    user.role === "admin"
   );
 
   // Get user initial for avatar
@@ -137,6 +155,18 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
                 {comment.isResolved ? "Unresolve" : "Resolve"}
               </Button>
             )}
+            
+            {canDelete && (
+              <Button
+                variant="link"
+                className="text-xs p-0 h-auto text-destructive"
+                onClick={handleDeleteComment}
+                disabled={deleteCommentMutation.isPending}
+              >
+                <Trash2 className="h-3 w-3 mr-1 inline" />
+                Delete
+              </Button>
+            )}
           </div>
           
           {showReplyForm && (
@@ -165,9 +195,25 @@ export default function CommentThread({ comment, comments, onTimeClick }: Commen
                       <h4 className="text-sm font-medium text-neutral-900">
                         {reply.user?.name || "Unknown User"}
                       </h4>
-                      <span className="text-sm text-neutral-500">
-                        {formatTimeAgo(new Date(reply.createdAt))}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-neutral-500">
+                          {formatTimeAgo(new Date(reply.createdAt))}
+                        </span>
+                        {canDelete && (
+                          <Button
+                            variant="link"
+                            className="text-xs p-0 h-auto text-destructive"
+                            onClick={() => {
+                              if (window.confirm("Are you sure you want to delete this reply?")) {
+                                deleteCommentMutation.mutate(reply.id);
+                              }
+                            }}
+                            disabled={deleteCommentMutation.isPending}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="mt-1 text-sm text-neutral-700">
