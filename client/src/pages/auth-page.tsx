@@ -74,7 +74,38 @@ export default function AuthPage() {
     }
   }, [user, setLocation]);
 
-  const onLoginSubmit = (data: LoginFormValues) => {
+  const onLoginSubmit = async (data: LoginFormValues) => {
+    console.log("Login form submitted with data:", data);
+    
+    try {
+      // Try direct fetch first for debugging
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'include'
+      });
+      
+      console.log("Login response status:", response.status);
+      const responseText = await response.text();
+      console.log("Login response:", responseText);
+      
+      if (response.ok) {
+        try {
+          const userResponse = JSON.parse(responseText);
+          // Manual update of query cache
+          queryClient.setQueryData(["/api/user"], userResponse);
+          // Navigate to home page
+          setLocation("/");
+        } catch (parseError) {
+          console.error("Error parsing login response:", parseError);
+        }
+      }
+    } catch (error) {
+      console.error("Login fetch error:", error);
+    }
+    
+    // Also use the mutation as a backup
     loginMutation.mutate(data);
   };
 
