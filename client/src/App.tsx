@@ -19,7 +19,9 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/projects" component={ProjectsPage} />
-      <ProtectedRoute path="/project/:id" component={ProjectPage} />
+      <ProtectedRoute path="/projects/:id" component={ProjectPage} />
+      <ProtectedRoute path="/project/:id" component={ProjectPage} /> {/* Keep this for backward compatibility */}
+      <ProtectedRoute path="/projects/new" component={ProjectsPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />

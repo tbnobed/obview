@@ -67,8 +67,8 @@ export default function ProjectsPage() {
                     
                     // Delay navigation to ensure state updates
                     setTimeout(() => {
-                      console.log("Navigating to:", `/project/${projectId}`);
-                      navigate(`/project/${projectId}`);
+                      console.log("Navigating to:", `/projects/${projectId}`);
+                      navigate(`/projects/${projectId}`);
                     }, 500);
                   }} 
                 />
