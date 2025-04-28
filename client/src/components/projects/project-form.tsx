@@ -69,6 +69,7 @@ export default function ProjectForm({
       if (onSuccess) onSuccess(data.id);
     },
     onError: (error: Error) => {
+      console.error("Failed to create project:", error);
       toast({
         title: "Failed to create project",
         description: error.message,
