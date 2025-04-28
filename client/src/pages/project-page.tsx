@@ -3,6 +3,7 @@ import { useParams, useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import { useProject } from "@/hooks/use-projects";
 import { useMediaFiles } from "@/hooks/use-media";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Tabs, 
   TabsContent, 
@@ -34,6 +35,11 @@ export default function ProjectPage() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Fetch all users for the invite dropdown
+  const { data: allUsers } = useQuery<any[]>({
+    queryKey: ["/api/users"],
+  });
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
   const [initialTime, setInitialTime] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("media");
@@ -41,6 +47,7 @@ export default function ProjectPage() {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [showUsersDropdown, setShowUsersDropdown] = useState(false);
   
   const { 
     data: project, 
@@ -351,13 +358,47 @@ export default function ProjectPage() {
                 >
                   <div className="space-y-2">
                     <Label htmlFor="email">Email address</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="teammate@example.com"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="teammate@example.com"
+                        onFocus={() => setShowUsersDropdown(true)}
+                        onBlur={() => {
+                          // Delay hiding dropdown to allow click to register
+                          setTimeout(() => setShowUsersDropdown(false), 200);
+                        }}
+                        required
+                      />
+                      {showUsersDropdown && allUsers && allUsers.length > 0 && (
+                        <div className="absolute w-full max-h-60 overflow-auto mt-1 border border-gray-200 rounded-md bg-white z-10 shadow-lg">
+                          {allUsers.map((existingUser) => (
+                            <div 
+                              key={existingUser.id}
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                              onClick={() => {
+                                // Set the email input value to the selected user's email
+                                const emailInput = document.getElementById('email') as HTMLInputElement;
+                                if (emailInput) {
+                                  emailInput.value = existingUser.email;
+                                  // Hide dropdown after selection
+                                  setShowUsersDropdown(false);
+                                }
+                              }}
+                            >
+                              <div className="flex-shrink-0 h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center text-primary font-medium">
+                                {existingUser.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium">{existingUser.name}</div>
+                                <div className="text-xs text-gray-500">{existingUser.email}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
