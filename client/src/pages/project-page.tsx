@@ -10,18 +10,21 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon } from "lucide-react";
+import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon, Download, Share2, UserPlus } from "lucide-react";
 import MediaPlayer from "@/components/media/media-player";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import ProjectForm from "@/components/projects/project-form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProjectCommentsTab } from "@/components/project/project-comments-tab";
 import { ProjectActivityTab } from "@/components/project/project-activity-tab";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 
 
@@ -30,10 +33,14 @@ export default function ProjectPage() {
   const projectId = parseInt(id);
   const [location, navigate] = useLocation();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
   const [initialTime, setInitialTime] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("media");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   
   const { 
     data: project, 
@@ -90,6 +97,80 @@ export default function ProjectPage() {
   }, [location, files]);
 
   const selectedFile = files?.find(file => file.id === selectedFileId);
+  
+  // Share project handler
+  const handleShareProject = () => {
+    const shareUrl = `${window.location.origin}/projects/${projectId}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      toast({
+        title: "Link copied to clipboard",
+        description: "You can now share this link with others",
+      });
+      setShareDialogOpen(false);
+    }).catch(() => {
+      toast({
+        title: "Failed to copy link",
+        description: "Please try again or copy the link manually",
+        variant: "destructive",
+      });
+    });
+  };
+  
+  // Download project handler
+  const handleDownloadFile = (fileId: number) => {
+    if (!fileId) {
+      toast({
+        title: "No file selected",
+        description: "Please select a file to download",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Redirect to download endpoint
+    window.open(`/api/files/${fileId}/download`, '_blank');
+    setDownloadDialogOpen(false);
+    
+    toast({
+      title: "Download started",
+      description: "Your file is being downloaded",
+    });
+  };
+  
+  // Invite member handler
+  const handleInviteMember = (email: string, role: string = "viewer") => {
+    // Make API call to invite member
+    fetch(`/api/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        projectId,
+        role,
+      }),
+      credentials: 'include',
+    })
+    .then(response => {
+      if (!response.ok) throw new Error("Failed to send invitation");
+      return response.json();
+    })
+    .then(data => {
+      toast({
+        title: "Invitation sent",
+        description: `Invitation sent to ${email}`,
+      });
+      setInviteDialogOpen(false);
+    })
+    .catch(error => {
+      toast({
+        title: "Failed to send invitation",
+        description: error.message,
+        variant: "destructive",
+      });
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
