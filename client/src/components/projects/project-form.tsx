@@ -104,11 +104,18 @@ export default function ProjectForm({
 
   const onSubmit = (data: InsertProject) => {
     console.log("Submitting project data:", data);
+    
+    // Add user validation check and more detailed logging
+    if (!form.formState.isValid) {
+      console.error("Form is not valid:", form.formState.errors);
+      return;
+    }
+    
     if (isEditMode) {
       console.log("Updating existing project:", projectId);
       updateMutation.mutate(data);
     } else {
-      console.log("Creating new project");
+      console.log("Creating new project with data:", JSON.stringify(data));
       createMutation.mutate(data);
     }
   };

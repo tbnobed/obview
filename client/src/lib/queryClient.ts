@@ -14,17 +14,31 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  console.log(`API Request: ${method} ${url}`, data);
+  console.log(`API Request: ${method} ${url}`, data ? JSON.stringify(data) : "no data");
   
   try {
-    const res = await fetch(url, {
+    const fetchOptions = {
       method,
       headers: data ? { "Content-Type": "application/json" } : {},
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
-    });
+    };
+    
+    console.log("Fetch options:", JSON.stringify(fetchOptions));
+    
+    const res = await fetch(url, fetchOptions);
     
     console.log(`API Response: ${res.status} ${res.statusText} for ${method} ${url}`);
+    
+    // For debugging, try to read the response body
+    try {
+      const responseClone = res.clone();
+      const responseText = await responseClone.text();
+      console.log(`Response body: ${responseText.substring(0, 200)}${responseText.length > 200 ? '...' : ''}`);
+    } catch (readError) {
+      console.error("Error reading response:", readError);
+    }
+    
     await throwIfResNotOk(res);
     return res;
   } catch (error) {
