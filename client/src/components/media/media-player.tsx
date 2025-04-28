@@ -149,7 +149,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
         return (
           <video
             ref={videoRef}
-            className="w-full h-full rounded-t-lg object-contain bg-black"
+            className="w-full h-full max-h-[500px] rounded-t-lg object-contain bg-black"
             src={`/api/files/${file.id}/content`}
             onLoadedMetadata={handleMetadataLoaded}
             onTimeUpdate={handleTimeUpdate}
@@ -183,7 +183,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
             <img
               src={`/api/files/${file.id}/content`}
               alt={file.filename}
-              className="max-w-full max-h-full object-contain"
+              className="max-w-full max-h-[500px] object-contain"
             />
           </div>
         );
@@ -204,7 +204,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
     <div>
       {/* Media Viewer */}
       <div className="relative">
-        <div className="aspect-w-16 aspect-h-9 bg-neutral-900 rounded-t-lg overflow-hidden">
+        <div className="max-h-[500px] aspect-w-16 aspect-h-9 bg-neutral-900 rounded-t-lg overflow-hidden">
           {renderMediaContent()}
         </div>
         
