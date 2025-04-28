@@ -3,6 +3,14 @@ import { Comment } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Get all comments for a project (across all files)
+export const useProjectComments = (projectId?: number) => {
+  return useQuery<(Comment & { user?: any; file?: any })[]>({
+    queryKey: [`/api/projects/${projectId}/comments`],
+    enabled: !!projectId,
+  });
+};
+
 // Get all comments for a file
 export const useComments = (fileId?: number) => {
   return useQuery<(Comment & { user?: any })[]>({

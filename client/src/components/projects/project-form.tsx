@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ProjectFormProps {
+  projectId?: number;
   onSuccess?: (projectId: number) => void;
   className?: string;
 }
@@ -28,11 +29,19 @@ const createProjectSchema = z.object({
 type CreateProjectInput = z.infer<typeof createProjectSchema>;
 
 export default function ProjectForm({ 
+  projectId,
   onSuccess,
   className
 }: ProjectFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const isEditMode = !!projectId;
+  
+  // Fetch project data if in edit mode
+  const { data: project } = useQuery<any>({
+    queryKey: [`/api/projects/${projectId}`],
+    enabled: isEditMode,
+  });
   
   // Form setup with our schema
   const form = useForm<CreateProjectInput>({
@@ -41,18 +50,25 @@ export default function ProjectForm({
       name: "",
       description: "",
       status: "in_progress",
-    }
+    },
+    values: project ? {
+      name: project.name || "",
+      description: project.description || "",
+      status: project.status || "in_progress",
+    } : undefined
   });
   
   // Handle form submission
   const handleSubmit = form.handleSubmit(async (data) => {
     setIsLoading(true);
-    console.log("Creating project with data:", data);
     
     try {
-      // Create project with direct API call
-      const response = await fetch('/api/projects', {
-        method: 'POST',
+      const url = isEditMode ? `/api/projects/${projectId}` : '/api/projects';
+      const method = isEditMode ? 'PATCH' : 'POST';
+      
+      // API call
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: data.name,
@@ -63,6 +79,7 @@ export default function ProjectForm({
       });
       
       const responseText = await response.text();
+      console.log(`${isEditMode ? "Updating" : "Creating"} project with data:`, data);
       console.log("Response status:", response.status);
       console.log("Response text:", responseText);
       
@@ -70,10 +87,16 @@ export default function ProjectForm({
         try {
           const responseData = JSON.parse(responseText);
           toast({
-            title: "Project created",
-            description: "Project created successfully"
+            title: isEditMode ? "Project updated" : "Project created",
+            description: isEditMode ? "Project updated successfully" : "Project created successfully"
           });
+          
+          // Invalidate relevant queries
           queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+          if (isEditMode) {
+            queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
+          }
+          
           if (onSuccess) onSuccess(responseData.id);
         } catch (parseError) {
           console.error("Error parsing response:", parseError);
@@ -85,7 +108,7 @@ export default function ProjectForm({
         }
       } else {
         toast({
-          title: "Error creating project",
+          title: isEditMode ? "Error updating project" : "Error creating project",
           description: responseText,
           variant: "destructive"
         });
@@ -175,7 +198,7 @@ export default function ProjectForm({
           className="w-full"
         >
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Create Project
+          {isEditMode ? 'Update Project' : 'Create Project'}
         </Button>
       </form>
     </Form>
