@@ -94,14 +94,14 @@ export default function TimelineComments({
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-        <h3 className="text-base font-medium text-neutral-900">
+      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-3">
+        <h3 className="text-sm font-medium text-neutral-900">
           Comments ({comments?.length || 0})
         </h3>
         <div className="flex items-center">
-          <span className="text-sm text-neutral-500 mr-2">Filter:</span>
+          <span className="text-xs text-neutral-500 mr-1.5">Filter:</span>
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-full max-w-[160px] h-8 text-xs">
+            <SelectTrigger className="w-full max-w-[140px] h-7 text-xs py-0">
               <SelectValue placeholder="Filter comments" />
             </SelectTrigger>
             <SelectContent>
@@ -117,20 +117,20 @@ export default function TimelineComments({
       <CommentForm 
         fileId={fileId} 
         currentTime={currentTime} 
-        className="mb-6"
+        className="mb-4"
       />
       
       {/* Comment list */}
       {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : error ? (
-        <div className="p-4 bg-red-50 text-red-600 rounded-md">
+        <div className="p-3 bg-red-50 text-red-600 rounded-md text-xs">
           Error loading comments: {error.message}
         </div>
       ) : topLevelComments.length > 0 ? (
-        <div className="space-y-6">
+        <div className="space-y-0 divide-y divide-neutral-200">
           {topLevelComments.map(comment => (
             <CommentThread 
               key={comment.id} 
@@ -141,8 +141,8 @@ export default function TimelineComments({
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-neutral-500">
-          <p>No comments yet. Add the first comment to start the conversation!</p>
+        <div className="text-center py-6 text-neutral-500">
+          <p className="text-xs">No comments yet.<br />Add a comment to start the conversation.</p>
         </div>
       )}
     </div>

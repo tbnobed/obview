@@ -149,7 +149,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
         return (
           <video
             ref={videoRef}
-            className="w-full h-full max-h-[500px] rounded-t-lg object-contain bg-black"
+            className="w-full h-full rounded-t-lg object-contain bg-black"
             src={`/api/files/${file.id}/content`}
             onLoadedMetadata={handleMetadataLoaded}
             onTimeUpdate={handleTimeUpdate}
@@ -183,7 +183,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
             <img
               src={`/api/files/${file.id}/content`}
               alt={file.filename}
-              className="max-w-full max-h-[500px] object-contain"
+              className="max-w-full h-full object-contain"
             />
           </div>
         );
@@ -205,7 +205,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
       {/* Media Viewer - Takes 2/3 of the space on large screens */}
       <div className="lg:col-span-2">
         <div className="relative">
-          <div className="max-h-[600px] aspect-w-16 aspect-h-9 bg-neutral-900 rounded-t-lg overflow-hidden">
+          <div className="h-[calc(100vh-300px)] min-h-[500px] bg-neutral-900 rounded-t-lg overflow-hidden">
             {renderMediaContent()}
           </div>
           
@@ -361,7 +361,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile }: Me
       
       {/* Comments Section - Takes 1/3 of the space on large screens */}
       {file && (
-        <div className="border border-neutral-200 rounded-lg h-full">
+        <div className="border border-neutral-200 rounded-lg h-[calc(100vh-300px)] min-h-[500px] flex flex-col">
           <Tabs defaultValue="comments" className="h-full flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200">
               <TabsList>
