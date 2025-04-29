@@ -22,7 +22,7 @@ interface Invitation {
 
 export function useProjectInvitations(projectId?: number) {
   return useQuery<Invitation[]>({
-    queryKey: projectId ? ["/api/projects", projectId, "invitations"] : null,
+    queryKey: projectId ? ["/api/projects", projectId, "invitations"] : ["skip-query"],
     enabled: !!projectId,
   });
 }
@@ -56,7 +56,7 @@ export function useDeleteInvitation() {
 
 export function useInvitationDetails(token?: string) {
   return useQuery<Invitation>({
-    queryKey: token ? ["/api/invite", token] : null,
+    queryKey: token ? ["/api/invite", token] : ["skip-invite-query"],
     enabled: !!token,
   });
 }

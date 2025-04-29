@@ -624,61 +624,7 @@ export default function ProjectPage() {
                         <Mail className="h-4 w-4 mr-1.5 text-gray-500" />
                         Pending Invitations
                       </h4>
-                      <div className="border rounded-md">
-                        {pendingInvitations.map((invitation) => (
-                          <div 
-                            key={invitation.id} 
-                            className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
-                                <UserPlus className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium">{invitation.email}</div>
-                                <div className="text-xs text-gray-500">
-                                  Invited {formatTimeAgo(new Date(invitation.createdAt))}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center">
-                              <Badge className="mr-2 bg-yellow-100 text-yellow-800">
-                                Pending
-                              </Badge>
-                              {isEditor && (
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost"
-                                  className="text-gray-500 hover:text-red-600"
-                                  onClick={() => {
-                                    // Implement cancel invitation functionality
-                                    if (window.confirm(`Cancel invitation to ${invitation.email}?`)) {
-                                      fetch(`/api/invite/${invitation.id}`, {
-                                        method: 'DELETE',
-                                        credentials: 'include',
-                                      })
-                                      .then(response => {
-                                        if (!response.ok) throw new Error('Failed to cancel invitation');
-                                        // Invalidate query to refresh invitations list
-                                        window.location.reload();
-                                      })
-                                      .catch(error => {
-                                        toast({
-                                          title: 'Failed to cancel invitation',
-                                          description: error.message,
-                                          variant: 'destructive',
-                                        });
-                                      });
-                                    }
-                                  }}
-                                >
-                                  Cancel
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <ProjectInvitations projectId={projectId} />
                     </div>
                   )}
                 </div>
