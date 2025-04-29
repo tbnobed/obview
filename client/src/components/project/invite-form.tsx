@@ -37,23 +37,50 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
       // Log the complete response for debugging
       console.log("Invitation creation response:", response);
       
-      // The response should now have a consistent structure with emailSent at the top level
-      const emailSent = response?.emailSent === true;
+      // Get invitation ID for resending
+      const invitationId = response?.invitationId;
       
-      console.log("Email status from response:", emailSent, `(type: ${typeof response?.emailSent})`);
-      
-      // Show appropriate toast based on email delivery status
-      if (emailSent) {
-        toast({
-          title: "Invitation sent",
-          description: `An invitation has been sent to ${email}`,
-          variant: "default",
-        });
+      if (invitationId) {
+        // Directly make the API request to resend without using a hook
+        // since we can't create hooks inside a function
+        console.log(`Auto-resending invitation ${invitationId}...`);
+        
+        // Using an immediately invoked async function
+        (async () => {
+          try {
+            const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
+            console.log("Auto-resend response:", resendResponse);
+            
+            const emailSent = resendResponse?.emailSent;
+            
+            // Show appropriate toast based on email delivery status
+            if (emailSent) {
+              toast({
+                title: "Invitation sent",
+                description: `An invitation has been sent to ${email}`,
+                variant: "default",
+              });
+            } else {
+              toast({
+                title: "Invitation created",
+                description: `An invitation for ${email} was created, but there was an issue sending the email. The user can still join using the invitation link.`,
+                variant: "destructive",
+              });
+            }
+          } catch (error) {
+            console.error("Error auto-resending invitation:", error);
+            toast({
+              title: "Email delivery issue",
+              description: `The invitation was created but we couldn't confirm email delivery to ${email}.`,
+              variant: "destructive",
+            });
+          }
+        })();
       } else {
+        // Fallback if invitationId isn't in the response
         toast({
           title: "Invitation created",
-          description: `An invitation for ${email} was created, but there was an issue sending the email. The user can still join using the invitation link.`,
-          variant: "destructive",
+          description: `An invitation for ${email} was created and should be available in the invitations list.`,
         });
       }
 

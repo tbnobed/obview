@@ -104,13 +104,11 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                         <TooltipTrigger asChild>
                           <Badge variant="outline" className="px-1.5 mr-2 bg-amber-50 text-amber-700 border-amber-200 cursor-help">
                             <Mail className="h-3 w-3 mr-1" />
-                            Email not sent
+                            Email status unknown
                           </Badge>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="max-w-xs text-xs">
-                            Click the refresh button to try sending the email again.
-                          </p>
+                          <p className="max-w-xs text-xs">Email may have been sent. Click the refresh button to update status.</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
