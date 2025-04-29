@@ -21,8 +21,8 @@ function logToFile(message: string): void {
   fs.appendFileSync(logFilePath, logMessage);
 }
 
-// Check for either the original or new API key
-const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
+// Use a single standard API key variable
+const apiKey = process.env.SENDGRID_API_KEY;
 
 if (!apiKey) {
   const warning = "No SendGrid API key found. Email functionality will not work.";
@@ -59,8 +59,8 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     logToFile(`  - Text length: ${params.text?.length || 0} characters`);
     logToFile(`  - HTML length: ${params.html?.length || 0} characters`);
     
-    // Verify API key exists - check for NEW_SENDGRID_API_KEY first, then fall back to SENDGRID_API_KEY
-    const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
+    // Verify API key exists
+    const apiKey = process.env.SENDGRID_API_KEY;
     if (!apiKey) {
       const error = "Cannot send email: No SendGrid API key is set";
       console.error(error);
