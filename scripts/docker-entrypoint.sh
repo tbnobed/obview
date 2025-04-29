@@ -86,7 +86,8 @@ CREATE TABLE IF NOT EXISTS projects (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    ownerId INTEGER NOT NULL REFERENCES users(id),
+    ownerId INTEGER REFERENCES users(id),
+    \"createdById\" INTEGER REFERENCES users(id),
     \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     \"updatedAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -211,5 +212,21 @@ echo "Starting the application..."
 echo "==============================================="
 echo ""
 
-# Start the application
-exec "$@"
+# Check if the entry point exists
+if [ ! -f "/app/dist/server/index.js" ]; then
+  echo "ERROR: Application entry point (/app/dist/server/index.js) not found."
+  echo "Checking available files in /app/dist:"
+  find /app/dist -type f | sort
+  
+  # Check if we have dist/index.js instead (based on package.json start script)
+  if [ -f "/app/dist/index.js" ]; then
+    echo "Found /app/dist/index.js - using this as the entry point instead."
+    exec node /app/dist/index.js
+  else
+    echo "No suitable entry point found."
+    exit 1
+  fi
+else
+  # Start the application with the provided command
+  exec "$@"
+fi

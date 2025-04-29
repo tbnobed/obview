@@ -19,6 +19,10 @@ RUN node scripts/setup-drizzle.cjs
 # Build the application
 RUN npm run build
 
+# Debug build output
+RUN ls -la dist || echo "dist directory not found"
+RUN ls -la dist/server || echo "dist/server directory not found"
+
 # Production stage
 FROM node:20-alpine as production
 
@@ -69,5 +73,5 @@ VOLUME /app/uploads
 # Set entrypoint to our initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
-# Start the application
-CMD ["node", "dist/server/index.js"]
+# Start the application (based on package.json start script)
+CMD ["node", "dist/index.js"]

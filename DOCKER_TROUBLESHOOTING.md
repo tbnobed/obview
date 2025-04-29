@@ -312,6 +312,50 @@ docker image prune -a -f
 df -h
 ```
 
+### Issue: Missing Application Entry Point
+
+**Error message:**
+```
+Error: Cannot find module '/app/dist/server/index.js'
+```
+
+**Solution:**
+
+This issue occurs because the build script in package.json outputs to dist/index.js, but the Docker CMD tries to run dist/server/index.js.
+
+1. Option 1: Update the Dockerfile CMD to use the correct path:
+```dockerfile
+# Use the correct path from package.json start script
+CMD ["node", "dist/index.js"]
+```
+
+2. Option 2: Modify the entrypoint script to check for file existence and fallback:
+```bash
+# Add to docker-entrypoint.sh
+if [ ! -f "/app/dist/server/index.js" ]; then
+  echo "Application entry point (/app/dist/server/index.js) not found."
+  echo "Checking available files in /app/dist:"
+  find /app/dist -type f | sort
+  
+  # Check if we have dist/index.js instead (based on package.json start script)
+  if [ -f "/app/dist/index.js" ]; then
+    echo "Found /app/dist/index.js - using this instead."
+    exec node /app/dist/index.js
+  else
+    echo "No suitable entry point found."
+    exit 1
+  fi
+else
+  # Start the application with the provided command
+  exec "$@"
+fi
+```
+
+3. Option 3: Update the build script in package.json to output to dist/server/index.js:
+```json
+"build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server"
+```
+
 ## Advanced Troubleshooting
 
 ### Inspecting Docker Build Process
@@ -353,6 +397,44 @@ docker network inspect obview_app_network
 docker network rm obview_app_network
 docker compose up -d
 ```
+
+### Issue: Column Name Mismatch in Database Schema
+
+**Error message:**
+```
+ERROR: column "ownerid" does not exist
+```
+
+**Solution:**
+
+This error occurs because different initialization scripts reference different column names for the same conceptual field (e.g., "ownerId" vs "createdById").
+
+1. Option 1: Add both columns to your schema with one as an alias of the other:
+   ```sql
+   CREATE TABLE IF NOT EXISTS projects (
+       id SERIAL PRIMARY KEY,
+       name VARCHAR(255) NOT NULL,
+       description TEXT,
+       "createdById" INTEGER REFERENCES users(id) ON DELETE CASCADE,
+       -- Add this for backward compatibility with old scripts
+       ownerId INTEGER REFERENCES users(id) ON DELETE CASCADE GENERATED ALWAYS AS ("createdById") STORED
+   );
+   ```
+
+2. Option 2: Update all initialization scripts to use consistent column names throughout:
+   ```sql
+   -- In all scripts, standardize on a single column name like "createdById"
+   ```
+
+3. Option 3: Create views that provide compatibility across column names:
+   ```sql
+   -- After creating the tables, add a compatible view
+   CREATE OR REPLACE VIEW projects_compat AS
+   SELECT 
+     id, name, description, "createdAt", "updatedAt", 
+     "createdById" as ownerId 
+   FROM projects;
+   ```
 
 ### Issue: Migrations and Schema Setup Failures
 
