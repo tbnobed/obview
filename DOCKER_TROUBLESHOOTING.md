@@ -136,18 +136,54 @@ docker compose ps
 2. Verify the database environment variables:
 ```bash
 docker compose exec app env | grep DATABASE_URL
+docker compose exec app env | grep POSTGRES_PASSWORD
 ```
 
-3. Make sure the wait-for-db.sh script is executed before the application starts:
+3. Ensure database credentials are set in both containers by updating docker-compose.yml:
+```yaml
+# In docker-compose.yml, ensure both services have the same password
+services:
+  app:
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/obview
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_USER=postgres
+      - POSTGRES_HOST=db
+  
+  db:
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+```
+
+4. Create an initialization script for PostgreSQL:
 ```bash
-# Check entrypoint script permissions
-docker compose exec app ls -la /app/scripts/
+mkdir -p init-scripts
+cat > init-scripts/01-init-db.sql << EOF
+-- Create database tables
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    -- add other columns...
+);
+-- Add more tables...
+
+-- Add admin user
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin') THEN
+    INSERT INTO users (username, password, email, name, role)
+    VALUES ('admin', 'hashed_password', 'admin@example.com', 'Administrator', 'admin');
+  END IF;
+END \$\$;
+EOF
 ```
 
-4. Make sure the scripts are executable:
+5. Make scripts executable and restart:
 ```bash
 chmod +x scripts/*.sh
-docker compose build
+docker compose down
+docker compose build --no-cache
 docker compose up -d
 ```
 
