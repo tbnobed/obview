@@ -53,6 +53,13 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
   const isCurrentUser = (userId: number) => currentUser?.id === userId;
   const isProjectCreator = (member: any) => member.role === "admin";
 
+  // Add debugging to see what's in the teamMembers data
+  console.log("Team members data:", teamMembers);
+  if (teamMembers.length > 0) {
+    console.log("First team member:", teamMembers[0]);
+    console.log("User property:", teamMembers[0].user);
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
