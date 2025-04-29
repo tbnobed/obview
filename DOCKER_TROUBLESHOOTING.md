@@ -179,9 +179,14 @@ END \$\$;
 EOF
 ```
 
-5. Make scripts executable and restart:
+5. Make all scripts executable and restart:
 ```bash
+# Make scripts in scripts/ directory executable
 chmod +x scripts/*.sh
+
+# Make init-scripts/ executable too
+chmod +x init-scripts/*.sh
+
 docker compose down
 docker compose build --no-cache
 docker compose up -d
