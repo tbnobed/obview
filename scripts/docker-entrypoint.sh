@@ -296,20 +296,6 @@ console.log('Starting OBview.io application...');
 require('./server/index.js');
 EOL
 
-# Final check to make sure the file exists
-if [ ! -f "/app/dist/index.js" ]; then
-  echo "ERROR: index.js is still missing, creating a basic fallback..."
-  mkdir -p /app/dist
-  cat > /app/dist/index.js << 'EOL'
-console.log('EMERGENCY FALLBACK SERVER');
-const express = require('express');
-const app = express();
-app.get('/', (req, res) => res.send('OBview Emergency Server Running'));
-app.get('/api/health', (req, res) => res.json({ status: 'emergency_mode' }));
-app.listen(3000, '0.0.0.0', () => console.log('Emergency server running on port 3000'));
-EOL
-fi
-
 # Now start the application
-echo "Using entry point: /app/dist/index.js"
-cd /app && exec node dist/index.js
+echo "Using fallback entry point: /app/dist/index.js"
+exec node /app/dist/index.js

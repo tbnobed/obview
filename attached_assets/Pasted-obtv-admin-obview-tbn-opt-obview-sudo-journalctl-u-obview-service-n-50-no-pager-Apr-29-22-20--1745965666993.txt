@@ -1,0 +1,52 @@
+obtv-admin@obview-tbn:/opt/obview$ sudo journalctl -u obview.service -n 50 --no-pager
+Apr 29 22:20:01 obview-tbn node[66798]:     at async file:///opt/obview/node_modules/drizzle-orm/node-postgres/session.js:83:22
+Apr 29 22:20:01 obview-tbn node[66798]:     at async DatabaseStorage.getUserByUsername (file:///opt/obview/dist/index.js:384:20)
+Apr 29 22:20:01 obview-tbn node[66798]:     at async Strategy._verify (file:///opt/obview/dist/index.js:629:22)
+Apr 29 22:21:13 obview-tbn node[66798]: 10:21:13 PM [express] GET /api/user 401 in 1ms
+Apr 29 22:21:19 obview-tbn node[66798]: 10:21:19 PM [express] POST /api/login 500 in 30ms :: {"message":"column \"created_at\" does not exist…
+Apr 29 22:21:19 obview-tbn node[66798]: error: column "created_at" does not exist
+Apr 29 22:21:19 obview-tbn node[66798]:     at /opt/obview/node_modules/pg-pool/index.js:45:11
+Apr 29 22:21:19 obview-tbn node[66798]:     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Apr 29 22:21:19 obview-tbn node[66798]:     at async file:///opt/obview/node_modules/drizzle-orm/node-postgres/session.js:83:22
+Apr 29 22:21:19 obview-tbn node[66798]:     at async DatabaseStorage.getUserByUsername (file:///opt/obview/dist/index.js:384:20)
+Apr 29 22:21:19 obview-tbn node[66798]:     at async Strategy._verify (file:///opt/obview/dist/index.js:629:22)
+Apr 29 22:21:19 obview-tbn node[66798]: 10:21:19 PM [express] POST /api/login 500 in 17ms :: {"message":"column \"created_at\" does not exist…
+Apr 29 22:21:19 obview-tbn node[66798]: error: column "created_at" does not exist
+Apr 29 22:21:19 obview-tbn node[66798]:     at /opt/obview/node_modules/pg-pool/index.js:45:11
+Apr 29 22:21:19 obview-tbn node[66798]:     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Apr 29 22:21:19 obview-tbn node[66798]:     at async file:///opt/obview/node_modules/drizzle-orm/node-postgres/session.js:83:22
+Apr 29 22:21:19 obview-tbn node[66798]:     at async DatabaseStorage.getUserByUsername (file:///opt/obview/dist/index.js:384:20)
+Apr 29 22:21:19 obview-tbn node[66798]:     at async Strategy._verify (file:///opt/obview/dist/index.js:629:22)
+Apr 29 22:22:43 obview-tbn systemd[1]: Stopping obview.service - OBview.io Application...
+Apr 29 22:22:43 obview-tbn node[66798]: Database connections closed
+Apr 29 22:22:45 obview-tbn node[66798]: 10:22:45 PM [express] GET /api/user 401 in 1ms
+Apr 29 22:22:47 obview-tbn node[66798]: 10:22:47 PM [express] GET /api/user 401 in 1ms
+Apr 29 22:22:48 obview-tbn node[66798]: 10:22:48 PM [express] GET /api/user 401 in 1ms
+Apr 29 22:22:54 obview-tbn node[66798]: 10:22:54 PM [express] GET /api/user 401 in 1ms
+Apr 29 22:22:55 obview-tbn node[66798]: 10:22:55 PM [express] GET /api/user 401 in 1ms
+Apr 29 22:22:56 obview-tbn node[66798]: 10:22:56 PM [express] GET /api/user 401 in 1ms
+Apr 29 22:22:56 obview-tbn node[66798]: 10:22:56 PM [express] GET /api/user 401 in 1ms
+Apr 29 22:23:05 obview-tbn node[66798]: 10:23:05 PM [express] GET /api/user 401 in 1ms
+Apr 29 22:23:09 obview-tbn node[66798]: 10:23:09 PM [express] POST /api/login 500 in 3ms :: {"message":"Cannot use a pool after calling end o…
+Apr 29 22:23:09 obview-tbn node[66798]: Error: Cannot use a pool after calling end on the pool
+Apr 29 22:23:09 obview-tbn node[66798]:     at /opt/obview/node_modules/pg-pool/index.js:45:11
+Apr 29 22:23:09 obview-tbn node[66798]:     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Apr 29 22:23:09 obview-tbn node[66798]:     at async file:///opt/obview/node_modules/drizzle-orm/node-postgres/session.js:83:22
+Apr 29 22:23:09 obview-tbn node[66798]: 10:23:09 PM [express] POST /api/login 500 in 2ms :: {"message":"Cannot use a pool after calling end o…
+Apr 29 22:23:09 obview-tbn node[66798]: Error: Cannot use a pool after calling end on the pool
+Apr 29 22:23:09 obview-tbn node[66798]:     at /opt/obview/node_modules/pg-pool/index.js:45:11
+Apr 29 22:23:09 obview-tbn node[66798]:     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Apr 29 22:23:09 obview-tbn node[66798]:     at async file:///opt/obview/node_modules/drizzle-orm/node-postgres/session.js:83:22
+Apr 29 22:24:13 obview-tbn systemd[1]: obview.service: State 'stop-sigterm' timed out. Killing.
+Apr 29 22:24:13 obview-tbn systemd[1]: obview.service: Killing process 66798 (node) with signal SIGKILL.
+Apr 29 22:24:13 obview-tbn systemd[1]: obview.service: Failed to kill control group /system.slice/obview.service, ignoring: Invalid argument
+Apr 29 22:24:13 obview-tbn systemd[1]: obview.service: Main process exited, code=killed, status=9/KILL
+Apr 29 22:24:13 obview-tbn systemd[1]: obview.service: Failed with result 'timeout'.
+Apr 29 22:24:13 obview-tbn systemd[1]: Stopped obview.service - OBview.io Application.
+Apr 29 22:24:13 obview-tbn systemd[1]: obview.service: Consumed 1.524s CPU time, 56.5M memory peak, 0B memory swap peak.
+Apr 29 22:24:13 obview-tbn systemd[1]: Started obview.service - OBview.io Application.
+Apr 29 22:24:14 obview-tbn node[67098]: Database connection established: localhost:5432/obview
+Apr 29 22:24:14 obview-tbn node[67098]: 10:24:14 PM [express] serving on port 5000
+Apr 29 22:26:22 obview-tbn systemd[1]: Stopping obview.service - OBview.io Application...
+Apr 29 22:26:22 obview-tbn node[67098]: Database connections closed
+obtv-admin@obview-tbn:/opt/obview$
