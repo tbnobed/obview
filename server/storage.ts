@@ -756,10 +756,12 @@ export class DatabaseStorage implements IStorage {
       
     if (!invitation) return undefined;
     
-    // Ensure emailSent property is properly set - simplifying by only using camelCase property
+    // Ensure emailSent property is properly set, trying all possible variations
     return {
       ...invitation,
-      emailSent: invitation.emailSent === true || false
+      emailSent: invitation.emailSent === true || 
+                 invitation.email_sent === true || 
+                 false
     };
   }
   
@@ -777,24 +779,21 @@ export class DatabaseStorage implements IStorage {
       
     // Process each invitation to ensure consistent property names and values
     return results.map(invitation => {
-      // Add extra debugging information
-      console.log(`Processing invitation ${invitation.id}:`, JSON.stringify(invitation, null, 2));
-      
-      // Use type assertion to safely access raw properties
-      const rawData = invitation as any;
-      
       // Log what we receive from the database to help debug
       console.log(`Invitation ${invitation.id} raw data:`, JSON.stringify({
+        email_sent_db: invitation.email_sent, // Raw column name from DB might be in snake_case
         emailSent: invitation.emailSent, // Drizzle should transform to camelCase
-        rawDataKeys: rawData ? Object.keys(rawData) : [],
-        invitationKeys: Object.keys(invitation) // Check what keys are actually present
+        keys: Object.keys(invitation) // Check what keys are actually present
       }));
       
-      // Create a cleaned up version with guaranteed properties - simplifying to only use camelCase
+      // Create a cleaned up version with guaranteed properties
       return {
         ...invitation,
-        // Explicitly ensure emailSent is present with correct value
-        emailSent: invitation.emailSent === true || false
+        // Explicitly ensure emailSent is present with the correct value
+        // Try all possible property name variations
+        emailSent: invitation.emailSent === true || 
+                   invitation.email_sent === true || 
+                   false
       };
     });
   }

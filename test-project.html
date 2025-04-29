@@ -3,328 +3,262 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project Diagnostic</title>
+  <title>Auth Debug</title>
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      max-width: 1200px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      padding: 20px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 2rem;
-      line-height: 1.6;
     }
-    h1 { color: #3b82f6; }
-    h2 { color: #4b5563; margin-top: 2rem; }
-    pre {
-      background-color: #f3f4f6;
-      padding: 1rem;
-      border-radius: 0.5rem;
+    #results {
+      white-space: pre-wrap;
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
       overflow-x: auto;
     }
-    .card {
-      border: 1px solid #e5e7eb;
-      border-radius: 0.5rem;
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-    .error { color: #ef4444; }
-    .success { color: #10b981; }
-    .button {
-      display: inline-block;
-      background-color: #3b82f6;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 0.25rem;
-      text-decoration: none;
-      margin-right: 0.5rem;
+    button {
+      background-color: #4CAF50;
       border: none;
+      color: white;
+      padding: 10px 16px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
       cursor: pointer;
+      border-radius: 5px;
     }
-    .button:hover {
-      background-color: #2563eb;
-    }
-    #projects-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1rem;
-    }
-    table {
+    input, textarea {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
       width: 100%;
-      border-collapse: collapse;
+      box-sizing: border-box;
     }
-    th, td {
-      text-align: left;
-      padding: 0.5rem;
-      border-bottom: 1px solid #e5e7eb;
+    label {
+      display: block;
+      margin-bottom: 5px;
     }
-    th {
-      background-color: #f9fafb;
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .card-title {
+      font-size: 18px;
       font-weight: bold;
+      margin-bottom: 15px;
     }
   </style>
 </head>
 <body>
-  <h1>MediaReview.io Diagnostic Page</h1>
-  <p>This page will help diagnose issues with your MediaReview.io installation.</p>
+  <h1>Authentication & Project Creation Debug</h1>
   
   <div class="card">
-    <h2>Authentication Status</h2>
-    <div id="auth-status">Checking...</div>
-    <div id="user-info"></div>
-    <div class="button-group" style="margin-top: 1rem;">
-      <button class="button" id="login-btn">Login</button>
-      <button class="button" id="logout-btn">Logout</button>
+    <div class="card-title">Authentication Status</div>
+    <button id="checkAuth">Check Authentication</button>
+    <div id="authStatus">Not checked yet</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Auth API calls</div>
+    <div class="form-group">
+      <button id="getUser">Get Current User</button>
+      <button id="logout">Logout</button>
+    </div>
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" id="username" value="testuser">
+      <label for="password">Password</label>
+      <input type="password" id="password" value="password123">
+      <button id="login">Login</button>
+      <button id="register">Register</button>
     </div>
   </div>
 
   <div class="card">
-    <h2>Projects</h2>
-    <div id="projects-status">Checking...</div>
-    <div id="projects-container"></div>
-  </div>
-  
-  <div class="card">
-    <h2>Console Output</h2>
-    <pre id="console-output">Waiting for actions...</pre>
-  </div>
-
-  <div class="card">
-    <h2>Network Diagnostic</h2>
-    <button class="button" id="test-network">Test Network</button>
-    <div id="network-results"></div>
-  </div>
-
-  <h2>Next Actions</h2>
-  <div class="button-group">
-    <a class="button" href="/auth">Go to Auth Page</a>
-    <a class="button" href="/">Go to Home Page</a>
-    <a class="button" href="/projects">Go to Projects Page</a>
+    <div class="card-title">Create Project</div>
+    <div class="form-group">
+      <label for="projectName">Project Name</label>
+      <input type="text" id="projectName" value="Test Project">
+      <label for="projectDescription">Description</label>
+      <textarea id="projectDescription" rows="3">This is a test project</textarea>
+      <button id="createProject">Create Project</button>
+    </div>
+    <pre id="results">Results will appear here</pre>
   </div>
 
   <script>
-    // Utility function to log to both console and UI
-    function log(message, isError = false) {
-      const output = document.getElementById('console-output');
-      const timestamp = new Date().toLocaleTimeString();
-      const formattedMessage = `[${timestamp}] ${message}`;
-      
-      console[isError ? 'error' : 'log'](message);
-      
-      output.textContent = output.textContent + '\n' + formattedMessage;
-      output.scrollTop = output.scrollHeight;
-    }
-
-    // Function to update user info UI
-    function updateUserInfo(user) {
-      const authStatus = document.getElementById('auth-status');
-      const userInfo = document.getElementById('user-info');
-      
-      if (user) {
-        authStatus.innerHTML = '<span class="success">✓ Authenticated</span>';
-        userInfo.innerHTML = `
-          <table>
-            <tr><th>ID</th><td>${user.id}</td></tr>
-            <tr><th>Username</th><td>${user.username}</td></tr>
-            <tr><th>Name</th><td>${user.name}</td></tr>
-            <tr><th>Email</th><td>${user.email}</td></tr>
-            <tr><th>Role</th><td>${user.role}</td></tr>
-          </table>
-        `;
-      } else {
-        authStatus.innerHTML = '<span class="error">✗ Not authenticated</span>';
-        userInfo.innerHTML = 'You are not logged in.';
-      }
-    }
-
-    // Function to display projects
-    function displayProjects(projects) {
-      const projectsStatus = document.getElementById('projects-status');
-      const projectsContainer = document.getElementById('projects-container');
-      
-      if (projects && projects.length > 0) {
-        projectsStatus.innerHTML = `<span class="success">✓ Found ${projects.length} projects</span>`;
-        
-        projectsContainer.innerHTML = projects.map(project => `
-          <div class="card">
-            <h3>${project.name}</h3>
-            <p>${project.description || 'No description'}</p>
-            <p><strong>Status:</strong> ${project.status}</p>
-            <a href="/projects/${project.id}" class="button">View Project</a>
-          </div>
-        `).join('');
-      } else {
-        projectsStatus.innerHTML = '<span class="error">No projects found</span>';
-        projectsContainer.innerHTML = 'No projects available. Create a new project to get started.';
-      }
+    // Helper function to display results
+    function showResult(data) {
+      document.getElementById('results').textContent = JSON.stringify(data, null, 2);
     }
 
     // Check authentication status
-    async function checkAuth() {
+    document.getElementById('checkAuth').addEventListener('click', async () => {
       try {
-        log('Checking authentication status...');
-        const response = await fetch('/api/user', {
-          credentials: 'include'
-        });
-        
+        const response = await fetch('/api/auth-test');
+        const data = await response.json();
+        document.getElementById('authStatus').textContent = 
+          `Authenticated: ${data.isAuthenticated}, User: ${data.user ? data.user.username : 'None'}`;
+        showResult(data);
+      } catch (error) {
+        showResult({ error: error.message });
+      }
+    });
+
+    // Get current user
+    document.getElementById('getUser').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/user');
         if (response.ok) {
-          const user = await response.json();
-          log(`Authenticated as ${user.username}`);
-          updateUserInfo(user);
-          return user;
-        } else if (response.status === 401) {
-          log('Not authenticated', true);
-          updateUserInfo(null);
-          return null;
+          const data = await response.json();
+          showResult(data);
         } else {
-          throw new Error(`Unexpected status: ${response.status}`);
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Failed to get user' 
+          });
         }
       } catch (error) {
-        log(`Authentication check failed: ${error.message}`, true);
-        updateUserInfo(null);
-        return null;
+        showResult({ error: error.message });
       }
-    }
+    });
 
-    // Get projects
-    async function getProjects() {
+    // Login
+    document.getElementById('login').addEventListener('click', async () => {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
       try {
-        log('Fetching projects...');
-        const response = await fetch('/api/projects', {
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const projects = await response.json();
-          log(`Found ${projects.length} projects`);
-          displayProjects(projects);
-          return projects;
-        } else if (response.status === 401) {
-          log('Not authenticated to fetch projects', true);
-          document.getElementById('projects-status').innerHTML = '<span class="error">Authentication required</span>';
-          return null;
-        } else {
-          throw new Error(`Unexpected status: ${response.status}`);
-        }
-      } catch (error) {
-        log(`Projects fetch failed: ${error.message}`, true);
-        document.getElementById('projects-status').innerHTML = `<span class="error">Error: ${error.message}</span>`;
-        return null;
-      }
-    }
-
-    // Login function
-    async function login() {
-      try {
-        log('Attempting login...');
         const response = await fetch('/api/login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: 'admin',
-            password: 'password123'
-          }),
-          credentials: 'include'
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
         });
         
         if (response.ok) {
-          const user = await response.json();
-          log(`Login successful as ${user.username}`);
-          updateUserInfo(user);
-          getProjects();
-          return user;
+          const data = await response.json();
+          showResult(data);
+          document.getElementById('authStatus').textContent = 
+            `Authenticated: true, User: ${data.username}`;
         } else {
-          const text = await response.text();
-          throw new Error(`Login failed: ${text}`);
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Login failed' 
+          });
         }
       } catch (error) {
-        log(`Login error: ${error.message}`, true);
-        return null;
+        showResult({ error: error.message });
       }
-    }
+    });
 
-    // Logout function
-    async function logout() {
+    // Register
+    document.getElementById('register').addEventListener('click', async () => {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
       try {
-        log('Logging out...');
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            username, 
+            password,
+            email: `${username}@example.com`,
+            name: username,
+            role: 'user'
+          }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          showResult(data);
+          document.getElementById('authStatus').textContent = 
+            `Authenticated: true, User: ${data.username}`;
+        } else {
+          const errorText = await response.text();
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Registration failed',
+            error: errorText
+          });
+        }
+      } catch (error) {
+        showResult({ error: error.message });
+      }
+    });
+
+    // Logout
+    document.getElementById('logout').addEventListener('click', async () => {
+      try {
         const response = await fetch('/api/logout', {
           method: 'POST',
-          credentials: 'include'
         });
         
         if (response.ok) {
-          log('Logout successful');
-          updateUserInfo(null);
-          document.getElementById('projects-container').innerHTML = '';
-          document.getElementById('projects-status').innerHTML = '<span class="error">Authentication required</span>';
-          return true;
+          showResult({ message: 'Logged out successfully' });
+          document.getElementById('authStatus').textContent = 'Authenticated: false, User: None';
         } else {
-          throw new Error(`Logout failed: ${response.statusText}`);
-        }
-      } catch (error) {
-        log(`Logout error: ${error.message}`, true);
-        return false;
-      }
-    }
-
-    // Network test
-    async function testNetwork() {
-      const resultsDiv = document.getElementById('network-results');
-      resultsDiv.innerHTML = '<p>Testing network connections...</p>';
-      
-      const endpoints = [
-        { name: 'Auth Test', url: '/api/user' },
-        { name: 'Projects Test', url: '/api/projects' },
-        { name: 'Static Asset Test', url: '/favicon.ico' },
-        { name: 'React App Test', url: '/' }
-      ];
-      
-      let results = '<table><tr><th>Endpoint</th><th>Status</th><th>Time</th></tr>';
-      
-      for (const endpoint of endpoints) {
-        try {
-          const start = performance.now();
-          const response = await fetch(endpoint.url, { 
-            credentials: 'include',
-            headers: { 'Accept': 'text/html,application/json' }
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Logout failed' 
           });
-          const time = (performance.now() - start).toFixed(2);
-          
-          let status = `${response.status} ${response.statusText}`;
-          if (response.redirected) {
-            status += ` (Redirected to ${response.url})`;
-          }
-          
-          const statusClass = response.ok ? 'success' : 'error';
-          results += `<tr><td>${endpoint.name}</td><td class="${statusClass}">${status}</td><td>${time}ms</td></tr>`;
-          
-          log(`Tested ${endpoint.url}: ${status} in ${time}ms`);
-        } catch (error) {
-          results += `<tr><td>${endpoint.name}</td><td class="error">Failed: ${error.message}</td><td>N/A</td></tr>`;
-          log(`Test for ${endpoint.url} failed: ${error.message}`, true);
         }
-      }
-      
-      results += '</table>';
-      resultsDiv.innerHTML = results;
-    }
-
-    // Event listeners
-    document.getElementById('login-btn').addEventListener('click', login);
-    document.getElementById('logout-btn').addEventListener('click', logout);
-    document.getElementById('test-network').addEventListener('click', testNetwork);
-
-    // Initialize the page
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        log('Page loaded, running diagnostics...');
-        
-        const user = await checkAuth();
-        if (user) {
-          await getProjects();
-        }
-        
-        log('Initial diagnostics complete.');
       } catch (error) {
-        log(`Initialization error: ${error.message}`, true);
+        showResult({ error: error.message });
+      }
+    });
+
+    // Create Project
+    document.getElementById('createProject').addEventListener('click', async () => {
+      const name = document.getElementById('projectName').value;
+      const description = document.getElementById('projectDescription').value;
+      
+      try {
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            name,
+            description,
+            status: 'active',
+            createdById: 1 // Add the createdById field with the current user's ID
+          }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          showResult(data);
+        } else {
+          const errorData = await response.json().catch(() => ({ message: 'No error details' }));
+          showResult({ 
+            status: response.status, 
+            statusText: response.statusText,
+            message: 'Project creation failed',
+            error: errorData
+          });
+        }
+      } catch (error) {
+        showResult({ error: error.message });
       }
     });
   </script>
