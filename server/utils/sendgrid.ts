@@ -216,6 +216,13 @@ export async function sendInvitationEmail(
     }
     
     const inviteUrl = `${baseUrl}/invite/${token}`;
+    // Add more visible console logs for debugging
+    console.log(`=============================================`);
+    console.log(`DEBUG - INVITATION LINK GENERATION`);
+    console.log(`Token: ${token}`);
+    console.log(`Base URL: ${baseUrl}`);
+    console.log(`Final invite URL: ${inviteUrl}`);
+    console.log(`=============================================`);
     logToFile(`Generated invite URL: ${inviteUrl}`);
     
     const subject = `${inviterName} invited you to collaborate on ${projectName}`;
