@@ -1268,12 +1268,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAccepted: false
       });
       
-      // If SendGrid API key is available, send an email (commented out for now)
-      /*
+      // If SendGrid API key is available, send an email
+      let emailSent = false;
       if (process.env.SENDGRID_API_KEY) {
-        // Implementation of email sending functionality
+        try {
+          // Import the sendInvitationEmail function from utils/sendgrid
+          const { sendInvitationEmail } = await import('./utils/sendgrid');
+          
+          // Get the name of the user who created the invitation
+          const inviter = await storage.getUser(req.user.id);
+          
+          if (inviter && project) {
+            // Send the invitation email
+            emailSent = await sendInvitationEmail(
+              email,
+              inviter.name,
+              project.name,
+              role,
+              token
+            );
+            
+            if (emailSent) {
+              console.log(`Invitation email sent to ${email} for project ${project.name}`);
+            } else {
+              console.error(`Failed to send invitation email to ${email}`);
+            }
+          }
+        } catch (emailError) {
+          console.error('Error sending invitation email:', emailError);
+        }
       }
-      */
       
       // Log activity
       await storage.logActivity({
@@ -1281,15 +1305,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: "invited_user",
         entityType: "project",
         entityId: parseInt(projectId),
-        metadata: { inviteeEmail: email, role }
+        metadata: { inviteeEmail: email, role, emailSent }
       });
       
-      res.status(201).json(invitation);
+      // Return the created invitation with email status
+      res.status(201).json({ 
+        ...invitation, 
+        emailSent 
+      });
     } catch (error) {
       next(error);
     }
   });
   
+  // Get invitation details
+  app.get("/api/invite/:token", isAuthenticated, async (req, res, next) => {
+    try {
+      const { token } = req.params;
+      
+      // Find the invitation
+      const invitation = await storage.getInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // Check if the invitation has expired
+      if (new Date() > invitation.expiresAt) {
+        return res.status(400).json({ message: "Invitation has expired" });
+      }
+      
+      // Check if the invitation has already been accepted
+      if (invitation.isAccepted) {
+        return res.status(400).json({ message: "Invitation has already been accepted" });
+      }
+      
+      // Get project and creator details to provide context in the UI
+      const project = await storage.getProject(invitation.projectId);
+      const creator = await storage.getUser(invitation.createdById);
+      
+      // Remove sensitive information
+      let creatorInfo = null;
+      if (creator) {
+        const { password, ...creatorWithoutPassword } = creator;
+        creatorInfo = creatorWithoutPassword;
+      }
+      
+      res.json({
+        ...invitation,
+        project,
+        creator: creatorInfo
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Accept an invitation
   app.post("/api/invite/:token/accept", isAuthenticated, async (req, res, next) => {
     try {
