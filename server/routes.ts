@@ -117,6 +117,11 @@ async function hasProjectEditAccess(req: Request, res: Response, next: NextFunct
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add a test route to serve our test HTML page
+  app.get("/test", (req, res) => {
+    res.sendFile(path.resolve(process.cwd(), "test-index.html"));
+  });
+
   // Set up authentication
   setupAuth(app);
   
