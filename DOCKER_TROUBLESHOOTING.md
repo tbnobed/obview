@@ -119,6 +119,8 @@ docker compose up -d
 
 ### Issue: Database connection failures
 
+#### Error: Connection refused
+
 **Error message:**
 ```
 Error: connect ECONNREFUSED 127.0.0.1:5432
@@ -145,6 +147,47 @@ docker compose exec app ls -la /app/scripts/
 4. Make sure the scripts are executable:
 ```bash
 chmod +x scripts/*.sh
+docker compose build
+docker compose up -d
+```
+
+#### Error: Neon Database WebSocket Error
+
+**Error message:**
+```
+All attempts to open a WebSocket to connect to the database failed. Please refer to https://github.com/neondatabase/serverless/blob/main/CONFIG.md#websocketconstructor-typeof-websocket--undefined
+```
+
+**Solution:**
+
+This occurs because the application is trying to use the Neon database driver with WebSockets for a local PostgreSQL database connection, which doesn't support this protocol.
+
+1. Use the direct-fix.sh script to fix the issue:
+```bash
+# Make executable
+chmod +x scripts/direct-fix.sh
+
+# Run the script
+./scripts/direct-fix.sh
+```
+
+2. Alternatively, manually fix by:
+   - Replace @neondatabase/serverless with pg in package.json
+   - Update server/db.ts to use standard PostgreSQL connection:
+   ```typescript
+   import { Pool } from 'pg';
+   import { drizzle } from 'drizzle-orm/node-postgres';
+   import * as schema from "@shared/schema";
+
+   export const pool = new Pool({ 
+     connectionString: process.env.DATABASE_URL 
+   });
+   export const db = drizzle(pool, { schema });
+   ```
+
+3. Rebuild and restart:
+```bash
+docker compose down
 docker compose build
 docker compose up -d
 ```

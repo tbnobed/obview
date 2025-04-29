@@ -33,8 +33,12 @@ echo "Waiting for database to be ready..."
 # Check database connection
 echo "Verifying database connection..."
 if ! node -e "
-const { Pool } = require('@neondatabase/serverless');
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const { Pool } = require('pg');
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: 5,
+  connectionTimeoutMillis: 5000
+});
 pool.query('SELECT NOW()').then(res => {
   console.log('Database connection successful:', res.rows[0]);
   process.exit(0);

@@ -86,6 +86,10 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
+# Install pg and remove @neondatabase/serverless (local PostgreSQL support)
+RUN npm uninstall @neondatabase/serverless || true
+RUN npm install pg
+
 # Copy source code
 COPY . .
 
@@ -136,6 +140,9 @@ ENV PORT=3000
 
 # Create a volume for uploads
 VOLUME /app/uploads
+
+# Install additional package for PostgreSQL support
+RUN npm install pg
 
 # Set entrypoint to our initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
