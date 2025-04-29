@@ -1391,13 +1391,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Sending invitation email to ${email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email
+            // Get the host from the request for more reliable URLs
+            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+            const host = req.headers['x-forwarded-host'] || req.headers.host || `${process.env.REPL_ID}-00-1stk8jdk5ajcg.picard.replit.dev`;
+            const appUrl = `${protocol}://${host}`;
+            
+            console.log(`Generating invitation URL with base: ${appUrl}`);
+            
+            // Send the invitation email with the explicitly derived app URL
             emailSent = await sendInvitationEmail(
               email,
               inviter.name,
               project.name,
               role,
-              token
+              token,
+              appUrl
             );
             
             if (emailSent) {
@@ -1674,13 +1682,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email
+            // Get the host from the request for more reliable URLs
+            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+            const host = req.headers['x-forwarded-host'] || req.headers.host || `${process.env.REPL_ID}-00-1stk8jdk5ajcg.picard.replit.dev`;
+            const appUrl = `${protocol}://${host}`;
+            
+            console.log(`Generating RESEND invitation URL with base: ${appUrl}`);
+            
+            // Send the invitation email with the explicitly derived app URL
             emailSent = await sendInvitationEmail(
               invitation.email,
               inviter.name,
               project.name,
               invitation.role,
-              invitation.token
+              invitation.token,
+              appUrl
             );
             
             if (emailSent) {
