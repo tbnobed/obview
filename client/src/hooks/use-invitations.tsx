@@ -162,7 +162,8 @@ export function useResendInvitation() {
     mutationFn: async (invitationId: number) => {
       try {
         const response = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
-        return await response.json();
+        const data = await response.json();
+        return data;
       } catch (error) {
         console.error("Error resending invitation:", error);
         throw error;
