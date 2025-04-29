@@ -1,4 +1,4 @@
-import { useTeamMembers, useRemoveTeamMember, useUpdateTeamMemberRole } from "@/hooks/use-team-members";
+import { TeamMember, useTeamMembers, useRemoveTeamMember, useUpdateTeamMemberRole } from "@/hooks/use-team-members";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,7 @@ interface ProjectTeamMembersProps {
 export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMembersProps) {
   const [pendingRemoveUserId, setPendingRemoveUserId] = useState<number | null>(null);
   const { user: currentUser } = useAuth();
-  const { data: teamMembers = [], isLoading, error } = useTeamMembers(projectId) as 
-    { data: Array<any>, isLoading: boolean, error: Error | null };
+  const { data: teamMembers = [], isLoading, error } = useTeamMembers(projectId);
   const removeTeamMemberMutation = useRemoveTeamMember();
   const updateRoleMutation = useUpdateTeamMemberRole();
   

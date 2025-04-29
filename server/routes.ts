@@ -1835,13 +1835,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const projectId = parseInt(req.params.projectId);
       
+      console.log("Getting team members for project", projectId);
+      
       // Get all project users for this project using the storage interface
       const projectUsers = await storage.getProjectUsers(projectId);
+      
+      console.log("Project users:", projectUsers);
       
       // Get user details for each project user
       const teamMembers = await Promise.all(
         projectUsers.map(async (projectUser) => {
           const user = await storage.getUser(projectUser.userId);
+          
+          console.log("Project user ID:", projectUser.userId, "User:", user);
           
           if (!user) return null;
           
@@ -1858,8 +1864,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter out any null values
       const validTeamMembers = teamMembers.filter(member => member !== null);
       
+      console.log("Valid team members:", validTeamMembers);
+      
       res.json(validTeamMembers);
     } catch (error) {
+      console.error("Error getting team members:", error);
       next(error);
     }
   });

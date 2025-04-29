@@ -2,9 +2,25 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+interface TeamMember {
+  id: number;
+  projectId: number;
+  userId: number;
+  role: string;
+  createdAt: string;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    name: string;
+    role: string;
+    createdAt: string;
+  };
+}
+
 // Hook to fetch team members for a specific project
 export function useTeamMembers(projectId: number) {
-  return useQuery({
+  return useQuery<TeamMember[]>({
     queryKey: ["/api/projects", projectId, "members"],
     enabled: !!projectId,
   });
