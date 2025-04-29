@@ -198,23 +198,16 @@ export async function sendInvitationEmail(
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // Third priority: REPLIT environment with various environment variable combinations
+    // For Replit environment use the public URL
+    else if (process.env.PUBLIC_URL) {
+      // Use the PUBLIC_URL environment variable for the most reliable URL
+      baseUrl = process.env.PUBLIC_URL;
+      logToFile(`Using PUBLIC_URL environment variable: ${baseUrl}`);
+    }
+    // Fallback to constructing URL from REPL_ID
     else if (process.env.REPL_ID) {
-      // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (most reliable)
-      if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
-        baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-        logToFile(`Using Replit environment URL (slug+owner): ${baseUrl}`);
-      }
-      // Second try: Use the REPLIT_SLUG alone with .replit.app domain (newer Replit format)
-      else if (process.env.REPLIT_SLUG) {
-        baseUrl = `https://${process.env.REPLIT_SLUG}.replit.app`;
-        logToFile(`Using Replit environment URL (slug): ${baseUrl}`);
-      }
-      // Last resort: Use the REPL_ID directly
-      else {
-        baseUrl = `https://${process.env.REPL_ID}.repl.co`;
-        logToFile(`Using Replit environment URL (ID): ${baseUrl}`);
-      }
+      baseUrl = `https://${process.env.REPL_ID}-00-1stk8jdk5ajcg.picard.replit.dev`;
+      logToFile(`Using constructed Replit public URL: ${baseUrl}`);
     }
     // Final fallback: Local development
     else {
