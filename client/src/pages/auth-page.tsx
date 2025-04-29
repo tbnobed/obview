@@ -68,12 +68,15 @@ export default function AuthPage() {
     },
   });
 
+  // Get returnTo from URL query parameter
+  const returnTo = new URLSearchParams(window.location.search).get("returnTo") || "/";
+  
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      setLocation("/");
+      setLocation(returnTo);
     }
-  }, [user, setLocation]);
+  }, [user, setLocation, returnTo]);
 
   const onLoginSubmit = async (data: LoginFormValues) => {
     console.log("Login form submitted with data:", data);
@@ -97,7 +100,7 @@ export default function AuthPage() {
           // Manual update of query cache
           queryClient.setQueryData(["/api/user"], userResponse);
           // Navigate to home page
-          setLocation("/");
+          setLocation(returnTo);
         } catch (parseError) {
           console.error("Error parsing login response:", parseError);
         }
@@ -107,13 +110,23 @@ export default function AuthPage() {
     }
     
     // Also use the mutation as a backup
-    loginMutation.mutate(data);
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        // After login, navigate to the returnTo or home page
+        setLocation(returnTo);
+      }
+    });
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
     // Remove confirmPassword as it's not part of the API schema
     const { confirmPassword, ...registerData } = data;
-    registerMutation.mutate(registerData);
+    registerMutation.mutate(registerData, {
+      onSuccess: () => {
+        // After registration, navigate to the returnTo or home page
+        setLocation(returnTo);
+      }
+    });
   };
 
   const onResetPasswordSubmit = (data: ResetPasswordFormValues) => {
