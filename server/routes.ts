@@ -1379,6 +1379,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Checking SendGrid API key availability for invitation to ${email}`);
       console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
+      // Define a function to get the most up-to-date invitation data
+      const getUpdatedInvitation = async () => {
+        const latestInvitation = await storage.getInvitationById(invitation.id);
+        return latestInvitation || invitation;
+      };
+      
       if (process.env.SENDGRID_API_KEY) {
         console.log(`SendGrid API key is available, preparing to send invitation email to ${email}`);
         try {
@@ -1405,7 +1411,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Update the invitation to record that email was sent successfully
               await storage.updateInvitation(invitation.id, { emailSent: true });
-              invitation.emailSent = true;
+              
+              // Ensure we have the most up-to-date version of the invitation
+              const updatedInvitation = await getUpdatedInvitation();
+              if (updatedInvitation) {
+                Object.assign(invitation, updatedInvitation);
+              }
             } else {
               console.error(`ERROR: Failed to send invitation email to ${email} for project ${project.name}`);
             }
@@ -1423,6 +1434,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`SendGrid API key is not available, unable to send invitation email to ${email}`);
       }
       
+      // Get the final emailSent status from the invitation record
+      // This ensures we're using the persisted value from the database
+      const finalInvitation = await getUpdatedInvitation();
+      emailSent = finalInvitation.emailSent;
+      
       // Log activity
       await storage.logActivity({
         userId: req.user.id,
@@ -1432,12 +1448,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { inviteeEmail: email, role, emailSent }
       });
       
-      // Debug the final response data
+      // Prepare the response data with up-to-date email status
       const responseData = { 
-        invitationId: invitation.id,
-        token: invitation.token,
-        email: invitation.email,
-        emailSent // Include the email sent status that the client needs
+        invitationId: finalInvitation.id,
+        token: finalInvitation.token,
+        email: finalInvitation.email,
+        emailSent // Include the email sent status from the database
       };
       
       console.log("DEBUGGING INVITATION RESPONSE:", JSON.stringify(responseData));
