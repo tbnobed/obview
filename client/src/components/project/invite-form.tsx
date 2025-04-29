@@ -51,7 +51,7 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
         toast({
           title: "Invitation created",
           description: `An invitation for ${email} was created, but there was an issue sending the email. The user can still join using the invitation link.`,
-          variant: "warning",
+          variant: "destructive",
         });
       }
 

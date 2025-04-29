@@ -92,17 +92,26 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                     {invitation.role || "Viewer"}
                   </Badge>
                   
-                  {/* Email delivery status */}
+                  {/* Email delivery status with debug info */}
                   {invitation.emailSent ? (
                     <Badge variant="outline" className="px-1.5 mr-2 bg-green-50 text-green-700 border-green-200">
                       <Mail className="h-3 w-3 mr-1" />
                       Email sent
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="px-1.5 mr-2 bg-amber-50 text-amber-700 border-amber-200">
-                      <Mail className="h-3 w-3 mr-1" />
-                      Email not sent
-                    </Badge>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="px-1.5 mr-2 bg-amber-50 text-amber-700 border-amber-200 cursor-help">
+                            <Mail className="h-3 w-3 mr-1" />
+                            Email status unknown
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs text-xs">Email may have been sent. Click the refresh button to update status.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
                   
                   <div className="flex items-center">
