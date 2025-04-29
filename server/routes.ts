@@ -1465,7 +1465,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("========================================================");
       
       // Return the invitation details in a client-friendly format
-      res.status(201).json(responseData);
+      // But use a simpler structure that's guaranteed to include emailSent
+      res.status(201).json({
+        invitationId: invitation.id,
+        token: invitation.token,
+        email: invitation.email,
+        emailSent: invitation.emailSent || false
+      });
     } catch (error) {
       next(error);
     }
@@ -1737,13 +1743,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { inviteeEmail: invitation.email, emailSent }
       });
       
+      // Use a consistent response format with the create invitation endpoint
       res.status(200).json({ 
-        success: true, 
-        emailSent, 
-        invitation: {
-          ...invitation,
-          emailSent
-        }
+        invitationId: invitation.id,
+        token: invitation.token,
+        email: invitation.email,
+        emailSent: emailSent || false
       });
     } catch (error) {
       next(error);
