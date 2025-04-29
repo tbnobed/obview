@@ -1432,13 +1432,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { inviteeEmail: email, role, emailSent }
       });
       
-      // Return the invitation details in a client-friendly format
-      res.status(201).json({ 
+      // Debug the final response data
+      const responseData = { 
         invitationId: invitation.id,
         token: invitation.token,
         email: invitation.email,
         emailSent // Include the email sent status that the client needs
-      });
+      };
+      
+      console.log("DEBUGGING INVITATION RESPONSE:", JSON.stringify(responseData));
+      
+      // Return the invitation details in a client-friendly format
+      res.status(201).json(responseData);
     } catch (error) {
       next(error);
     }
