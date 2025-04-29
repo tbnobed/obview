@@ -38,38 +38,23 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
   
   const handleRemoveTeamMember = () => {
     if (pendingRemoveUserId) {
-      try {
-        removeTeamMemberMutation.mutate({ 
-          projectId, 
-          userId: pendingRemoveUserId 
-        }, {
-          onSuccess: () => {
-            setPendingRemoveUserId(null);
-          }
-        });
-      } catch (error) {
-        console.error("Failed to remove team member:", error);
-      }
+      removeTeamMemberMutation.mutate({ 
+        projectId, 
+        userId: pendingRemoveUserId 
+      }, {
+        onSuccess: () => {
+          setPendingRemoveUserId(null);
+        }
+      });
     }
   };
   
   const handleRoleChange = (userId: number, role: string) => {
-    try {
-      updateRoleMutation.mutate({ projectId, userId, role });
-    } catch (error) {
-      console.error("Failed to update role:", error);
-    }
+    updateRoleMutation.mutate({ projectId, userId, role });
   };
 
   const isCurrentUser = (userId: number) => currentUser?.id === userId;
   const isProjectCreator = (member: any) => member.role === "admin";
-
-  // Add debugging to see what's in the teamMembers data
-  console.log("Team members data:", teamMembers);
-  if (teamMembers.length > 0) {
-    console.log("First team member:", teamMembers[0]);
-    console.log("User property:", teamMembers[0].user);
-  }
 
   if (isLoading) {
     return (

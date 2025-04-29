@@ -23,7 +23,6 @@ export function useTeamMembers(projectId: number) {
   return useQuery<TeamMember[]>({
     queryKey: ["/api/projects", projectId, "users"],
     queryFn: async () => {
-      console.log("Fetching team members for project", projectId);
       const response = await fetch(`/api/projects/${projectId}/users`, {
         credentials: "include",
       });
@@ -32,9 +31,7 @@ export function useTeamMembers(projectId: number) {
         throw new Error("Failed to fetch team members");
       }
       
-      const data = await response.json();
-      console.log("Team members response:", data);
-      return data;
+      return await response.json();
     },
     enabled: !!projectId,
   });
