@@ -36,18 +36,29 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
   const removeTeamMemberMutation = useRemoveTeamMember();
   const updateRoleMutation = useUpdateTeamMemberRole();
   
-  const handleRemoveTeamMember = async () => {
+  const handleRemoveTeamMember = () => {
     if (pendingRemoveUserId) {
-      await removeTeamMemberMutation.mutateAsync({ 
-        projectId, 
-        userId: pendingRemoveUserId 
-      });
-      setPendingRemoveUserId(null);
+      try {
+        removeTeamMemberMutation.mutate({ 
+          projectId, 
+          userId: pendingRemoveUserId 
+        }, {
+          onSuccess: () => {
+            setPendingRemoveUserId(null);
+          }
+        });
+      } catch (error) {
+        console.error("Failed to remove team member:", error);
+      }
     }
   };
   
-  const handleRoleChange = async (userId: number, role: string) => {
-    await updateRoleMutation.mutateAsync({ projectId, userId, role });
+  const handleRoleChange = (userId: number, role: string) => {
+    try {
+      updateRoleMutation.mutate({ projectId, userId, role });
+    } catch (error) {
+      console.error("Failed to update role:", error);
+    }
   };
 
   const isCurrentUser = (userId: number) => currentUser?.id === userId;
