@@ -1508,6 +1508,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DEBUG Endpoint: Test invitation token validation
+  // This endpoint is for development/testing only and should be removed in production
+  app.get("/api/debug/validate-token/:token", isAuthenticated, async (req, res, next) => {
+    try {
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Unauthorized. Only admins can access this endpoint." });
+      }
+      
+      const { token } = req.params;
+      console.log(`VALIDATE TOKEN DEBUG: Testing token validation for: ${token}`);
+      
+      // Find the invitation
+      const invitation = await storage.getInvitationByToken(token);
+      
+      if (!invitation) {
+        console.log(`VALIDATE TOKEN DEBUG: No invitation found for token: ${token}`);
+        return res.status(404).json({ 
+          status: "error", 
+          message: "Invitation not found", 
+          token 
+        });
+      }
+      
+      console.log(`VALIDATE TOKEN DEBUG: Found invitation details:`, invitation);
+      
+      // Get project and creator details
+      const project = await storage.getProject(invitation.projectId);
+      const creator = await storage.getUser(invitation.createdById);
+      
+      const result = {
+        status: "success",
+        invitation: {
+          ...invitation,
+          isExpired: new Date() > invitation.expiresAt
+        },
+        project: project ? {
+          id: project.id,
+          name: project.name,
+          createdAt: project.createdAt
+        } : null,
+        creator: creator ? {
+          id: creator.id,
+          name: creator.name,
+          email: creator.email
+        } : null
+      };
+      
+      console.log(`VALIDATE TOKEN DEBUG: Validation response:`, result);
+      res.json(result);
+    } catch (error) {
+      console.error(`VALIDATE TOKEN DEBUG: Error:`, error);
+      next(error);
+    }
+  });
+
   // DEBUG Endpoint: Test SendGrid email directly 
   // This endpoint is for development/testing only and should be removed in production
   app.post("/api/debug/send-test-email", isAuthenticated, async (req, res, next) => {
@@ -1559,50 +1614,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/invite/:token/accept", isAuthenticated, async (req, res, next) => {
     try {
       const { token } = req.params;
+      console.log(`Processing invitation acceptance for token: ${token} by user: ${req.user.email} (ID: ${req.user.id})`);
       
       // Find the invitation
       const invitation = await storage.getInvitationByToken(token);
       
       if (!invitation) {
-        return res.status(404).json({ message: "Invitation not found" });
+        console.log(`Accept invitation error: Invitation with token "${token}" not found`);
+        return res.status(404).json({ message: "Invitation not found or invalid link" });
       }
       
+      console.log(`Found invitation ${invitation.id} for project ${invitation.projectId}, email: ${invitation.email}`);
+      
       // Check if the invitation has expired
-      if (new Date() > invitation.expiresAt) {
+      const now = new Date();
+      const isExpired = now > invitation.expiresAt;
+      console.log(`Invitation expiry check: now=${now.toISOString()}, expiresAt=${invitation.expiresAt}, isExpired=${isExpired}`);
+      
+      if (isExpired) {
+        console.log(`Accept invitation error: Invitation has expired (expired at ${invitation.expiresAt})`);
         return res.status(400).json({ message: "Invitation has expired" });
       }
       
       // Check if the invitation has already been accepted
       if (invitation.isAccepted) {
+        console.log(`Accept invitation error: Invitation has already been accepted`);
         return res.status(400).json({ message: "Invitation has already been accepted" });
       }
       
       // Check if the current user's email matches the invitation email
       if (req.user.email !== invitation.email) {
+        console.log(`Accept invitation error: Email mismatch. Invitation for ${invitation.email}, but user is ${req.user.email}`);
         return res.status(403).json({ message: "This invitation is for a different email address" });
       }
       
-      // Add the user to the project
-      await storage.addUserToProject({
-        projectId: invitation.projectId,
-        userId: req.user.id,
-        role: invitation.role
-      });
+      console.log(`Invitation validation passed, adding user ${req.user.id} to project ${invitation.projectId} with role ${invitation.role}`);
       
-      // Mark the invitation as accepted
-      await storage.updateInvitation(invitation.id, { isAccepted: true });
-      
-      // Log activity
-      await storage.logActivity({
-        userId: req.user.id,
-        action: "joined_project",
-        entityType: "project",
-        entityId: invitation.projectId,
-        metadata: { invitationId: invitation.id }
-      });
-      
-      res.status(200).json({ message: "Successfully joined project" });
+      try {
+        // Add the user to the project
+        const projectUser = await storage.addUserToProject({
+          projectId: invitation.projectId,
+          userId: req.user.id,
+          role: invitation.role
+        });
+        
+        console.log(`User successfully added to project: ${JSON.stringify(projectUser)}`);
+        
+        // Mark the invitation as accepted
+        const updatedInvitation = await storage.updateInvitation(invitation.id, { isAccepted: true });
+        console.log(`Invitation marked as accepted: ${JSON.stringify(updatedInvitation)}`);
+        
+        // Log activity
+        await storage.logActivity({
+          userId: req.user.id,
+          action: "joined_project",
+          entityType: "project",
+          entityId: invitation.projectId,
+          metadata: { invitationId: invitation.id }
+        });
+        
+        // Get project details to include in response
+        const project = await storage.getProject(invitation.projectId);
+        
+        res.status(200).json({ 
+          message: "Successfully joined project",
+          project: project || { name: "Unknown Project" }
+        });
+      } catch (processingError) {
+        console.error(`Error processing invitation acceptance:`, processingError);
+        return res.status(500).json({ 
+          message: "Error adding you to the project. Please try again or contact support.",
+          error: processingError.message
+        });
+      }
     } catch (error) {
+      console.error(`Unexpected error in invitation acceptance:`, error);
       next(error);
     }
   });
