@@ -34,6 +34,9 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
       });
     },
     onSuccess: (response) => {
+      // Log the complete response for debugging
+      console.log("Invitation creation response:", response);
+      
       // Check if the email was actually sent
       const emailSent = response?.emailSent;
       
@@ -47,16 +50,26 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
       } else {
         toast({
           title: "Invitation created",
-          description: `An invitation for ${email} was created, but the email could not be sent. They can still join using the invitation link.`,
-          variant: "destructive",
+          description: `An invitation for ${email} was created, but there was an issue sending the email. The user can still join using the invitation link.`,
+          variant: "warning",
         });
       }
 
       // Clear the form
       setEmail("");
       
-      // Invalidate invitations query to refresh the list
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/invitations`] });
+      // More aggressive cache invalidation to ensure UI is updated
+      // Force refresh all project and invitation data
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] }); 
+      
+      // Invalidate all invitations queries with a specific pattern
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && 
+            (key.includes('/invitations') || key.includes('/invite') || key.includes('/projects'));
+        }
+      });
       
       // Call the callback if provided
       if (onInviteSent) {

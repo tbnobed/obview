@@ -170,27 +170,31 @@ export function useResendInvitation() {
       }
     },
     onSuccess: (data) => {
-      if (data.emailSent) {
+      console.log("Resend invitation response:", data);
+      
+      if (data && data.emailSent) {
         toast({
-          title: "Invitation email resent",
-          description: "The invitation email has been successfully resent.",
+          title: "Invitation email sent",
+          description: "The invitation email has been successfully sent.",
         });
       } else {
         toast({
-          title: "Email not sent",
-          description: "The invitation was processed but the email could not be sent. Please try again later.",
+          title: "Email delivery issue",
+          description: "The invitation was processed but there was an issue sending the email. The recipient may not receive it.",
           variant: "destructive",
         });
       }
       
-      // Invalidate relevant queries
+      // Force refresh all project data
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       
-      // Invalidate all invitations queries
+      // Force refresh all invitations queries with a more specific pattern
       queryClient.invalidateQueries({ 
-        predicate: (query) => 
-          typeof query.queryKey[0] === 'string' && 
-          (query.queryKey[0].includes('/invitations') || query.queryKey[0].includes('/invite')) 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && 
+            (key.includes('/invitations') || key.includes('/invite') || key.includes('/projects'));
+        }
       });
     },
     onError: (error: Error) => {

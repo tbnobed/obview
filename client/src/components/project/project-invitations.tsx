@@ -118,31 +118,29 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                 <span>Invited by {invitation.creator?.name || "Unknown"}</span>
               </div>
               
-              {/* Resend button - only show if email not sent or needs to be resent */}
-              {!invitation.emailSent && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleResendInvitation(invitation.id)}
-                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 mr-1"
-                        disabled={resendInvitationMutation.isPending}
-                      >
-                        {resendInvitationMutation.isPending && resendInvitationMutation.variables === invitation.id ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-5 w-5" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Resend invitation email</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              {/* Resend button - always show, with different tooltip */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleResendInvitation(invitation.id)}
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 mr-1"
+                      disabled={resendInvitationMutation.isPending}
+                    >
+                      {resendInvitationMutation.isPending && resendInvitationMutation.variables === invitation.id ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-5 w-5" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{invitation.emailSent ? "Send again" : "Resend invitation email"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               
               <AlertDialog open={pendingDeleteId === invitation.id} onOpenChange={(open) => {
                 if (!open) setPendingDeleteId(null);
