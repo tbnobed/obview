@@ -29,6 +29,7 @@ function Router() {
       <ProtectedRoute path="/projects/new" component={ProjectsPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
+      <ProtectedRoute path="/debug" component={DebugPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/invite/:token" component={InvitePage} />
       <Route component={NotFound} />
