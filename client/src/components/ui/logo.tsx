@@ -10,21 +10,21 @@ interface LogoProps {
 
 const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', withText = true }) => {
   const sizeClasses = {
-    sm: 'h-16 w-16',
-    md: 'h-24 w-24',
-    lg: 'h-32 w-32'
+    sm: 'h-24 w-24',
+    md: 'h-36 w-36',
+    lg: 'h-48 w-48'
   };
 
   return (
     <Link href="/">
-      <div className={`flex items-center space-x-2 cursor-pointer ${className}`}>
+      <div className={`flex items-center space-x-4 md:space-x-6 cursor-pointer ${className}`}>
         <img 
           src={logoImage} 
           alt="OBview.io" 
-          className={`${sizeClasses[size]} object-contain`} 
+          className={`${sizeClasses[size]} object-contain drop-shadow-[0_0_15px_rgba(20,184,166,0.5)]`} 
         />
         {withText && (
-          <span className="font-bold text-xl md:text-2xl lg:text-3xl bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">
+          <span className="font-bold text-3xl md:text-4xl lg:text-5xl bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">
             OBview.io
           </span>
         )}
