@@ -37,8 +37,22 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
       // Log the complete response for debugging
       console.log("Invitation creation response:", response);
       
-      // Check if the email was actually sent
-      const emailSent = response?.emailSent;
+      // Extract the email sent status more carefully
+      // Check different potential response structures
+      let emailSent = false;
+      
+      if (response?.emailSent !== undefined) {
+        // Direct property
+        emailSent = !!response.emailSent;
+      } else if (response?.invitation?.emailSent !== undefined) {
+        // Nested in an invitation object
+        emailSent = !!response.invitation.emailSent;
+      } else if (response?.success && response?.emailSent !== undefined) {
+        // Success response format
+        emailSent = !!response.emailSent;
+      }
+      
+      console.log("Extracted email sent status:", emailSent);
       
       // Show appropriate toast based on email delivery status
       if (emailSent) {

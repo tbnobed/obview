@@ -1442,11 +1442,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Prepare the response data with email status
-      const responseData = { 
+      // Let's be really explicit to ensure the emailSent property goes through
+      const responseData = {
+        invitation: {
+          id: invitation.id,
+          token: invitation.token,
+          email: invitation.email,
+          emailSent: invitation.emailSent || false
+        },
         invitationId: invitation.id,
         token: invitation.token,
         email: invitation.email,
-        emailSent: invitation.emailSent || false // Include explicitly
+        emailSent: invitation.emailSent || false,
+        success: true
       };
       
       // Print detailed debug information to help diagnose the issue
