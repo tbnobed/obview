@@ -149,11 +149,8 @@ export default function AuthPage() {
       {/* Left Side - Forms */}
       <div className="flex flex-col justify-center flex-1 px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
         <div className="w-full max-w-sm mx-auto lg:w-96">
-          <div className="mb-8">
-            <Logo size="lg" withText className="mb-2" />
-            <p className="mt-2 text-sm text-neutral-600">
-              Your self-hosted media review & approval platform
-            </p>
+          <div className="mb-12 flex justify-center">
+            <Logo size="lg" withText={false} />
           </div>
 
           {showResetForm ? (
@@ -390,7 +387,9 @@ export default function AuthPage() {
       <div className="relative flex-1 hidden w-0 lg:block">
         <div className="absolute inset-0 bg-gradient-to-r from-teal-700 to-teal-500 flex flex-col items-center justify-center text-white px-12">
           <div className="max-w-md">
-            <Logo size="lg" className="mb-6 text-white" />
+            <div className="flex justify-center w-full mb-10">
+              <Logo size="lg" withText={false} className="text-white" />
+            </div>
             <h1 className="text-4xl font-bold mb-6">Streamline Your Media Review Process</h1>
             <p className="text-lg mb-8 text-white/90">
               OBview.io is a powerful platform for teams to collaborate on media projects. 
