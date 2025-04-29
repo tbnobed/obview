@@ -1376,8 +1376,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If SendGrid API key is available, send an email
       let emailSent = false;
+      
+      // Log debug info for troubleshooting
       console.log(`Checking SendGrid API key availability for invitation to ${email}`);
       console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
+      console.log(`Initial invitation object:`, JSON.stringify({
+        id: invitation.id,
+        email: invitation.email,
+        emailSent: invitation.emailSent
+      }));
       
       // Define a function to get the most up-to-date invitation data
       const getUpdatedInvitation = async () => {
