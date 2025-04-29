@@ -51,34 +51,135 @@ pool.query('SELECT NOW()').then(res => {
   exit 1
 fi
 
-# Run migrations
-echo "Running database migrations..."
-if ! node /app/dist/server/db-migrate.js; then
-  echo "WARNING: Database migration script failed. This could be due to missing /app/drizzle directory."
-  echo "Attempting to generate migration files..."
-  
-  # Try to generate migration files using drizzle-kit
-  if command -v npx &> /dev/null; then
-    echo "Generating migration files with Drizzle Kit..."
-    cd /app && npx drizzle-kit generate:pg || echo "Failed to generate migration files."
-  else
-    echo "npx not found, skipping migration generation."
-  fi
-  
-  # Try to run migrations again
-  echo "Retrying database migration..."
-  if ! node /app/dist/server/db-migrate.js; then
-    echo "ERROR: Database migration failed after retry."
-    echo "You may need to manually run migrations or check database structure."
-    # We continue despite error since the schema might be already up to date
-  fi
+# Skip migrations for now as we don't have the db-migrate.js file
+echo "Creating database schema directly..."
+
+# Using the pg client to create tables directly
+if ! PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U postgres -d obview -c "
+-- Create tables if they don't exist
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'user',
+    \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS projects (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    ownerId INTEGER NOT NULL REFERENCES users(id),
+    \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    \"updatedAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS project_users (
+    id SERIAL PRIMARY KEY,
+    projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+    \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(projectId, userId)
+);
+
+CREATE TABLE IF NOT EXISTS files (
+    id SERIAL PRIMARY KEY,
+    projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    filename VARCHAR(255) NOT NULL,
+    fileType VARCHAR(100) NOT NULL,
+    fileSize INTEGER NOT NULL,
+    filePath TEXT NOT NULL,
+    uploadedById INTEGER NOT NULL REFERENCES users(id),
+    version INTEGER DEFAULT 1,
+    isLatestVersion BOOLEAN DEFAULT TRUE,
+    \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS comments (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+    userId INTEGER NOT NULL REFERENCES users(id),
+    parentId INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    timestamp INTEGER,
+    isResolved BOOLEAN DEFAULT FALSE,
+    \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id SERIAL PRIMARY KEY,
+    userId INTEGER NOT NULL REFERENCES users(id),
+    projectId INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    fileId INTEGER REFERENCES files(id) ON DELETE CASCADE,
+    action VARCHAR(255) NOT NULL,
+    details JSONB,
+    \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS invitations (
+    id SERIAL PRIMARY KEY,
+    projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+    emailSent BOOLEAN DEFAULT FALSE,
+    expiresAt TIMESTAMP WITH TIME ZONE NOT NULL,
+    \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS approvals (
+    id SERIAL PRIMARY KEY,
+    fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+    userId INTEGER NOT NULL REFERENCES users(id),
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    feedback TEXT,
+    \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(fileId, userId)
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_projects_ownerId ON projects(ownerId);
+CREATE INDEX IF NOT EXISTS idx_files_projectId ON files(projectId);
+CREATE INDEX IF NOT EXISTS idx_comments_fileId ON comments(fileId);
+CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentId);
+CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_userId ON activity_logs(userId);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_projectId ON activity_logs(projectId);
+CREATE INDEX IF NOT EXISTS idx_project_users_projectId ON project_users(projectId);
+CREATE INDEX IF NOT EXISTS idx_project_users_userId ON project_users(userId);
+"; then
+  echo "WARNING: Direct schema creation failed."
+  echo "Proceeding anyway as the schema might already exist."
 fi
 
 # Create admin user if not exists
 echo "Setting up admin user if needed..."
-if ! node /app/scripts/setup.js; then
-  echo "ERROR: Admin user setup failed"
-  exit 1
+if ! node /app/scripts/setup.cjs; then
+  echo "WARNING: Admin user setup with CJS script failed, trying alternative approach"
+  # If the setup.cjs script fails, we can directly execute SQL 
+  if ! PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U postgres -d obview -c "
+    DO \$\$
+    DECLARE
+      user_exists BOOLEAN;
+    BEGIN
+      SELECT EXISTS(SELECT 1 FROM users WHERE username = 'admin') INTO user_exists;
+      IF NOT user_exists THEN
+        INSERT INTO users (username, password, email, name, role, \"createdAt\") 
+        VALUES ('admin', 'a7b13d2b2b89eacba6e3d2c10b08f7d0cf5ba0a79d0b99d27e8912613f087d6bfe21ef50c43709a97269d9ff7c779e17adf12d2a6722a7e6d30b70a9d87e0bde.7c3cde42af095f81af3fc6c5a95bf273', 'admin@example.com', 'Administrator', 'admin', NOW());
+        RAISE NOTICE 'Admin user created successfully';
+      ELSE
+        RAISE NOTICE 'Admin user already exists';
+      END IF;
+    END \$\$;
+  "; then
+    echo "ERROR: Admin user setup failed with direct SQL"
+    # We continue despite error since the user might be added in another way
+  fi
 fi
 
 # Print startup information

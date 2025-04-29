@@ -128,6 +128,12 @@ RUN echo "-- Placeholder drizzle file" > drizzle/placeholder.sql
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/.env* ./
 
+# Rename setup.js to setup.cjs
+RUN if [ -f "/app/scripts/setup.js" ]; then \
+    cp /app/scripts/setup.js /app/scripts/setup.cjs; \
+    sed -i 's/@neondatabase\/serverless/pg/g' /app/scripts/setup.cjs; \
+fi
+
 # Make scripts executable
 RUN chmod +x ./scripts/*.sh || true
 

@@ -313,6 +313,74 @@ docker network rm obview_app_network
 docker compose up -d
 ```
 
+### Issue: Migrations and Schema Setup Failures
+
+#### Error: Missing db-migrate.js file
+
+**Error message:**
+```
+Error: Cannot find module '/app/dist/server/db-migrate.js'
+```
+
+**Solution:**
+
+1. The simplest solution is to use the direct-fix.sh script, which addresses multiple issues:
+```bash
+chmod +x scripts/direct-fix.sh
+./scripts/direct-fix.sh
+```
+
+2. If you prefer to fix manually, you can create database tables directly:
+```bash
+# Connect to PostgreSQL container
+docker compose exec db psql -U postgres -d obview -c "
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'user',
+    \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+-- Add other tables...
+"
+```
+
+3. Or modify the docker-entrypoint.sh script to create the schema directly:
+```bash
+# Edit docker-entrypoint.sh to skip migrations and create tables directly
+```
+
+#### Error: ES Module vs CommonJS issues with setup.js
+
+**Error message:**
+```
+ReferenceError: require is not defined in ES module scope, you can use import instead
+This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module".
+```
+
+**Solution:**
+
+1. Rename the setup.js file to setup.cjs with pg package:
+```bash
+# Create a .cjs version of the script
+cp scripts/setup.js scripts/setup.cjs
+sed -i 's/@neondatabase\/serverless/pg/g' scripts/setup.cjs
+
+# Update docker-entrypoint.sh to use the .cjs file
+sed -i 's/setup.js/setup.cjs/g' scripts/docker-entrypoint.sh
+```
+
+2. If the admin user still isn't creating properly, you can add one manually:
+```bash
+docker compose exec db psql -U postgres -d obview -c "
+INSERT INTO users (username, password, email, name, role, \"createdAt\") 
+VALUES ('admin', 'a7b13d2b2b89eacba6e3d2c10b08f7d0cf5ba0a79d0b99d27e8912613f087d6bfe21ef50c43709a97269d9ff7c779e17adf12d2a6722a7e6d30b70a9d87e0bde.7c3cde42af095f81af3fc6c5a95bf273', 'admin@example.com', 'Administrator', 'admin', NOW())
+ON CONFLICT (username) DO NOTHING;
+"
+```
+
 ## Database Recovery
 
 If your database is corrupted or migrations fail:
