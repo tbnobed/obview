@@ -1758,6 +1758,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all invitations for this project using the storage interface
       const pendingInvitations = await storage.getInvitationsByProject(projectId);
       
+      console.log(`Retrieved ${pendingInvitations.length} invitations for project ${projectId}`);
+      // Log the first invitation data to check if emailSent is present
+      if (pendingInvitations.length > 0) {
+        console.log(`Sample invitation data (ID ${pendingInvitations[0].id}):`, {
+          email: pendingInvitations[0].email,
+          emailSent: pendingInvitations[0].emailSent,
+          createdAt: pendingInvitations[0].createdAt
+        });
+      }
+      
       // Get creator details for each invitation
       const invitationsWithCreators = await Promise.all(
         pendingInvitations.map(async (invitation) => {
@@ -1768,8 +1778,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Remove password from creator object
           const { password, ...creatorWithoutPassword } = creator;
           
+          // Explicitly include all invitation fields, especially emailSent
           return {
             ...invitation,
+            emailSent: invitation.emailSent || false, // Provide a default if missing
             creator: creatorWithoutPassword,
           };
         })

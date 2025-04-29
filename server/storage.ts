@@ -739,8 +739,20 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getInvitationsByProject(projectId: number): Promise<Invitation[]> {
+    // Explicitly select all fields including emailSent to ensure it's present
     return await db
-      .select()
+      .select({
+        id: invitations.id,
+        email: invitations.email,
+        projectId: invitations.projectId,
+        role: invitations.role,
+        token: invitations.token,
+        expiresAt: invitations.expiresAt,
+        isAccepted: invitations.isAccepted,
+        emailSent: invitations.emailSent,
+        createdById: invitations.createdById,
+        createdAt: invitations.createdAt
+      })
       .from(invitations)
       .where(
         and(
