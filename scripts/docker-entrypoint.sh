@@ -55,6 +55,21 @@ fi
 echo "Creating database schema directly..."
 
 # Using the pg client to create tables directly
+# Make sure POSTGRES_PASSWORD is available, use default if not
+if [ -z "$POSTGRES_PASSWORD" ]; then
+  # For Docker Compose setups, the default password is usually 'postgres'
+  export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+  echo "No POSTGRES_PASSWORD set, using default password"
+fi
+
+# Create the database if it doesn't exist
+echo "Ensuring database exists..."
+if ! PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U postgres -c "SELECT 1 FROM pg_database WHERE datname = 'obview'" | grep -q 1; then
+  echo "Creating database obview..."
+  PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U postgres -c "CREATE DATABASE obview"
+fi
+
+echo "Creating database schema..."
 if ! PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U postgres -d obview -c "
 -- Create tables if they don't exist
 CREATE TABLE IF NOT EXISTS users (

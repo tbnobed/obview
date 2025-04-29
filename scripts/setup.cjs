@@ -29,8 +29,13 @@ async function main() {
   }
 
   console.log('Connecting to database...');
-  const pool = new Pool({ 
+  // Use either connectionString or individual parameters
+  const pool = new Pool({
     connectionString: DATABASE_URL,
+    host: process.env.POSTGRES_HOST || 'db',
+    user: process.env.POSTGRES_USER || 'postgres',
+    password: process.env.POSTGRES_PASSWORD || 'postgres',
+    database: process.env.POSTGRES_DB || 'obview',
     max: 5,
     connectionTimeoutMillis: 5000
   });
