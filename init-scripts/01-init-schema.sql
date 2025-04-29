@@ -1,13 +1,25 @@
--- Create necessary extensions
+-- Initialize database schema
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create session table for express-session with connect-pg-simple
-CREATE TABLE IF NOT EXISTS "session" (
+-- Create initial schema if it doesn't exist
+CREATE TABLE IF NOT EXISTS "pg_session" (
   "sid" varchar NOT NULL COLLATE "default",
   "sess" json NOT NULL,
   "expire" timestamp(6) NOT NULL,
-  CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+  CONSTRAINT "pg_session_pkey" PRIMARY KEY ("sid")
 );
-CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
 
--- We'll let Drizzle handle the rest of the schema migrations
+-- Create indexes if they don't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE indexname = 'IDX_pg_session_expire'
+    ) THEN
+        CREATE INDEX "IDX_pg_session_expire" ON "pg_session" ("expire");
+    END IF;
+END
+$$;
+
+-- Grant permissions
+GRANT ALL PRIVILEGES ON DATABASE mediareview TO postgres;

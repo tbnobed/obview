@@ -117,6 +117,10 @@ async function hasProjectEditAccess(req: Request, res: Response, next: NextFunct
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint for Docker
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
   // Set up authentication
   setupAuth(app);
   
