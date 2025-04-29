@@ -16,6 +16,9 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Generate Drizzle migrations during build time
+RUN node scripts/setup-drizzle.js
+
 # Production stage
 FROM node:20-alpine as production
 
@@ -28,11 +31,20 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/uploads ./uploads
 COPY --from=builder /app/drizzle.config.ts ./
 
-# Add database migration files and scripts
-COPY --from=builder /app/drizzle ./drizzle
+# Create uploads directory
+RUN mkdir -p uploads
+
+# Generate directory for migrations
+RUN mkdir -p migrations
+RUN mkdir -p drizzle
+
+# Try to copy migration files from both possible locations
+COPY --from=builder /app/migrations ./migrations 2>/dev/null || true
+COPY --from=builder /app/drizzle ./drizzle 2>/dev/null || true
+
+# Copy scripts and config files
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/.env* ./
 
