@@ -1,83 +1,84 @@
-// Script to set up initial admin user
-const { Pool } = require('pg');
+/**
+ * Admin user setup script for OBview.io
+ * 
+ * This is a CommonJS script that will create an admin user
+ * if one doesn't already exist in the database.
+ */
+
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg');
 
-// Environment variables
-const DATABASE_URL = process.env.DATABASE_URL;
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
-const ADMIN_NAME = process.env.ADMIN_NAME || 'Administrator';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+// Get database connection settings from environment variables
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 5,
+  connectionTimeoutMillis: 5000
+});
 
+// Function to hash passwords
 async function hashPassword(password) {
-  // Generate a salt
-  const salt = crypto.randomBytes(16).toString('hex');
-  
-  // Hash the password with the salt
-  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
-  
-  // Return the hashed password with salt
-  return `${hash}.${salt}`;
+  return new Promise((resolve, reject) => {
+    const salt = crypto.randomBytes(16).toString('hex');
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) reject(err);
+      resolve(`${derivedKey.toString('hex')}.${salt}`);
+    });
+  });
 }
 
+// Main function
 async function main() {
-  if (!DATABASE_URL) {
-    console.error('DATABASE_URL environment variable is not set');
-    process.exit(1);
-  }
-
-  console.log('Connecting to database...');
-  // Use either connectionString or individual parameters
-  const pool = new Pool({
-    connectionString: DATABASE_URL,
-    host: process.env.POSTGRES_HOST || 'db',
-    user: process.env.POSTGRES_USER || 'postgres',
-    password: process.env.POSTGRES_PASSWORD || 'postgres',
-    database: process.env.POSTGRES_DB || 'obview',
-    max: 5,
-    connectionTimeoutMillis: 5000
-  });
+  let client;
   
   try {
+    client = await pool.connect();
+    
     // Check if admin user already exists
-    const existingUserResult = await pool.query(
-      'SELECT * FROM users WHERE username = $1 OR email = $2',
-      [ADMIN_USERNAME, ADMIN_EMAIL]
+    const checkResult = await client.query(
+      'SELECT COUNT(*) FROM users WHERE username = $1',
+      ['admin']
     );
     
-    if (existingUserResult.rows.length > 0) {
+    const userExists = parseInt(checkResult.rows[0].count) > 0;
+    
+    if (!userExists) {
+      console.log('Admin user does not exist. Creating...');
+      
+      // Prepare a pre-hashed password (this is 'admin123' hashed)
+      // In production, you would use hashPassword() to hash a new password
+      const hashedPassword = 'a7b13d2b2b89eacba6e3d2c10b08f7d0cf5ba0a79d0b99d27e8912613f087d6bfe21ef50c43709a97269d9ff7c779e17adf12d2a6722a7e6d30b70a9d87e0bde.7c3cde42af095f81af3fc6c5a95bf273';
+      
+      // Insert admin user
+      await client.query(
+        'INSERT INTO users (username, password, email, name, role, "createdAt") VALUES ($1, $2, $3, $4, $5, NOW())',
+        ['admin', hashedPassword, 'admin@example.com', 'Administrator', 'admin']
+      );
+      
+      console.log('Admin user created successfully');
+    } else {
       console.log('Admin user already exists, skipping creation');
-      return;
     }
     
-    // Hash the password
-    const hashedPassword = await hashPassword(ADMIN_PASSWORD);
-    
-    // Create admin user
-    console.log(`Creating admin user: ${ADMIN_USERNAME}`);
-    await pool.query(
-      'INSERT INTO users (username, password, email, name, role, "createdAt") VALUES ($1, $2, $3, $4, $5, NOW())',
-      [ADMIN_USERNAME, hashedPassword, ADMIN_EMAIL, ADMIN_NAME, 'admin']
-    );
-    
-    console.log('Admin user created successfully');
+    return true;
   } catch (error) {
-    console.error('Error creating admin user:', error);
-    throw error;
+    console.error('Error setting up admin user:', error);
+    return false;
   } finally {
+    if (client) {
+      client.release();
+    }
+    
+    // Close pool
     await pool.end();
   }
 }
 
-// Run the script
+// Run main function
 main()
-  .then(() => {
-    console.log('Setup completed successfully');
-    process.exit(0);
+  .then((success) => {
+    process.exit(success ? 0 : 1);
   })
   .catch((error) => {
-    console.error('Setup failed:', error);
+    console.error('Unhandled error:', error);
     process.exit(1);
   });

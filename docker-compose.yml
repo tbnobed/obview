@@ -1,85 +1,48 @@
+version: '3.8'
+
 services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.new
     container_name: obview_app
-    restart: always
+    restart: unless-stopped
     ports:
       - "3000:3000"
     depends_on:
-      db:
-        condition: service_started
+      - db
     environment:
       - NODE_ENV=production
-      - PORT=3000
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/obview
-      - SESSION_SECRET=${SESSION_SECRET:-1234567890abcdef}
-      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-      - ADMIN_NAME=${ADMIN_NAME:-Administrator}
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
-      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - POSTGRES_DB=obview
+      - POSTGRES_USER=postgres
       - POSTGRES_HOST=db
+      - POSTGRES_DB=obview
+      - POSTGRES_PORT=5432
+      - SESSION_SECRET=${SESSION_SECRET:-obview-default-session-secret}
     volumes:
       - uploads:/app/uploads
     networks:
-      - app_network
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 512M
+      - obview_network
 
   db:
     image: postgres:16-alpine
     container_name: obview_db
-    restart: always
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_USER=postgres
       - POSTGRES_DB=obview
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
-      - app_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 500M
-        reservations:
-          cpus: '0.1'
-          memory: 200M
-    # PostgreSQL performance tuning
-    command: postgres -c shared_buffers=128MB -c effective_cache_size=384MB -c maintenance_work_mem=64MB -c work_mem=8MB
+      - obview_network
 
 volumes:
-  postgres_data:
-    name: obview_postgres_data
   uploads:
-    name: obview_uploads
+  postgres_data:
 
 networks:
-  app_network:
-    name: obview_network
+  obview_network:
     driver: bridge

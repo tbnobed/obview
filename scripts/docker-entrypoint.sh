@@ -28,9 +28,23 @@ chmod 755 /app/uploads
 
 # Wait for database to be ready
 echo "Waiting for database to be ready..."
-/app/scripts/wait-for-db.sh
+MAX_RETRIES=60
+RETRY=0
 
-# Check database connection
+until PGPASSWORD=${POSTGRES_PASSWORD:-postgres} psql -h db -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-obview} -c "SELECT 1" > /dev/null 2>&1; do
+  RETRY=$((RETRY+1))
+  if [ $RETRY -ge $MAX_RETRIES ]; then
+    echo "ERROR: Failed to connect to PostgreSQL after $MAX_RETRIES attempts"
+    exit 1
+  fi
+  echo "PostgreSQL is unavailable - attempt $RETRY/$MAX_RETRIES - waiting for 2 seconds"
+  sleep 2
+done
+
+echo "SUCCESS: PostgreSQL is up and running"
+echo "Connection to db:5432 as ${POSTGRES_USER:-postgres} to database ${POSTGRES_DB:-obview} was successful"
+
+# Check database connection with node
 echo "Verifying database connection..."
 if ! node -e "
 const { Pool } = require('pg');
@@ -51,26 +65,9 @@ pool.query('SELECT NOW()').then(res => {
   exit 1
 fi
 
-# Skip migrations for now as we don't have the db-migrate.js file
+# Create schema if needed
 echo "Creating database schema directly..."
-
-# Using the pg client to create tables directly
-# Make sure POSTGRES_PASSWORD is available, use default if not
-if [ -z "$POSTGRES_PASSWORD" ]; then
-  # For Docker Compose setups, the default password is usually 'postgres'
-  export POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-  echo "No POSTGRES_PASSWORD set, using default password"
-fi
-
-# Create the database if it doesn't exist
-echo "Ensuring database exists..."
-if ! PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U postgres -c "SELECT 1 FROM pg_database WHERE datname = 'obview'" | grep -q 1; then
-  echo "Creating database obview..."
-  PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U postgres -c "CREATE DATABASE obview"
-fi
-
-echo "Creating database schema..."
-if ! PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U postgres -d obview -c "
+if ! PGPASSWORD=${POSTGRES_PASSWORD:-postgres} psql -h db -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-obview} -c "
 -- Create tables if they don't exist
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -86,88 +83,99 @@ CREATE TABLE IF NOT EXISTS projects (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    ownerId INTEGER REFERENCES users(id),
     \"createdById\" INTEGER REFERENCES users(id),
+    ownerId INTEGER REFERENCES users(id),
     \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     \"updatedAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS project_users (
     id SERIAL PRIMARY KEY,
-    projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    \"projectId\" INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    \"userId\" INTEGER REFERENCES users(id) ON DELETE CASCADE,
     role VARCHAR(50) NOT NULL DEFAULT 'viewer',
     \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(projectId, userId)
+    UNIQUE(\"projectId\", \"userId\")
 );
 
 CREATE TABLE IF NOT EXISTS files (
     id SERIAL PRIMARY KEY,
-    projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     filename VARCHAR(255) NOT NULL,
-    fileType VARCHAR(100) NOT NULL,
-    fileSize INTEGER NOT NULL,
-    filePath TEXT NOT NULL,
-    uploadedById INTEGER NOT NULL REFERENCES users(id),
+    \"fileType\" VARCHAR(50) NOT NULL,
+    \"fileSize\" INTEGER NOT NULL,
+    \"filePath\" VARCHAR(255) NOT NULL,
+    \"projectId\" INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    \"uploadedById\" INTEGER REFERENCES users(id) ON DELETE SET NULL,
     version INTEGER DEFAULT 1,
-    isLatestVersion BOOLEAN DEFAULT TRUE,
+    \"isLatestVersion\" BOOLEAN DEFAULT TRUE,
     \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS comments (
     id SERIAL PRIMARY KEY,
     content TEXT NOT NULL,
-    fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
-    userId INTEGER NOT NULL REFERENCES users(id),
-    parentId INTEGER REFERENCES comments(id) ON DELETE CASCADE,
-    timestamp INTEGER,
-    isResolved BOOLEAN DEFAULT FALSE,
+    \"fileId\" INTEGER REFERENCES files(id) ON DELETE CASCADE,
+    \"userId\" INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    \"parentId\" INTEGER REFERENCES comments(id) ON DELETE CASCADE NULL,
+    timestamp INTEGER NULL,
+    \"isResolved\" BOOLEAN DEFAULT FALSE,
     \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS activity_logs (
     id SERIAL PRIMARY KEY,
-    userId INTEGER NOT NULL REFERENCES users(id),
-    projectId INTEGER REFERENCES projects(id) ON DELETE CASCADE,
-    fileId INTEGER REFERENCES files(id) ON DELETE CASCADE,
-    action VARCHAR(255) NOT NULL,
+    \"activityType\" VARCHAR(50) NOT NULL,
+    \"projectId\" INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    \"userId\" INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    \"entityId\" INTEGER,
+    \"entityType\" VARCHAR(50),
     details JSONB,
     \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS invitations (
     id SERIAL PRIMARY KEY,
-    projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
+    \"projectId\" INTEGER REFERENCES projects(id) ON DELETE CASCADE,
     token VARCHAR(255) NOT NULL UNIQUE,
     role VARCHAR(50) NOT NULL DEFAULT 'viewer',
-    emailSent BOOLEAN DEFAULT FALSE,
-    expiresAt TIMESTAMP WITH TIME ZONE NOT NULL,
+    \"invitedById\" INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    \"emailSent\" BOOLEAN DEFAULT FALSE,
     \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS approvals (
     id SERIAL PRIMARY KEY,
-    fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
-    userId INTEGER NOT NULL REFERENCES users(id),
+    \"fileId\" INTEGER REFERENCES files(id) ON DELETE CASCADE,
+    \"userId\" INTEGER REFERENCES users(id) ON DELETE CASCADE,
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
-    feedback TEXT,
+    feedback TEXT NULL,
     \"createdAt\" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(fileId, userId)
+    UNIQUE(\"fileId\", \"userId\")
 );
 
--- Create indexes
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_projects_ownerId ON projects(ownerId);
-CREATE INDEX IF NOT EXISTS idx_files_projectId ON files(projectId);
-CREATE INDEX IF NOT EXISTS idx_comments_fileId ON comments(fileId);
-CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentId);
-CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_userId ON activity_logs(userId);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_projectId ON activity_logs(projectId);
-CREATE INDEX IF NOT EXISTS idx_project_users_projectId ON project_users(projectId);
-CREATE INDEX IF NOT EXISTS idx_project_users_userId ON project_users(userId);
+-- Create session table for PostgreSQL session store
+CREATE TABLE IF NOT EXISTS \"session\" (
+    \"sid\" varchar NOT NULL COLLATE \"default\",
+    \"sess\" json NOT NULL,
+    \"expire\" timestamp(6) NOT NULL,
+    CONSTRAINT \"session_pkey\" PRIMARY KEY (\"sid\")
+);
+CREATE INDEX IF NOT EXISTS \"IDX_session_expire\" ON \"session\" (\"expire\");
+
+-- Create indexes for improved performance
+CREATE INDEX IF NOT EXISTS idx_projects_created_by ON projects(\"createdById\");
+CREATE INDEX IF NOT EXISTS idx_projects_owner_id ON projects(ownerId);
+CREATE INDEX IF NOT EXISTS idx_files_project ON files(\"projectId\");
+CREATE INDEX IF NOT EXISTS idx_files_uploaded_by ON files(\"uploadedById\");
+CREATE INDEX IF NOT EXISTS idx_comments_file ON comments(\"fileId\");
+CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(\"userId\");
+CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(\"parentId\");
+CREATE INDEX IF NOT EXISTS idx_activity_logs_project ON activity_logs(\"projectId\");
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(\"userId\");
+CREATE INDEX IF NOT EXISTS idx_invitations_project ON invitations(\"projectId\");
+CREATE INDEX IF NOT EXISTS idx_invitations_invited_by ON invitations(\"invitedById\");
+CREATE INDEX IF NOT EXISTS idx_approvals_file ON approvals(\"fileId\");
 "; then
   echo "WARNING: Direct schema creation failed."
   echo "Proceeding anyway as the schema might already exist."
@@ -175,27 +183,23 @@ fi
 
 # Create admin user if not exists
 echo "Setting up admin user if needed..."
-if ! node /app/scripts/setup.cjs; then
-  echo "WARNING: Admin user setup with CJS script failed, trying alternative approach"
-  # If the setup.cjs script fails, we can directly execute SQL 
-  if ! PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U postgres -d obview -c "
-    DO \$\$
-    DECLARE
-      user_exists BOOLEAN;
-    BEGIN
-      SELECT EXISTS(SELECT 1 FROM users WHERE username = 'admin') INTO user_exists;
-      IF NOT user_exists THEN
-        INSERT INTO users (username, password, email, name, role, \"createdAt\") 
-        VALUES ('admin', 'a7b13d2b2b89eacba6e3d2c10b08f7d0cf5ba0a79d0b99d27e8912613f087d6bfe21ef50c43709a97269d9ff7c779e17adf12d2a6722a7e6d30b70a9d87e0bde.7c3cde42af095f81af3fc6c5a95bf273', 'admin@example.com', 'Administrator', 'admin', NOW());
-        RAISE NOTICE 'Admin user created successfully';
-      ELSE
-        RAISE NOTICE 'Admin user already exists';
-      END IF;
-    END \$\$;
-  "; then
-    echo "ERROR: Admin user setup failed with direct SQL"
-    # We continue despite error since the user might be added in another way
-  fi
+if ! PGPASSWORD=${POSTGRES_PASSWORD:-postgres} psql -h db -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-obview} -c "
+  DO \$\$
+  DECLARE
+    user_exists BOOLEAN;
+  BEGIN
+    SELECT EXISTS(SELECT 1 FROM users WHERE username = 'admin') INTO user_exists;
+    IF NOT user_exists THEN
+      INSERT INTO users (username, password, email, name, role, \"createdAt\") 
+      VALUES ('admin', 'a7b13d2b2b89eacba6e3d2c10b08f7d0cf5ba0a79d0b99d27e8912613f087d6bfe21ef50c43709a97269d9ff7c779e17adf12d2a6722a7e6d30b70a9d87e0bde.7c3cde42af095f81af3fc6c5a95bf273', 'admin@example.com', 'Administrator', 'admin', NOW());
+      RAISE NOTICE 'Admin user created successfully';
+    ELSE
+      RAISE NOTICE 'Admin user already exists';
+    END IF;
+  END \$\$;
+"; then
+  echo "ERROR: Admin user setup failed with direct SQL"
+  # We continue despite error since the user might be added in another way
 fi
 
 # Print startup information
@@ -212,21 +216,16 @@ echo "Starting the application..."
 echo "==============================================="
 echo ""
 
-# Check if the entry point exists
-if [ ! -f "/app/dist/server/index.js" ]; then
-  echo "ERROR: Application entry point (/app/dist/server/index.js) not found."
-  echo "Checking available files in /app/dist:"
-  find /app/dist -type f | sort
-  
-  # Check if we have dist/index.js instead (based on package.json start script)
-  if [ -f "/app/dist/index.js" ]; then
-    echo "Found /app/dist/index.js - using this as the entry point instead."
-    exec node /app/dist/index.js
-  else
-    echo "No suitable entry point found."
-    exit 1
-  fi
+# Check available built files and start appropriate entry point
+if [ ! -f "/app/dist/server/index.js" ] && [ -f "/app/dist/index.js" ]; then
+  echo "Using entry point: /app/dist/index.js"
+  exec node /app/dist/index.js
+elif [ -f "/app/dist/server/index.js" ]; then
+  echo "Using entry point: /app/dist/server/index.js"
+  exec node /app/dist/server/index.js
 else
-  # Start the application with the provided command
-  exec "$@"
+  echo "ERROR: Application entry point not found"
+  echo "Available files in /app/dist:"
+  find /app/dist -type f | sort
+  exit 1
 fi

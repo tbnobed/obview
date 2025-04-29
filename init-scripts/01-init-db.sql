@@ -1,4 +1,7 @@
--- Create database tables for OBview
+-- Enable pgcrypto extension for UUID generation
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Create tables if they don't exist
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
@@ -16,7 +19,7 @@ CREATE TABLE IF NOT EXISTS projects (
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     "createdById" INTEGER REFERENCES users(id) ON DELETE CASCADE,
     -- Add this for backward compatibility with old scripts
-    ownerId INTEGER REFERENCES users(id) ON DELETE CASCADE GENERATED ALWAYS AS ("createdById") STORED
+    ownerId INTEGER GENERATED ALWAYS AS ("createdById") STORED
 );
 
 CREATE TABLE IF NOT EXISTS project_users (
@@ -83,6 +86,15 @@ CREATE TABLE IF NOT EXISTS approvals (
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE("fileId", "userId")
 );
+
+-- Create session table for PostgreSQL session store
+CREATE TABLE IF NOT EXISTS "session" (
+    "sid" varchar NOT NULL COLLATE "default",
+    "sess" json NOT NULL,
+    "expire" timestamp(6) NOT NULL,
+    CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+);
+CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
 
 -- Create indexes for improved performance
 CREATE INDEX IF NOT EXISTS idx_projects_created_by ON projects("createdById");

@@ -1,48 +1,28 @@
 #!/bin/sh
-# wait-for-db.sh: Wait for the database to be ready
-
 set -e
 
-# Maximum number of attempts before giving up
-MAX_ATTEMPTS=60
-# Seconds to wait between attempts
-WAIT_SECONDS=2
-# Counter for the attempts
-ATTEMPTS=0
+# Get database connection details from environment variables
+DB_HOST=${POSTGRES_HOST:-db}
+DB_PORT=${POSTGRES_PORT:-5432}
+DB_USER=${POSTGRES_USER:-postgres}
+DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+DB_NAME=${POSTGRES_DB:-obview}
 
-# Parse database connection details from DATABASE_URL
-if [ -z "$DATABASE_URL" ]; then
-  echo "ERROR: DATABASE_URL environment variable is not set"
-  exit 1
-fi
+echo "Waiting for PostgreSQL to become available on $DB_HOST:$DB_PORT..."
+echo "Database: $DB_NAME, User: $DB_USER"
 
-host=$(echo $DATABASE_URL | sed -e 's/^.*@\(.*\):\(.*\)\/.*$/\1/' | tr -d '[:space:]')
-port=$(echo $DATABASE_URL | sed -e 's/^.*@\(.*\):\(.*\)\/.*$/\2/' | tr -d '[:space:]')
-db_name=$(echo $DATABASE_URL | sed -e 's/^.*\/\(.*\)$/\1/' | tr -d '[:space:]')
-user=$(echo $DATABASE_URL | sed -e 's/^.*:\/\/\(.*\):.*@.*$/\1/' | tr -d '[:space:]')
-password=$(echo $DATABASE_URL | sed -e 's/^.*:\/\/.*:\(.*\)@.*$/\1/' | tr -d '[:space:]')
+MAX_RETRIES=60
+RETRY=0
 
-# Validate extracted parameters
-if [ -z "$host" ] || [ -z "$port" ] || [ -z "$db_name" ] || [ -z "$user" ] || [ -z "$password" ]; then
-  echo "ERROR: Failed to parse all required parameters from DATABASE_URL"
-  echo "host=$host, port=$port, db_name=$db_name, user=$user"
-  exit 1
-fi
-
-echo "Waiting for PostgreSQL to become available on $host:$port..."
-echo "Database: $db_name, User: $user"
-
-# Try to connect to the database
-until PGPASSWORD=$password psql -h "$host" -p "$port" -U "$user" -d "$db_name" -c '\q' > /dev/null 2>&1; do
-  ATTEMPTS=$((ATTEMPTS + 1))
-  if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
-    echo "ERROR: Maximum attempts ($MAX_ATTEMPTS) reached. PostgreSQL is still not available."
+until PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -p $DB_PORT -d $DB_NAME -c "SELECT 1" > /dev/null 2>&1; do
+  RETRY=$((RETRY+1))
+  if [ $RETRY -ge $MAX_RETRIES ]; then
+    echo "ERROR: Failed to connect to PostgreSQL after $MAX_RETRIES attempts"
     exit 1
   fi
-  
-  echo "PostgreSQL is unavailable - attempt $ATTEMPTS/$MAX_ATTEMPTS - waiting for $WAIT_SECONDS seconds"
-  sleep $WAIT_SECONDS
+  echo "PostgreSQL is unavailable - attempt $RETRY/$MAX_RETRIES - waiting for 2 seconds"
+  sleep 2
 done
 
 echo "SUCCESS: PostgreSQL is up and running"
-echo "Connection to $host:$port as $user to database $db_name was successful"
+echo "Connection to $DB_HOST:$DB_PORT as $DB_USER to database $DB_NAME was successful"

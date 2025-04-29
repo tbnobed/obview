@@ -1,9 +1,10 @@
+# Build stage
 FROM node:20-alpine as builder
 
-# Install dependencies
+# Install necessary build dependencies
 RUN apk add --no-cache python3 make g++ libc6-compat
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
 # Copy package files and install dependencies
@@ -13,15 +14,11 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Run the setup script to create required directories and files
-RUN node scripts/setup-drizzle.cjs
+# Create necessary directories for build
+RUN mkdir -p drizzle migrations
 
 # Build the application
 RUN npm run build
-
-# Debug build output
-RUN ls -la dist || echo "dist directory not found"
-RUN ls -la dist/server || echo "dist/server directory not found"
 
 # Production stage
 FROM node:20-alpine as production
@@ -31,34 +28,21 @@ RUN apk add --no-cache postgresql-client
 
 WORKDIR /app
 
-# Copy built assets from builder
+# Copy only necessary files from builder stage
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/drizzle.config.ts ./
-
-# Create uploads directory
-RUN mkdir -p uploads
-
-# Generate directory for migrations
-RUN mkdir -p migrations
-RUN mkdir -p drizzle
-
-# Create placeholder migration files
-RUN touch migrations/placeholder.sql
-RUN touch drizzle/placeholder.sql
-
-# We won't attempt to copy files from the builder stage as this is causing issues
-# Instead, we'll ensure the directories are properly created with placeholder content
-RUN echo "-- Placeholder migration file" > migrations/placeholder.sql
-RUN echo "-- Placeholder drizzle file" > drizzle/placeholder.sql
-
-# Copy scripts and config files
 COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/.env* ./
+COPY --from=builder /app/init-scripts ./init-scripts
+COPY --from=builder /app/.env* ./ 2>/dev/null || true
+
+# Create required directories 
+RUN mkdir -p uploads
+RUN mkdir -p drizzle migrations
 
 # Make scripts executable
 RUN chmod +x ./scripts/*.sh
+RUN find ./init-scripts -name "*.sh" -exec chmod +x {} \;
 
 # Expose port
 EXPOSE 3000
@@ -70,8 +54,8 @@ ENV PORT=3000
 # Create a volume for uploads
 VOLUME /app/uploads
 
-# Set entrypoint to our initialization script
+# Set entrypoint to initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
-# Start the application (based on package.json start script)
+# Start the application using the correct path
 CMD ["node", "dist/index.js"]
