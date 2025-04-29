@@ -32,7 +32,8 @@ interface ProjectTeamMembersProps {
 export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMembersProps) {
   const [pendingRemoveUserId, setPendingRemoveUserId] = useState<number | null>(null);
   const { user: currentUser } = useAuth();
-  const { data: teamMembers = [], isLoading, error } = useTeamMembers(projectId);
+  const { data: teamMembers = [], isLoading, error } = useTeamMembers(projectId) as 
+    { data: Array<any>, isLoading: boolean, error: Error | null };
   const removeTeamMemberMutation = useRemoveTeamMember();
   const updateRoleMutation = useUpdateTeamMemberRole();
   
