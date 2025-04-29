@@ -81,6 +81,19 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                     {invitation.role || "Viewer"}
                   </Badge>
                   
+                  {/* Email delivery status */}
+                  {invitation.emailSent ? (
+                    <Badge variant="outline" className="px-1.5 mr-2 bg-green-50 text-green-700 border-green-200">
+                      <Mail className="h-3 w-3 mr-1" />
+                      Email sent
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="px-1.5 mr-2 bg-amber-50 text-amber-700 border-amber-200">
+                      <Mail className="h-3 w-3 mr-1" />
+                      Email not sent
+                    </Badge>
+                  )}
+                  
                   <div className="flex items-center">
                     <Clock className="h-3 w-3 mr-1" />
                     <span>Expires {invitation.expiresAt ? formatTimeAgo(new Date(invitation.expiresAt)) : "soon"}</span>

@@ -33,13 +33,24 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
         role,
       });
     },
-    onSuccess: () => {
-      // Show success toast
-      toast({
-        title: "Invitation sent",
-        description: `An invitation has been sent to ${email}`,
-        variant: "default",
-      });
+    onSuccess: (response) => {
+      // Check if the email was actually sent
+      const emailSent = response?.emailSent;
+      
+      // Show appropriate toast based on email delivery status
+      if (emailSent) {
+        toast({
+          title: "Invitation sent",
+          description: `An invitation has been sent to ${email}`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Invitation created",
+          description: `An invitation for ${email} was created, but the email could not be sent. They can still join using the invitation link.`,
+          variant: "destructive",
+        });
+      }
 
       // Clear the form
       setEmail("");

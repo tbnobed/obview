@@ -97,6 +97,7 @@ export const invitations = pgTable("invitations", {
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   isAccepted: boolean("is_accepted").notNull().default(false),
+  emailSent: boolean("email_sent").notNull().default(false),
   createdById: integer("created_by_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
