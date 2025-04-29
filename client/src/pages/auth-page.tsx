@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { insertUserSchema } from "@shared/schema";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import Logo from "@/components/ui/logo";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -149,7 +150,7 @@ export default function AuthPage() {
       <div className="flex flex-col justify-center flex-1 px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
         <div className="w-full max-w-sm mx-auto lg:w-96">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-neutral-900">MediaReview.io</h2>
+            <Logo size="lg" withText className="mb-2" />
             <p className="mt-2 text-sm text-neutral-600">
               Your self-hosted media review & approval platform
             </p>
@@ -389,9 +390,10 @@ export default function AuthPage() {
       <div className="relative flex-1 hidden w-0 lg:block">
         <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-400 flex flex-col items-center justify-center text-white px-12">
           <div className="max-w-md">
+            <Logo size="lg" className="mb-6 text-white" />
             <h1 className="text-4xl font-bold mb-6">Streamline Your Media Review Process</h1>
             <p className="text-lg mb-8 text-white/90">
-              MediaReview.io is a powerful platform for teams to collaborate on media projects. 
+              OBview.io is a powerful platform for teams to collaborate on media projects. 
               Upload videos, leave timestamped comments, and get approvals—all in one place.
             </p>
             <ul className="space-y-3">
