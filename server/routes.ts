@@ -1830,6 +1830,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get team members for a project
+  app.get("/api/projects/:projectId/members", hasProjectAccess, async (req, res, next) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      // Get all project users for this project using the storage interface
+      const projectUsers = await storage.getProjectUsers(projectId);
+      
+      // Get user details for each project user
+      const teamMembers = await Promise.all(
+        projectUsers.map(async (projectUser) => {
+          const user = await storage.getUser(projectUser.userId);
+          
+          if (!user) return null;
+          
+          // Remove password from user object
+          const { password, ...userWithoutPassword } = user;
+          
+          return {
+            ...projectUser,
+            user: userWithoutPassword,
+          };
+        })
+      );
+      
+      // Filter out any null values
+      const validTeamMembers = teamMembers.filter(member => member !== null);
+      
+      res.json(validTeamMembers);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
   // Get pending invitations for a project
   app.get("/api/projects/:projectId/invitations", hasProjectAccess, async (req, res, next) => {
     try {

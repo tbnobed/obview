@@ -25,6 +25,7 @@ import { ProjectCommentsTab } from "@/components/project/project-comments-tab";
 import { ProjectActivityTab } from "@/components/project/project-activity-tab";
 import InviteForm from "@/components/project/invite-form";
 import { ProjectInvitations } from "@/components/project/project-invitations";
+import { ProjectTeamMembers } from "@/components/project/project-team-members";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
