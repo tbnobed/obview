@@ -23,7 +23,7 @@ interface ProjectInvitationsProps {
 
 export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
-  const { data: invitations, isLoading, error } = useProjectInvitations(projectId);
+  const { data: invitations = [], isLoading, error } = useProjectInvitations(projectId);
   const deleteInvitationMutation = useDeleteInvitation();
   
   const handleDeleteInvitation = async () => {
@@ -49,7 +49,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
     );
   }
 
-  if (!invitations || invitations.length === 0) {
+  if (invitations.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         No pending invitations
@@ -62,7 +62,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
       <h3 className="text-lg font-medium mb-4">Pending Invitations</h3>
       
       <div className="space-y-3">
-        {invitations.map((invitation) => (
+        {invitations.map((invitation: any) => (
           <div 
             key={invitation.id} 
             className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm"
