@@ -15,6 +15,7 @@ import ProjectsPage from "@/pages/projects-page";
 import FileUploadPage from "@/pages/file-upload-page";
 import AdminPage from "@/pages/admin-page";
 import SettingsPage from "@/pages/settings-page";
+import InvitePage from "@/pages/invite-page";
 
 function Router() {
   return (
@@ -28,6 +29,7 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/invite/:token" component={InvitePage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -356,127 +356,23 @@ export default function ProjectPage() {
                     Invite team members to collaborate on this project
                   </DialogDescription>
                 </DialogHeader>
-                <form 
-                  className="space-y-4 py-4"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.currentTarget);
-                    const email = formData.get('email') as string;
-                    const role = formData.get('role') as string;
-                    
-                    if (email) {
-                      handleInviteMember(email, role);
-                    }
-                  }}
-                >
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email address</Label>
-                    <div className="relative">
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="Search by name or email..."
-                        onFocus={() => setShowUsersDropdown(true)}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onBlur={() => {
-                          // Delay hiding dropdown to allow click to register
-                          setTimeout(() => setShowUsersDropdown(false), 200);
-                        }}
-                        required
-                      />
-                      {showUsersDropdown && allUsers && (
-                        <div className="absolute w-full max-h-64 overflow-auto mt-1 border border-gray-100 rounded-md bg-white z-10 shadow-lg ring-1 ring-black ring-opacity-5">
-                          {/* Filter out users who are already members of the project and match search term */}
-                          {allUsers
-                            .filter((existingUser) => {
-                              // Skip filtering if project members aren't loaded yet
-                              const notMember = !projectMembers || 
-                                !projectMembers.some(member => member.userId === existingUser.id);
-                              
-                              // Filter by search term if provided
-                              const matchesSearch = searchTerm.trim() === '' || 
-                                existingUser.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                existingUser.email.toLowerCase().includes(searchTerm.toLowerCase());
-                              
-                              return notMember && matchesSearch;
-                            })
-                            .map((existingUser) => (
-                            <div 
-                              key={existingUser.id}
-                              className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center space-x-3 border-b border-gray-100 last:border-b-0"
-                              onClick={() => {
-                                // Set the email input value to the selected user's email
-                                const emailInput = document.getElementById('email') as HTMLInputElement;
-                                if (emailInput) {
-                                  emailInput.value = existingUser.email;
-                                  // Hide dropdown after selection
-                                  setShowUsersDropdown(false);
-                                }
-                              }}
-                            >
-                              <div className="flex-shrink-0 h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
-                                {existingUser.name.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="flex-grow min-w-0">
-                                <div className="text-sm font-medium truncate">{existingUser.name}</div>
-                                <div className="text-xs text-gray-500 truncate">{existingUser.email}</div>
-                              </div>
-                            </div>
-                          ))}
-                          {/* Show a message when no users match the search or filter criteria */}
-                          {allUsers.filter((existingUser) => {
-                            // Skip filtering if project members aren't loaded yet
-                            const notMember = !projectMembers || 
-                              !projectMembers.some(member => member.userId === existingUser.id);
-                            
-                            // Filter by search term if provided
-                            const matchesSearch = searchTerm.trim() === '' || 
-                              existingUser.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              existingUser.email.toLowerCase().includes(searchTerm.toLowerCase());
-                            
-                            return notMember && matchesSearch;
-                          }).length === 0 && (
-                            <div className="px-4 py-3 text-center text-sm text-gray-500">
-                              {searchTerm ? 'No matching users found' : 'No available users to invite'}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <select 
-                      id="role" 
-                      name="role"
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-                      defaultValue="viewer"
-                    >
-                      <option value="viewer">Viewer</option>
-                      <option value="editor">Editor</option>
-                      {user?.role === 'admin' && (
-                        <option value="admin">Admin</option>
-                      )}
-                    </select>
-                    <p className="text-sm text-neutral-500">
-                      Viewers can only comment. Editors can upload and edit content.
-                    </p>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setInviteDialogOpen(false)}
-                      className="mr-2"
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit">
-                      Send Invitation
-                    </Button>
-                  </DialogFooter>
-                </form>
+                {/* Using the new InviteForm component */}
+                <div className="py-4">
+                  <InviteForm
+                    projectId={projectId}
+                    onInviteSent={() => {
+                      setInviteDialogOpen(false);
+                      // Refetch pending invitations
+                      projectInvitationsQuery.refetch();
+                      // Show success message
+                      toast({
+                        title: "Invitation sent",
+                        description: "Project invitation was sent successfully!",
+                        variant: "default",
+                      });
+                    }}
+                  />
+                </div>
               </DialogContent>
             </Dialog>
 
