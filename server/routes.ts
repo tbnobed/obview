@@ -1505,7 +1505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const emailSent = await sendEmail({
         to: to,
-        from: process.env.EMAIL_FROM || 'ObedTV App <test@example.com>',
+        from: process.env.EMAIL_FROM || 'alerts@obedtv.com',
         subject: 'Test Email from ObedTV',
         text: 'This is a test email sent directly from the /api/debug/send-test-email endpoint.',
         html: '<p>This is a test email sent directly from the <code>/api/debug/send-test-email</code> endpoint.</p>'

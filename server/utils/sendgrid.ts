@@ -76,14 +76,19 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     mailService.setApiKey(apiKey);
     logToFile(`API key set in mail service`);
     
-    // Prepare email data without sandbox mode to send real emails
+    // Prepare email data with configurable sandbox mode
     // The account now has a verified sender (alerts@obedtv.com)
     const emailData = {
       to: params.to,
       from: params.from,
       subject: params.subject,
       text: params.text || '',
-      html: params.html || ''
+      html: params.html || '',
+      mail_settings: {
+        sandbox_mode: {
+          enable: process.env.SENDGRID_SANDBOX === 'true' ? true : false
+        }
+      }
     };
     
     logToFile(`Sending email via SendGrid...`);
