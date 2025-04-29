@@ -33,12 +33,23 @@ export function useProjectInvitations(projectId?: number) {
     retry: 2, // Try a bit harder to get data
     staleTime: 10000, // 10 seconds - more frequent refresh
     select: (data) => {
-      // Transform the data to ensure emailSent is properly typed
-      return data.map(invitation => ({
-        ...invitation,
-        // Force emailSent to be a boolean
-        emailSent: invitation.emailSent === true
-      }));
+      console.log("Raw invitation data from API:", data);
+      // Transform the data to ensure emailSent is properly typed as boolean
+      return data.map(invitation => {
+        // Log individual invitation data before transformation
+        console.log(`Invitation ${invitation.id} before transform:`, 
+          JSON.stringify({
+            emailSent: invitation.emailSent, 
+            type: typeof invitation.emailSent
+          })
+        );
+        
+        return {
+          ...invitation,
+          // Force emailSent to be a proper boolean (true or false, never undefined)
+          emailSent: invitation.emailSent === true
+        };
+      });
     }
   });
   

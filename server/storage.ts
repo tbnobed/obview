@@ -756,12 +756,10 @@ export class DatabaseStorage implements IStorage {
       
     if (!invitation) return undefined;
     
-    // Ensure emailSent property is properly set, trying all possible variations
+    // Ensure emailSent property is properly set as a boolean
     return {
       ...invitation,
-      emailSent: invitation.emailSent === true || 
-                 invitation.email_sent === true || 
-                 false
+      emailSent: invitation.emailSent === true || false
     };
   }
   
@@ -781,7 +779,6 @@ export class DatabaseStorage implements IStorage {
     return results.map(invitation => {
       // Log what we receive from the database to help debug
       console.log(`Invitation ${invitation.id} raw data:`, JSON.stringify({
-        email_sent_db: invitation.email_sent, // Raw column name from DB might be in snake_case
         emailSent: invitation.emailSent, // Drizzle should transform to camelCase
         keys: Object.keys(invitation) // Check what keys are actually present
       }));
@@ -790,10 +787,7 @@ export class DatabaseStorage implements IStorage {
       return {
         ...invitation,
         // Explicitly ensure emailSent is present with the correct value
-        // Try all possible property name variations
-        emailSent: invitation.emailSent === true || 
-                   invitation.email_sent === true || 
-                   false
+        emailSent: invitation.emailSent === true || false
       };
     });
   }
