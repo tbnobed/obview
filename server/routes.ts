@@ -1376,21 +1376,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If SendGrid API key is available, send an email
       let emailSent = false;
-      
-      // Log debug info for troubleshooting
       console.log(`Checking SendGrid API key availability for invitation to ${email}`);
       console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
-      console.log(`Initial invitation object:`, JSON.stringify({
-        id: invitation.id,
-        email: invitation.email,
-        emailSent: invitation.emailSent
-      }));
-      
-      // Define a function to get the most up-to-date invitation data
-      const getUpdatedInvitation = async () => {
-        const latestInvitation = await storage.getInvitationById(invitation.id);
-        return latestInvitation || invitation;
-      };
       
       if (process.env.SENDGRID_API_KEY) {
         console.log(`SendGrid API key is available, preparing to send invitation email to ${email}`);
@@ -1416,10 +1403,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (emailSent) {
               console.log(`SUCCESS: Invitation email sent to ${email} for project ${project.name}`);
               
-              // Update the invitation record to mark email as sent 
-              // Don't need to refetch since we control the value ourselves
+              // Update the invitation to record that email was sent successfully
               await storage.updateInvitation(invitation.id, { emailSent: true });
-              invitation.emailSent = true; // Update in memory directly
+              invitation.emailSent = true;
             } else {
               console.error(`ERROR: Failed to send invitation email to ${email} for project ${project.name}`);
             }
@@ -1437,8 +1423,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`SendGrid API key is not available, unable to send invitation email to ${email}`);
       }
       
-      // We already have the most up-to-date data in memory - no need to refetch
-      
       // Log activity
       await storage.logActivity({
         userId: req.user.id,
@@ -1448,37 +1432,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { inviteeEmail: email, role, emailSent }
       });
       
-      // Prepare the response data with email status
-      // Let's be really explicit to ensure the emailSent property goes through
-      const responseData = {
-        invitation: {
-          id: invitation.id,
-          token: invitation.token,
-          email: invitation.email,
-          emailSent: invitation.emailSent || false
-        },
+      // Debug the final response data
+      const responseData = { 
         invitationId: invitation.id,
         token: invitation.token,
         email: invitation.email,
-        emailSent: invitation.emailSent || false,
-        success: true
+        emailSent // Include the email sent status that the client needs
       };
       
-      // Print detailed debug information to help diagnose the issue
-      console.log("============== EMAIL INVITATION DEBUG INFO ==============");
-      console.log("INVITATION EMAIL SENT STATUS:", invitation.emailSent || false);
-      console.log("INVITATION ID:", invitation.id);
-      console.log("FINAL RESPONSE DATA:", JSON.stringify(responseData));
-      console.log("========================================================");
+      console.log("DEBUGGING INVITATION RESPONSE:", JSON.stringify(responseData));
       
       // Return the invitation details in a client-friendly format
-      // But use a simpler structure that's guaranteed to include emailSent
-      res.status(201).json({
-        invitationId: invitation.id,
-        token: invitation.token,
-        email: invitation.email,
-        emailSent: invitation.emailSent || false
-      });
+      res.status(201).json(responseData);
     } catch (error) {
       next(error);
     }
@@ -1750,12 +1715,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { inviteeEmail: invitation.email, emailSent }
       });
       
-      // Use a consistent response format with the create invitation endpoint
       res.status(200).json({ 
-        invitationId: invitation.id,
-        token: invitation.token,
-        email: invitation.email,
-        emailSent: emailSent || false
+        success: true, 
+        emailSent, 
+        invitation: {
+          ...invitation,
+          emailSent
+        }
       });
     } catch (error) {
       next(error);
@@ -1770,16 +1736,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all invitations for this project using the storage interface
       const pendingInvitations = await storage.getInvitationsByProject(projectId);
       
-      console.log(`Retrieved ${pendingInvitations.length} invitations for project ${projectId}`);
-      // Log the first invitation data to check if emailSent is present
-      if (pendingInvitations.length > 0) {
-        console.log(`Sample invitation data (ID ${pendingInvitations[0].id}):`, {
-          email: pendingInvitations[0].email,
-          emailSent: pendingInvitations[0].emailSent,
-          createdAt: pendingInvitations[0].createdAt
-        });
-      }
-      
       // Get creator details for each invitation
       const invitationsWithCreators = await Promise.all(
         pendingInvitations.map(async (invitation) => {
@@ -1790,10 +1746,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Remove password from creator object
           const { password, ...creatorWithoutPassword } = creator;
           
-          // Explicitly include all invitation fields, especially emailSent
           return {
             ...invitation,
-            emailSent: invitation.emailSent || false, // Provide a default if missing
             creator: creatorWithoutPassword,
           };
         })
