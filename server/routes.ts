@@ -1409,14 +1409,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (emailSent) {
               console.log(`SUCCESS: Invitation email sent to ${email} for project ${project.name}`);
               
-              // Update the invitation to record that email was sent successfully
+              // Update the invitation record to mark email as sent 
+              // Don't need to refetch since we control the value ourselves
               await storage.updateInvitation(invitation.id, { emailSent: true });
-              
-              // Ensure we have the most up-to-date version of the invitation
-              const updatedInvitation = await getUpdatedInvitation();
-              if (updatedInvitation) {
-                Object.assign(invitation, updatedInvitation);
-              }
+              invitation.emailSent = true; // Update in memory directly
             } else {
               console.error(`ERROR: Failed to send invitation email to ${email} for project ${project.name}`);
             }
@@ -1434,10 +1430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`SendGrid API key is not available, unable to send invitation email to ${email}`);
       }
       
-      // Get the final emailSent status from the invitation record
-      // This ensures we're using the persisted value from the database
-      const finalInvitation = await getUpdatedInvitation();
-      emailSent = finalInvitation.emailSent;
+      // We already have the most up-to-date data in memory - no need to refetch
       
       // Log activity
       await storage.logActivity({
@@ -1448,15 +1441,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { inviteeEmail: email, role, emailSent }
       });
       
-      // Prepare the response data with up-to-date email status
+      // Prepare the response data with email status
       const responseData = { 
-        invitationId: finalInvitation.id,
-        token: finalInvitation.token,
-        email: finalInvitation.email,
-        emailSent // Include the email sent status from the database
+        invitationId: invitation.id,
+        token: invitation.token,
+        email: invitation.email,
+        emailSent: invitation.emailSent || false // Include explicitly
       };
       
-      console.log("DEBUGGING INVITATION RESPONSE:", JSON.stringify(responseData));
+      // Print detailed debug information to help diagnose the issue
+      console.log("============== EMAIL INVITATION DEBUG INFO ==============");
+      console.log("INVITATION EMAIL SENT STATUS:", invitation.emailSent || false);
+      console.log("INVITATION ID:", invitation.id);
+      console.log("FINAL RESPONSE DATA:", JSON.stringify(responseData));
+      console.log("========================================================");
       
       // Return the invitation details in a client-friendly format
       res.status(201).json(responseData);
