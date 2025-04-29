@@ -17,33 +17,75 @@ export default function InvitePage() {
   const [projectName, setProjectName] = useState("");
   const [inviterName, setInviterName] = useState("");
   const [invitationEmail, setInvitationEmail] = useState("");
+  const [debug, setDebug] = useState<string[]>([]);
 
   useEffect(() => {
+    const addDebug = (msg: string) => {
+      setDebug(prev => [...prev, `${new Date().toISOString().split('T')[1].split('.')[0]} - ${msg}`]);
+      console.log(msg);
+    };
+
     const checkInvitation = async () => {
       try {
+        addDebug(`Processing invitation with token: ${token}`);
+        addDebug(`Auth state: ${authLoading ? 'loading' : (user ? 'logged in' : 'not logged in')}`);
+        
         // First, fetch invitation details to check if it's valid
-        const detailsResponse = await apiRequest("GET", `/api/invite/${token}`);
+        addDebug("Fetching invitation details from API");
+        const detailsResponse = await fetch(`/api/invite/${token}`, {
+          method: "GET",
+          headers: {},
+          credentials: "include"
+        });
+        
+        addDebug(`API response status: ${detailsResponse.status} ${detailsResponse.statusText}`);
         
         if (!detailsResponse.ok) {
-          const errorData = await detailsResponse.json();
+          let errorMessage = "Invalid invitation link.";
+          try {
+            const errorData = await detailsResponse.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (jsonError) {
+            addDebug(`Error parsing error response: ${jsonError}`);
+            // If parsing fails, use the status text
+            errorMessage = detailsResponse.statusText || errorMessage;
+          }
+          
+          addDebug(`Error from API: ${errorMessage}`);
           setStatus("error");
-          setMessage(errorData.message || "Invalid invitation link.");
+          setMessage(errorMessage);
           return;
         }
         
-        const invitationDetails = await detailsResponse.json();
+        // Successfully got invitation details
+        let invitationDetails;
+        try {
+          invitationDetails = await detailsResponse.json();
+          addDebug(`Invitation details: ${JSON.stringify(invitationDetails, null, 2)}`);
+        } catch (jsonError) {
+          addDebug(`Error parsing invitation details: ${jsonError}`);
+          setStatus("error");
+          setMessage("Could not parse invitation details");
+          return;
+        }
+        
+        // Set UI state from invitation details
         setProjectName(invitationDetails.project?.name || "Unknown Project");
         setInviterName(invitationDetails.creator?.name || "Someone");
         setInvitationEmail(invitationDetails.email || "");
         
+        addDebug(`Project: ${invitationDetails.project?.name}, Inviter: ${invitationDetails.creator?.name}`);
+        
         // If user is not logged in, show login prompt
         if (!user && !authLoading) {
+          addDebug("User not logged in, showing login prompt");
           setStatus("login_required");
           return;
         }
         
         // If user is logged in but the email doesn't match
         if (user && user.email !== invitationDetails.email) {
+          addDebug(`Email mismatch: invitation for ${invitationDetails.email}, user logged in as ${user.email}`);
           setStatus("unauthorized");
           setMessage(`This invitation was sent to ${invitationDetails.email}, but you're logged in with ${user.email}.`);
           return;
@@ -51,19 +93,21 @@ export default function InvitePage() {
         
         // If user is logged in and the email matches, accept the invitation
         if (user && user.email === invitationDetails.email) {
-          const acceptResponse = await apiRequest("POST", `/api/invite/${token}/accept`);
-          
-          if (!acceptResponse.ok) {
-            const errorData = await acceptResponse.json();
+          addDebug(`Email match, accepting invitation`);
+          try {
+            const acceptResponse = await apiRequest("POST", `/api/invite/${token}/accept`);
+            addDebug(`Accept response: ${JSON.stringify(acceptResponse)}`);
+            
+            // Success!
+            setStatus("success");
+          } catch (acceptError) {
+            addDebug(`Error accepting invitation: ${acceptError}`);
             setStatus("error");
-            setMessage(errorData.message || "Failed to accept invitation.");
-            return;
+            setMessage(acceptError instanceof Error ? acceptError.message : "Failed to accept invitation.");
           }
-          
-          // Success!
-          setStatus("success");
         }
       } catch (error) {
+        addDebug(`Unhandled error: ${error}`);
         console.error("Error processing invitation:", error);
         setStatus("error");
         setMessage("An unexpected error occurred. Please try again later.");
@@ -73,6 +117,9 @@ export default function InvitePage() {
     // Only run if we have a token and auth state is loaded
     if (token && !authLoading) {
       checkInvitation();
+    } else if (!token) {
+      setStatus("error");
+      setMessage("Invalid invitation link - no token provided");
     }
   }, [token, user, authLoading, navigate]);
   
@@ -102,14 +149,27 @@ export default function InvitePage() {
             <CardTitle>Invitation Error</CardTitle>
             <CardDescription>We couldn't process your invitation</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{message}</AlertDescription>
             </Alert>
+            
+            {/* Debug information - only in development */}
+            {debug.length > 0 && process.env.NODE_ENV !== 'production' && (
+              <div className="mt-4 p-3 bg-gray-100 rounded text-xs font-mono text-gray-800 max-h-40 overflow-auto">
+                <h4 className="font-semibold mb-1">Debug Information:</h4>
+                {debug.map((line, i) => (
+                  <div key={i} className="whitespace-pre-wrap mb-1">{line}</div>
+                ))}
+              </div>
+            )}
           </CardContent>
-          <CardFooter className="flex justify-center">
+          <CardFooter className="flex justify-center gap-2">
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
             <Button asChild>
               <Link href="/">Return to Dashboard</Link>
             </Button>

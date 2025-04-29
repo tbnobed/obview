@@ -731,11 +731,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getInvitationByToken(token: string): Promise<Invitation | undefined> {
-    const [invitation] = await db
-      .select()
-      .from(invitations)
-      .where(eq(invitations.token, token));
-    return invitation;
+    try {
+      console.log(`Database getInvitationByToken: Looking up invitation with token: ${token}`);
+      
+      if (!token || typeof token !== 'string' || token.trim() === '') {
+        console.log('Invalid token format provided:', token);
+        return undefined;
+      }
+      
+      const [invitation] = await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.token, token.trim()));
+      
+      console.log(`Database query result:`, invitation ? `Found invitation ID: ${invitation.id}` : 'No matching invitation found');
+      
+      return invitation;
+    } catch (error) {
+      console.error('Error in getInvitationByToken:', error);
+      throw error;
+    }
   }
   
   async getInvitationsByProject(projectId: number): Promise<Invitation[]> {

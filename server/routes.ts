@@ -1453,20 +1453,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/invite/:token", async (req, res, next) => {
     try {
       const { token } = req.params;
+      console.log(`Retrieving invitation details for token: ${token}`);
       
       // Find the invitation
       const invitation = await storage.getInvitationByToken(token);
       
+      console.log(`Invitation lookup result:`, invitation ? `Found invitation ID: ${invitation.id}` : 'No invitation found');
+      
       if (!invitation) {
-        return res.status(404).json({ message: "Invitation not found" });
+        console.log(`Invitation not found for token: ${token}`);
+        return res.status(404).json({ message: "Invitation not found or invalid link" });
       }
       
       // Check if the invitation has expired
-      if (new Date() > invitation.expiresAt) {
+      const now = new Date();
+      const isExpired = now > invitation.expiresAt;
+      console.log(`Invitation expiry check: now=${now.toISOString()}, expiresAt=${invitation.expiresAt}, isExpired=${isExpired}`);
+      
+      if (isExpired) {
+        console.log(`Invitation has expired: ${invitation.expiresAt}`);
         return res.status(400).json({ message: "Invitation has expired" });
       }
       
       // Check if the invitation has already been accepted
+      console.log(`Invitation acceptance status: ${invitation.isAccepted ? 'Accepted' : 'Not yet accepted'}`);
       if (invitation.isAccepted) {
         return res.status(400).json({ message: "Invitation has already been accepted" });
       }
@@ -1475,6 +1485,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const project = await storage.getProject(invitation.projectId);
       const creator = await storage.getUser(invitation.createdById);
       
+      console.log(`Project details: ${project ? `Found "${project.name}"` : 'Project not found'}`);
+      console.log(`Creator details: ${creator ? `Found "${creator.name}"` : 'Creator not found'}`);
+      
       // Remove sensitive information
       let creatorInfo = null;
       if (creator) {
@@ -1482,11 +1495,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         creatorInfo = creatorWithoutPassword;
       }
       
-      res.json({
+      const response = {
         ...invitation,
         project,
         creator: creatorInfo
-      });
+      };
+      
+      console.log(`Sending invitation details response for ${invitation.email}`);
+      res.json(response);
     } catch (error) {
       next(error);
     }
