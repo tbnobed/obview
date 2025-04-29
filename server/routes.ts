@@ -1292,7 +1292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7); // Invitation expires in 7 days
       
-      // Create the invitation
+      // Create the invitation (initially with emailSent as false)
       const invitation = await storage.createInvitation({
         email,
         role,
@@ -1300,7 +1300,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         projectId: parseInt(projectId),
         token,
         expiresAt,
-        isAccepted: false
+        isAccepted: false,
+        emailSent: false
       });
       
       // If SendGrid API key is available, send an email
@@ -1330,6 +1331,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (emailSent) {
               console.log(`SUCCESS: Invitation email sent to ${email} for project ${project.name}`);
+              
+              // Update the invitation to record that email was sent successfully
+              await storage.updateInvitation(invitation.id, { emailSent: true });
+              invitation.emailSent = true;
             } else {
               console.error(`ERROR: Failed to send invitation email to ${email} for project ${project.name}`);
             }
