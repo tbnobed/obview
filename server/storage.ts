@@ -82,6 +82,7 @@ export interface IStorage {
   // Invitations
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   getInvitationByToken(token: string): Promise<Invitation | undefined>;
+  getInvitationsByProject(projectId: number): Promise<Invitation[]>;
   updateInvitation(id: number, data: Partial<Invitation>): Promise<Invitation | undefined>;
 
   // Approvals
@@ -402,6 +403,12 @@ export class MemStorage implements IStorage {
       (invitation) => invitation.token === token
     );
   }
+  
+  async getInvitationsByProject(projectId: number): Promise<Invitation[]> {
+    return Array.from(this.invitations.values()).filter(
+      (invitation) => invitation.projectId === projectId && invitation.isAccepted === false
+    );
+  }
 
   async updateInvitation(id: number, data: Partial<Invitation>): Promise<Invitation | undefined> {
     const invitation = this.invitations.get(id);
@@ -711,6 +718,18 @@ export class DatabaseStorage implements IStorage {
       .from(invitations)
       .where(eq(invitations.token, token));
     return invitation;
+  }
+  
+  async getInvitationsByProject(projectId: number): Promise<Invitation[]> {
+    return await db
+      .select()
+      .from(invitations)
+      .where(
+        and(
+          eq(invitations.projectId, projectId),
+          eq(invitations.isAccepted, false)
+        )
+      );
   }
 
   async updateInvitation(id: number, data: Partial<Invitation>): Promise<Invitation | undefined> {
