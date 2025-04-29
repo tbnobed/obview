@@ -14,6 +14,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { useState } from "react";
 
@@ -112,18 +118,53 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                 <span>Invited by {invitation.creator?.name || "Unknown"}</span>
               </div>
               
+              {/* Resend button - only show if email not sent or needs to be resent */}
+              {!invitation.emailSent && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleResendInvitation(invitation.id)}
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 mr-1"
+                        disabled={resendInvitationMutation.isPending}
+                      >
+                        {resendInvitationMutation.isPending && resendInvitationMutation.variables === invitation.id ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-5 w-5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Resend invitation email</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              
               <AlertDialog open={pendingDeleteId === invitation.id} onOpenChange={(open) => {
                 if (!open) setPendingDeleteId(null);
               }}>
                 <AlertDialogTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => setPendingDeleteId(invitation.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setPendingDeleteId(invitation.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Delete invitation</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </AlertDialogTrigger>
                 
                 <AlertDialogContent>
