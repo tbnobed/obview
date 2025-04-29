@@ -1,6 +1,11 @@
 import { MailService } from '@sendgrid/mail';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// In ES modules, __dirname is not defined, so we need to create it
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Setup logging
 const logDir = path.join(__dirname, '../logs');

@@ -147,6 +147,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint for email testing (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    app.get("/api/debug/send-test-email", async (req, res) => {
+      try {
+        const { sendEmail } = await import('./utils/sendgrid');
+        
+        const to = req.query.to as string || 'test@example.com';
+        console.log(`Attempting to send test email to: ${to}`);
+        
+        const result = await sendEmail({
+          to,
+          from: req.query.from as string || 'alerts@obedtv.com',
+          subject: 'Test Email from ObedTV',
+          text: 'This is a test email to verify SendGrid functionality.',
+          html: '<h1>Test Email</h1><p>This is a test email to verify SendGrid functionality.</p>'
+        });
+        
+        if (result) {
+          console.log(`Test email successfully sent to ${to}`);
+          res.json({ success: true, message: `Test email sent successfully to ${to}` });
+        } else {
+          console.error(`Failed to send test email to ${to}`);
+          res.status(500).json({ success: false, message: "Failed to send test email" });
+        }
+      } catch (error) {
+        console.error('Error sending test email:', error);
+        res.status(500).json({ 
+          success: false, 
+          message: "Error sending test email", 
+          error: error instanceof Error ? error.message : String(error) 
+        });
+      }
+    });
+  }
+
   // ===== USER ROUTES =====
   // Get all users (admin only)
   app.get("/api/users", isAdmin, async (req, res, next) => {
