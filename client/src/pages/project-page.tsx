@@ -650,7 +650,7 @@ export default function ProjectPage() {
                   {/* Active Members */}
                   <div className="border rounded-md">
                     {projectMembers && projectMembers.length > 0 ? (
-                      projectMembers.map((member) => (
+                      projectMembers.filter(member => member.user).map((member) => (
                         <div 
                           key={member.id} 
                           className="flex items-center justify-between px-4 py-3 border-b border-gray-100 last:border-0"
