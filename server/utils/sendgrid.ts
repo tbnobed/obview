@@ -261,8 +261,9 @@ export async function sendInvitationEmail(
       If you didn't expect this invitation, you can safely ignore this email.
     `;
     
-    // Use the original sender email that was working before
-    const sender = process.env.EMAIL_FROM || 'noreply@example.com';
+    // Use a verified sender identity from SendGrid
+    // For most new SendGrid accounts, you can use something@sendgrid.net as it's pre-verified
+    const sender = process.env.EMAIL_FROM || 'noreply@sendgrid.net';
     logToFile(`Using sender email: ${sender}`);
     
     return await sendEmail({

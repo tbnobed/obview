@@ -228,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const result = await sendEmail({
           to,
-          from: req.query.from as string || 'alerts@obedtv.com',
+          from: req.query.from as string || 'noreply@sendgrid.net',
           subject: 'Test Email from ObedTV',
           text: 'This is a test email to verify SendGrid functionality.',
           html: '<h1>Test Email</h1><p>This is a test email to verify SendGrid functionality.</p>'
@@ -1505,7 +1505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const emailSent = await sendEmail({
         to: to,
-        from: process.env.EMAIL_FROM || 'noreply@example.com',
+        from: process.env.EMAIL_FROM || 'noreply@sendgrid.net',
         subject: 'Test Email from ObedTV',
         text: 'This is a test email sent directly from the /api/debug/send-test-email endpoint.',
         html: '<p>This is a test email sent directly from the <code>/api/debug/send-test-email</code> endpoint.</p>'
