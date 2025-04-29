@@ -70,7 +70,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  {invitation.email.substring(0, 2).toUpperCase()}
+                  {invitation.email && invitation.email.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               
@@ -78,12 +78,12 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                 <div className="font-medium">{invitation.email}</div>
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Badge variant="outline" className="mr-2 px-1.5">
-                    {invitation.role}
+                    {invitation.role || "Viewer"}
                   </Badge>
                   
                   <div className="flex items-center">
                     <Clock className="h-3 w-3 mr-1" />
-                    <span>Expires {formatTimeAgo(new Date(invitation.expiresAt))}</span>
+                    <span>Expires {invitation.expiresAt ? formatTimeAgo(new Date(invitation.expiresAt)) : "soon"}</span>
                   </div>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete invitation?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently delete the invitation sent to <span className="font-semibold">{invitation.email}</span>. 
+                      This will permanently delete the invitation sent to <span className="font-semibold">{invitation.email || "this user"}</span>. 
                       This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
