@@ -257,14 +257,9 @@ export async function sendInvitationEmail(
       If you didn't expect this invitation, you can safely ignore this email.
     `;
     
-    // Use a verified SendGrid sender address or the sandbox mode
-    // For new SendGrid accounts, use an address ending in @sendgrid.net for sandbox testing
-    const sender = process.env.EMAIL_FROM || 'noreply@sendgrid.net';
+    // Use the original sender email that was working before
+    const sender = process.env.EMAIL_FROM || 'noreply@example.com';
     logToFile(`Using sender email: ${sender}`);
-    
-    if (process.env.SENDGRID_SANDBOX === 'true') {
-      logToFile(`SendGrid sandbox mode is ENABLED - emails will not be delivered but API will be tested`);
-    }
     
     return await sendEmail({
       to,
