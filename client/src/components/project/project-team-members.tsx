@@ -119,9 +119,11 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
             <div className="flex items-center gap-2">
               {/* Role Selector */}
               <Select
-                defaultValue={member.role}
+                value={member.role}
                 disabled={isCurrentUser(member.userId) || isProjectCreator(member)}
-                onValueChange={(value) => handleRoleChange(member.userId, value)}
+                onValueChange={(value) => {
+                  handleRoleChange(member.userId, value);
+                }}
               >
                 <SelectTrigger className="w-[110px]">
                   <SelectValue placeholder="Select role" />

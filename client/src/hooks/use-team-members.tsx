@@ -43,11 +43,11 @@ export function useRemoveTeamMember() {
   
   return useMutation({
     mutationFn: async ({ projectId, userId }: { projectId: number; userId: number }) => {
-      const response = await apiRequest(
+      await apiRequest(
         "DELETE", 
         `/api/projects/${projectId}/users/${userId}`
       );
-      return response.ok;
+      return true;
     },
     onSuccess: (_, variables) => {
       // Invalidate team members query to refresh the list
@@ -84,17 +84,11 @@ export function useUpdateTeamMemberRole() {
       userId: number; 
       role: string 
     }) => {
-      const response = await apiRequest(
+      return await apiRequest(
         "PATCH", 
         `/api/projects/${projectId}/users/${userId}`,
         { role }
       );
-      
-      if (!response.ok) {
-        throw new Error("Failed to update role");
-      }
-      
-      return await response.json();
     },
     onSuccess: (_, variables) => {
       // Invalidate team members query to refresh the list
