@@ -1211,6 +1211,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get pending invitations for a project
+  app.get("/api/projects/:projectId/invitations", hasProjectAccess, async (req, res, next) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      // Get all invitations for this project using the storage interface
+      const pendingInvitations = await storage.getInvitationsByProject(projectId);
+      
+      // Get creator details for each invitation
+      const invitationsWithCreators = await Promise.all(
+        pendingInvitations.map(async (invitation) => {
+          const creator = await storage.getUser(invitation.createdById);
+          
+          if (!creator) return invitation;
+          
+          // Remove password from creator object
+          const { password, ...creatorWithoutPassword } = creator;
+          
+          return {
+            ...invitation,
+            creator: creatorWithoutPassword,
+          };
+        })
+      );
+      
+      res.json(invitationsWithCreators);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Get all comments for a project
   app.get("/api/projects/:projectId/comments", hasProjectAccess, async (req, res, next) => {
     try {
