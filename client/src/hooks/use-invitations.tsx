@@ -30,8 +30,16 @@ export function useProjectInvitations(projectId?: number) {
   const query = useQuery<Invitation[]>({
     queryKey,
     enabled: !!projectId,
-    retry: 1,
-    staleTime: 30000, // 30 seconds
+    retry: 2, // Try a bit harder to get data
+    staleTime: 10000, // 10 seconds - more frequent refresh
+    select: (data) => {
+      // Transform the data to ensure emailSent is properly typed
+      return data.map(invitation => ({
+        ...invitation,
+        // Force emailSent to be a boolean
+        emailSent: invitation.emailSent === true
+      }));
+    }
   });
   
   // Handle errors with a side effect
@@ -163,7 +171,15 @@ export function useResendInvitation() {
       try {
         // apiRequest already returns parsed JSON, no need to call .json() again
         const data = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
-        return data;
+        // Transform the response to ensure emailSent is a boolean
+        return {
+          ...data,
+          emailSent: data?.emailSent === true,
+          invitation: data?.invitation ? {
+            ...data.invitation,
+            emailSent: data.invitation.emailSent === true
+          } : undefined
+        };
       } catch (error) {
         console.error("Error resending invitation:", error);
         throw error;

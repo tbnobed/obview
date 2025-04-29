@@ -715,11 +715,22 @@ export class DatabaseStorage implements IStorage {
 
   // Invitation methods
   async createInvitation(insertInvitation: InsertInvitation): Promise<Invitation> {
+    // Make sure emailSent is explicitly set to a boolean
+    const invitationData = {
+      ...insertInvitation,
+      emailSent: insertInvitation.emailSent === true || false
+    };
+    
     const [invitation] = await db
       .insert(invitations)
-      .values(insertInvitation)
+      .values(invitationData)
       .returning();
-    return invitation;
+      
+    // Ensure emailSent is properly returned
+    return {
+      ...invitation,
+      emailSent: invitation.emailSent === true || false
+    };
   }
 
   async getInvitationById(id: number): Promise<Invitation | undefined> {
@@ -727,7 +738,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(invitations)
       .where(eq(invitations.id, id));
-    return invitation;
+    
+    if (!invitation) return undefined;
+    
+    // Ensure emailSent property is properly set, trying all possible variations
+    return {
+      ...invitation,
+      emailSent: invitation.emailSent === true || false
+    };
   }
 
   async getInvitationByToken(token: string): Promise<Invitation | undefined> {
@@ -735,11 +753,21 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(invitations)
       .where(eq(invitations.token, token));
-    return invitation;
+      
+    if (!invitation) return undefined;
+    
+    // Ensure emailSent property is properly set, trying all possible variations
+    return {
+      ...invitation,
+      emailSent: invitation.emailSent === true || 
+                 invitation.email_sent === true || 
+                 false
+    };
   }
   
   async getInvitationsByProject(projectId: number): Promise<Invitation[]> {
-    return await db
+    // Get all invitations matching the criteria
+    const results = await db
       .select()
       .from(invitations)
       .where(
@@ -748,6 +776,26 @@ export class DatabaseStorage implements IStorage {
           eq(invitations.isAccepted, false)
         )
       );
+      
+    // Process each invitation to ensure consistent property names and values
+    return results.map(invitation => {
+      // Log what we receive from the database to help debug
+      console.log(`Invitation ${invitation.id} raw data:`, JSON.stringify({
+        email_sent_db: invitation.email_sent, // Raw column name from DB might be in snake_case
+        emailSent: invitation.emailSent, // Drizzle should transform to camelCase
+        keys: Object.keys(invitation) // Check what keys are actually present
+      }));
+      
+      // Create a cleaned up version with guaranteed properties
+      return {
+        ...invitation,
+        // Explicitly ensure emailSent is present with the correct value
+        // Try all possible property name variations
+        emailSent: invitation.emailSent === true || 
+                   invitation.email_sent === true || 
+                   false
+      };
+    });
   }
   
   async deleteInvitation(id: number): Promise<boolean> {
@@ -759,12 +807,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateInvitation(id: number, data: Partial<Invitation>): Promise<Invitation | undefined> {
+    // Log what we're trying to update for debugging
+    console.log(`Updating invitation ${id} with data:`, JSON.stringify(data));
+    
+    // If we're updating emailSent status, make sure it's explicitly set to true/false
+    let updateData = { ...data };
+    if ('emailSent' in updateData) {
+      updateData.emailSent = updateData.emailSent === true;
+    }
+    
     const [updatedInvitation] = await db
       .update(invitations)
-      .set(data)
+      .set(updateData)
       .where(eq(invitations.id, id))
       .returning();
-    return updatedInvitation;
+      
+    if (!updatedInvitation) return undefined;
+    
+    // Ensure emailSent property is properly returned
+    return {
+      ...updatedInvitation,
+      emailSent: updatedInvitation.emailSent === true || false
+    };
   }
 
   // Approval methods
