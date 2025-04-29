@@ -21,10 +21,10 @@ export interface TeamMember {
 // Hook to fetch team members for a specific project
 export function useTeamMembers(projectId: number) {
   return useQuery<TeamMember[]>({
-    queryKey: ["/api/projects", projectId, "members"],
+    queryKey: ["/api/projects", projectId, "users"],
     queryFn: async () => {
       console.log("Fetching team members for project", projectId);
-      const response = await fetch(`/api/projects/${projectId}/members`, {
+      const response = await fetch(`/api/projects/${projectId}/users`, {
         credentials: "include",
       });
       
@@ -55,7 +55,7 @@ export function useRemoveTeamMember() {
     onSuccess: (_, variables) => {
       // Invalidate team members query to refresh the list
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", variables.projectId, "members"] 
+        queryKey: ["/api/projects", variables.projectId, "users"] 
       });
       
       toast({
@@ -102,7 +102,7 @@ export function useUpdateTeamMemberRole() {
     onSuccess: (_, variables) => {
       // Invalidate team members query to refresh the list
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", variables.projectId, "members"] 
+        queryKey: ["/api/projects", variables.projectId, "users"] 
       });
       
       toast({
