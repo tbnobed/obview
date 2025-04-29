@@ -1484,9 +1484,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DEBUG Endpoint: Test SendGrid email directly 
+  // This endpoint is for development/testing only and should be removed in production
+  app.post("/api/debug/send-test-email", isAuthenticated, async (req, res, next) => {
+    try {
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Unauthorized. Only admins can access this endpoint." });
+      }
+      
+      const { to } = req.body;
+      
+      if (!to) {
+        return res.status(400).json({ message: "Email address is required" });
+      }
+      
+      // Import the sendEmail function
+      const { sendEmail } = await import('./utils/sendgrid');
+      
+      console.log(`Sending test email to ${to}`);
+      
+      const emailSent = await sendEmail({
+        to: to,
+        from: process.env.EMAIL_FROM || 'noreply@example.com',
+        subject: 'Test Email from ObedTV',
+        text: 'This is a test email sent directly from the /api/debug/send-test-email endpoint.',
+        html: '<p>This is a test email sent directly from the <code>/api/debug/send-test-email</code> endpoint.</p>'
+      });
+      
+      if (emailSent) {
+        res.json({ 
+          success: true, 
+          message: `Test email sent to ${to}. Check the logs for details.`,
+          apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled" 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: `Failed to send test email to ${to}. Check the logs for details.`,
+          apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
 
-
-// Accept an invitation
+  // Accept an invitation
   app.post("/api/invite/:token/accept", isAuthenticated, async (req, res, next) => {
     try {
       const { token } = req.params;

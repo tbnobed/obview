@@ -72,13 +72,20 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     mailService.setApiKey(process.env.SENDGRID_API_KEY);
     logToFile(`API key set in mail service`);
     
-    // Prepare email data
+    // Prepare email data with sandbox mode option for development
+    // This can help with SendGrid account that hasn't been fully verified
+    // https://docs.sendgrid.com/for-developers/sending-email/sandbox-mode
     const emailData = {
       to: params.to,
       from: params.from,
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
+      mail_settings: {
+        sandbox_mode: {
+          enable: process.env.SENDGRID_SANDBOX === 'true' ? true : false
+        }
+      }
     };
     
     logToFile(`Sending email via SendGrid...`);
@@ -226,7 +233,9 @@ export async function sendInvitationEmail(
       If you didn't expect this invitation, you can safely ignore this email.
     `;
     
-    const sender = process.env.EMAIL_FROM || 'alerts@obedtv.com';
+    // Use a Gmail or similar address that's more likely to work with new SendGrid accounts
+    // This avoids domain verification issues with custom domains
+    const sender = process.env.EMAIL_FROM || 'noreply@example.com'; 
     logToFile(`Using sender email: ${sender}`);
     
     return await sendEmail({

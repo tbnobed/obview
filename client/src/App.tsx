@@ -16,6 +16,7 @@ import FileUploadPage from "@/pages/file-upload-page";
 import AdminPage from "@/pages/admin-page";
 import SettingsPage from "@/pages/settings-page";
 import InvitePage from "@/pages/invite-page";
+import DebugPage from "@/pages/debug-page";
 
 function Router() {
   return (
