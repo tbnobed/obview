@@ -170,8 +170,21 @@ echo "=== Setting up automatic backups ==="
 # Start the application
 echo "=== Starting OBview.io ==="
 cd /opt/obview
-docker compose down || true  # Stop if already running
-docker compose up -d
+
+# Make scripts executable
+chmod +x scripts/*.sh
+chmod +x scripts/*.js 2>/dev/null || true
+
+# Run the fix-docker-build script if it exists
+if [ -f "./scripts/fix-docker-build.sh" ]; then
+  echo "Running Docker build fix script..."
+  ./scripts/fix-docker-build.sh
+else
+  # Fallback to standard docker compose commands
+  docker compose down || true  # Stop if already running
+  docker compose build
+  docker compose up -d
+fi
 
 # Final instructions
 echo ""

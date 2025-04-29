@@ -293,6 +293,27 @@ docker compose up -d
 
 ## Troubleshooting
 
+### Fixing Docker Build Issues
+
+If you encounter issues during the Docker build process, especially with missing directories like `/app/drizzle`, use our automated fix script:
+
+```bash
+# Run the fix script (resolves most common issues)
+./scripts/fix-docker-build.sh
+
+# For more stubborn issues, use the force clean option
+./scripts/fix-docker-build.sh --force-clean
+```
+
+This script will:
+- Create all necessary directories
+- Generate placeholder files if needed
+- Make scripts executable
+- Rebuild Docker images with a clean cache
+- Start the containers
+
+For more detailed troubleshooting, see the [DOCKER_TROUBLESHOOTING.md](DOCKER_TROUBLESHOOTING.md) file.
+
 ### Database Connectivity Issues
 
 If the application can't connect to the database:
