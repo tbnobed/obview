@@ -5,6 +5,7 @@ import { useProjects } from "@/hooks/use-projects";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
+import Logo from "@/components/ui/logo";
 
 export default function Sidebar() {
   const { user } = useAuth();
@@ -17,17 +18,15 @@ export default function Sidebar() {
   return (
     <div className="flex flex-col w-64 border-r border-neutral-200 bg-white">
       <div className="flex items-center justify-center h-16 flex-shrink-0 px-4 bg-primary-400">
-        <Link href="/">
-          <h1 className="text-white font-bold text-xl cursor-pointer">MediaReview.io</h1>
-        </Link>
+        <Logo size="md" withText={false} className="text-white" />
       </div>
       
       {/* Main Navigation */}
       <ScrollArea className="flex-1 overflow-y-auto">
         <nav className="flex-1 px-2 py-4 space-y-1">
           <Link href="/">
-            <a className={cn(
-              "flex items-center px-2 py-2 text-sm font-medium rounded-md",
+            <div className={cn(
+              "flex items-center px-2 py-2 text-sm font-medium rounded-md cursor-pointer",
               location === "/" 
                 ? "bg-primary-50 text-primary-600" 
                 : "text-neutral-600 hover:bg-neutral-100"
@@ -39,12 +38,12 @@ export default function Sidebar() {
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
               </svg>
               Dashboard
-            </a>
+            </div>
           </Link>
           
           <Link href="/projects">
-            <a className={cn(
-              "flex items-center px-2 py-2 text-sm font-medium rounded-md",
+            <div className={cn(
+              "flex items-center px-2 py-2 text-sm font-medium rounded-md cursor-pointer",
               location === "/projects" || location.startsWith("/project/") 
                 ? "bg-primary-50 text-primary-600" 
                 : "text-neutral-600 hover:bg-neutral-100"
@@ -58,13 +57,13 @@ export default function Sidebar() {
                 <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
               </svg>
               Projects
-            </a>
+            </div>
           </Link>
 
           {user?.role === "admin" && (
             <Link href="/admin">
-              <a className={cn(
-                "flex items-center px-2 py-2 text-sm font-medium rounded-md",
+              <div className={cn(
+                "flex items-center px-2 py-2 text-sm font-medium rounded-md cursor-pointer",
                 location === "/admin" 
                   ? "bg-primary-50 text-primary-600" 
                   : "text-neutral-600 hover:bg-neutral-100"
@@ -76,13 +75,13 @@ export default function Sidebar() {
                   <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                 </svg>
                 Admin
-              </a>
+              </div>
             </Link>
           )}
           
           <Link href="/settings">
-            <a className={cn(
-              "flex items-center px-2 py-2 text-sm font-medium rounded-md",
+            <div className={cn(
+              "flex items-center px-2 py-2 text-sm font-medium rounded-md cursor-pointer",
               location === "/settings" 
                 ? "bg-primary-50 text-primary-600" 
                 : "text-neutral-600 hover:bg-neutral-100"
@@ -94,7 +93,7 @@ export default function Sidebar() {
                 <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
               </svg>
               Settings
-            </a>
+            </div>
           </Link>
         </nav>
         

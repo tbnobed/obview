@@ -17,7 +17,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', withText = tru
 
   return (
     <Link href="/">
-      <a className={`flex items-center space-x-2 ${className}`}>
+      <div className={`flex items-center space-x-2 cursor-pointer ${className}`}>
         <img 
           src={logoImage} 
           alt="OBview.io" 
@@ -28,7 +28,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', withText = tru
             OBview.io
           </span>
         )}
-      </a>
+      </div>
     </Link>
   );
 };
