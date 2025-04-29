@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-interface TeamMember {
+export interface TeamMember {
   id: number;
   projectId: number;
   userId: number;
@@ -22,6 +22,20 @@ interface TeamMember {
 export function useTeamMembers(projectId: number) {
   return useQuery<TeamMember[]>({
     queryKey: ["/api/projects", projectId, "members"],
+    queryFn: async () => {
+      console.log("Fetching team members for project", projectId);
+      const response = await fetch(`/api/projects/${projectId}/members`, {
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch team members");
+      }
+      
+      const data = await response.json();
+      console.log("Team members response:", data);
+      return data;
+    },
     enabled: !!projectId,
   });
 }
