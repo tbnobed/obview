@@ -45,8 +45,8 @@ Log out and log back in for the group membership to take effect.
 ### 2. Clone the Repository
 
 ```bash
-git clone <repository-url> mediareview
-cd mediareview
+git clone <repository-url> obview
+cd obview
 ```
 
 ### 3. Configure Environment Variables
@@ -97,12 +97,12 @@ For production use, it's recommended to set up Nginx as a reverse proxy and enab
 sudo apt install -y nginx certbot python3-certbot-nginx
 
 # Set up Nginx configuration
-sudo nano /etc/nginx/sites-available/mediareview
+sudo nano /etc/nginx/sites-available/obview
 
-# Add the following configuration (replace yourdomain.com with your actual domain)
+# Add the following configuration (replace obview.io with your actual domain if different)
 server {
     listen 80;
-    server_name yourdomain.com www.yourdomain.com;
+    server_name obview.io www.obview.io;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -117,12 +117,12 @@ server {
 }
 
 # Enable the site
-sudo ln -s /etc/nginx/sites-available/mediareview /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/obview /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
 # Obtain SSL certificate
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+sudo certbot --nginx -d obview.io -d www.obview.io
 ```
 
 ### 7. Maintenance Tasks
@@ -151,7 +151,7 @@ docker-compose up -d
 #### Backup the database
 
 ```bash
-docker-compose exec db pg_dump -U postgres mediareview > backup_$(date +%Y-%m-%d).sql
+docker-compose exec db pg_dump -U postgres obview > backup_$(date +%Y-%m-%d).sql
 ```
 
 ## Troubleshooting

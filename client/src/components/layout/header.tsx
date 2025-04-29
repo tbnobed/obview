@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from "@/components/layout/sidebar";
+import Logo from "@/components/ui/logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,9 +56,7 @@ export default function Header() {
     <>
       {/* Mobile header - hidden on desktop */}
       <div className="bg-white border-b border-neutral-200 flex items-center justify-between px-4 py-2 sm:px-6 md:hidden">
-        <Link href="/">
-          <h1 className="text-primary-500 font-bold text-xl cursor-pointer">MediaReview.io</h1>
-        </Link>
+        <Logo size="sm" />
         
         <div className="flex items-center space-x-3">
           {user && <UserProfileDropdown />}
