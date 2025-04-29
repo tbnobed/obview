@@ -94,7 +94,7 @@ export async function sendInvitationEmail(
   
   return await sendEmail({
     to,
-    from: process.env.FROM_EMAIL || 'noreply@example.com',
+    from: 'alerts@obedtv.com',
     subject,
     html,
     text

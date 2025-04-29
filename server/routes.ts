@@ -1361,7 +1361,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Accept an invitation
+
+
+// Accept an invitation
   app.post("/api/invite/:token/accept", isAuthenticated, async (req, res, next) => {
     try {
       const { token } = req.params;
