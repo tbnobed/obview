@@ -1,174 +1,320 @@
 # OBview.io Deployment Guide
 
-This guide provides detailed instructions for deploying OBview.io using Docker.
+This guide covers different deployment options for OBview.io, including direct server deployment and cloud hosting options.
+
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Direct Server Deployment](#direct-server-deployment)
+3. [High Availability Setup](#high-availability-setup)
+4. [Cloud Deployment Options](#cloud-deployment-options)
+5. [Deployment Checklist](#deployment-checklist)
+6. [Maintenance and Updates](#maintenance-and-updates)
+7. [Monitoring and Logging](#monitoring-and-logging)
+8. [Scaling Considerations](#scaling-considerations)
 
 ## Prerequisites
 
-Ensure you have the following installed:
-- Docker (version 20.10.0 or later)
-- Docker Compose (version 2.0.0 or later)
-- Git (for cloning the repository)
+Before deploying OBview.io, ensure you have:
 
-## Quick Deployment
+- Domain name configured with DNS pointing to your server
+- Server with root/sudo access
+- Node.js v14+ installed
+- PostgreSQL v12+ installed
+- Nginx or similar web server
+- SSL certificate (recommended for production)
 
-For a quick deployment, use our automated deployment script:
+## Direct Server Deployment
 
-```bash
-# Make the script executable
-chmod +x scripts/direct-fix.sh
+### Ubuntu/Debian Server
 
-# Run the script
-./scripts/direct-fix.sh
-```
-
-This script will:
-1. Create all necessary directories and files
-2. Set proper permissions on scripts
-3. Build and start the Docker containers
-
-After a successful deployment, the application will be available at: http://localhost:3000
-
-## Manual Deployment
-
-If you prefer to deploy manually, follow these steps:
-
-### 1. Prepare the environment
-
-First, create the necessary directories:
-
-```bash
-mkdir -p drizzle migrations uploads
-chmod 777 uploads
-```
-
-### 2. Make all scripts executable
-
-```bash
-find scripts -name "*.sh" -exec chmod +x {} \;
-find init-scripts -name "*.sh" -exec chmod +x {} \;
-```
-
-### 3. Set up Docker configuration files
-
-All necessary Docker configuration files are already in place. You don't need to modify them unless you want to customize the deployment.
-
-### 4. Build and start the Docker containers
-
-```bash
-# Build the containers
-docker compose build --no-cache
-
-# Start the containers
-docker compose up -d
-```
-
-### 5. Verify deployment
-
-```bash
-# Check the logs
-docker compose logs -f
-
-# Check the container status
-docker compose ps
-```
-
-## Environment Variables
-
-The application uses the following environment variables:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | postgresql://postgres:postgres@db:5432/obview |
-| `POSTGRES_PASSWORD` | PostgreSQL password | postgres |
-| `POSTGRES_USER` | PostgreSQL username | postgres |
-| `POSTGRES_DB` | PostgreSQL database name | obview |
-| `SESSION_SECRET` | Secret for session cookies | obview-default-session-secret |
-| `NODE_ENV` | Node.js environment | production |
-
-You can customize these by creating a `.env` file in the project root or by setting them in the environment before deployment.
-
-## Database Access
-
-To access the PostgreSQL database directly:
-
-```bash
-# Connect to the database
-docker compose exec db psql -U postgres -d obview
-
-# View tables
-\dt
-
-# Check users
-SELECT * FROM users;
-
-# Exit PostgreSQL
-\q
-```
-
-## Troubleshooting
-
-If you encounter issues during deployment, try the following:
-
-1. Check the logs:
+1. Update system packages:
    ```bash
-   docker compose logs -f
+   sudo apt update && sudo apt upgrade -y
    ```
 
-2. Restart the containers:
+2. Install required dependencies:
    ```bash
-   docker compose restart
+   sudo apt install -y nodejs npm postgresql nginx certbot python3-certbot-nginx git
    ```
 
-3. Reset the environment:
+3. Clone the repository:
    ```bash
-   docker compose down -v
-   docker compose up -d
+   git clone https://github.com/yourusername/obview.git /opt/obview
+   cd /opt/obview
    ```
 
-4. For more specific issues, refer to the `DOCKER_TROUBLESHOOTING.md` file.
-
-## Production Deployment
-
-For production deployment:
-
-1. Use strong passwords and secrets:
+4. Run the installation script:
    ```bash
-   # Create a .env file with secure values
-   echo "POSTGRES_PASSWORD=your-secure-password" > .env
-   echo "SESSION_SECRET=your-secure-session-secret" >> .env
+   sudo chmod +x install.sh
+   sudo ./install.sh
    ```
 
-2. Configure with proper volume mounts for data persistence:
-   ```yaml
-   # In docker-compose.yml
-   volumes:
-     - /path/to/persistent/storage/uploads:/app/uploads
-     - /path/to/persistent/storage/postgres:/var/lib/postgresql/data
+5. Set up SSL:
+   ```bash
+   sudo certbot --nginx -d yourdomain.com
    ```
 
-3. Set up HTTPS with a reverse proxy like Nginx or Traefik.
-
-4. Implement regular database backups:
+6. Verify the installation:
    ```bash
-   # Create a backup script
-   echo '#!/bin/bash
-   TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-   docker compose exec -T db pg_dump -U postgres obview > backup_${TIMESTAMP}.sql
-   ' > backup.sh
-   chmod +x backup.sh
+   sudo systemctl status obview
+   curl http://localhost:5000/api/health
+   ```
+
+### CentOS/RHEL/Fedora
+
+1. Update system packages:
+   ```bash
+   sudo dnf update -y
+   ```
+
+2. Install Node.js and npm:
+   ```bash
+   sudo dnf install -y nodejs npm
+   ```
+
+3. Install PostgreSQL:
+   ```bash
+   sudo dnf install -y postgresql postgresql-server
+   sudo postgresql-setup --initdb
+   sudo systemctl start postgresql
+   sudo systemctl enable postgresql
+   ```
+
+4. Install Nginx:
+   ```bash
+   sudo dnf install -y nginx
+   sudo systemctl start nginx
+   sudo systemctl enable nginx
+   ```
+
+5. Follow the same steps 3-6 as in the Ubuntu/Debian section.
+
+## High Availability Setup
+
+For mission-critical deployments, consider a high availability setup:
+
+### Database Replication
+
+1. Set up PostgreSQL with replication:
+   ```bash
+   # On primary server
+   # Edit postgresql.conf
+   listen_addresses = '*'
+   wal_level = replica
+   max_wal_senders = 10
+   max_replication_slots = 10
    
-   # Add to crontab for daily backups
-   # 0 2 * * * /path/to/project/backup.sh
+   # Create replication user
+   CREATE ROLE replicator WITH REPLICATION LOGIN PASSWORD 'secure-password';
+   
+   # On replica server
+   # Configure and start as standby
+   # Details depend on PostgreSQL version
    ```
 
-## Default Login
+2. Set up connection pooling with PgBouncer:
+   ```bash
+   sudo apt install -y pgbouncer
+   # Configure pgbouncer.ini
+   ```
 
-After deployment, you can log in with the default admin credentials:
-- Username: `admin`
-- Password: `admin123`
+### Application Load Balancing
 
-**Important:** Change the default password immediately after first login in a production environment.
+1. Set up multiple application instances:
+   ```bash
+   # Create systemd service files for each instance, using different ports
+   # obview-1.service -> PORT=5001
+   # obview-2.service -> PORT=5002
+   # etc.
+   ```
 
-## License
+2. Configure Nginx for load balancing:
+   ```nginx
+   upstream obview_backend {
+       server 127.0.0.1:5001;
+       server 127.0.0.1:5002;
+       server 127.0.0.1:5003;
+   }
+   
+   server {
+       listen 80;
+       server_name yourdomain.com;
+       
+       location / {
+           proxy_pass http://obview_backend;
+           # Other proxy settings...
+       }
+   }
+   ```
 
-OBview.io is licensed under the terms provided in the LICENSE file.
+## Cloud Deployment Options
+
+### AWS Deployment
+
+1. EC2 Instance setup:
+   - Launch an EC2 instance with Ubuntu Server
+   - Minimum recommended: t3.medium (2 vCPU, 4 GB RAM)
+   - Add EBS volume for uploads (min 50 GB)
+   
+2. RDS for PostgreSQL:
+   - Create a PostgreSQL RDS instance
+   - Configure security groups to allow EC2 access
+   
+3. Application deployment:
+   - Follow the direct server deployment steps
+   - Use the RDS endpoint in your DATABASE_URL
+   
+4. Route 53 for DNS:
+   - Set up DNS records pointing to your EC2 instance
+   
+5. CloudFront (optional):
+   - Set up CloudFront for media file distribution
+
+### Digital Ocean
+
+1. Create Droplet:
+   - Use Ubuntu 20.04 or newer
+   - Minimum: 2 GB RAM / 2 vCPU
+   
+2. Managed Database:
+   - Create PostgreSQL managed database
+   - Connect your Droplet to the database
+   
+3. Deployment:
+   - Follow direct server deployment steps
+   - Use managed database connection details
+
+### Heroku (not recommended for media-heavy applications)
+
+1. Prepare the app:
+   - Add `Procfile` with: `web: node server.js`
+   - Configure for Heroku PostgreSQL
+   
+2. Deploy:
+   ```bash
+   heroku create
+   heroku addons:create heroku-postgresql:hobby-dev
+   git push heroku main
+   ```
+   
+3. Limitations:
+   - Heroku's ephemeral filesystem isn't suitable for file storage
+   - Would need integration with S3 or similar for media storage
+
+## Deployment Checklist
+
+Before going live, ensure:
+
+- [ ] Database backup and restore procedures are tested
+- [ ] SSL/TLS certificates are installed and working
+- [ ] File permissions are correctly set
+- [ ] Default admin password is changed
+- [ ] Application health check is passing
+- [ ] Upload functionality is working
+- [ ] Email notifications are configured (if applicable)
+- [ ] Monitoring is set up
+- [ ] Firewall rules are configured
+- [ ] Rate limiting is implemented
+- [ ] Database connections are optimized
+
+## Maintenance and Updates
+
+### Regular Maintenance
+
+1. Database maintenance:
+   ```bash
+   # Connect to PostgreSQL
+   sudo -u postgres psql
+   
+   # Within PostgreSQL:
+   VACUUM ANALYZE;
+   REINDEX DATABASE obview;
+   ```
+
+2. System updates:
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   sudo systemctl restart obview
+   ```
+
+3. SSL certificate renewal:
+   ```bash
+   sudo certbot renew
+   ```
+
+### Application Updates
+
+1. Pull latest changes:
+   ```bash
+   cd /opt/obview
+   git pull origin main
+   ```
+
+2. Apply database migrations (if any):
+   ```bash
+   psql -U obviewuser -h localhost -d obview -f migrations/latest.sql
+   ```
+
+3. Restart the service:
+   ```bash
+   sudo systemctl restart obview
+   ```
+
+## Monitoring and Logging
+
+### Log Management
+
+1. View application logs:
+   ```bash
+   sudo journalctl -u obview -n 100 --no-pager
+   ```
+
+2. Nginx logs:
+   ```bash
+   sudo tail -f /var/log/nginx/access.log
+   sudo tail -f /var/log/nginx/error.log
+   ```
+
+3. Database logs:
+   ```bash
+   sudo tail -f /var/log/postgresql/postgresql-*.log
+   ```
+
+### Monitoring Tools
+
+1. Basic monitoring with systemd:
+   ```bash
+   systemctl status obview
+   ```
+
+2. Configure monitoring tools:
+   - Prometheus + Grafana
+   - Netdata
+   - New Relic
+   - Datadog
+
+## Scaling Considerations
+
+### Vertical Scaling
+
+- Increase server resources (CPU, RAM)
+- Optimize PostgreSQL configuration for larger resources
+- Increase Node.js memory limits: `NODE_OPTIONS=--max_old_space_size=4096`
+
+### Horizontal Scaling
+
+- Split services:
+  - Application servers
+  - Database servers
+  - File storage servers
+  
+- Implement load balancing
+- Set up database read replicas
+- Use a CDN for media file distribution
+
+### Storage Scaling
+
+- Move uploads to object storage (S3, MinIO)
+- Implement tiered storage for different media types
+- Consider video transcoding for different bitrates
