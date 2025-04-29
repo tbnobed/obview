@@ -1,6 +1,6 @@
-# MediaReview Deployment Guide
+# OBview.io Deployment Guide
 
-This guide explains how to deploy the MediaReview application on an Ubuntu server using Docker and Docker Compose.
+This guide explains how to deploy the OBview.io application on an Ubuntu server using Docker and Docker Compose.
 
 ## Prerequisites
 

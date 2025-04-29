@@ -22,4 +22,4 @@ END
 $$;
 
 -- Grant permissions
-GRANT ALL PRIVILEGES ON DATABASE mediareview TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE obview TO postgres;
