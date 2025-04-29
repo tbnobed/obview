@@ -126,7 +126,31 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
         
         // Check for specific SendGrid error properties
         if ('response' in error) {
-          logToFile(`SendGrid API response: ${JSON.stringify((error as any).response?.body || {})}`);
+          const responseBody = (error as any).response?.body || {};
+          logToFile(`SendGrid API response: ${JSON.stringify(responseBody)}`);
+          
+          // Check for common SendGrid errors and provide helpful messages
+          if (responseBody.errors) {
+            responseBody.errors.forEach((err: any) => {
+              if (err.message) {
+                console.error(`SendGrid specific error: ${err.message}`);
+                logToFile(`SendGrid specific error: ${err.message}`);
+              }
+              
+              // Help with common error codes
+              if (err.field === 'from' && err.message?.includes('does not exist')) {
+                console.error('IMPORTANT: Your sender email is not verified with SendGrid.');
+                logToFile('IMPORTANT: Your sender email is not verified with SendGrid.');
+                logToFile('Try using a sendgrid.net address or verify your domain/email with SendGrid.');
+              }
+              
+              if (err.message?.includes('forbidden')) {
+                console.error('IMPORTANT: Your SendGrid API key may have insufficient permissions or your account needs verification.');
+                logToFile('IMPORTANT: Your SendGrid API key may have insufficient permissions or your account needs verification.');
+                logToFile('Try using sandbox mode or check your SendGrid account status.');
+              }
+            });
+          }
         }
       }
     } catch (jsonError) {
@@ -233,10 +257,14 @@ export async function sendInvitationEmail(
       If you didn't expect this invitation, you can safely ignore this email.
     `;
     
-    // Use a Gmail or similar address that's more likely to work with new SendGrid accounts
-    // This avoids domain verification issues with custom domains
-    const sender = process.env.EMAIL_FROM || 'noreply@example.com'; 
+    // Use a verified SendGrid sender address or the sandbox mode
+    // For new SendGrid accounts, use an address ending in @sendgrid.net for sandbox testing
+    const sender = process.env.EMAIL_FROM || 'noreply@sendgrid.net';
     logToFile(`Using sender email: ${sender}`);
+    
+    if (process.env.SENDGRID_SANDBOX === 'true') {
+      logToFile(`SendGrid sandbox mode is ENABLED - emails will not be delivered but API will be tested`);
+    }
     
     return await sendEmail({
       to,

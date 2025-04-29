@@ -26,10 +26,18 @@ export function EmailTestForm() {
     setLoading(true);
     try {
       const response = await apiRequest('POST', '/api/debug/send-test-email', { to: email });
-      const data = await response.json();
+      let data;
+      
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        data = { success: false, message: 'Invalid response format from server' };
+      }
+      
       setResult(data);
       
-      if (data.success) {
+      if (data && data.success) {
         toast({
           title: 'Test Email Sent',
           description: `Email was sent to ${email}. Check logs for details.`,
@@ -37,7 +45,7 @@ export function EmailTestForm() {
       } else {
         toast({
           title: 'Test Email Failed',
-          description: data.message || 'Failed to send test email. Check logs for details.',
+          description: (data && data.message) ? data.message : 'Failed to send test email. Check logs for details.',
           variant: 'destructive',
         });
       }
