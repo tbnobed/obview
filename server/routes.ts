@@ -1432,10 +1432,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { inviteeEmail: email, role, emailSent }
       });
       
-      // Return the created invitation with email status
+      // Return the invitation details in a client-friendly format
       res.status(201).json({ 
-        ...invitation, 
-        emailSent 
+        invitationId: invitation.id,
+        token: invitation.token,
+        email: invitation.email,
+        emailSent // Include the email sent status that the client needs
       });
     } catch (error) {
       next(error);
