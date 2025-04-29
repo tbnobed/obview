@@ -1,5 +1,9 @@
 import { MailService } from '@sendgrid/mail';
 
+if (!process.env.SENDGRID_API_KEY) {
+  console.warn("SENDGRID_API_KEY environment variable is not set. Email functionality will not work.");
+}
+
 // Initialize the SendGrid mail service with API key
 const mailService = new MailService();
 mailService.setApiKey(process.env.SENDGRID_API_KEY || '');
@@ -23,8 +27,8 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       to: params.to,
       from: params.from,
       subject: params.subject,
-      text: params.text,
-      html: params.html,
+      text: params.text || '',
+      html: params.html || '',
     });
     console.log(`Email sent successfully to ${params.to}`);
     return true;

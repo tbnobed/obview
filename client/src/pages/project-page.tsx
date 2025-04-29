@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProjectCommentsTab } from "@/components/project/project-comments-tab";
 import { ProjectActivityTab } from "@/components/project/project-activity-tab";
+import InviteForm from "@/components/project/invite-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -48,10 +49,11 @@ export default function ProjectPage() {
   });
   
   // Fetch pending invitations for this project
-  const { data: pendingInvitations } = useQuery<any[]>({
+  const projectInvitationsQuery = useQuery<any[]>({
     queryKey: ["/api/projects", projectId, "invitations"],
     enabled: !!projectId,
   });
+  const { data: pendingInvitations } = projectInvitationsQuery;
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
   const [initialTime, setInitialTime] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("media");
