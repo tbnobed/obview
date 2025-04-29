@@ -27,18 +27,11 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
 
   const inviteMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/invite", {
+      return await apiRequest("POST", "/api/invite", {
         email,
         projectId,
         role,
       });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to send invitation");
-      }
-
-      return await res.json();
     },
     onSuccess: () => {
       // Show success toast
