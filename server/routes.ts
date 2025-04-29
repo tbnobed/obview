@@ -1522,7 +1522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ 
           success: false, 
           message: `Failed to send test email to ${to}. Check the logs for details.`,
-          apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+          apiKey: (process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY) ? "API key is set" : "API key is missing",
           sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
         });
       }
@@ -1657,7 +1657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let emailSent = false;
       console.log(`Attempting to resend invitation email to ${invitation.email}`);
       
-      if (process.env.SENDGRID_API_KEY) {
+      if (process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY) {
         try {
           // Import the sendInvitationEmail function from utils/sendgrid
           const { sendInvitationEmail } = await import('./utils/sendgrid');
