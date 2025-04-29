@@ -4,7 +4,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.new
+      dockerfile: Dockerfile
     container_name: obview_app
     restart: unless-stopped
     ports:

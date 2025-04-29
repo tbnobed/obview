@@ -49,16 +49,10 @@ main() {
   
   create_directories
   
-  echo "Replacing Docker configuration files with fixed versions..."
+  echo "Setting up Docker configuration files..."
   
-  # Rename .new files to replace the originals
-  for file in Dockerfile.new docker-compose.yml.new scripts/docker-entrypoint.sh.new scripts/wait-for-db.sh.new init-scripts/01-init-db.sql.new init-scripts/02-init-db.sh.new scripts/direct-fix.sh.new; do
-    if [ -f "$file" ]; then
-      base_file="${file%.new}"
-      echo "Replacing $base_file with fixed version..."
-      mv "$file" "$base_file"
-    fi
-  done
+  # All the configuration files are already in place
+  echo "All configuration files are ready to use."
   
   set_permissions
   
