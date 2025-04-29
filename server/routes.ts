@@ -1377,8 +1377,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If SendGrid API key is available, send an email
       let emailSent = false;
       console.log(`Checking SendGrid API key availability for invitation to ${email}`);
+      console.log(`API Keys: NEW_SENDGRID_API_KEY ${process.env.NEW_SENDGRID_API_KEY ? 'is set' : 'is NOT set'}, SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
-      if (process.env.SENDGRID_API_KEY) {
+      if (process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY) {
         console.log(`SendGrid API key is available, preparing to send invitation email to ${email}`);
         try {
           // Import the sendInvitationEmail function from utils/sendgrid
@@ -1656,6 +1657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If SendGrid API key is available, send the email
       let emailSent = false;
       console.log(`Attempting to resend invitation email to ${invitation.email}`);
+      console.log(`API Keys: NEW_SENDGRID_API_KEY ${process.env.NEW_SENDGRID_API_KEY ? 'is set' : 'is NOT set'}, SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
       if (process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY) {
         try {
