@@ -21,17 +21,20 @@ function logToFile(message: string): void {
   fs.appendFileSync(logFilePath, logMessage);
 }
 
-if (!process.env.SENDGRID_API_KEY) {
-  const warning = "SENDGRID_API_KEY environment variable is not set. Email functionality will not work.";
+// Check for either the original or new API key
+const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
+
+if (!apiKey) {
+  const warning = "No SendGrid API key found. Email functionality will not work.";
   console.warn(warning);
   logToFile(warning);
 } else {
-  logToFile("SENDGRID_API_KEY is set. Email functionality should be working.");
+  logToFile("SendGrid API key is set. Email functionality should be working.");
 }
 
 // Initialize the SendGrid mail service with API key
 const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY || '');
+mailService.setApiKey(apiKey || '');
 
 interface EmailParams {
   to: string;
@@ -56,20 +59,21 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     logToFile(`  - Text length: ${params.text?.length || 0} characters`);
     logToFile(`  - HTML length: ${params.html?.length || 0} characters`);
     
-    // Verify API key exists
-    if (!process.env.SENDGRID_API_KEY) {
-      const error = "Cannot send email: SENDGRID_API_KEY is not set";
+    // Verify API key exists - check for NEW_SENDGRID_API_KEY first, then fall back to SENDGRID_API_KEY
+    const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
+    if (!apiKey) {
+      const error = "Cannot send email: No SendGrid API key is set";
       console.error(error);
       logToFile(error);
       return false;
     }
     
     // Log API key state (not the actual key for security)
-    const apiKeyLength = process.env.SENDGRID_API_KEY.length;
+    const apiKeyLength = apiKey.length;
     logToFile(`Using SendGrid API key (${apiKeyLength} characters)`);
     
     // Ensure the API key is properly set in the mail service
-    mailService.setApiKey(process.env.SENDGRID_API_KEY);
+    mailService.setApiKey(apiKey);
     logToFile(`API key set in mail service`);
     
     // Prepare email data with sandbox mode option for development
