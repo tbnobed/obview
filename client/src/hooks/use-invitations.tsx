@@ -11,6 +11,7 @@ interface Invitation {
   token: string;
   expiresAt: string;
   isAccepted: boolean;
+  emailSent: boolean;
   createdById: number;
   createdAt: string;
   creator?: {
@@ -148,6 +149,53 @@ export function useAcceptInvitation() {
       toast({
         title: "Failed to accept invitation",
         description: error.message || "An error occurred while accepting the invitation",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useResendInvitation() {
+  const { toast } = useToast();
+  
+  return useMutation({
+    mutationFn: async (invitationId: number) => {
+      try {
+        const response = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
+        return await response.json();
+      } catch (error) {
+        console.error("Error resending invitation:", error);
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      if (data.emailSent) {
+        toast({
+          title: "Invitation email resent",
+          description: "The invitation email has been successfully resent.",
+        });
+      } else {
+        toast({
+          title: "Email not sent",
+          description: "The invitation was processed but the email could not be sent. Please try again later.",
+          variant: "destructive",
+        });
+      }
+      
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      
+      // Invalidate all invitations queries
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          typeof query.queryKey[0] === 'string' && 
+          (query.queryKey[0].includes('/invitations') || query.queryKey[0].includes('/invite')) 
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to resend invitation",
+        description: error.message || "An error occurred while resending the invitation",
         variant: "destructive",
       });
     },

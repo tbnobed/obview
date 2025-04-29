@@ -1509,6 +1509,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Resend invitation email
+  app.post("/api/invite/:id/resend", isAuthenticated, async (req, res, next) => {
+    try {
+      const invitationId = parseInt(req.params.id);
+      
+      // Get the invitation
+      const invitation = await storage.getInvitationById(invitationId);
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // Check if the user has permission to resend the invitation
+      if (req.user.role !== "admin") {
+        // Check if the user is the creator of the invitation
+        if (invitation.createdById !== req.user.id) {
+          // Check if the user has edit access to the project
+          const projectUser = await storage.getProjectUser(invitation.projectId, req.user.id);
+          if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
+            return res.status(403).json({ message: "You don't have permission to resend this invitation" });
+          }
+        }
+      }
+      
+      // Get the project and user data
+      const project = await storage.getProject(invitation.projectId);
+      const inviter = await storage.getUser(req.user.id);
+      
+      // If SendGrid API key is available, send the email
+      let emailSent = false;
+      console.log(`Attempting to resend invitation email to ${invitation.email}`);
+      
+      if (process.env.SENDGRID_API_KEY) {
+        try {
+          // Import the sendInvitationEmail function from utils/sendgrid
+          const { sendInvitationEmail } = await import('./utils/sendgrid');
+          
+          if (inviter && project) {
+            console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
+            
+            // Send the invitation email
+            emailSent = await sendInvitationEmail(
+              invitation.email,
+              inviter.name,
+              project.name,
+              invitation.role,
+              invitation.token
+            );
+            
+            if (emailSent) {
+              console.log(`SUCCESS: Invitation email resent to ${invitation.email}`);
+              
+              // Update the invitation to record that email was sent successfully
+              await storage.updateInvitation(invitation.id, { emailSent: true });
+              invitation.emailSent = true;
+            } else {
+              console.error(`ERROR: Failed to resend invitation email to ${invitation.email}`);
+            }
+          } else {
+            console.error(`Cannot resend invitation email: ${!inviter ? 'Inviter not found' : 'Project not found'}`);
+          }
+        } catch (emailError) {
+          console.error('Error resending invitation email:', emailError);
+          console.error('Error details:', emailError instanceof Error ? emailError.message : String(emailError));
+          if (emailError instanceof Error && emailError.stack) {
+            console.error('Stack trace:', emailError.stack);
+          }
+        }
+      } else {
+        console.warn(`SendGrid API key is not available, unable to resend invitation email to ${invitation.email}`);
+      }
+      
+      // Log activity
+      await storage.logActivity({
+        userId: req.user.id,
+        action: "resent_invitation_email",
+        entityType: "project",
+        entityId: invitation.projectId,
+        metadata: { inviteeEmail: invitation.email, emailSent }
+      });
+      
+      res.status(200).json({ 
+        success: true, 
+        emailSent, 
+        invitation: {
+          ...invitation,
+          emailSent
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Get pending invitations for a project
   app.get("/api/projects/:projectId/invitations", hasProjectAccess, async (req, res, next) => {

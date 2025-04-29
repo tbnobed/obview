@@ -1,8 +1,8 @@
-import { useProjectInvitations, useDeleteInvitation } from "@/hooks/use-invitations";
+import { useProjectInvitations, useDeleteInvitation, useResendInvitation } from "@/hooks/use-invitations";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trash2, Mail, Clock } from "lucide-react";
+import { Loader2, Trash2, Mail, Clock, RefreshCw } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -25,12 +25,17 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const { data: invitations = [], isLoading, error } = useProjectInvitations(projectId);
   const deleteInvitationMutation = useDeleteInvitation();
+  const resendInvitationMutation = useResendInvitation();
   
   const handleDeleteInvitation = async () => {
     if (pendingDeleteId) {
       await deleteInvitationMutation.mutateAsync(pendingDeleteId);
       setPendingDeleteId(null);
     }
+  };
+  
+  const handleResendInvitation = async (invitationId: number) => {
+    await resendInvitationMutation.mutateAsync(invitationId);
   };
 
   if (isLoading) {
