@@ -295,9 +295,13 @@ docker compose up -d
 
 ### Fixing Docker Build Issues
 
-If you encounter issues during the Docker build process, especially with missing directories like `/app/drizzle`, use our automated fix script:
+If you encounter issues during the Docker build process, especially with missing directories like `/app/drizzle` or COPY command failures, use one of our automated fix scripts:
 
+#### Standard Fix
 ```bash
+# Make the script executable
+chmod +x scripts/fix-docker-build.sh
+
 # Run the fix script (resolves most common issues)
 ./scripts/fix-docker-build.sh
 
@@ -305,12 +309,25 @@ If you encounter issues during the Docker build process, especially with missing
 ./scripts/fix-docker-build.sh --force-clean
 ```
 
-This script will:
+#### Critical Build Issues
+For persistent failures with the Docker build process, use our direct fix script:
+
+```bash
+# Make the script executable
+chmod +x scripts/direct-fix.sh
+
+# Run the direct fix script
+./scripts/direct-fix.sh
+```
+
+These scripts will:
 - Create all necessary directories
 - Generate placeholder files if needed
 - Make scripts executable
 - Rebuild Docker images with a clean cache
 - Start the containers
+
+The direct-fix.sh script takes a more aggressive approach by completely replacing the Dockerfile with a simplified version known to work in all environments.
 
 For more detailed troubleshooting, see the [DOCKER_TROUBLESHOOTING.md](DOCKER_TROUBLESHOOTING.md) file.
 

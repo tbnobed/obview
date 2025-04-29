@@ -1,162 +1,309 @@
 # Docker Troubleshooting Guide
 
-This document provides solutions for common Docker build and deployment issues with OBview.io.
+This document provides solutions to common Docker build and deployment issues with OBview.io.
 
-## Common Build Issues
+## Quick Fix Scripts
 
-### Missing /app/drizzle Directory Error
+### Standard Fix
 
-**Error Message:**
-```
-ERROR [app production 9/12] COPY --from=builder /app/drizzle ./drizzle
-failed to solve: failed to compute cache key: failed to calculate checksum of ref XXXX-XXXX-XXXX-XXXX::XXXXX: "/app/drizzle": not found
-```
-
-**Solution:**
-
-The error occurs because the Dockerfile is trying to copy a directory that doesn't exist. We've implemented multiple fixes for this issue:
-
-1. **Manually create the directory structure**:
-   ```bash
-   # On your host machine, before building
-   mkdir -p drizzle
-   touch drizzle/.gitkeep
-   ```
-
-2. **Force a clean build ignoring cache**:
-   ```bash
-   docker compose build --no-cache app
-   ```
-
-3. **Use the updated Dockerfile from the latest commit**:
-   The latest Dockerfile includes fixes for this issue by:
-   - Creating required directories during build
-   - Making the COPY commands more resilient
-   - Generating placeholder files when needed
-
-### Database Migration Failures
-
-**Error Message:**
-```
-ERROR: Database migration failed
-```
-
-**Solution:**
-
-1. **Verify database connection**:
-   Check that your DATABASE_URL environment variable is correctly set and the PostgreSQL server is running.
-
-2. **Manually initialize the database**:
-   If migrations are failing, you can manually run them:
-   ```bash
-   # Start just the database
-   docker compose up -d db
-   
-   # Wait for DB to be ready
-   sleep 10
-   
-   # Run migrations manually
-   docker compose exec app node dist/server/db-migrate.js
-   ```
-
-3. **Use the setup-drizzle.js script**:
-   ```bash
-   docker compose exec app node scripts/setup-drizzle.js
-   ```
-
-## Build Process Overview
-
-The Docker build process for OBview.io involves several key steps:
-
-1. **Builder Stage**:
-   - Installs dependencies
-   - Builds the application
-   - Generates drizzle migration files
-
-2. **Production Stage**:
-   - Copies built assets from the builder stage
-   - Sets up directories for uploads and migrations
-   - Runs database migrations and initializes the admin user
-   - Starts the application
-
-## Customizing the Build
-
-You can customize the build process by modifying the following files:
-
-- **Dockerfile**: Controls the build and packaging process
-- **docker-compose.yml**: Defines services, networks, and volumes
-- **scripts/docker-entrypoint.sh**: Controls initialization when the container starts
-- **scripts/wait-for-db.sh**: Ensures database is ready before starting the app
-- **scripts/setup-drizzle.js**: Handles drizzle migration setup
-
-## Full Rebuild Instructions
-
-If you need to completely rebuild the application from scratch:
+For most Docker build issues, you can use our automated fix script:
 
 ```bash
-# Stop all containers
-docker compose down
+# Make the script executable
+chmod +x scripts/fix-docker-build.sh
 
-# Remove volumes (caution: this deletes all data)
-docker compose down -v
+# Run the fix script
+./scripts/fix-docker-build.sh
+```
 
-# Remove all images related to this project
-docker images | grep obview | awk '{print $3}' | xargs docker rmi -f
+For more stubborn issues, use the force clean option:
 
-# Rebuild everything
-docker compose build --no-cache
+```bash
+./scripts/fix-docker-build.sh --force-clean
+```
 
-# Start from scratch
+### Direct Fix (For Critical Build Failures)
+
+If you're experiencing persistent COPY command failures or other critical build issues, we have a direct fix script that completely rewrites the Dockerfile with a simplified version:
+
+```bash
+# Make the script executable
+chmod +x scripts/direct-fix.sh
+
+# Run the direct fix script
+./scripts/direct-fix.sh
+```
+
+The direct fix script:
+1. Creates a backup of your existing Dockerfile as Dockerfile.bak
+2. Writes a new simplified Dockerfile designed to work in all environments
+3. Creates all necessary directories and placeholder files
+4. Rebuilds and starts the Docker containers
+
+## Common Issues and Solutions
+
+### Issue: Missing drizzle directory during build
+
+**Error message:**
+```
+failed to solve: process "/bin/sh -c node scripts/setup-drizzle.js" did not complete successfully: exit code: 1
+```
+
+**Solution:**
+
+1. Create the required directories in your project root:
+```bash
+mkdir -p drizzle
+mkdir -p migrations
+```
+
+2. Create placeholder files:
+```bash
+echo "-- Placeholder migration file for Drizzle" > drizzle/placeholder.sql
+echo "-- Placeholder migration file for Drizzle" > migrations/placeholder.sql
+```
+
+3. Rebuild Docker images:
+```bash
+docker compose build
 docker compose up -d
 ```
 
-This ensures a completely fresh environment with no cached artifacts from previous builds.
+### Issue: "require is not defined in ES module scope" error
 
-## Advanced Issues
+**Error message:**
+```
+ReferenceError: require is not defined in ES module scope, you can use import instead
+This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module"
+```
 
-### Missing NPM Packages
+**Solution:**
 
-If the build fails with missing npm packages, try:
+This occurs because Node.js treats .js files as ES modules when "type": "module" is set in package.json. Use one of these solutions:
+
+1. Use the CommonJS version of the script:
+```bash
+docker compose run --rm app node scripts/setup-drizzle.cjs
+```
+
+2. Skip the problematic script in the build process by modifying the Dockerfile:
+```dockerfile
+# Create drizzle directories manually instead of using the script
+RUN mkdir -p drizzle migrations
+RUN echo "-- Placeholder migration file for Drizzle" > drizzle/placeholder.sql
+RUN echo "-- Placeholder migration file for Drizzle" > migrations/placeholder.sql
+```
+
+### Issue: Docker build cache issues
+
+**Error message:**
+```
+ => ERROR [builder 7/8] RUN npm run build                                                                 5.2s
+```
+
+**Solution:**
+
+Clear Docker's build cache and rebuild:
 
 ```bash
-# In your project directory
-npm ci
+# Remove all stopped containers
+docker container prune -f
 
-# Then rebuild
+# Clean the build cache
+docker builder prune -f
+
+# Rebuild without cache
 docker compose build --no-cache
+docker compose up -d
 ```
 
-### Permissions Issues
+### Issue: Database connection failures
 
-If you encounter permission issues with uploads or script execution:
+**Error message:**
+```
+Error: connect ECONNREFUSED 127.0.0.1:5432
+```
+
+**Solution:**
+
+1. Check if the database container is running:
+```bash
+docker compose ps
+```
+
+2. Verify the database environment variables:
+```bash
+docker compose exec app env | grep DATABASE_URL
+```
+
+3. Make sure the wait-for-db.sh script is executed before the application starts:
+```bash
+# Check entrypoint script permissions
+docker compose exec app ls -la /app/scripts/
+```
+
+4. Make sure the scripts are executable:
+```bash
+chmod +x scripts/*.sh
+docker compose build
+docker compose up -d
+```
+
+### Issue: Permission denied when executing scripts
+
+**Error message:**
+```
+/app/scripts/docker-entrypoint.sh: Permission denied
+```
+
+**Solution:**
+
+1. Make scripts executable locally:
+```bash
+chmod +x scripts/*.sh
+```
+
+2. Update Dockerfile to make scripts executable:
+```dockerfile
+# Make scripts executable
+RUN chmod +x ./scripts/*.sh
+```
+
+3. Rebuild:
+```bash
+docker compose build
+docker compose up -d
+```
+
+### Issue: Volume mounting problems
+
+**Error message:**
+```
+Error response from daemon: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error mounting "/var/lib/docker/volumes/..." to "/app/uploads": operation not permitted: unknown
+```
+
+**Solution:**
+
+1. Check for proper volume configuration in docker-compose.yml:
+```yaml
+volumes:
+  - ./uploads:/app/uploads
+```
+
+2. Use a named volume instead of a bind mount:
+```yaml
+volumes:
+  - app_uploads:/app/uploads
+
+volumes:
+  app_uploads:
+```
+
+3. Check permissions on the host directory:
+```bash
+sudo chown -R $(id -u):$(id -g) ./uploads
+```
+
+### Issue: Out of disk space
+
+**Error message:**
+```
+failed to solve: failed to register layer: write /var/lib/docker/tmp/...: no space left on device
+```
+
+**Solution:**
+
+1. Clear Docker resources:
+```bash
+docker system prune -a -f
+```
+
+2. Remove unused images:
+```bash
+docker image prune -a -f
+```
+
+3. Check available disk space:
+```bash
+df -h
+```
+
+## Advanced Troubleshooting
+
+### Inspecting Docker Build Process
+
+To understand what's happening during the build process:
 
 ```bash
-# Fix permissions in the container
-docker compose exec app chmod -R 755 /app/scripts
-docker compose exec app chmod -R 777 /app/uploads
-
-# Or rebuild with correct permissions
-docker compose build --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)
+# Build with verbose output
+docker compose build --progress=plain
 ```
 
-### Docker Context Size Issues
+### Debugging Container Issues
 
-If your Docker build context is too large:
+To debug a running container:
 
 ```bash
-# Add more files to .dockerignore
-echo "node_modules/" >> .dockerignore
-echo "uploads/" >> .dockerignore
+# Get into a running container
+docker compose exec app /bin/sh
 
-# Or build with a specific context
-docker build -t obview -f Dockerfile .
+# View logs
+docker compose logs -f app
+
+# Check process list
+docker compose top app
 ```
 
-## Getting Help
+### Fixing Network Issues
 
-If you continue to experience issues with the Docker build, please:
+If containers can't communicate:
 
-1. Check the logs with `docker compose logs app`
-2. Verify all environment variables are correctly set
-3. Ensure your Docker version is up to date
-4. Reference the detailed DEPLOYMENT.md document for complete setup instructions
+```bash
+# Check Docker networks
+docker network ls
+
+# Inspect the application network
+docker network inspect obview_app_network
+
+# Recreate the network
+docker network rm obview_app_network
+docker compose up -d
+```
+
+## Database Recovery
+
+If your database is corrupted or migrations fail:
+
+1. Backup your data first:
+```bash
+docker compose exec db pg_dump -U postgres obview > backup.sql
+```
+
+2. Reset the database:
+```bash
+docker compose down
+docker volume rm obview_db_data
+docker compose up -d
+```
+
+3. Create a fresh database:
+```bash
+docker compose exec db createdb -U postgres obview
+```
+
+4. Restore from backup if needed:
+```bash
+cat backup.sql | docker compose exec -T db psql -U postgres obview
+```
+
+## Getting Additional Help
+
+If you continue to experience issues after trying these solutions:
+
+1. Check the GitHub repository issues section
+2. Search the community forums
+3. Contact support with the following details:
+   - Docker and Docker Compose versions
+   - Operating system and version
+   - Full error messages
+   - Output of `docker compose ps` and `docker compose logs`

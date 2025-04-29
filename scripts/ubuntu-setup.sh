@@ -176,7 +176,10 @@ chmod +x scripts/*.sh
 chmod +x scripts/*.js 2>/dev/null || true
 
 # Run the fix-docker-build script if it exists
-if [ -f "./scripts/fix-docker-build.sh" ]; then
+if [ -f "./scripts/direct-fix.sh" ]; then
+  echo "Running direct Docker build fix script..."
+  ./scripts/direct-fix.sh
+elif [ -f "./scripts/fix-docker-build.sh" ]; then
   echo "Running Docker build fix script..."
   ./scripts/fix-docker-build.sh
 else
