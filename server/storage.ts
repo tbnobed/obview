@@ -756,15 +756,10 @@ export class DatabaseStorage implements IStorage {
       
     if (!invitation) return undefined;
     
-    // Ensure emailSent property is properly set
-    // Use type assertion to safely access all possible property names
-    const rawData = invitation as any;
-    
+    // Ensure emailSent property is properly set - simplifying by only using camelCase property
     return {
       ...invitation,
-      emailSent: invitation.emailSent === true || 
-                 (rawData && rawData.email_sent === true) || 
-                 false
+      emailSent: invitation.emailSent === true || false
     };
   }
   
@@ -782,6 +777,9 @@ export class DatabaseStorage implements IStorage {
       
     // Process each invitation to ensure consistent property names and values
     return results.map(invitation => {
+      // Add extra debugging information
+      console.log(`Processing invitation ${invitation.id}:`, JSON.stringify(invitation, null, 2));
+      
       // Use type assertion to safely access raw properties
       const rawData = invitation as any;
       
@@ -792,13 +790,11 @@ export class DatabaseStorage implements IStorage {
         invitationKeys: Object.keys(invitation) // Check what keys are actually present
       }));
       
-      // Create a cleaned up version with guaranteed properties
+      // Create a cleaned up version with guaranteed properties - simplifying to only use camelCase
       return {
         ...invitation,
-        // Explicitly ensure emailSent is present with the correct value
-        emailSent: invitation.emailSent === true || 
-                   (rawData && rawData.email_sent === true) || 
-                   false
+        // Explicitly ensure emailSent is present with correct value
+        emailSent: invitation.emailSent === true || false
       };
     });
   }
