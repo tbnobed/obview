@@ -48,8 +48,15 @@ interface EmailParams {
  */
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
-    logToFile(`Attempting to send email to ${params.to} from ${params.from} with subject: ${params.subject}`);
+    // Log all input parameters for debugging
+    logToFile(`Sending email with the following parameters:`);
+    logToFile(`  - To: ${params.to}`);
+    logToFile(`  - From: ${params.from}`);
+    logToFile(`  - Subject: ${params.subject}`);
+    logToFile(`  - Text length: ${params.text?.length || 0} characters`);
+    logToFile(`  - HTML length: ${params.html?.length || 0} characters`);
     
+    // Verify API key exists
     if (!process.env.SENDGRID_API_KEY) {
       const error = "Cannot send email: SENDGRID_API_KEY is not set";
       console.error(error);
@@ -57,31 +64,66 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       return false;
     }
     
-    const response = await mailService.send({
+    // Log API key state (not the actual key for security)
+    const apiKeyLength = process.env.SENDGRID_API_KEY.length;
+    logToFile(`Using SendGrid API key (${apiKeyLength} characters)`);
+    
+    // Ensure the API key is properly set in the mail service
+    mailService.setApiKey(process.env.SENDGRID_API_KEY);
+    logToFile(`API key set in mail service`);
+    
+    // Prepare email data
+    const emailData = {
       to: params.to,
       from: params.from,
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
-    });
+    };
     
+    logToFile(`Sending email via SendGrid...`);
+    const response = await mailService.send(emailData);
+    
+    // Log success and response details
     const successMsg = `Email sent successfully to ${params.to}`;
     console.log(successMsg);
     logToFile(successMsg);
-    logToFile(`SendGrid response: ${JSON.stringify(response)}`);
+    
+    if (response && response.length > 0) {
+      const statusCode = response[0]?.statusCode;
+      const messageId = response[0]?.headers?.['x-message-id'] || 'unknown';
+      
+      logToFile(`SendGrid response status code: ${statusCode}`);
+      logToFile(`SendGrid message ID: ${messageId}`);
+      logToFile(`Full response: ${JSON.stringify(response)}`);
+    } else {
+      logToFile(`No detailed response received from SendGrid`);
+    }
     
     return true;
   } catch (error) {
+    // Enhanced error logging
     const errorMsg = `SendGrid email error when sending to ${params.to}: ${error instanceof Error ? error.message : String(error)}`;
     console.error(errorMsg);
     logToFile(errorMsg);
     
+    // Log stack trace if available
     if (error instanceof Error && error.stack) {
       logToFile(`Error stack: ${error.stack}`);
     }
     
-    if (typeof error === 'object' && error !== null) {
-      logToFile(`Error details: ${JSON.stringify(error)}`);
+    // Log error object details if possible
+    try {
+      if (typeof error === 'object' && error !== null) {
+        logToFile(`Error details: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+        
+        // Check for specific SendGrid error properties
+        if ('response' in error) {
+          logToFile(`SendGrid API response: ${JSON.stringify((error as any).response?.body || {})}`);
+        }
+      }
+    } catch (jsonError) {
+      logToFile(`Error serializing error object: ${jsonError}`);
     }
     
     return false;
@@ -104,19 +146,34 @@ export async function sendInvitationEmail(
   projectName: string,
   role: string,
   token: string,
-  appUrl: string = process.env.APP_URL || `http://localhost:5000`
+  appUrl?: string
 ): Promise<boolean> {
   try {
     logToFile(`Preparing invitation email to ${to} for project "${projectName}" from "${inviterName}" with role "${role}"`);
+    logToFile(`Token: ${token}`);
     
-    // Determine the correct invite URL
-    // If we're in a Replit environment, construct a proper URL
-    let baseUrl = appUrl;
-    if (process.env.REPL_ID) {
+    // Determine the correct invite URL using the best available option
+    let baseUrl: string;
+    
+    // First priority: Explicitly provided appUrl parameter
+    if (appUrl) {
+      baseUrl = appUrl;
+      logToFile(`Using explicitly provided app URL: ${baseUrl}`);
+    }
+    // Second priority: APP_URL environment variable
+    else if (process.env.APP_URL) {
+      baseUrl = process.env.APP_URL;
+      logToFile(`Using APP_URL environment variable: ${baseUrl}`);
+    }
+    // Third priority: REPLIT environment 
+    else if (process.env.REPL_ID) {
       baseUrl = `https://${process.env.REPL_ID}.repl.co`;
-      logToFile(`Running in Replit environment, using base URL: ${baseUrl}`);
-    } else {
-      logToFile(`Using provided app URL: ${baseUrl}`);
+      logToFile(`Using Replit environment URL: ${baseUrl}`);
+    }
+    // Final fallback: Local development
+    else {
+      baseUrl = `http://localhost:5000`;
+      logToFile(`Using fallback local development URL: ${baseUrl}`);
     }
     
     const inviteUrl = `${baseUrl}/invite/${token}`;

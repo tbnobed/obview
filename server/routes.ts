@@ -1305,7 +1305,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If SendGrid API key is available, send an email
       let emailSent = false;
+      console.log(`Checking SendGrid API key availability for invitation to ${email}`);
+      
       if (process.env.SENDGRID_API_KEY) {
+        console.log(`SendGrid API key is available, preparing to send invitation email to ${email}`);
         try {
           // Import the sendInvitationEmail function from utils/sendgrid
           const { sendInvitationEmail } = await import('./utils/sendgrid');
@@ -1314,6 +1317,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const inviter = await storage.getUser(req.user.id);
           
           if (inviter && project) {
+            console.log(`Sending invitation email to ${email} for project "${project.name}" from "${inviter.name}"`);
+            
             // Send the invitation email
             emailSent = await sendInvitationEmail(
               email,
@@ -1324,14 +1329,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             
             if (emailSent) {
-              console.log(`Invitation email sent to ${email} for project ${project.name}`);
+              console.log(`SUCCESS: Invitation email sent to ${email} for project ${project.name}`);
             } else {
-              console.error(`Failed to send invitation email to ${email}`);
+              console.error(`ERROR: Failed to send invitation email to ${email} for project ${project.name}`);
             }
+          } else {
+            console.error(`Cannot send invitation email: ${!inviter ? 'Inviter not found' : 'Project not found'}`);
           }
         } catch (emailError) {
           console.error('Error sending invitation email:', emailError);
+          console.error('Error details:', emailError instanceof Error ? emailError.message : String(emailError));
+          if (emailError instanceof Error && emailError.stack) {
+            console.error('Stack trace:', emailError.stack);
+          }
         }
+      } else {
+        console.warn(`SendGrid API key is not available, unable to send invitation email to ${email}`);
       }
       
       // Log activity
