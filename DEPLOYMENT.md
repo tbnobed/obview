@@ -2,6 +2,31 @@
 
 This guide explains how to deploy the OBview.io application on an Ubuntu server using Docker and Docker Compose.
 
+## Quick Setup (Automated)
+
+For a quick automated setup on Ubuntu, you can use our setup script:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/obview.git
+cd obview
+
+# Make the script executable
+chmod +x scripts/ubuntu-setup.sh
+
+# Run the setup script (add your domain for automatic SSL setup)
+sudo ./scripts/ubuntu-setup.sh yourdomain.com
+```
+
+This script will:
+- Install all required dependencies (Docker, Nginx, etc.)
+- Configure your server with security best practices
+- Set up the application with Docker Compose
+- Configure Nginx and obtain SSL certificates
+- Set up automatic backups and system updates
+
+For a manual setup or more control over the installation process, follow the steps below.
+
 ## Prerequisites
 
 - Ubuntu 22.04 LTS or newer (recommended for best performance)
@@ -9,7 +34,7 @@ This guide explains how to deploy the OBview.io application on an Ubuntu server 
 - Domain name pointed to your server (strongly recommended for production use)
 - Root or sudo access to the server
 
-## Installation Steps
+## Manual Installation Steps
 
 ### 1. Connect to Your Ubuntu Server
 
