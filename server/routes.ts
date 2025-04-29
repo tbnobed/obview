@@ -1535,30 +1535,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized. Only admins can access this endpoint." });
       }
       
-      const { to } = req.body;
+      const { to, type = 'basic' } = req.body;
       
       if (!to) {
         return res.status(400).json({ message: "Email address is required" });
       }
       
-      // Import the sendEmail function
-      const { sendEmail } = await import('./utils/sendgrid');
+      // Import both SendGrid functions
+      const { sendEmail, sendInvitationEmail } = await import('./utils/sendgrid');
       
       console.log(`Sending test email to ${to}`);
+      console.log(`API Keys available:
+        - SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'YES' : 'NO'}
+        - NEW_SENDGRID_API_KEY: ${process.env.NEW_SENDGRID_API_KEY ? 'YES' : 'NO'}
+      `);
       
-      const emailSent = await sendEmail({
-        to: to,
-        from: process.env.EMAIL_FROM || 'alerts@obedtv.com',
-        subject: 'Test Email from ObedTV',
-        text: 'This is a test email sent directly from the /api/debug/send-test-email endpoint.',
-        html: '<p>This is a test email sent directly from the <code>/api/debug/send-test-email</code> endpoint.</p>'
-      });
+      // Use the NEW_SENDGRID_API_KEY if available (temporarily override the environment variable)
+      const originalApiKey = process.env.SENDGRID_API_KEY;
+      if (process.env.NEW_SENDGRID_API_KEY) {
+        process.env.SENDGRID_API_KEY = process.env.NEW_SENDGRID_API_KEY;
+        console.log("Using NEW_SENDGRID_API_KEY for this test request");
+      }
       
-      if (emailSent) {
+      let emailResult;
+      
+      // Check if we should send a test invitation email instead of a basic email
+      if (type === 'invitation') {
+        console.log("Sending test INVITATION email...");
+        emailResult = await sendInvitationEmail(
+          to,
+          "Test Inviter",
+          "Test Project",
+          "viewer",
+          "test-token-12345",
+          req.body.appUrl
+        );
+      } else {
+        // Simple test email
+        console.log("Sending simple test email...");
+        emailResult = await sendEmail({
+          to: to,
+          from: process.env.EMAIL_FROM || 'alerts@obedtv.com',
+          subject: 'Test Email from MediaCollab',
+          text: 'This is a test email sent directly from the /api/debug/send-test-email endpoint.',
+          html: '<p>This is a test email sent directly from the <code>/api/debug/send-test-email</code> endpoint.</p>'
+        });
+      }
+      
+      // Restore the original API key if we changed it
+      if (process.env.NEW_SENDGRID_API_KEY) {
+        process.env.SENDGRID_API_KEY = originalApiKey;
+      }
+      
+      if (emailResult) {
         res.json({ 
           success: true, 
           message: `Test email sent to ${to}. Check the logs for details.`,
           apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+          emailType: type,
           sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled" 
         });
       } else {
@@ -1566,11 +1600,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: false, 
           message: `Failed to send test email to ${to}. Check the logs for details.`,
           apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+          emailType: type,
           sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
         });
       }
     } catch (error) {
-      next(error);
+      console.error("Error in test email endpoint:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
     }
   });
 
