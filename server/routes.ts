@@ -1371,8 +1371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get invitation details
-  app.get("/api/invite/:token", isAuthenticated, async (req, res, next) => {
+  // Get invitation details - Public route that doesn't require authentication
+  app.get("/api/invite/:token", async (req, res, next) => {
     try {
       const { token } = req.params;
       

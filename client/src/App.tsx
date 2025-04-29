@@ -29,7 +29,7 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/invite/:token" component={InvitePage} />
+      <Route path="/invite/:token" component={InvitePage} />
       <Route component={NotFound} />
     </Switch>
   );
