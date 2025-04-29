@@ -149,6 +149,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Debug endpoint for email testing (only in development)
   if (process.env.NODE_ENV === 'development') {
+    // Email configuration debug endpoint
+    app.get("/api/debug/email-config", isAuthenticated, isAdmin, async (req, res) => {
+      try {
+        // Gather environment variables related to URL construction
+        const envVars = {
+          REPL_ID: process.env.REPL_ID || 'not set',
+          REPL_OWNER: process.env.REPL_OWNER || 'not set',
+          REPLIT_SLUG: process.env.REPLIT_SLUG || 'not set',
+          APP_URL: process.env.APP_URL || 'not set',
+          EMAIL_FROM: process.env.EMAIL_FROM || 'not set',
+          SENDGRID_API_KEY: process.env.SENDGRID_API_KEY ? 'set (length: ' + process.env.SENDGRID_API_KEY.length + ')' : 'not set'
+        };
+
+        // Determine what URL would be used based on current environment
+        let baseUrl = '';
+        
+        if (process.env.APP_URL) {
+          baseUrl = process.env.APP_URL;
+        }
+        else if (process.env.REPL_ID) {
+          if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
+            baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+          }
+          else if (process.env.REPLIT_SLUG) {
+            baseUrl = `https://${process.env.REPLIT_SLUG}.replit.app`;
+          }
+          else {
+            baseUrl = `https://${process.env.REPL_ID}.repl.co`;
+          }
+        }
+        else {
+          baseUrl = 'http://localhost:5000';
+        }
+        
+        const sampleInviteUrl = `${baseUrl}/invite/sample-token-12345`;
+        
+        // Get logs if available
+        let logs = 'Logs not available';
+        try {
+          const { fileURLToPath } = await import('url');
+          const __filename = fileURLToPath(import.meta.url);
+          const __dirname = path.dirname(__filename);
+          const logDir = path.join(__dirname, 'logs');
+          const logFilePath = path.join(logDir, 'sendgrid.log');
+          
+          if (fs.existsSync(logFilePath)) {
+            // Get last 20 lines of log file
+            const logContent = fs.readFileSync(logFilePath, 'utf8');
+            const logLines = logContent.split('\n').filter(line => line.trim());
+            logs = logLines.slice(-20).join('\n');
+          }
+        } catch (error) {
+          logs = `Error reading logs: ${error instanceof Error ? error.message : String(error)}`;
+        }
+        
+        return res.json({
+          environment: envVars,
+          urlConstruction: {
+            determinedBaseUrl: baseUrl,
+            sampleInviteUrl: sampleInviteUrl
+          },
+          recentLogs: logs
+        });
+      } catch (error) {
+        console.error("Error in debug email endpoint:", error);
+        return res.status(500).json({ message: "Error retrieving email debug information" });
+      }
+    });
+    
+    // Test email sending endpoint
     app.get("/api/debug/send-test-email", async (req, res) => {
       try {
         const { sendEmail } = await import('./utils/sendgrid');
