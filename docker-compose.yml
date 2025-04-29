@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -10,7 +8,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -31,6 +30,14 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
 
   db:
     image: postgres:16-alpine
@@ -51,11 +58,24 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+        reservations:
+          cpus: '0.1'
+          memory: 200M
+    # PostgreSQL performance tuning
+    command: postgres -c shared_buffers=128MB -c effective_cache_size=384MB -c maintenance_work_mem=64MB -c work_mem=8MB
 
 volumes:
   postgres_data:
+    name: obview_postgres_data
   uploads:
+    name: obview_uploads
 
 networks:
   app_network:
+    name: obview_network
     driver: bridge
