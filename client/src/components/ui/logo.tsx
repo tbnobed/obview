@@ -10,9 +10,9 @@ interface LogoProps {
 
 const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', withText = true }) => {
   const sizeClasses = {
-    sm: 'h-6 w-6',
-    md: 'h-8 w-8',
-    lg: 'h-10 w-10'
+    sm: 'h-16 w-16',
+    md: 'h-24 w-24',
+    lg: 'h-32 w-32'
   };
 
   return (
@@ -24,7 +24,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', withText = tru
           className={`${sizeClasses[size]} object-contain`} 
         />
         {withText && (
-          <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
+          <span className="font-bold text-xl md:text-2xl lg:text-3xl bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">
             OBview.io
           </span>
         )}

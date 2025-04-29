@@ -388,7 +388,7 @@ export default function AuthPage() {
       
       {/* Right Side - Hero Area */}
       <div className="relative flex-1 hidden w-0 lg:block">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-400 flex flex-col items-center justify-center text-white px-12">
+        <div className="absolute inset-0 bg-gradient-to-r from-teal-700 to-teal-500 flex flex-col items-center justify-center text-white px-12">
           <div className="max-w-md">
             <Logo size="lg" className="mb-6 text-white" />
             <h1 className="text-4xl font-bold mb-6">Streamline Your Media Review Process</h1>
