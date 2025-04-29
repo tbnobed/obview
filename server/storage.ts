@@ -81,9 +81,11 @@ export interface IStorage {
 
   // Invitations
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
+  getInvitationById(id: number): Promise<Invitation | undefined>;
   getInvitationByToken(token: string): Promise<Invitation | undefined>;
   getInvitationsByProject(projectId: number): Promise<Invitation[]>;
   updateInvitation(id: number, data: Partial<Invitation>): Promise<Invitation | undefined>;
+  deleteInvitation(id: number): Promise<boolean>;
 
   // Approvals
   createApproval(approval: InsertApproval): Promise<Approval>;
@@ -398,6 +400,10 @@ export class MemStorage implements IStorage {
     return invitation;
   }
 
+  async getInvitationById(id: number): Promise<Invitation | undefined> {
+    return this.invitations.get(id);
+  }
+
   async getInvitationByToken(token: string): Promise<Invitation | undefined> {
     return Array.from(this.invitations.values()).find(
       (invitation) => invitation.token === token
@@ -408,6 +414,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.invitations.values()).filter(
       (invitation) => invitation.projectId === projectId && invitation.isAccepted === false
     );
+  }
+  
+  async deleteInvitation(id: number): Promise<boolean> {
+    return this.invitations.delete(id);
   }
 
   async updateInvitation(id: number, data: Partial<Invitation>): Promise<Invitation | undefined> {
@@ -712,6 +722,14 @@ export class DatabaseStorage implements IStorage {
     return invitation;
   }
 
+  async getInvitationById(id: number): Promise<Invitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.id, id));
+    return invitation;
+  }
+
   async getInvitationByToken(token: string): Promise<Invitation | undefined> {
     const [invitation] = await db
       .select()
@@ -730,6 +748,14 @@ export class DatabaseStorage implements IStorage {
           eq(invitations.isAccepted, false)
         )
       );
+  }
+  
+  async deleteInvitation(id: number): Promise<boolean> {
+    const result = await db
+      .delete(invitations)
+      .where(eq(invitations.id, id))
+      .returning({ deletedId: invitations.id });
+    return result.length > 0;
   }
 
   async updateInvitation(id: number, data: Partial<Invitation>): Promise<Invitation | undefined> {

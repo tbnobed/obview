@@ -1211,6 +1211,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Create a new invitation
+  app.post("/api/invite", isAuthenticated, async (req, res, next) => {
+    try {
+      const { email, projectId, role = "viewer" } = req.body;
+      
+      if (!email || !projectId) {
+        return res.status(400).json({ message: "Email and projectId are required" });
+      }
+      
+      const project = await storage.getProject(parseInt(projectId));
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Check if user has edit access to the project
+      if (req.user.role !== "admin") {
+        const projectUser = await storage.getProjectUser(parseInt(projectId), req.user.id);
+        if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
+          return res.status(403).json({ message: "You don't have permission to invite users to this project" });
+        }
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      
+      // If user exists and is already a member of the project, return an error
+      if (existingUser) {
+        const existingMember = await storage.getProjectUser(parseInt(projectId), existingUser.id);
+        if (existingMember) {
+          return res.status(400).json({ message: "User is already a member of this project" });
+        }
+      }
+      
+      // Check if there's already a pending invitation for this email and project
+      const existingInvitations = await storage.getInvitationsByProject(parseInt(projectId));
+      const alreadyInvited = existingInvitations.some(inv => inv.email === email && !inv.isAccepted);
+      
+      if (alreadyInvited) {
+        return res.status(400).json({ message: "User has already been invited to this project" });
+      }
+      
+      // Generate a unique token for this invitation
+      const token = generateToken();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // Invitation expires in 7 days
+      
+      // Create the invitation
+      const invitation = await storage.createInvitation({
+        email,
+        role,
+        createdById: req.user.id,
+        projectId: parseInt(projectId),
+        token,
+        expiresAt,
+        isAccepted: false
+      });
+      
+      // If SendGrid API key is available, send an email (commented out for now)
+      /*
+      if (process.env.SENDGRID_API_KEY) {
+        // Implementation of email sending functionality
+      }
+      */
+      
+      // Log activity
+      await storage.logActivity({
+        userId: req.user.id,
+        action: "invited_user",
+        entityType: "project",
+        entityId: parseInt(projectId),
+        metadata: { inviteeEmail: email, role }
+      });
+      
+      res.status(201).json(invitation);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Accept an invitation
+  app.post("/api/invite/:token/accept", isAuthenticated, async (req, res, next) => {
+    try {
+      const { token } = req.params;
+      
+      // Find the invitation
+      const invitation = await storage.getInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // Check if the invitation has expired
+      if (new Date() > invitation.expiresAt) {
+        return res.status(400).json({ message: "Invitation has expired" });
+      }
+      
+      // Check if the invitation has already been accepted
+      if (invitation.isAccepted) {
+        return res.status(400).json({ message: "Invitation has already been accepted" });
+      }
+      
+      // Check if the current user's email matches the invitation email
+      if (req.user.email !== invitation.email) {
+        return res.status(403).json({ message: "This invitation is for a different email address" });
+      }
+      
+      // Add the user to the project
+      await storage.addUserToProject({
+        projectId: invitation.projectId,
+        userId: req.user.id,
+        role: invitation.role
+      });
+      
+      // Mark the invitation as accepted
+      await storage.updateInvitation(invitation.id, { isAccepted: true });
+      
+      // Log activity
+      await storage.logActivity({
+        userId: req.user.id,
+        action: "joined_project",
+        entityType: "project",
+        entityId: invitation.projectId,
+        metadata: { invitationId: invitation.id }
+      });
+      
+      res.status(200).json({ message: "Successfully joined project" });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Delete an invitation
+  app.delete("/api/invite/:id", isAuthenticated, async (req, res, next) => {
+    try {
+      const invitationId = parseInt(req.params.id);
+      
+      // Get the invitation
+      const invitation = await storage.getInvitationById(invitationId);
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // Check if the user has permission to delete the invitation
+      if (req.user.role !== "admin") {
+        // Check if the user is the creator of the invitation
+        if (invitation.createdById !== req.user.id) {
+          // Check if the user has edit access to the project
+          const projectUser = await storage.getProjectUser(invitation.projectId, req.user.id);
+          if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
+            return res.status(403).json({ message: "You don't have permission to cancel this invitation" });
+          }
+        }
+      }
+      
+      // Delete the invitation
+      await storage.deleteInvitation(invitationId);
+      
+      // Log activity
+      await storage.logActivity({
+        userId: req.user.id,
+        action: "cancelled_invitation",
+        entityType: "project",
+        entityId: invitation.projectId,
+        metadata: { inviteeEmail: invitation.email }
+      });
+      
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Get pending invitations for a project
   app.get("/api/projects/:projectId/invitations", hasProjectAccess, async (req, res, next) => {
     try {
