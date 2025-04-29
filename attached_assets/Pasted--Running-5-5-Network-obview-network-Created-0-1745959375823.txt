@@ -1,0 +1,1207 @@
+[+] Running 5/5
+ ✔ Network obview_network         Created                                         0.1s
+ ✔ Volume "obview_uploads"        Created                                         0.0s
+ ✔ Volume "obview_postgres_data"  Created                                         0.0s
+ ✔ Container obview_db            Started                                         0.3s
+ ✔ Container obview_app           Started                                         0.5s
+obtv-admin@obview-tbn:/opt/obview$ sudo docker compose logs -f
+obview_db  | The files belonging to this database system will be owned by user "postgres".
+obview_db  | This user must also own the server process.
+obview_db  |
+obview_db   | The database cluster will be initialized with locale "en_US.utf8".
+obview_app  | Checking environment configuration...
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_db   | The default database encoding has accordingly been set to "UTF8".
+obview_db   | The default text search configuration will be set to "english".
+obview_db   |
+obview_db   | Data page checksums are disabled.
+obview_db   |
+obview_app  | Database: obview, User: postgres
+obview_app  | PostgreSQL is unavailable - attempt 1/60 - waiting for 2 seconds
+obview_app  | PostgreSQL is unavailable - attempt 2/60 - waiting for 2 seconds
+obview_app  | PostgreSQL is unavailable - attempt 3/60 - waiting for 2 seconds
+obview_app  | SUCCESS: PostgreSQL is up and running
+obview_app  | Connection to db:5432 as postgres to database obview was successful
+obview_db   | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+obview_db   | creating subdirectories ... ok
+obview_db   | selecting dynamic shared memory implementation ... posix
+obview_db   | selecting default max_connections ... 100
+obview_db   | selecting default shared_buffers ... 128MB
+obview_db   | selecting default time zone ... UTC
+obview_db   | creating configuration files ... ok
+obview_app  | Verifying database connection...
+obview_app  | Database connection successful: { now: 2025-04-29T20:42:08.952Z }
+obview_db   | running bootstrap script ... ok
+obview_db   | sh: locale: not found
+obview_db   | 2025-04-29 20:42:04.350 UTC [35] WARNING:  no usable system locales were found
+obview_db   | performing post-bootstrap initialization ... ok
+obview_db   | syncing data to disk ... ok
+obview_db   |
+obview_db   |
+obview_db   | Success. You can now start the database server using:
+obview_db   |
+obview_db   |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+obview_db   | initdb: warning: enabling "trust" authentication for local connections
+obview_db   | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+obview_db   |
+obview_db   | waiting for server to start....2025-04-29 20:42:06.562 UTC [41] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db   | 2025-04-29 20:42:06.564 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2025-04-29 20:42:06.570 UTC [44] LOG:  database system was shut down at 2025-04-29 20:42:06 UTC
+obview_db   | 2025-04-29 20:42:06.577 UTC [41] LOG:  database system is ready to accept connections
+obview_app  | Creating database schema directly...
+obview_app  | NOTICE:  relation "users" already exists, skipping
+obview_app  | NOTICE:  relation "projects" already exists, skipping
+obview_app  | NOTICE:  relation "project_users" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "files" already exists, skipping
+obview_db   |  done
+obview_db   | server started
+obview_db   | CREATE DATABASE
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-db.sql
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "comments" already exists, skipping
+obview_app  | NOTICE:  relation "activity_logs" already exists, skipping
+obview_app  | NOTICE:  relation "invitations" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "approvals" already exists, skipping
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_app  | CREATE TABLE
+obview_app  | ERROR:  column "ownerid" does not exist
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_app  | WARNING: Direct schema creation failed.
+obview_app  | Proceeding anyway as the schema might already exist.
+obview_app  | Setting up admin user if needed...
+obview_db   | CREATE INDEX
+obview_db   | psql:/docker-entrypoint-initdb.d/01-init-db.sql:106: NOTICE:  Admin user created successfully
+obview_db   | DO
+obview_db   |
+obview_app  | Connecting to database...
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-schema.sql
+obview_db   | CREATE EXTENSION
+obview_db   | CREATE TABLE
+obview_db   | DO
+obview_db   | GRANT
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: sourcing /docker-entrypoint-initdb.d/02-init-db.sh
+obview_db   | Migrations already applied via SQL scripts
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_db   |
+obview_app  |
+obview_db   | PostgreSQL Database directory appears to contain a database; Skipping initialization
+obview_db   |
+obview_db   | 2025-04-29 20:42:07.717 UTC [1] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db   | 2025-04-29 20:42:07.717 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db   | 2025-04-29 20:42:07.717 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db   | 2025-04-29 20:42:07.720 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2025-04-29 20:42:07.725 UTC [29] LOG:  database system was interrupted; last known up at 2025-04-29 20:42:06 UTC
+obview_db   | 2025-04-29 20:42:08.009 UTC [29] LOG:  database system was not properly shut down; automatic recovery in progress
+obview_db   | 2025-04-29 20:42:08.012 UTC [29] LOG:  redo starts at 0/14EFCE8
+obview_db   | 2025-04-29 20:42:08.052 UTC [29] LOG:  invalid record length at 0/19672B0: expected at least 24, got 0
+obview_app  | ===============================================
+obview_app  | OBview.io is ready to start
+obview_app  | ===============================================
+obview_db   | 2025-04-29 20:42:08.052 UTC [29] LOG:  redo done at 0/1967268 system usage: CPU: user: 0.01 s, system: 0.01 s, elapsed: 0.03 s
+obview_db   | 2025-04-29 20:42:08.057 UTC [27] LOG:  checkpoint starting: end-of-recovery immediate wait
+obview_app  | Version: 1.0.0
+obview_app  | Environment: production
+obview_app  | Database: Connected
+obview_app  | Uploads directory: /app/uploads
+obview_app  | -----------------------------------------------
+obview_app  | Starting the application...
+obview_app  | ===============================================
+obview_app  |
+obview_app  | node:internal/modules/cjs/loader:1215
+obview_db   | 2025-04-29 20:42:08.156 UTC [27] LOG:  checkpoint complete: wrote 997 buffers (6.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.036 s, sync=0.041 s, total=0.101 s; sync files=361, longest=0.002 s, average=0.001 s; distance=4573 kB, estimate=4573 kB; lsn=0/19672B0, redo lsn=0/19672B0
+obview_db   | 2025-04-29 20:42:08.182 UTC [1] LOG:  database system is ready to accept connections
+obview_db   | 2025-04-29 20:42:09.009 UTC [35] ERROR:  column "ownerid" does not exist
+obview_db   | 2025-04-29 20:42:09.009 UTC [35] STATEMENT:
+obview_db   |   -- Create tables if they don't exist
+obview_db   |   CREATE TABLE IF NOT EXISTS users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       username VARCHAR(255) NOT NULL UNIQUE,
+obview_app  |   throw err;
+obview_app  |   ^
+obview_app  |
+obview_app  | Error: Cannot find module '/app/dist/server/index.js'
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_db   |       password VARCHAR(255) NOT NULL,
+obview_db   |       email VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'user',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS projects (
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       description TEXT,
+obview_db   |       ownerId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS project_users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(projectId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS files (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       filename VARCHAR(255) NOT NULL,
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app  | Checking environment configuration...
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | Database: obview, User: postgres
+obview_app  | SUCCESS: PostgreSQL is up and running
+obview_app  | Connection to db:5432 as postgres to database obview was successful
+obview_app  | Verifying database connection...
+obview_app  | Database connection successful: { now: 2025-04-29T20:42:10.066Z }
+obview_app  | Creating database schema directly...
+obview_app  | NOTICE:  relation "users" already exists, skipping
+obview_app  | NOTICE:  relation "projects" already exists, skipping
+obview_db   |       fileType VARCHAR(100) NOT NULL,
+obview_db   |       fileSize INTEGER NOT NULL,
+obview_db   |       filePath TEXT NOT NULL,
+obview_app  | NOTICE:  relation "project_users" already exists, skipping
+obview_app  | NOTICE:  relation "files" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_db   |       uploadedById INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       version INTEGER DEFAULT 1,
+obview_db   |       isLatestVersion BOOLEAN DEFAULT TRUE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS comments (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       content TEXT NOT NULL,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_app  | NOTICE:  relation "comments" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "activity_logs" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "invitations" already exists, skipping
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       parentId INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+obview_db   |       timestamp INTEGER,
+obview_db   |       isResolved BOOLEAN DEFAULT FALSE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_app  | NOTICE:  relation "approvals" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | ERROR:  column "ownerid" does not exist
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | WARNING: Direct schema creation failed.
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS activity_logs (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       projectId INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+obview_app  | Proceeding anyway as the schema might already exist.
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  |
+obview_app  | ===============================================
+obview_app  | OBview.io is ready to start
+obview_app  | ===============================================
+obview_app  | Version: 1.0.0
+obview_app  | Environment: production
+obview_app  | Database: Connected
+obview_app  | Uploads directory: /app/uploads
+obview_app  | -----------------------------------------------
+obview_app  | Starting the application...
+obview_app  | ===============================================
+obview_app  |
+obview_db   |       fileId INTEGER REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       action VARCHAR(255) NOT NULL,
+obview_db   |       details JSONB,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS invitations (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       email VARCHAR(255) NOT NULL,
+obview_app  | node:internal/modules/cjs/loader:1215
+obview_app  |   throw err;
+obview_app  |   ^
+obview_app  |
+obview_app  | Error: Cannot find module '/app/dist/server/index.js'
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_db   |       token VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       emailSent BOOLEAN DEFAULT FALSE,
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app  | Checking environment configuration...
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | Database: obview, User: postgres
+obview_db   |       expiresAt TIMESTAMP WITH TIME ZONE NOT NULL,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS approvals (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_app  | SUCCESS: PostgreSQL is up and running
+obview_app  | Connection to db:5432 as postgres to database obview was successful
+obview_app  | Verifying database connection...
+obview_app  | Database connection successful: { now: 2025-04-29T20:42:11.236Z }
+obview_app  | Creating database schema directly...
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_app  | NOTICE:  relation "users" already exists, skipping
+obview_db   |       status VARCHAR(50) NOT NULL DEFAULT 'pending',
+obview_db   |       feedback TEXT,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(fileId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   -- Create indexes
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_projects_ownerId ON projects(ownerId);
+obview_app  | NOTICE:  relation "projects" already exists, skipping
+obview_app  | NOTICE:  relation "project_users" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "files" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "comments" already exists, skipping
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_files_projectId ON files(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_fileId ON comments(fileId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_userId ON activity_logs(userId);
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "activity_logs" already exists, skipping
+obview_app  | NOTICE:  relation "invitations" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "approvals" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | ERROR:  column "ownerid" does not exist
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_projectId ON activity_logs(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_projectId ON project_users(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_userId ON project_users(userId);
+obview_db   |
+obview_db   | 2025-04-29 20:42:10.122 UTC [39] ERROR:  column "ownerid" does not exist
+obview_db   | 2025-04-29 20:42:10.122 UTC [39] STATEMENT:
+obview_db   |   -- Create tables if they don't exist
+obview_db   |   CREATE TABLE IF NOT EXISTS users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_db   |       username VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       password VARCHAR(255) NOT NULL,
+obview_app  | CREATE INDEX
+obview_app  | WARNING: Direct schema creation failed.
+obview_app  | Proceeding anyway as the schema might already exist.
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_db   |       email VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'user',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS projects (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       description TEXT,
+obview_db   |       ownerId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS project_users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(projectId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS files (
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       filename VARCHAR(255) NOT NULL,
+obview_db   |       fileType VARCHAR(100) NOT NULL,
+obview_db   |       fileSize INTEGER NOT NULL,
+obview_db   |       filePath TEXT NOT NULL,
+obview_db   |       uploadedById INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       version INTEGER DEFAULT 1,
+obview_db   |       isLatestVersion BOOLEAN DEFAULT TRUE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_app  |
+obview_app  | ===============================================
+obview_app  | OBview.io is ready to start
+obview_app  | ===============================================
+obview_app  | Version: 1.0.0
+obview_app  | Environment: production
+obview_app  | Database: Connected
+obview_app  | Uploads directory: /app/uploads
+obview_app  | -----------------------------------------------
+obview_app  | Starting the application...
+obview_app  | ===============================================
+obview_app  |
+obview_app  | node:internal/modules/cjs/loader:1215
+obview_app  |   throw err;
+obview_app  |   ^
+obview_app  |
+obview_app  | Error: Cannot find module '/app/dist/server/index.js'
+obview_db   |   );
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app  | Checking environment configuration...
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | Database: obview, User: postgres
+obview_app  | SUCCESS: PostgreSQL is up and running
+obview_app  | Connection to db:5432 as postgres to database obview was successful
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS comments (
+obview_app  | Verifying database connection...
+obview_app  | Database connection successful: { now: 2025-04-29T20:42:12.615Z }
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       content TEXT NOT NULL,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       parentId INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+obview_db   |       timestamp INTEGER,
+obview_db   |       isResolved BOOLEAN DEFAULT FALSE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_app  | Creating database schema directly...
+obview_app  | NOTICE:  relation "users" already exists, skipping
+obview_app  | NOTICE:  relation "projects" already exists, skipping
+obview_app  | NOTICE:  relation "project_users" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "files" already exists, skipping
+obview_app  | NOTICE:  relation "comments" already exists, skipping
+obview_app  | CREATE TABLE
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS activity_logs (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       projectId INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       fileId INTEGER REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       action VARCHAR(255) NOT NULL,
+obview_db   |       details JSONB,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS invitations (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       email VARCHAR(255) NOT NULL,
+obview_db   |       token VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       emailSent BOOLEAN DEFAULT FALSE,
+obview_db   |       expiresAt TIMESTAMP WITH TIME ZONE NOT NULL,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS approvals (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "activity_logs" already exists, skipping
+obview_app  | NOTICE:  relation "invitations" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "approvals" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_db   |       status VARCHAR(50) NOT NULL DEFAULT 'pending',
+obview_db   |       feedback TEXT,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(fileId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   -- Create indexes
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_projects_ownerId ON projects(ownerId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_files_projectId ON files(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_fileId ON comments(fileId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentId);
+obview_app  | CREATE INDEX
+obview_app  | ERROR:  column "ownerid" does not exist
+obview_app  | WARNING: Direct schema creation failed.
+obview_app  | Proceeding anyway as the schema might already exist.
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  |
+obview_app  | ===============================================
+obview_app  | OBview.io is ready to start
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_userId ON activity_logs(userId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_projectId ON activity_logs(projectId);
+obview_app  | ===============================================
+obview_app  | Version: 1.0.0
+obview_app  | Environment: production
+obview_app  | Database: Connected
+obview_app  | Uploads directory: /app/uploads
+obview_app  | -----------------------------------------------
+obview_app  | Starting the application...
+obview_app  | ===============================================
+obview_app  |
+obview_app  | node:internal/modules/cjs/loader:1215
+obview_app  |   throw err;
+obview_app  |   ^
+obview_app  |
+obview_app  | Error: Cannot find module '/app/dist/server/index.js'
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_projectId ON project_users(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_userId ON project_users(userId);
+obview_db   |
+obview_db   | 2025-04-29 20:42:11.292 UTC [43] ERROR:  column "ownerid" does not exist
+obview_db   | 2025-04-29 20:42:11.292 UTC [43] STATEMENT:
+obview_db   |   -- Create tables if they don't exist
+obview_db   |   CREATE TABLE IF NOT EXISTS users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       username VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       password VARCHAR(255) NOT NULL,
+obview_db   |       email VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'user',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS projects (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       description TEXT,
+obview_db   |       ownerId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS project_users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(projectId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS files (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       filename VARCHAR(255) NOT NULL,
+obview_db   |       fileType VARCHAR(100) NOT NULL,
+obview_db   |       fileSize INTEGER NOT NULL,
+obview_db   |       filePath TEXT NOT NULL,
+obview_db   |       uploadedById INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       version INTEGER DEFAULT 1,
+obview_db   |       isLatestVersion BOOLEAN DEFAULT TRUE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS comments (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       content TEXT NOT NULL,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       parentId INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+obview_db   |       timestamp INTEGER,
+obview_db   |       isResolved BOOLEAN DEFAULT FALSE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS activity_logs (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       projectId INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       fileId INTEGER REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       action VARCHAR(255) NOT NULL,
+obview_db   |       details JSONB,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS invitations (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       email VARCHAR(255) NOT NULL,
+obview_db   |       token VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       emailSent BOOLEAN DEFAULT FALSE,
+obview_db   |       expiresAt TIMESTAMP WITH TIME ZONE NOT NULL,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS approvals (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       status VARCHAR(50) NOT NULL DEFAULT 'pending',
+obview_db   |       feedback TEXT,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(fileId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   -- Create indexes
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_projects_ownerId ON projects(ownerId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_files_projectId ON files(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_fileId ON comments(fileId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_userId ON activity_logs(userId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_projectId ON activity_logs(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_projectId ON project_users(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_userId ON project_users(userId);
+obview_db   |
+obview_db   | 2025-04-29 20:42:12.681 UTC [47] ERROR:  column "ownerid" does not exist
+obview_db   | 2025-04-29 20:42:12.681 UTC [47] STATEMENT:
+obview_db   |   -- Create tables if they don't exist
+obview_db   |   CREATE TABLE IF NOT EXISTS users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       username VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       password VARCHAR(255) NOT NULL,
+obview_db   |       email VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'user',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS projects (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       description TEXT,
+obview_db   |       ownerId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS project_users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(projectId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS files (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       filename VARCHAR(255) NOT NULL,
+obview_db   |       fileType VARCHAR(100) NOT NULL,
+obview_db   |       fileSize INTEGER NOT NULL,
+obview_db   |       filePath TEXT NOT NULL,
+obview_db   |       uploadedById INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       version INTEGER DEFAULT 1,
+obview_db   |       isLatestVersion BOOLEAN DEFAULT TRUE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS comments (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       content TEXT NOT NULL,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       parentId INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+obview_db   |       timestamp INTEGER,
+obview_db   |       isResolved BOOLEAN DEFAULT FALSE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS activity_logs (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       projectId INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       fileId INTEGER REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       action VARCHAR(255) NOT NULL,
+obview_db   |       details JSONB,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS invitations (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       email VARCHAR(255) NOT NULL,
+obview_db   |       token VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       emailSent BOOLEAN DEFAULT FALSE,
+obview_db   |       expiresAt TIMESTAMP WITH TIME ZONE NOT NULL,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS approvals (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       status VARCHAR(50) NOT NULL DEFAULT 'pending',
+obview_db   |       feedback TEXT,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(fileId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   -- Create indexes
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_projects_ownerId ON projects(ownerId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_files_projectId ON files(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_fileId ON comments(fileId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_userId ON activity_logs(userId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_projectId ON activity_logs(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_projectId ON project_users(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_userId ON project_users(userId);
+obview_db   |
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | Database: obview, User: postgres
+obview_app  | SUCCESS: PostgreSQL is up and running
+obview_app  | Connection to db:5432 as postgres to database obview was successful
+obview_app  | Verifying database connection...
+obview_app  | Database connection successful: { now: 2025-04-29T20:42:14.383Z }
+obview_app  | Creating database schema directly...
+obview_app  | NOTICE:  relation "users" already exists, skipping
+obview_app  | NOTICE:  relation "projects" already exists, skipping
+obview_app  | NOTICE:  relation "project_users" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "files" already exists, skipping
+obview_app  | NOTICE:  relation "comments" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "activity_logs" already exists, skipping
+obview_app  | NOTICE:  relation "invitations" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "approvals" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | ERROR:  column "ownerid" does not exist
+obview_db   | 2025-04-29 20:42:14.441 UTC [58] ERROR:  column "ownerid" does not exist
+obview_db   | 2025-04-29 20:42:14.441 UTC [58] STATEMENT:
+obview_db   |   -- Create tables if they don't exist
+obview_db   |   CREATE TABLE IF NOT EXISTS users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       username VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       password VARCHAR(255) NOT NULL,
+obview_db   |       email VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'user',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS projects (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       description TEXT,
+obview_db   |       ownerId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS project_users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(projectId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS files (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       filename VARCHAR(255) NOT NULL,
+obview_db   |       fileType VARCHAR(100) NOT NULL,
+obview_db   |       fileSize INTEGER NOT NULL,
+obview_db   |       filePath TEXT NOT NULL,
+obview_db   |       uploadedById INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       version INTEGER DEFAULT 1,
+obview_db   |       isLatestVersion BOOLEAN DEFAULT TRUE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS comments (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       content TEXT NOT NULL,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       parentId INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+obview_db   |       timestamp INTEGER,
+obview_db   |       isResolved BOOLEAN DEFAULT FALSE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS activity_logs (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       projectId INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       fileId INTEGER REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       action VARCHAR(255) NOT NULL,
+obview_db   |       details JSONB,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS invitations (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       email VARCHAR(255) NOT NULL,
+obview_db   |       token VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       emailSent BOOLEAN DEFAULT FALSE,
+obview_db   |       expiresAt TIMESTAMP WITH TIME ZONE NOT NULL,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS approvals (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       status VARCHAR(50) NOT NULL DEFAULT 'pending',
+obview_db   |       feedback TEXT,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(fileId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   -- Create indexes
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_projects_ownerId ON projects(ownerId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_files_projectId ON files(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_fileId ON comments(fileId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_userId ON activity_logs(userId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_projectId ON activity_logs(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_projectId ON project_users(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_userId ON project_users(userId);
+obview_db   |
+obview_app  | WARNING: Direct schema creation failed.
+obview_app  | Proceeding anyway as the schema might already exist.
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  |
+obview_app  | ===============================================
+obview_app  | OBview.io is ready to start
+obview_app  | ===============================================
+obview_app  | Version: 1.0.0
+obview_app  | Environment: production
+obview_app  | Database: Connected
+obview_app  | Uploads directory: /app/uploads
+obview_app  | -----------------------------------------------
+obview_app  | Starting the application...
+obview_app  | ===============================================
+obview_app  |
+obview_app  | node:internal/modules/cjs/loader:1215
+obview_app  |   throw err;
+obview_app  |   ^
+obview_app  |
+obview_app  | Error: Cannot find module '/app/dist/server/index.js'
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | Database: obview, User: postgres
+obview_app  | SUCCESS: PostgreSQL is up and running
+obview_app  | Connection to db:5432 as postgres to database obview was successful
+obview_app  | Verifying database connection...
+obview_app  | Database connection successful: { now: 2025-04-29T20:42:16.956Z }
+obview_app  | Creating database schema directly...
+obview_app  | NOTICE:  relation "users" already exists, skipping
+obview_app  | NOTICE:  relation "projects" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "project_users" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "files" already exists, skipping
+obview_app  | NOTICE:  relation "comments" already exists, skipping
+obview_app  | NOTICE:  relation "activity_logs" already exists, skipping
+obview_app  | NOTICE:  relation "invitations" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "approvals" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | ERROR:  column "ownerid" does not exist
+obview_app  | CREATE INDEX
+obview_db   | 2025-04-29 20:42:17.010 UTC [62] ERROR:  column "ownerid" does not exist
+obview_db   | 2025-04-29 20:42:17.010 UTC [62] STATEMENT:
+obview_db   |   -- Create tables if they don't exist
+obview_db   |   CREATE TABLE IF NOT EXISTS users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       username VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       password VARCHAR(255) NOT NULL,
+obview_db   |       email VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'user',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS projects (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       description TEXT,
+obview_db   |       ownerId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS project_users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(projectId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS files (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       filename VARCHAR(255) NOT NULL,
+obview_db   |       fileType VARCHAR(100) NOT NULL,
+obview_db   |       fileSize INTEGER NOT NULL,
+obview_db   |       filePath TEXT NOT NULL,
+obview_db   |       uploadedById INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       version INTEGER DEFAULT 1,
+obview_db   |       isLatestVersion BOOLEAN DEFAULT TRUE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS comments (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       content TEXT NOT NULL,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       parentId INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+obview_db   |       timestamp INTEGER,
+obview_db   |       isResolved BOOLEAN DEFAULT FALSE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS activity_logs (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       projectId INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       fileId INTEGER REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       action VARCHAR(255) NOT NULL,
+obview_db   |       details JSONB,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS invitations (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       email VARCHAR(255) NOT NULL,
+obview_db   |       token VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       emailSent BOOLEAN DEFAULT FALSE,
+obview_db   |       expiresAt TIMESTAMP WITH TIME ZONE NOT NULL,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS approvals (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       status VARCHAR(50) NOT NULL DEFAULT 'pending',
+obview_db   |       feedback TEXT,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(fileId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   -- Create indexes
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_projects_ownerId ON projects(ownerId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_files_projectId ON files(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_fileId ON comments(fileId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_userId ON activity_logs(userId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_projectId ON activity_logs(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_projectId ON project_users(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_userId ON project_users(userId);
+obview_db   |
+obview_app  | WARNING: Direct schema creation failed.
+obview_app  | Proceeding anyway as the schema might already exist.
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  |
+obview_app  | ===============================================
+obview_app  | OBview.io is ready to start
+obview_app  | ===============================================
+obview_app  | Version: 1.0.0
+obview_app  | Environment: production
+obview_app  | Database: Connected
+obview_app  | Uploads directory: /app/uploads
+obview_app  | -----------------------------------------------
+obview_app  | Starting the application...
+obview_app  | ===============================================
+obview_app  |
+obview_app  | node:internal/modules/cjs/loader:1215
+obview_app  |   throw err;
+obview_app  |   ^
+obview_app  |
+obview_app  | Error: Cannot find module '/app/dist/server/index.js'
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | Database: obview, User: postgres
+obview_app  | SUCCESS: PostgreSQL is up and running
+obview_app  | Connection to db:5432 as postgres to database obview was successful
+obview_app  | Verifying database connection...
+obview_app  | Database connection successful: { now: 2025-04-29T20:42:21.110Z }
+obview_app  | Creating database schema directly...
+obview_app  | NOTICE:  relation "users" already exists, skipping
+obview_app  | NOTICE:  relation "projects" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "project_users" already exists, skipping
+obview_app  | NOTICE:  relation "files" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "comments" already exists, skipping
+obview_app  | NOTICE:  relation "activity_logs" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "invitations" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | NOTICE:  relation "approvals" already exists, skipping
+obview_db   | 2025-04-29 20:42:21.167 UTC [66] ERROR:  column "ownerid" does not exist
+obview_db   | 2025-04-29 20:42:21.167 UTC [66] STATEMENT:
+obview_db   |   -- Create tables if they don't exist
+obview_db   |   CREATE TABLE IF NOT EXISTS users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       username VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       password VARCHAR(255) NOT NULL,
+obview_db   |       email VARCHAR(255) NOT NULL UNIQUE,
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | ERROR:  column "ownerid" does not exist
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'user',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS projects (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       name VARCHAR(255) NOT NULL,
+obview_db   |       description TEXT,
+obview_db   |       ownerId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS project_users (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(projectId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS files (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       filename VARCHAR(255) NOT NULL,
+obview_db   |       fileType VARCHAR(100) NOT NULL,
+obview_db   |       fileSize INTEGER NOT NULL,
+obview_db   |       filePath TEXT NOT NULL,
+obview_db   |       uploadedById INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       version INTEGER DEFAULT 1,
+obview_db   |       isLatestVersion BOOLEAN DEFAULT TRUE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS comments (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       content TEXT NOT NULL,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       parentId INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+obview_db   |       timestamp INTEGER,
+obview_db   |       isResolved BOOLEAN DEFAULT FALSE,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS activity_logs (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       projectId INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       fileId INTEGER REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       action VARCHAR(255) NOT NULL,
+obview_db   |       details JSONB,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS invitations (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       projectId INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+obview_db   |       email VARCHAR(255) NOT NULL,
+obview_db   |       token VARCHAR(255) NOT NULL UNIQUE,
+obview_db   |       role VARCHAR(50) NOT NULL DEFAULT 'viewer',
+obview_db   |       emailSent BOOLEAN DEFAULT FALSE,
+obview_db   |       expiresAt TIMESTAMP WITH TIME ZONE NOT NULL,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+obview_db   |   );
+obview_db   |
+obview_db   |   CREATE TABLE IF NOT EXISTS approvals (
+obview_db   |       id SERIAL PRIMARY KEY,
+obview_db   |       fileId INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       userId INTEGER NOT NULL REFERENCES users(id),
+obview_db   |       status VARCHAR(50) NOT NULL DEFAULT 'pending',
+obview_db   |       feedback TEXT,
+obview_db   |       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+obview_db   |       UNIQUE(fileId, userId)
+obview_db   |   );
+obview_db   |
+obview_db   |   -- Create indexes
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_projects_ownerId ON projects(ownerId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_files_projectId ON files(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_fileId ON comments(fileId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_userId ON activity_logs(userId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_activity_logs_projectId ON activity_logs(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_projectId ON project_users(projectId);
+obview_db   |   CREATE INDEX IF NOT EXISTS idx_project_users_userId ON project_users(userId);
+obview_db   |
+obview_app  | WARNING: Direct schema creation failed.
+obview_app  | Proceeding anyway as the schema might already exist.
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  |
+obview_app  | ===============================================
+obview_app  | OBview.io is ready to start
+obview_app  | ===============================================
+obview_app  | Version: 1.0.0
+obview_app  | Environment: production
+obview_app  | Database: Connected
+obview_app  | Uploads directory: /app/uploads
+obview_app  | -----------------------------------------------
+obview_app  | Starting the application...
+obview_app  | ===============================================
+obview_app  |
+obview_app  | node:internal/modules/cjs/loader:1215
+obview_app  |   throw err;
+obview_app  |   ^
+obview_app  |
+obview_app  | Error: Cannot find module '/app/dist/server/index.js'
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+obview_app  | Waiting for Postgr

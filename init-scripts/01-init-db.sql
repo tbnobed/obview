@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS projects (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    "createdById" INTEGER REFERENCES users(id) ON DELETE CASCADE
+    "createdById" INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    -- Add this for backward compatibility with old scripts
+    ownerId INTEGER REFERENCES users(id) ON DELETE CASCADE GENERATED ALWAYS AS ("createdById") STORED
 );
 
 CREATE TABLE IF NOT EXISTS project_users (
