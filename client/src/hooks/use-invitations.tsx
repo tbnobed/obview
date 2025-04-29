@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import * as React from "react";
 
 interface Invitation {
   id: number;
@@ -68,8 +69,14 @@ export function useDeleteInvitation() {
         description: "The invitation has been successfully deleted.",
       });
       
-      // Invalidate both project and project invitations queries
+      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      // Invalidate all invitations queries
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          typeof query.queryKey[0] === 'string' && 
+          query.queryKey[0].includes('/invitations') 
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -82,10 +89,29 @@ export function useDeleteInvitation() {
 }
 
 export function useInvitationDetails(token?: string) {
-  return useQuery<Invitation>({
+  const { toast } = useToast();
+  
+  const query = useQuery<Invitation>({
     queryKey: token ? ["/api/invite", token] : ["skip-invite-query"],
     enabled: !!token,
+    retry: 1,
   });
+  
+  // Handle errors with a side effect
+  React.useEffect(() => {
+    if (query.error) {
+      console.error("Error fetching invitation details:", query.error);
+      toast({
+        title: "Error loading invitation",
+        description: query.error instanceof Error 
+          ? query.error.message 
+          : "Failed to load invitation details",
+        variant: "destructive",
+      });
+    }
+  }, [query.error, toast]);
+  
+  return query;
 }
 
 export function useAcceptInvitation() {
@@ -93,8 +119,13 @@ export function useAcceptInvitation() {
   
   return useMutation({
     mutationFn: async (token: string) => {
-      const response = await apiRequest("POST", `/api/invite/${token}/accept`);
-      return await response.json();
+      try {
+        const response = await apiRequest("POST", `/api/invite/${token}/accept`);
+        return response;
+      } catch (error) {
+        console.error("Error accepting invitation:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -104,12 +135,19 @@ export function useAcceptInvitation() {
       
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invite"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      // Invalidate all invitations queries
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          typeof query.queryKey[0] === 'string' && 
+          (query.queryKey[0].includes('/invitations') || query.queryKey[0].includes('/invite'))
+      });
     },
     onError: (error: Error) => {
       toast({
         title: "Failed to accept invitation",
-        description: error.message,
+        description: error.message || "An error occurred while accepting the invitation",
         variant: "destructive",
       });
     },
