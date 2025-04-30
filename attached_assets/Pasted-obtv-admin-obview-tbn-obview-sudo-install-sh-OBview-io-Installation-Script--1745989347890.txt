@@ -1,0 +1,120 @@
+obtv-admin@obview-tbn:~/obview$ sudo ./install.sh
+OBview.io Installation Script
+============================
+
+Creating application directory...
+Installing required packages...
+Hit:1 https://download.docker.com/linux/ubuntu noble InRelease
+Hit:2 https://deb.nodesource.com/node_20.x nodistro InRelease
+Get:3 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+Hit:4 http://us.archive.ubuntu.com/ubuntu noble InRelease
+Get:5 http://us.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+Get:6 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [782 kB]
+Get:7 http://us.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+Get:8 http://us.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1028 kB]
+Get:9 http://security.ubuntu.com/ubuntu noble-security/main amd64 Components [21.5 kB]
+Get:10 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Components [212 B]
+Get:11 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [833 kB]
+Get:12 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Components [52.2 kB]
+Get:13 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Components [212 B]
+Get:14 http://us.archive.ubuntu.com/ubuntu noble-updates/main amd64 Components [161 kB]
+Get:15 http://us.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Components [212 B]
+Get:16 http://us.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1059 kB]
+Get:17 http://us.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Components [376 kB]
+Get:18 http://us.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Components [940 B]
+Get:19 http://us.archive.ubuntu.com/ubuntu noble-backports/main amd64 Components [7076 B]
+Get:20 http://us.archive.ubuntu.com/ubuntu noble-backports/restricted amd64 Components [216 B]
+Get:21 http://us.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Components [16.4 kB]
+Get:22 http://us.archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Components [212 B]
+Fetched 4717 kB in 2s (2899 kB/s)
+Reading package lists... Done
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+nodejs is already the newest version (20.19.1-1nodesource1).
+postgresql is already the newest version (16+257build1.1).
+Some packages could not be installed. This may mean that you have
+requested an impossible situation or if you are using the unstable
+distribution that some required packages have not yet been created
+or been moved out of Incoming.
+The following information may help to resolve the situation:
+
+The following packages have unmet dependencies:
+ nodejs : Conflicts: npm
+ npm : Depends: node-agent-base but it is not going to be installed
+       Depends: node-archy but it is not going to be installed
+       Depends: node-cacache (>= 17) but it is not going to be installed
+       Depends: node-chalk (>= 5.1.2-2~) but it is not going to be installed
+       Depends: node-cli-table3
+       Depends: node-columnify but it is not going to be installed
+       Depends: node-cssesc
+       Depends: node-debug but it is not going to be installed
+       Depends: node-emoji-regex
+       Depends: node-gyp but it is not going to be installed
+       Depends: node-http-proxy-agent but it is not going to be installed
+       Depends: node-https-proxy-agent but it is not going to be installed
+       Depends: node-mkdirp but it is not going to be installed
+       Depends: node-ms but it is not going to be installed
+       Depends: node-nopt but it is not going to be installed
+       Depends: node-normalize-package-data but it is not going to be installed
+       Depends: node-npm-bundled but it is not going to be installed
+       Depends: node-npm-normalize-package-bin
+       Depends: node-npm-package-arg (>= 10) but it is not going to be installed
+       Depends: node-npmlog but it is not going to be installed
+       Depends: node-postcss-selector-parser
+       Depends: node-read-package-json but it is not going to be installed
+       Depends: node-rimraf but it is not going to be installed
+       Depends: node-semver but it is not going to be installed
+       Depends: node-string-width but it is not going to be installed
+       Depends: node-strip-ansi but it is not going to be installed
+       Depends: node-tar but it is not going to be installed
+       Depends: node-validate-npm-package-name but it is not going to be installed
+       Depends: node-which but it is not going to be installed
+       Depends: nodejs:any
+       Recommends: node-tap but it is not going to be installed
+E: Unable to correct problems, you have held broken packages.
+Node.js version: v20.19.1
+User obtv-admin already exists
+Setting up PostgreSQL...
+PostgreSQL is running
+Creating database user and database...
+ERROR:  role "obviewuser" already exists
+User may already exist
+CREATE DATABASE
+GRANT
+Importing database schema...
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+INSERT 0 1
+Schema imported successfully
+Copying application files...
+Warning: 'dist' directory not found
+Setting permissions...
+Installing Node.js dependencies...
+
+added 109 packages in 4s
+
+15 packages are looking for funding
+  run `npm fund` for details
+Setting up systemd service...
+Service file not found: obview.service
