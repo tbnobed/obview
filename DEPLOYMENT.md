@@ -1,268 +1,180 @@
 # OBview.io Deployment Guide
 
-This guide walks through the steps to deploy OBview.io on an Ubuntu server.
-
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Post-Installation Configuration](#post-installation-configuration)
-- [Upgrading](#upgrading)
-- [Troubleshooting](#troubleshooting)
-- [Backup and Restore](#backup-and-restore)
+This guide explains how to deploy the OBview.io application on an Ubuntu server using Docker and Docker Compose.
 
 ## Prerequisites
 
-Before installing OBview.io, ensure your system meets these requirements:
-
-### System Requirements
-
 - Ubuntu 20.04 LTS or newer
-- At least 2GB RAM
-- 20GB free disk space
-- Internet connection
+- Docker and Docker Compose installed
+- Git (to clone the repository)
+- Domain name pointed to your server (optional but recommended)
 
-### Required Software
+## Installation Steps
 
-The following packages must be installed:
+### 1. Install Docker and Docker Compose
 
-- Node.js 18.x or newer
-- PostgreSQL 14.x or newer
-- Nginx
-- Let's Encrypt certbot (for SSL)
-
-You can install these with:
+If not already installed, install Docker and Docker Compose:
 
 ```bash
-# Add Node.js repository
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-
-# Add PostgreSQL repository
-sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-
 # Update package lists
 sudo apt update
 
-# Install required packages
-sudo apt install -y nodejs postgresql-14 nginx certbot python3-certbot-nginx
+# Install prerequisites
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+
+# Add Docker's official GPG key
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+# Add Docker repository
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+# Install Docker
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+# Install Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.22.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Add your user to the docker group to run docker without sudo
+sudo usermod -aG docker $USER
 ```
 
-### Network Requirements
+Log out and log back in for the group membership to take effect.
 
-- A public domain name pointing to your server
-- Open ports 80 and 443
-
-## Installation
-
-### 1. Extract the Installation Package
-
-Upload the OBview.io installation package to your server and extract it:
+### 2. Clone the Repository
 
 ```bash
-tar -xzf obview-*.tar.gz
-cd obview-*
+git clone <repository-url> obview
+cd obview
 ```
 
-### 2. Run the Installation Script
+### 3. Configure Environment Variables
 
-The installation script will set up the application, database, and web server:
+Create an environment file from the template:
 
 ```bash
-sudo chmod +x install.sh
-sudo ./install.sh
+cp .env.example .env
 ```
 
-Follow the prompts during installation.
-
-### 3. Configure SSL (Recommended)
-
-Set up HTTPS with Let's Encrypt:
+Then edit the `.env` file to set your configuration:
 
 ```bash
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+nano .env
 ```
 
-Follow the prompts to complete the SSL configuration.
+Make sure to update:
+- `POSTGRES_PASSWORD`: Use a strong, random password
+- `SESSION_SECRET`: Generate a secure random string
+- `SENDGRID_API_KEY`: Your SendGrid API key for email functionality
+- `ADMIN_USERNAME`, `ADMIN_PASSWORD`, etc.: Credentials for the initial admin user
 
-## Post-Installation Configuration
-
-### Configure the Application
-
-Review and adjust settings in the configuration files:
-
-1. **Environment variables**: Edit `/etc/systemd/system/obview.service`
-2. **Nginx settings**: Edit `/etc/nginx/sites-available/obview`
-
-For detailed configuration options, see [CONFIGURATION.md](CONFIGURATION.md).
-
-### Change Default Passwords
-
-For security, change the default passwords:
-
-1. **Admin user**: Use the `password-util.js` script:
-   ```bash
-   cd /opt/obview
-   node password-util.js
-   ```
-   Choose option 2 to reset the admin password.
-
-2. **Database password**: Update the PostgreSQL user password:
-   ```bash
-   sudo -u postgres psql
-   postgres=# ALTER USER obviewuser WITH PASSWORD 'new_password';
-   postgres=# \q
-   ```
-   
-   Then update the `DATABASE_URL` in the service file:
-   ```bash
-   sudo systemctl edit obview.service
-   # Update the DATABASE_URL with the new password
-   sudo systemctl daemon-reload
-   sudo systemctl restart obview
-   ```
-
-### Set Up Regular Backups
-
-Configure scheduled backups using cron:
+### 4. Build and Start the Application
 
 ```bash
-sudo crontab -e
+docker-compose up -d
 ```
 
-Add a line to run backups daily:
+This will:
+- Build the application Docker image
+- Create a PostgreSQL database
+- Run the necessary migrations
+- Create an initial admin user
+- Start the application
 
+### 5. Access the Application
+
+Once deployed, you can access the application at:
+
+http://your-server-ip:3000
+
+### 6. Set Up a Reverse Proxy (Optional)
+
+For production use, it's recommended to set up Nginx as a reverse proxy and enable HTTPS with Let's Encrypt:
+
+```bash
+# Install Nginx and Certbot
+sudo apt install -y nginx certbot python3-certbot-nginx
+
+# Set up Nginx configuration
+sudo nano /etc/nginx/sites-available/obview
+
+# Add the following configuration (replace obview.io with your actual domain if different)
+server {
+    listen 80;
+    server_name obview.io www.obview.io;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# Enable the site
+sudo ln -s /etc/nginx/sites-available/obview /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+
+# Obtain SSL certificate
+sudo certbot --nginx -d obview.io -d www.obview.io
 ```
-0 2 * * * /opt/obview/backup.sh > /dev/null 2>&1
+
+### 7. Maintenance Tasks
+
+#### View logs
+
+```bash
+docker-compose logs -f
 ```
 
-This will run backups at 2 AM daily.
+#### Restart the application
 
-## Upgrading
+```bash
+docker-compose restart
+```
 
-To upgrade OBview.io to a newer version:
+#### Update the application
 
-1. **Backup the current installation**:
-   ```bash
-   cd /opt/obview
-   sudo ./backup.sh
-   ```
+```bash
+git pull
+docker-compose down
+docker-compose build
+docker-compose up -d
+```
 
-2. **Extract the new version** to a temporary location:
-   ```bash
-   sudo mkdir -p /tmp/obview-upgrade
-   sudo tar -xzf obview-new-version.tar.gz -C /tmp/obview-upgrade
-   ```
+#### Backup the database
 
-3. **Stop the current service**:
-   ```bash
-   sudo systemctl stop obview
-   ```
-
-4. **Copy new files**:
-   ```bash
-   sudo cp -r /tmp/obview-upgrade/* /opt/obview/
-   ```
-
-5. **Update permissions**:
-   ```bash
-   sudo chown -R obtv-admin:obtv-admin /opt/obview
-   sudo chmod +x /opt/obview/*.js /opt/obview/*.sh
-   ```
-
-6. **Restart the service**:
-   ```bash
-   sudo systemctl start obview
-   ```
-
-7. **Clean up**:
-   ```bash
-   sudo rm -rf /tmp/obview-upgrade
-   ```
+```bash
+docker-compose exec db pg_dump -U postgres obview > backup_$(date +%Y-%m-%d).sql
+```
 
 ## Troubleshooting
 
-### Health Check Tool
+### Database Connectivity Issues
 
-Run the health check tool to diagnose common issues:
-
-```bash
-cd /opt/obview
-node healthcheck.js
-```
-
-### Common Issues
-
-#### Application Not Starting
-
-Check the service status:
+If the application can't connect to the database, check:
 
 ```bash
-sudo systemctl status obview
+# Verify the database container is running
+docker-compose ps
+
+# Check database logs
+docker-compose logs db
+
+# Check if the environment variables are correct
+docker-compose exec app env | grep DATABASE_URL
 ```
 
-View the logs for errors:
+### Email Sending Issues
 
-```bash
-sudo journalctl -u obview -n 100
-```
+If emails aren't being sent properly:
 
-#### Database Connection Issues
-
-Verify database settings and connectivity:
-
-```bash
-cd /opt/obview
-node check-database.js
-```
-
-#### Nginx Configuration Issues
-
-Test the Nginx configuration:
-
-```bash
-sudo nginx -t
-```
-
-If errors are found, fix them and reload:
-
-```bash
-sudo systemctl reload nginx
-```
-
-## Backup and Restore
-
-### Manual Backup
-
-Create a manual backup:
-
-```bash
-cd /opt/obview
-sudo ./backup.sh
-```
-
-Backups are stored in `/opt/obview/backups/`.
-
-### Restore from Backup
-
-Restore from a previous backup:
-
-```bash
-cd /opt/obview
-sudo ./restore.sh /opt/obview/backups/obview_backup_YYYYMMDD_HHMMSS.tar.gz
-```
-
-Follow the prompts to complete the restoration.
-
-### Offsite Backups
-
-Consider copying backups to an offsite location regularly:
-
-```bash
-# Example using rsync to a remote server
-rsync -avz /opt/obview/backups/ user@backup-server:/path/to/backup/directory/
-```
-
----
-
-For additional support, contact your system administrator or refer to the OBview.io documentation.
+1. Verify your SendGrid API key is correct
+2. Check that the sender email address is verified in SendGrid
+3. Check the application logs for any SendGrid-related errors:
