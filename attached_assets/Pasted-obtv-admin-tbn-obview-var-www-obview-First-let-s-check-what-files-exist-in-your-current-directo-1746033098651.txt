@@ -1,0 +1,64 @@
+obtv-admin@tbn-obview:/var/www/obview$ # First, let's check what files exist in your current directory
+ls -la /var/www/obview
+
+# Then check what's inside the server directory (if it exists)
+ls -la /var/www/obview/server
+
+# Check what's inside the dist directory
+ls -la /var/www/obview/dist
+
+# Look for any JavaScript files in the root that might be entry points
+find /var/www/obview -maxdepth 1 -name "*.js" -o -name "*.mjs"
+
+# Check package.json for the main entry point or start script
+cat /var/www/obview/package.json | grep \"main\":
+cat /var/www/obview/package.json | grep \"start\":
+total 1128
+drwxr-xr-x  12 obtv-admin obtv-admin   4096 Apr 30 16:27 .
+drwxr-xr-x   4 root       root         4096 Apr 30 16:15 ..
+-rw-r--r--   1 obtv-admin obtv-admin    383 Apr 30 16:20 .dockerignore
+-rw-rw-r--   1 obtv-admin obtv-admin    298 Apr 30 16:27 .env
+-rw-r--r--   1 obtv-admin obtv-admin    463 Apr 30 16:20 .env.example
+drwxr-xr-x   8 obtv-admin obtv-admin   4096 Apr 30 16:20 .git
+-rw-r--r--   1 obtv-admin obtv-admin     67 Apr 30 16:20 .gitignore
+-rw-r--r--   1 obtv-admin obtv-admin    676 Apr 30 16:20 .replit
+-rw-r--r--   1 obtv-admin obtv-admin   4267 Apr 30 16:20 DEPLOYMENT.md
+drwxr-xr-x   2 obtv-admin obtv-admin   4096 Apr 30 16:20 attached_assets
+drwxr-xr-x   3 obtv-admin obtv-admin   4096 Apr 30 16:20 client
+-rw-r--r--   1 obtv-admin obtv-admin    459 Apr 30 16:20 components.json
+-rw-r--r--   1 obtv-admin obtv-admin    131 Apr 30 16:20 cookies.txt
+drwxrwxr-x   3 obtv-admin obtv-admin   4096 Apr 30 16:24 dist
+-rw-r--r--   1 obtv-admin obtv-admin    325 Apr 30 16:20 drizzle.config.ts
+-rw-r--r--   1 obtv-admin obtv-admin 683817 Apr 30 16:20 generated-icon.png
+drwxr-xr-x   2 obtv-admin obtv-admin   4096 Apr 30 16:20 init-scripts
+drwxr-xr-x 345 obtv-admin obtv-admin  12288 Apr 30 16:23 node_modules
+-rw-r--r--   1 obtv-admin obtv-admin 340121 Apr 30 16:23 package-lock.json
+-rw-r--r--   1 obtv-admin obtv-admin   3598 Apr 30 16:23 package.json
+-rw-r--r--   1 obtv-admin obtv-admin     80 Apr 30 16:20 postcss.config.js
+drwxr-xr-x   2 obtv-admin obtv-admin   4096 Apr 30 16:20 scripts
+drwxr-xr-x   3 obtv-admin obtv-admin   4096 Apr 30 16:20 server
+drwxr-xr-x   2 obtv-admin obtv-admin   4096 Apr 30 16:20 shared
+-rw-r--r--   1 obtv-admin obtv-admin   2787 Apr 30 16:20 tailwind.config.ts
+-rw-r--r--   1 obtv-admin obtv-admin   7946 Apr 30 16:20 test-project.html
+-rw-r--r--   1 obtv-admin obtv-admin    657 Apr 30 16:20 tsconfig.json
+drwxrwxr-x   2 obtv-admin obtv-admin   4096 Apr 30 16:20 uploads
+-rw-r--r--   1 obtv-admin obtv-admin    894 Apr 30 16:20 vite.config.ts
+total 132
+drwxr-xr-x  3 obtv-admin obtv-admin  4096 Apr 30 16:20 .
+drwxr-xr-x 12 obtv-admin obtv-admin  4096 Apr 30 16:27 ..
+-rw-r--r--  1 obtv-admin obtv-admin  9383 Apr 30 16:20 auth.ts
+-rw-r--r--  1 obtv-admin obtv-admin  1240 Apr 30 16:20 db-migrate.js
+-rw-r--r--  1 obtv-admin obtv-admin   482 Apr 30 16:20 db.ts
+-rw-r--r--  1 obtv-admin obtv-admin  1921 Apr 30 16:20 index.ts
+-rw-r--r--  1 obtv-admin obtv-admin 66136 Apr 30 16:20 routes.ts
+-rw-r--r--  1 obtv-admin obtv-admin 24456 Apr 30 16:20 storage.ts
+drwxr-xr-x  2 obtv-admin obtv-admin  4096 Apr 30 16:20 utils
+-rw-r--r--  1 obtv-admin obtv-admin  2254 Apr 30 16:20 vite.ts
+total 100
+drwxrwxr-x  3 obtv-admin obtv-admin  4096 Apr 30 16:24 .
+drwxr-xr-x 12 obtv-admin obtv-admin  4096 Apr 30 16:27 ..
+-rw-rw-r--  1 obtv-admin obtv-admin 89282 Apr 30 16:24 index.js
+drwxrwxr-x  3 obtv-admin obtv-admin  4096 Apr 30 16:24 public
+/var/www/obview/postcss.config.js
+    "start": "NODE_ENV=production node dist/index.js",
+obtv-admin@tbn-obview:/var/www/obview$
