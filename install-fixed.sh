@@ -180,86 +180,84 @@ fi
 echo "Installing dependencies..."
 npm install
 
-# Create a basic landing page if dist/public is empty
-if [ ! -f "$APP_DIR/dist/public/index.html" ]; then
-  echo "Creating a basic landing page..."
-  cat > $APP_DIR/dist/public/index.html << 'EOF'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OBview.io</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: linear-gradient(to right, #2b5876, #4e4376);
-      color: white;
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-    }
-    .container {
-      max-width: 800px;
-      padding: 40px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 10px;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-    }
-    h1 {
-      font-size: 3rem;
-      margin-bottom: 0.5rem;
-      background: linear-gradient(to right, #ff8a00, #da1b60);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 700;
-    }
-    p {
-      font-size: 1.2rem;
-      line-height: 1.6;
-      margin-bottom: 1.5rem;
-    }
-    .login-btn {
-      display: inline-block;
-      padding: 12px 24px;
-      background: linear-gradient(to right, #ff8a00, #da1b60);
-      color: white;
-      text-decoration: none;
-      border-radius: 5px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-    }
-    .login-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 5px 15px rgba(218, 27, 96, 0.4);
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>OBview.io</h1>
-    <p>A collaborative media review platform for teams to review, comment, and approve files in a streamlined workflow.</p>
-    <a href="/auth" class="login-btn">Log In / Register</a>
-  </div>
-</body>
-</html>
+# Check if frontend assets are missing
+if [ ! -f "$APP_DIR/dist/index.html" ] && [ -d "$APP_DIR/client" ]; then
+  echo "Frontend assets missing. Building frontend application..."
+  
+  # Navigate to client directory
+  cd "$APP_DIR/client"
+  
+  # Make sure client has package.json
+  if [ ! -f "package.json" ]; then
+    echo "Creating client package.json"
+    cat > package.json << 'EOF'
+{
+  "name": "obview-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "wouter": "^2.11.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
+  }
+}
 EOF
-  echo "Created basic landing page"
+  fi
+  
+  # Install development dependencies
+  echo "Installing client dependencies..."
+  npm install
+  
+  # Check if vite.config.js exists
+  if [ ! -f "vite.config.ts" ] && [ ! -f "vite.config.js" ]; then
+    echo "Creating Vite configuration"
+    cat > vite.config.js << 'EOF'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: '../dist',
+    emptyOutDir: true,
+  },
+});
+EOF
+  fi
+  
+  # Build the client
+  echo "Building client application..."
+  npm run build
+  
+  # Check if build succeeded
+  if [ $? -ne 0 ]; then
+    echo "Frontend build failed. Please check your frontend code."
+    exit 1
+  fi
+  
+  echo "Frontend built successfully"
+  
+  # Return to app directory
+  cd "$APP_DIR"
 fi
 
-# Try to build the frontend if vite config exists
-if [ -f "$APP_DIR/vite.config.ts" ] || [ -f "$APP_DIR/vite.config.js" ]; then
-  echo "Vite configuration found. Attempting to build frontend..."
-  
-  # Install dev dependencies needed for building
-  npm install -D vite @vitejs/plugin-react typescript
-
-  # Try to build
-  npm run build || echo "Frontend build failed. Using fallback landing page."
+# Double-check that we have the frontend built correctly
+if [ ! -f "$APP_DIR/dist/index.html" ] && [ ! -f "$APP_DIR/dist/assets" ]; then
+  echo "Warning: Frontend assets may not have been built correctly."
+  echo "Check the application logs after starting the service."
 fi
 
 # Create systemd service file
