@@ -1,0 +1,119 @@
+Run `npm audit` for details.
+Server running at http://0.0.0.0:5000
+Deserializing user ID: 1
+User deserialized: admin
+Deserializing user ID: 1
+User deserialized: admin
+Deserializing user ID: 1
+User deserialized: admin
+Deserializing user ID: 1
+User deserialized: admin
+Current user: admin
+Deserializing user ID: 1
+User deserialized: admin
+Deserializing user ID: 1
+User deserialized: admin
+User is authenticated: admin
+Getting projects for user: admin
+Error fetching projects: error: column p.creator_id does not exist
+    at /var/www/obview/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///var/www/obview/full-server.mjs:231:22 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '106',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+Deserializing user ID: 1
+Deserializing user ID: 1
+User deserialized: admin
+User is authenticated: admin
+Getting projects for user: admin
+User deserialized: admin
+Error fetching projects: error: column p.creator_id does not exist
+    at /var/www/obview/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///var/www/obview/full-server.mjs:231:22 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '106',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+Deserializing user ID: 1
+User deserialized: admin
+User is authenticated: admin
+Getting projects for user: admin
+Error fetching projects: error: column p.creator_id does not exist
+    at /var/www/obview/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///var/www/obview/full-server.mjs:231:22 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '106',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+Deserializing user ID: 1
+User deserialized: admin
+User is authenticated: admin
+Creating project for user: admin
+Project data: { name: 'test', description: 'test', status: 'in_progress' }
+Error creating project: error: column "creator_id" of relation "projects" does not exist
+    at /var/www/obview/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///var/www/obview/full-server.mjs:261:20 {
+  length: 131,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '57',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_target.c',
+  line: '1066',
+  routine: 'checkInsertTargets'
