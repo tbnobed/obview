@@ -1,0 +1,94 @@
+obtv-admin@obview-tbn:/opt/obview$ cd /opt/obview
+node check-database.js
+OBview.io Database Check Utility
+================================
+
+Using database URL: postgresql://obviewuser:***@localhost:5432/obview
+
+Testing database connection...
+✓ Connected to database at Wed Apr 30 2025 05:20:27 GMT+0000 (Coordinated Universal Time)
+
+Checking for required tables...
+✓ Table 'users' exists
+✓ Table 'projects' exists
+✓ Table 'project_users' exists
+✓ Table 'files' exists
+✓ Table 'comments' exists
+✓ Table 'activity_logs' exists
+✓ Table 'invitations' exists
+✓ Table 'approvals' exists
+
+Checking table columns...
+
+Columns for table 'users':
+✓ Column 'id' exists
+✓ Column 'username' exists
+✓ Column 'password' exists
+✓ Column 'email' exists
+✓ Column 'role' exists
+✓ Column 'createdAt' exists
+
+Columns for table 'projects':
+✓ Column 'id' exists
+✓ Column 'name' exists
+✓ Column 'description' exists
+✓ Column 'createdAt' exists
+✓ Column 'createdById' exists
+
+Columns for table 'project_users':
+✓ Column 'id' exists
+✓ Column 'projectId' exists
+✓ Column 'userId' exists
+✓ Column 'role' exists
+
+Columns for table 'files':
+✓ Column 'id' exists
+✓ Column 'filename' exists
+✓ Column 'filepath' exists
+✓ Column 'projectId' exists
+✓ Column 'uploadedBy' exists
+
+Columns for table 'comments':
+✓ Column 'id' exists
+✓ Column 'content' exists
+✓ Column 'fileId' exists
+✓ Column 'userId' exists
+✓ Column 'timestamp' exists
+
+Columns for table 'activity_logs':
+✓ Column 'id' exists
+✓ Column 'userId' exists
+✓ Column 'action' exists
+✓ Column 'projectId' exists
+✓ Column 'resourceId' exists
+✓ Column 'resourceType' exists
+
+Columns for table 'invitations':
+✓ Column 'id' exists
+✓ Column 'email' exists
+✓ Column 'token' exists
+✓ Column 'projectId' exists
+✓ Column 'role' exists
+✓ Column 'status' exists
+
+Columns for table 'approvals':
+✓ Column 'id' exists
+✓ Column 'fileId' exists
+✓ Column 'userId' exists
+✓ Column 'status' exists
+✓ Column 'feedback' exists
+
+Checking for admin user...
+✓ Admin user exists: admin (ID: 1)
+
+Counting records in tables:
+- users: 1 records
+- projects: 0 records
+- project_users: 0 records
+- files: 0 records
+- comments: 0 records
+- activity_logs: 0 records
+- invitations: 0 records
+- approvals: 0 records
+
+Database check completed.
