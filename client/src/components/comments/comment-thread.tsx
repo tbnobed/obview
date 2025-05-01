@@ -47,12 +47,19 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
         isResolved: !comment.isResolved
       });
     },
-    onSuccess: () => {
+    onSuccess: (updatedComment) => {
+      // Use the updated comment from the response for the toast message
+      const newStatus = updatedComment.isResolved;
       toast({
-        title: comment.isResolved ? "Comment marked as unresolved" : "Comment marked as resolved",
+        title: newStatus ? "Comment marked as resolved" : "Comment marked as unresolved",
         description: "",
       });
+      
+      // Force a refetch by invalidating the comments query
       queryClient.invalidateQueries({ queryKey: [`/api/files/${comment.fileId}/comments`] });
+      
+      // Also invalidate any project comments queries that might exist
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', null, 'comments'] });
     },
     onError: (error: Error) => {
       toast({
