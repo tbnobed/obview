@@ -165,7 +165,7 @@ export function useResendInvitation() {
         const origin = window.location.origin;
         
         const data = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
-          appUrl: origin // Send the current domain to the server
+          clientDomain: origin // Send the current domain to the server
         });
         return data;
       } catch (error) {

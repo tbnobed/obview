@@ -34,7 +34,7 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
         email,
         projectId,
         role,
-        appUrl: origin, // Send the current domain to the server
+        clientDomain: origin, // Send the current domain to the server
       });
     },
     onSuccess: (response) => {
@@ -56,7 +56,7 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
             const origin = window.location.origin;
             
             const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
-              appUrl: origin // Send the current domain to the server
+              clientDomain: origin // Send the current domain to the server
             });
             console.log("Auto-resend response:", resendResponse);
             
