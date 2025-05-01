@@ -62,28 +62,63 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
     console.log("Navigating to comment:", comment);
     
     if (comment.timestamp !== null && comment.file?.id) {
-      // Direct approach: set a global variable on the window object
-      // This is more reliable than sessionStorage across different origins
-      (window as any).OBview_jumpToMedia = {
-        fileId: comment.file.id,
-        timestamp: comment.timestamp,
-        projectId: projectId,
-        timestamp_ms: Date.now() // Add timestamp to ensure it's detected as a new event
-      };
+      // Use multiple approaches to ensure cross-browser compatibility
       
-      // Use direct window location change with hash fragment and query params
-      // This ensures both the tab is activated AND we have the parameters available
+      // 1. Direct approach: set a global variable on the window object
+      try {
+        (window as any).OBview_jumpToMedia = {
+          fileId: comment.file.id,
+          timestamp: comment.timestamp,
+          projectId: projectId,
+          timestamp_ms: Date.now() // Add timestamp to ensure it's detected as a new event
+        };
+      } catch (e) {
+        console.error("Failed to set global variable:", e);
+      }
+      
+      // 2. Use direct window location change with hash fragment and query params
       const url = `/projects/${projectId}?media=${comment.file.id}&time=${comment.timestamp}#media`;
       
       if (window.location.pathname.includes(`/projects/${projectId}`)) {
         // If we're already on the project page, just replace the URL and dispatch a custom event
-        window.history.replaceState(null, '', url);
+        try {
+          window.history.replaceState(null, '', url);
+        } catch (e) {
+          console.error("Failed to update history:", e);
+        }
         
-        // Dispatch a custom event to notify the page that we want to navigate
-        const jumpEvent = new CustomEvent('obview_jump_to_timestamp', { 
-          detail: { fileId: comment.file.id, timestamp: comment.timestamp }
-        });
-        window.dispatchEvent(jumpEvent);
+        // 3. Dispatch a custom event to notify the page that we want to navigate
+        try {
+          const jumpEvent = new CustomEvent('obview_jump_to_timestamp', { 
+            detail: { fileId: comment.file.id, timestamp: comment.timestamp }
+          });
+          window.dispatchEvent(jumpEvent);
+          
+          // 4. Extra backup approach - dispatch using a more traditional event
+          const backupEvent = document.createEvent('CustomEvent');
+          backupEvent.initCustomEvent('obview_jump_to_timestamp_backup', true, true, { 
+            fileId: comment.file.id, 
+            timestamp: comment.timestamp 
+          });
+          document.dispatchEvent(backupEvent);
+        } catch (e) {
+          console.error("Failed to dispatch event:", e);
+        }
+        
+        // 5. Force direct DOM update as a last resort
+        try {
+          // This is a direct DOM manipulation to set the video time
+          // It will attempt to find the video element and set its time directly
+          setTimeout(() => {
+            const videoElement = document.querySelector('video');
+            if (videoElement) {
+              videoElement.currentTime = comment.timestamp || 0;
+              videoElement.play().catch(e => console.error("Failed to play video:", e));
+            }
+          }, 300);
+        } catch (e) {
+          console.error("Failed direct DOM manipulation:", e);
+        }
       } else {
         // If we're on a different page, navigate to the new URL
         window.location.href = url;

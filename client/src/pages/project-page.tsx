@@ -105,19 +105,42 @@ export default function ProjectPage() {
       }
     };
     
-    // Add event listener
+    // Handler for the backup event
+    const handleBackupEvent = (event: any) => {
+      console.log("⚡ Received backup jump event:", event.detail);
+      const { fileId, timestamp } = event.detail;
+      
+      if (fileId && timestamp !== undefined) {
+        setSelectedFileId(fileId);
+        setInitialTime(timestamp);
+        setActiveTab("media");
+      }
+    };
+    
+    // Add event listeners
     window.addEventListener('obview_jump_to_timestamp', handleJumpEvent);
+    document.addEventListener('obview_jump_to_timestamp_backup', handleBackupEvent);
     
     // Also check for our global window variable
     const checkWindowVar = () => {
-      const jumpData = (window as any).OBview_jumpToMedia;
-      if (jumpData && jumpData.projectId === projectId) {
-        console.log("⚡ Found global jump data:", jumpData);
-        setSelectedFileId(jumpData.fileId);
-        setInitialTime(jumpData.timestamp);
-        setActiveTab("media");
-        // Clear it so it's only used once
-        delete (window as any).OBview_jumpToMedia;
+      try {
+        const jumpData = (window as any).OBview_jumpToMedia;
+        if (jumpData && jumpData.projectId === projectId) {
+          console.log("⚡ Found global jump data:", jumpData);
+          setSelectedFileId(jumpData.fileId);
+          setInitialTime(jumpData.timestamp);
+          setActiveTab("media");
+          // Clear it so it's only used once
+          try {
+            delete (window as any).OBview_jumpToMedia;
+          } catch (e) {
+            console.error("Failed to delete global variable:", e);
+            // Alternative approach to clear it
+            (window as any).OBview_jumpToMedia = null;
+          }
+        }
+      } catch (e) {
+        console.error("Error checking window variable:", e);
       }
     };
     
@@ -125,11 +148,12 @@ export default function ProjectPage() {
     checkWindowVar();
     
     // Check periodically in case it's set after we've mounted
-    const intervalId = setInterval(checkWindowVar, 500);
+    const intervalId = setInterval(checkWindowVar, 300);
     
     // Clean up
     return () => {
       window.removeEventListener('obview_jump_to_timestamp', handleJumpEvent);
+      document.removeEventListener('obview_jump_to_timestamp_backup', handleBackupEvent);
       clearInterval(intervalId);
     };
   }, [projectId]);
