@@ -3,10 +3,24 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, generateToken, hashPassword } from "./auth";
 import multer from "multer";
+import type { Multer } from "multer"; // Import multer types
 import path from "path";
 import fs from "fs/promises";
 import * as fsSync from "fs";
 import { z } from "zod";
+
+// Extended Request type to handle file uploads
+// Using declaration merging with Express namespace
+declare namespace Express {
+  export interface Request {
+    user?: import("@shared/schema").User;
+  }
+}
+
+// Interface for file upload requests
+interface FileRequest extends Request {
+  file?: Express.Multer.File;
+}
 import { 
   insertProjectSchema,
   insertCommentSchema,
@@ -793,7 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload a file to a project (support both endpoints for compatibility)
-  app.post(["/api/projects/:projectId/files", "/api/projects/:projectId/upload"], hasProjectEditAccess, upload.single('file'), async (req, res, next) => {
+  app.post(["/api/projects/:projectId/files", "/api/projects/:projectId/upload"], hasProjectEditAccess, upload.single('file'), async (req: FileRequest, res, next) => {
     try {
       const projectId = parseInt(req.params.projectId);
       

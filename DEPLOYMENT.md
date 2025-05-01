@@ -421,3 +421,79 @@ docker-compose exec app /app/scripts/restore-db.sh /path/to/backup/obview_backup
 # Verify application functionality
 curl http://localhost:3000/api/health
 ```
+
+## Development Notes
+
+### TypeScript Type Checking
+
+The OBview.io codebase uses TypeScript for type safety. There are some common patterns to be aware of when extending the code:
+
+#### File Uploads with Multer
+
+For file upload handlers using multer, always use the `FileRequest` interface defined in `server/routes.ts`:
+
+```typescript
+// Use this interface for file upload handlers
+interface FileRequest extends Request {
+  file: Express.Multer.File;
+}
+
+// In route handlers:
+app.post('/api/upload', upload.single('file'), async (req: FileRequest, res, next) => {
+  // Now req.file is properly typed
+  console.log(req.file.originalname);
+});
+```
+
+#### Authentication Type Safety
+
+When accessing `req.user` in authenticated routes, you may need to handle TypeScript's null checking:
+
+```typescript
+// Safe pattern for accessing user ID
+if (!req.isAuthenticated() || !req.user) {
+  return res.status(401).json({ message: "Unauthorized" });
+}
+const userId = req.user.id; // Now safe to use
+```
+
+#### Database ID Handling
+
+When dealing with nullable database IDs:
+
+```typescript
+// Safe pattern for handling nullable IDs
+const parentId = commentData.parentId ?? null;
+if (parentId !== null) {
+  // Safe to use as number
+}
+```
+
+### Browser Compatibility
+
+OBview.io is built with modern web standards and should work in all recent browser versions:
+
+- Chrome/Edge (latest 2 versions)
+- Firefox (latest 2 versions)
+- Safari (latest 2 versions)
+
+To update the browserslist database (which you may see warnings about in the console):
+
+```bash
+npx update-browserslist-db@latest
+```
+
+### Dependency Management
+
+When adding new packages, use the proper method to maintain compatibility:
+
+```bash
+# For server-side dependencies
+npm install package-name --save
+
+# For TypeScript type definitions
+npm install @types/package-name --save-dev
+
+# Update all dependencies (use with caution)
+npm update
+```
