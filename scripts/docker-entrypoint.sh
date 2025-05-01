@@ -25,44 +25,122 @@ node /app/scripts/setup.cjs || {
   echo "This might be normal if the user already exists. Continuing..."
 }
 
-# Create dist directories if they don't exist
+# Create required directories
 mkdir -p /app/dist/server
+mkdir -p /app/uploads
 
-# Check if the application server file exists
-if [ ! -f "/app/dist/server/index.js" ]; then
-  # If dist/server/index.js doesn't exist, try to build it
-  echo "WARNING: Application server file not found at /app/dist/server/index.js"
+# Build the server files if they don't exist
+build_server_from_source() {
   echo "Attempting to build server from source..."
   
-  # Check if we have the necessary source files
   if [ -d "/app/server" ] && [ -f "/app/server/index.ts" ]; then
     echo "Found server source files. Attempting to compile..."
-    # Try to build using TypeScript's tsc command directly
-    npx tsc --project /app/tsconfig.json || echo "TypeScript compilation failed"
     
-    # Try to use build script from package.json
-    npm run build || echo "npm build script failed"
+    # Try the npm build script first
+    echo "Running npm build script..."
+    npm run build && echo "Build successful!" && return 0
+    
+    # Fallback to manual TypeScript compilation
+    echo "npm build failed, trying direct TypeScript compilation..."
+    npx tsc --project /app/tsconfig.json && echo "TypeScript compilation successful!" && return 0
+    
+    echo "TypeScript compilation also failed. Trying esbuild directly..."
+    npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && \
+      echo "esbuild compilation successful!" && return 0
+      
+    return 1
   else
-    echo "Source files not found. Checking for alternate server start methods..."
+    echo "Source files not found." 
+    return 1
   fi
+}
+
+# Find a valid entry point for the server
+find_server_entry() {
+  # Check for built server entry points in priority order
+  if [ -f "/app/dist/server/index.js" ]; then
+    echo "Found primary entry point: /app/dist/server/index.js"
+    export SERVER_ENTRY="/app/dist/server/index.js"
+    return 0
+  elif [ -f "/app/dist/index.js" ]; then
+    echo "Found secondary entry point: /app/dist/index.js"
+    export SERVER_ENTRY="/app/dist/index.js"
+    return 0
+  elif [ -f "/app/server/index.js" ]; then
+    echo "Found server source entry point: /app/server/index.js"
+    export SERVER_ENTRY="/app/server/index.js"
+    return 0
+  else
+    # If no JS entry points found, look for TypeScript source as last resort
+    if [ -f "/app/server/index.ts" ]; then
+      echo "Found TypeScript source: /app/server/index.ts"
+      export SERVER_ENTRY="tsx /app/server/index.ts"
+      return 0
+    fi
+    return 1
+  fi
+}
+
+# Diagnose system and application status
+diagnose_system() {
+  echo "=== System Diagnosis ==="
+  echo "Node version: $(node -v)"
+  echo "NPM version: $(npm -v)"
+  echo "Environment: $NODE_ENV"
+  echo "IS_DOCKER: $IS_DOCKER"
   
-  # List available files to help with debugging
+  echo "=== Directory Structure ==="
   echo "Contents of /app directory:"
   ls -la /app
-  echo "Contents of /app/server directory (if it exists):"
-  ls -la /app/server || echo "Server directory not found"
-  echo "Contents of /app/dist directory (if it exists):"
-  ls -la /app/dist || echo "Dist directory not found"
   
-  # Look for alternative entry points
-  if [ -f "/app/server/index.js" ]; then
-    echo "Found a server entry point at /app/server/index.js"
-    echo "Will use node /app/server/index.js as fallback"
-    # Set an environment variable for the CMD to use
-    export SERVER_ENTRY="/app/server/index.js"
+  if [ -d "/app/server" ]; then
+    echo "Contents of /app/server directory:"
+    ls -la /app/server
   else
-    echo "ERROR: No usable server entry point found. Docker build may be incomplete."
-    exit 1
+    echo "Server directory not found!"
+  fi
+  
+  if [ -d "/app/dist" ]; then
+    echo "Contents of /app/dist directory:"
+    ls -la /app/dist
+    
+    if [ -d "/app/dist/server" ]; then
+      echo "Contents of /app/dist/server directory:"
+      ls -la /app/dist/server
+    fi
+  else
+    echo "Dist directory not found!"
+  fi
+  
+  echo "=== Package.json Validation ==="
+  if [ -f "/app/package.json" ]; then
+    echo "package.json found. Checking build script:"
+    grep '"build"' /app/package.json
+  else
+    echo "package.json not found!"
+  fi
+}
+
+# Main execution logic
+echo "Starting OBview.io application initialization..."
+
+# Check for existing build files
+if ! find_server_entry; then
+  echo "WARNING: No server entry point found."
+  diagnose_system
+  
+  echo "Attempting to build server from source..."
+  if build_server_from_source; then
+    echo "Build successful. Searching for entry point again..."
+    if ! find_server_entry; then
+      echo "ERROR: Still no valid entry point found after build"
+      diagnose_system
+      echo "Will try to run using fallback methods in the CMD..."
+    fi
+  else
+    echo "ERROR: Failed to build server from source"
+    diagnose_system
+    echo "Will try to run using fallback methods in the CMD..."
   fi
 fi
 

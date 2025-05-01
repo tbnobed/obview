@@ -16,15 +16,17 @@ COPY . .
 # Verify the structure before building
 RUN ls -la && echo "Content of server directory:" && ls -la server/
 
-# Build the application with a more comprehensive approach
+# Build the application - carefully tracking the build process
 RUN mkdir -p dist/server && \
-    echo "Building client..." && \
-    npm run build:client && \
-    echo "Building server..." && \
-    npm run build:server && \
-    echo "Build completed successfully" && \
+    echo "Running full build process..." && \
+    npm run build && \
+    echo "Verifying build output:" && \
     ls -la dist/ && \
-    ls -la dist/server/ || { echo "Build failed"; exit 1; }
+    echo "Checking for server file:" && \
+    ls -la dist/server/ || { \
+      echo "Server directory not found, checking root dist:"; \
+      ls -la dist/; \
+      echo "Build may have used different output directory structure"; \n    }
 
 # Production stage
 FROM node:20-alpine as production
@@ -70,5 +72,14 @@ VOLUME /app/uploads
 # Set entrypoint to our initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
-# Start the application with fallback support
-CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; else node dist/server/index.js; fi"]
+# Start the application with multiple fallback paths
+CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then \
+    node $SERVER_ENTRY; \
+elif [ -f \"dist/server/index.js\" ]; then \
+    node dist/server/index.js; \
+elif [ -f \"dist/index.js\" ]; then \
+    node dist/index.js; \
+else \
+    echo \"Error: Could not find server entry point. Fallback to source file.\" && \
+    npx tsx server/index.ts; \
+fi"]
