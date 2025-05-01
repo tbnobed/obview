@@ -28,7 +28,7 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 # Create server directory and copy migration script
 RUN mkdir -p ./server
-COPY --from=builder /app/server/db-migrate.js ./server/db-migrate.js
+COPY --from=builder /app/server/db-migrate.cjs ./server/db-migrate.cjs
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/uploads ./uploads

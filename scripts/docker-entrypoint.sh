@@ -7,7 +7,7 @@ echo "Waiting for database to be ready..."
 
 # Run migrations
 echo "Running database migrations..."
-node /app/server/db-migrate.js
+node /app/server/db-migrate.cjs
 
 # Create admin user if not exists
 echo "Setting up admin user if needed..."
