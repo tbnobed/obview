@@ -17,9 +17,18 @@ declare namespace Express {
   }
 }
 
-// Interface for file upload requests
+// Interface for file upload requests with multer file
 interface FileRequest extends Request {
-  file?: Express.Multer.File;
+  file?: {
+    fieldname: string;
+    originalname: string;
+    encoding: string;
+    mimetype: string;
+    destination: string;
+    filename: string;
+    path: string;
+    size: number;
+  };
 }
 import { 
   insertProjectSchema,
@@ -59,7 +68,7 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   console.log("Auth check - session:", req.session);
   console.log("Auth check - user:", req.user);
   
-  if (req.isAuthenticated()) {
+  if (req.isAuthenticated() && req.user) {
     console.log("User is authenticated, proceeding");
     return next();
   }
@@ -69,7 +78,7 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 
 // Middleware to check if user is admin
 function isAdmin(req: Request, res: Response, next: NextFunction) {
-  if (req.isAuthenticated() && req.user.role === "admin") {
+  if (req.isAuthenticated() && req.user && req.user.role === "admin") {
     return next();
   }
   res.status(403).json({ message: "Forbidden" });
@@ -78,7 +87,7 @@ function isAdmin(req: Request, res: Response, next: NextFunction) {
 // Middleware to check if user has access to a project
 async function hasProjectAccess(req: Request, res: Response, next: NextFunction) {
   try {
-    if (!req.isAuthenticated()) {
+    if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
@@ -107,7 +116,7 @@ async function hasProjectAccess(req: Request, res: Response, next: NextFunction)
 // Middleware to check if user has edit access to a project
 async function hasProjectEditAccess(req: Request, res: Response, next: NextFunction) {
   try {
-    if (!req.isAuthenticated()) {
+    if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
