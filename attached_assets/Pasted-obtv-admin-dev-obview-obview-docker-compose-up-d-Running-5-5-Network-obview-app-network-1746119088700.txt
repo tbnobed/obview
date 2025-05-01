@@ -1,0 +1,1244 @@
+obtv-admin@dev-obview:~/obview$ docker compose up -d
+[+] Running 5/5
+ ✔ Network obview_app_network     Created                                                                                                                                                           0.1s
+ ✔ Volume "obview_uploads"        Created                                                                                                                                                           0.0s
+ ✔ Volume "obview_postgres_data"  Created                                                                                                                                                           0.0s
+ ✔ Container obview_db            Started                                                                                                                                                           0.3s
+ ✔ Container obview_app           Started                                                                                                                                                           0.5s
+obtv-admin@dev-obview:~/obview$ docker-compose logs -f
+obview_app  | Waiting for database to be ready...
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is unavailable at db:5432 - sleeping for 1 second (attempt 1/60)
+obview_db   | The files belonging to this database system will be owned by user "postgres".
+obview_db   | This user must also own the server process.
+obview_db   |
+obview_db   | The database cluster will be initialized with locale "en_US.utf8".
+obview_app  | PostgreSQL is unavailable at db:5432 - sleeping for 1 second (attempt 2/60)
+obview_db   | The default database encoding has accordingly been set to "UTF8".
+obview_db   | The default text search configuration will be set to "english".
+obview_db   |
+obview_db   | Data page checksums are disabled.
+obview_db   |
+obview_db   | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+obview_db   | creating subdirectories ... ok
+obview_db   | selecting dynamic shared memory implementation ... posix
+obview_db   | selecting default max_connections ... 100
+obview_db   | selecting default shared_buffers ... 128MB
+obview_db   | selecting default time zone ... UTC
+obview_db   | creating configuration files ... ok
+obview_db   | running bootstrap script ... ok
+obview_db   | sh: locale: not found
+obview_db   | 2025-05-01 17:03:52.703 UTC [35] WARNING:  no usable system locales were found
+obview_db   | performing post-bootstrap initialization ... ok
+obview_db   | initdb: warning: enabling "trust" authentication for local connections
+obview_db   | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+obview_db   | syncing data to disk ... ok
+obview_db   |
+obview_db   |
+obview_db   | Success. You can now start the database server using:
+obview_db   |
+obview_db   |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+obview_db   |
+obview_db   | waiting for server to start....2025-05-01 17:03:53.976 UTC [41] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db   | 2025-05-01 17:03:53.978 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2025-05-01 17:03:53.984 UTC [44] LOG:  database system was shut down at 2025-05-01 17:03:53 UTC
+obview_db   | 2025-05-01 17:03:53.991 UTC [41] LOG:  database system is ready to accept connections
+obview_app  | PostgreSQL is unavailable at db:5432 - sleeping for 1 second (attempt 3/60)
+obview_db   |  done
+obview_db   | server started
+obview_db   | CREATE DATABASE
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-schema.sql
+obview_db   | CREATE EXTENSION
+obview_db   | CREATE TABLE
+obview_db   | DO
+obview_db   | GRANT
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: sourcing /docker-entrypoint-initdb.d/02-init-db.sh
+obview_db   | Starting database initialization...
+obview_db   | Warning: /app directory not found. This script is meant to run within the application container.
+obview_db   | Database initialization process completed!
+obview_db   |
+obview_db   | waiting for server to shut down....2025-05-01 17:03:54.257 UTC [41] LOG:  received fast shutdown request
+obview_db   | 2025-05-01 17:03:54.258 UTC [41] LOG:  aborting any active transactions
+obview_db   | 2025-05-01 17:03:54.261 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
+obview_db   | 2025-05-01 17:03:54.262 UTC [42] LOG:  shutting down
+obview_db   | 2025-05-01 17:03:54.263 UTC [42] LOG:  checkpoint starting: shutdown immediate
+obview_db   | 2025-05-01 17:03:54.325 UTC [42] LOG:  checkpoint complete: wrote 924 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.034 s, sync=0.026 s, total=0.064 s; sync files=306, longest=0.001 s, average=0.001 s; distance=4293 kB, estimate=4293 kB; lsn=0/1921288, redo lsn=0/1921288
+obview_db   | 2025-05-01 17:03:54.334 UTC [41] LOG:  database system is shut down
+obview_db   |  done
+obview_db   | server stopped
+obview_db   |
+obview_db   | PostgreSQL init process complete; ready for start up.
+obview_db   |
+obview_db   | 2025-05-01 17:03:54.394 UTC [1] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db   | 2025-05-01 17:03:54.394 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db   | 2025-05-01 17:03:54.394 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db   | 2025-05-01 17:03:54.397 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2025-05-01 17:03:54.401 UTC [59] LOG:  database system was shut down at 2025-05-01 17:03:54 UTC
+obview_db   | 2025-05-01 17:03:54.409 UTC [1] LOG:  database system is ready to accept connections
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Creating admin user: admin
+obview_app  | Admin user created successfully
+obview_app  | Setup completed successfully
+obview_app  | Starting OBview.io application initialization...
+obview_app  | Found secondary entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | 5:03:56 PM [express] serving on port 5000
+obview_app  | Failed to initialize database connection: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app  | Database initialization failed: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app exited with code 0
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 17:03:57.346 UTC [74] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 17:03:57.346 UTC [74] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:57.373 UTC [75] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 17:03:57.373 UTC [75] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:57.395 UTC [76] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 17:03:57.395 UTC [76] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:57.416 UTC [77] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 17:03:57.416 UTC [77] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:57.437 UTC [78] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 17:03:57.437 UTC [78] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:57.457 UTC [79] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 17:03:57.457 UTC [79] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:57.478 UTC [80] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 17:03:57.478 UTC [80] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:57.496 UTC [81] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 17:03:57.496 UTC [81] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Starting OBview.io application initialization...
+obview_app  | Found secondary entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | 5:03:58 PM [express] serving on port 5000
+obview_app  | Failed to initialize database connection: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app  | Database initialization failed: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 17:03:59.436 UTC [84] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 17:03:59.436 UTC [84] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:59.462 UTC [85] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 17:03:59.462 UTC [85] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:59.484 UTC [86] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 17:03:59.484 UTC [86] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:59.504 UTC [87] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 17:03:59.504 UTC [87] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:59.525 UTC [88] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 17:03:59.525 UTC [88] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:59.545 UTC [89] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 17:03:59.545 UTC [89] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:59.564 UTC [90] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 17:03:59.564 UTC [90] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   | 2025-05-01 17:03:59.583 UTC [91] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 17:03:59.583 UTC [91] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Starting OBview.io application initialization...
+obview_app  | Found secondary entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | 5:04:00 PM [express] serving on port 5000
+obview_app  | Failed to initialize database connection: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app  | Database initialization failed: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 17:04:01.720 UTC [94] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 17:04:01.720 UTC [94] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:01.747 UTC [95] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 17:04:01.747 UTC [95] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:01.769 UTC [96] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 17:04:01.769 UTC [96] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:01.791 UTC [97] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 17:04:01.791 UTC [97] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:01.814 UTC [98] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 17:04:01.814 UTC [98] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:01.836 UTC [99] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 17:04:01.836 UTC [99] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:01.858 UTC [100] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 17:04:01.858 UTC [100] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:01.879 UTC [101] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 17:04:01.879 UTC [101] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Starting OBview.io application initialization...
+obview_app  | Found secondary entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | 5:04:03 PM [express] serving on port 5000
+obview_app  | Failed to initialize database connection: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app  | Database initialization failed: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 17:04:04.404 UTC [104] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 17:04:04.404 UTC [104] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:04.435 UTC [105] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 17:04:04.435 UTC [105] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:04.458 UTC [106] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 17:04:04.458 UTC [106] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:04.478 UTC [107] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 17:04:04.478 UTC [107] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:04.499 UTC [108] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 17:04:04.499 UTC [108] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:04.520 UTC [109] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 17:04:04.520 UTC [109] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:04.540 UTC [110] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 17:04:04.540 UTC [110] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:04.558 UTC [111] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 17:04:04.558 UTC [111] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Starting OBview.io application initialization...
+obview_app  | Found secondary entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | 5:04:05 PM [express] serving on port 5000
+obview_app  | Failed to initialize database connection: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app  | Database initialization failed: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 17:04:07.946 UTC [121] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 17:04:07.946 UTC [121] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:07.972 UTC [122] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 17:04:07.972 UTC [122] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:07.995 UTC [123] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 17:04:07.995 UTC [123] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:08.017 UTC [124] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 17:04:08.017 UTC [124] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:08.038 UTC [125] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 17:04:08.038 UTC [125] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:08.059 UTC [126] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 17:04:08.059 UTC [126] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:08.079 UTC [127] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 17:04:08.079 UTC [127] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:08.099 UTC [128] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 17:04:08.099 UTC [128] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Starting OBview.io application initialization...
+obview_app  | Found secondary entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | 5:04:09 PM [express] serving on port 5000
+obview_app  | Failed to initialize database connection: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app  | Database initialization failed: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 17:04:13.069 UTC [131] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 17:04:13.069 UTC [131] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:13.094 UTC [132] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 17:04:13.094 UTC [132] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:13.116 UTC [133] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 17:04:13.116 UTC [133] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:13.136 UTC [134] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 17:04:13.136 UTC [134] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:13.157 UTC [135] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 17:04:13.157 UTC [135] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:13.177 UTC [136] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 17:04:13.177 UTC [136] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:13.196 UTC [137] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 17:04:13.196 UTC [137] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:13.216 UTC [138] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 17:04:13.216 UTC [138] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Starting OBview.io application initialization...
+obview_app  | Found secondary entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | 5:04:14 PM [express] serving on port 5000
+obview_app  | Failed to initialize database connection: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app  | Database initialization failed: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 17:04:21.408 UTC [149] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 17:04:21.408 UTC [149] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:21.434 UTC [150] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 17:04:21.434 UTC [150] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:21.456 UTC [151] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 17:04:21.456 UTC [151] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:21.477 UTC [152] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 17:04:21.477 UTC [152] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:21.499 UTC [153] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 17:04:21.499 UTC [153] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:21.518 UTC [154] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 17:04:21.518 UTC [154] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:21.538 UTC [155] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 17:04:21.538 UTC [155] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   | 2025-05-01 17:04:21.556 UTC [156] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 17:04:21.556 UTC [156] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Starting OBview.io application initialization...
+obview_app  | Found secondary entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | 5:04:22 PM [express] serving on port 5000
+obview_app  | Failed to initialize database connection: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app  | Database initialization failed: Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-pool' is not defined by "exports" in /app/node_modules/drizzle-orm/package.json imported from /app/dist/index.js
+obview_app  |     at exportsNotFound (node:internal/modules/esm/resolve:322:10)
+obview_app  |     at packageExportsResolve (node:internal/modules/esm/resolve:670:9)
+obview_app  |     at packageResolve (node:internal/modules/esm/resolve:856:14)
+obview_app  |     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+obview_app  |     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+obview_app  |     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+obview_app  |     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+obview_app  |     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+obview_app  |     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+obview_app  |     at ModuleLoader.import (node:internal/modules/esm/loader:539:34) {
+obview_app  |   code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'
+obview_app  | }
+obview_app exited with code 1
+^Ccanceled

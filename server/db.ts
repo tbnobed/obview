@@ -22,7 +22,8 @@ const initializeDatabase = async () => {
     if (isDocker) {
       // For Docker/production, use regular PostgreSQL client
       const { Pool: PgPool } = await import('pg');
-      const { drizzle: pgDrizzle } = await import('drizzle-orm/pg-pool');
+      // Use the correct import path for pg compatible with newer versions of drizzle-orm
+      const { drizzle: pgDrizzle } = await import('drizzle-orm/node-postgres');
       
       pool = new PgPool({ 
         connectionString: process.env.DATABASE_URL,
