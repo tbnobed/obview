@@ -1469,15 +1469,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new invitation
   app.post("/api/invite", isAuthenticated, async (req, res, next) => {
     try {
-      const { email, projectId, role = "viewer", clientDomain } = req.body;
+      const { email, projectId, role = "viewer", appUrl } = req.body;
       
       if (!email || !projectId) {
         return res.status(400).json({ message: "Email and projectId are required" });
       }
       
       // Log the client domain if provided
-      if (clientDomain) {
-        console.log(`Client domain provided for invitation: ${clientDomain}`);
+      if (appUrl) {
+        console.log(`Client URL provided for invitation: ${appUrl}`);
       }
       
       const project = await storage.getProject(parseInt(projectId));
@@ -1553,7 +1553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               project.name,
               role,
               token,
-              clientDomain // Pass the client domain (undefined if not provided)
+              appUrl // Pass the client app URL (undefined if not provided)
             );
             
             if (emailSent) {
@@ -1895,11 +1895,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/invite/:id/resend", isAuthenticated, async (req, res, next) => {
     try {
       const invitationId = parseInt(req.params.id);
-      const { clientDomain } = req.body; // Get client domain from request body
+      const { appUrl } = req.body; // Get client app URL from request body
       
-      // Log the client domain if provided
-      if (clientDomain) {
-        console.log(`Client domain provided for resending invitation: ${clientDomain}`);
+      // Log the client app URL if provided
+      if (appUrl) {
+        console.log(`Client URL provided for resending invitation: ${appUrl}`);
       }
       
       // Get the invitation
