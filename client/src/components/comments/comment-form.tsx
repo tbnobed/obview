@@ -225,42 +225,45 @@ export default function CommentForm({
                     {/* Emoji picker popup */}
                     {showEmojiPicker && (
                       <div 
-                        className="absolute bottom-9 right-0 z-50" 
+                        className="absolute bottom-9 right-0 z-50 bg-white rounded-md border border-gray-200 shadow-lg" 
                         ref={emojiPickerRef}
                         style={{ 
                           position: 'absolute', 
                           bottom: '100%', 
                           right: '0', 
                           zIndex: 1000,
-                          boxShadow: '0 0 10px rgba(0,0,0,0.2)',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          marginBottom: '8px',
-                          background: 'white',
-                          width: '200px',
-                          padding: '8px'
+                          width: '220px',
+                          marginBottom: '8px'
                         }}
                       >
-                        <div className="grid grid-cols-6 gap-2 emoji-grid">
+                        <div className="grid grid-cols-6 gap-2 emoji-grid p-2">
                           {commonEmojis.map((emoji, index) => (
-                            <button
+                            <div
                               key={index}
-                              type="button"
-                              className="p-1 rounded cursor-pointer"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const currentContent = form.getValues("content");
+                              className="p-1 rounded cursor-pointer text-center hover:bg-gray-100 text-lg"
+                              onClick={() => {
+                                console.log("Emoji clicked:", emoji);
+                                const currentContent = form.getValues("content") || "";
+                                console.log("Current content:", currentContent);
+                                
                                 form.setValue("content", currentContent + emoji);
-                                form.trigger("content");
+                                console.log("New content:", currentContent + emoji);
+                                
                                 if (textareaRef.current) {
                                   textareaRef.current.focus();
                                 }
-                                setShowEmojiPicker(false);
+                                
+                                // Make sure to update the form validation
+                                form.trigger("content");
+                                
+                                // Close the emoji picker after selection
+                                setTimeout(() => {
+                                  setShowEmojiPicker(false);
+                                }, 100);
                               }}
                             >
                               {emoji}
-                            </button>
+                            </div>
                           ))}
                         </div>
                       </div>
