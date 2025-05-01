@@ -12,7 +12,6 @@ import { Loader2, Paperclip, Image, Smile } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import EmojiPicker from "emoji-picker-react";
 
 // Create a comment schema with only the fields we need for the form
 const commentFormSchema = z.object({
@@ -106,10 +105,17 @@ export default function CommentForm({
     },
   });
 
+  // List of common emojis
+  const commonEmojis = [
+    "👍", "👎", "❤️", "😊", "😂", "😍", 
+    "🙂", "😉", "🤔", "👏", "🔥", "✅",
+    "❌", "⭐", "🎉", "👀", "💯", "🙏"
+  ];
+  
   // Handler for inserting an emoji
-  const handleEmojiClick = (emojiData: any) => {
+  const handleEmojiClick = (emoji: string) => {
     const currentContent = form.getValues("content");
-    form.setValue("content", currentContent + emojiData.emoji);
+    form.setValue("content", currentContent + emoji);
     setShowEmojiPicker(false);
     
     // Focus the textarea after inserting emoji
@@ -242,18 +248,24 @@ export default function CommentForm({
                           boxShadow: '0 0 10px rgba(0,0,0,0.2)',
                           borderRadius: '8px',
                           overflow: 'hidden',
-                          marginBottom: '8px'
+                          marginBottom: '8px',
+                          background: 'white',
+                          width: '200px',
+                          padding: '8px'
                         }}
                       >
-                        <EmojiPicker 
-                          onEmojiClick={handleEmojiClick} 
-                          width={280} 
-                          height={350} 
-                          previewConfig={{ showPreview: false }}
-                          searchDisabled={true}
-                          skinTonesDisabled={true}
-                          lazyLoadEmojis={false}
-                        />
+                        <div className="grid grid-cols-6 gap-2 emoji-grid">
+                          {commonEmojis.map((emoji, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              className="p-1 rounded cursor-pointer"
+                              onClick={() => handleEmojiClick(emoji)}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

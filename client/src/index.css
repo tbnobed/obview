@@ -59,34 +59,14 @@
   }
 }
 
-/* Emoji picker fixes */
-.EmojiPickerReact {
-  --epr-emoji-size: 24px !important;
-  --epr-category-navigation-button-size: 22px !important;
-  border: none !important;
-  font-family: var(--font-sans) !important;
+/* Custom emoji picker styles */
+.emoji-grid button {
+  font-size: 18px;
+  transition: transform 0.1s ease;
 }
 
-.EmojiPickerReact .epr-emoji-category-label {
-  font-size: 12px !important;
-  padding: 0 8px !important;
-}
-
-.EmojiPickerReact .epr-body::-webkit-scrollbar {
-  width: 8px !important;
-}
-
-.EmojiPickerReact .epr-body::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.2) !important;
-  border-radius: 4px !important;
-}
-
-.EmojiPickerReact button.epr-emoji {
-  height: var(--epr-emoji-size) !important;
-  width: var(--epr-emoji-size) !important;
-  font-size: var(--epr-emoji-size) !important;
-  align-items: center !important;
-  justify-content: center !important;
-  display: flex !important;
+.emoji-grid button:hover {
+  transform: scale(1.15);
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
