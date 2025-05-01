@@ -198,23 +198,10 @@ export async function sendInvitationEmail(
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // Third priority: REPLIT environment with various environment variable combinations
-    else if (process.env.REPL_ID) {
-      // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (most reliable)
-      if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
-        baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-        logToFile(`Using Replit environment URL (slug+owner): ${baseUrl}`);
-      }
-      // Second try: Use the REPLIT_SLUG alone with .replit.app domain (newer Replit format)
-      else if (process.env.REPLIT_SLUG) {
-        baseUrl = `https://${process.env.REPLIT_SLUG}.replit.app`;
-        logToFile(`Using Replit environment URL (slug): ${baseUrl}`);
-      }
-      // Last resort: Use the REPL_ID directly
-      else {
-        baseUrl = `https://${process.env.REPL_ID}.repl.co`;
-        logToFile(`Using Replit environment URL (ID): ${baseUrl}`);
-      }
+    // Third priority: Always use obview.io domain in Replit or production environments
+    else if (process.env.NODE_ENV === 'production' || process.env.REPL_ID) {
+      baseUrl = `https://obview.io`;
+      logToFile(`Using obview.io production domain: ${baseUrl}`);
     }
     // Final fallback: Local development
     else {
