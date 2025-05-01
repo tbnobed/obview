@@ -346,7 +346,7 @@ export default function CommentForm({
                           bottom: '100%', 
                           right: '0', 
                           zIndex: 1000,
-                          width: '300px',
+                          width: '320px',
                           marginBottom: '8px'
                         }}
                       >
@@ -370,11 +370,11 @@ export default function CommentForm({
                           </div>
                           
                           {/* Emoji Grid */}
-                          <div className="grid grid-cols-6 gap-2 emoji-grid p-3 max-h-[180px] overflow-y-auto">
+                          <div className="grid grid-cols-6 gap-1 emoji-grid p-2 max-h-[180px] overflow-y-auto">
                             {emojiCategories[activeEmojiCategory as keyof typeof emojiCategories].map((emoji, index) => (
                               <div
                                 key={index}
-                                className="p-1 rounded cursor-pointer text-center hover:bg-gray-100 text-lg"
+                                className="p-1.5 rounded cursor-pointer flex items-center justify-center hover:bg-gray-100 text-xl"
                                 onClick={() => {
                                   // Get the textarea DOM element directly
                                   if (textareaRef.current) {
