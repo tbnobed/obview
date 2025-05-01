@@ -26,7 +26,8 @@ RUN mkdir -p dist/server && \
     ls -la dist/server/ || { \
       echo "Server directory not found, checking root dist:"; \
       ls -la dist/; \
-      echo "Build may have used different output directory structure"; \n    }
+      echo "Build may have used different output directory structure"; \
+    }
 
 # Production stage
 FROM node:20-alpine as production
@@ -73,13 +74,4 @@ VOLUME /app/uploads
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
 # Start the application with multiple fallback paths
-CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then \
-    node $SERVER_ENTRY; \
-elif [ -f \"dist/server/index.js\" ]; then \
-    node dist/server/index.js; \
-elif [ -f \"dist/index.js\" ]; then \
-    node dist/index.js; \
-else \
-    echo \"Error: Could not find server entry point. Fallback to source file.\" && \
-    npx tsx server/index.ts; \
-fi"]
+CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; elif [ -f \"dist/server/index.js\" ]; then node dist/server/index.js; elif [ -f \"dist/index.js\" ]; then node dist/index.js; else echo \"Error: Could not find server entry point. Fallback to source file.\" && npx tsx server/index.ts; fi"]

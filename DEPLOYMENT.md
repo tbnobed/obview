@@ -390,13 +390,33 @@ If you continue to experience issues with migrations, consider these options:
 
 If you encounter errors about missing files or directories in the Docker container, try these solutions:
 
-1. **Rebuild Docker Image**: Ensure your Dockerfile is properly copying all necessary files:
+1. **Docker Build Syntax Issues**: Make sure your Dockerfile doesn't have syntax errors:
+   ```bash
+   # Check for unexpected newlines or escaped characters in RUN commands
+   # This common error (new line with \n) will cause builds to fail:
+   # RUN command && \
+   #    next_command && \
+   #    echo "text with newline \n" 
+   #
+   # Fix by removing the \n or any escaped characters that cause problems
+   ```
+
+2. **Multi-line CMD Statement**: When using multi-line commands in Dockerfile CMD statements, use one of these formats:
+   ```bash
+   # Format 1: Write everything on a single line
+   CMD ["sh", "-c", "if [ condition ]; then cmd1; elif [ condition2 ]; then cmd2; else cmd3; fi"]
+   
+   # Format 2: Use proper bash here-document format
+   CMD ["bash", "-c", "if [ condition ]; then\n  cmd1\nelse\n  cmd2\nfi"]
+   ```
+
+3. **Rebuild Docker Image**: Ensure your Dockerfile is properly copying all necessary files:
    ```bash
    # Build with verbose output to debug issues
    docker-compose build --no-cache --progress=plain app
    ```
 
-2. **Check File Structure**: Inspect the container's filesystem:
+4. **Check File Structure**: Inspect the container's filesystem:
    ```bash
    # Start a shell in the application container
    docker-compose exec app sh
@@ -407,7 +427,15 @@ If you encounter errors about missing files or directories in the Docker contain
    ls -la /app/server
    ```
    
-3. **Manually Trigger Build**: Sometimes you need to force a build inside the container:
+5. **Diagnosis and Recovery**: The application includes robust diagnostic and recovery mechanisms:
+   ```bash
+   # Inside the container, run the diagnostic report
+   /app/scripts/docker-entrypoint.sh
+   
+   # This will check paths, server entry points, and attempt recovery
+   ```
+   
+6. **Manually Trigger Build**: Sometimes you need to force a build inside the container:
    ```bash
    # Access container shell
    docker-compose exec app sh
@@ -416,7 +444,7 @@ If you encounter errors about missing files or directories in the Docker contain
    npm run build
    ```
 
-4. **Copy Build Output**: If your local build works but the Docker build fails:
+7. **Copy Build Output**: If your local build works but the Docker build fails:
    ```bash
    # Build locally first
    npm run build
