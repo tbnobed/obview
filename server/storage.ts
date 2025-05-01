@@ -54,6 +54,7 @@ export interface IStorage {
   // File management
   getFile(id: number): Promise<File | undefined>;
   getFilesByProject(projectId: number): Promise<File[]>;
+  getAllFiles(): Promise<File[]>;
   createFile(file: InsertFile): Promise<File>;
   updateFile(id: number, data: Partial<InsertFile>): Promise<File | undefined>;
   deleteFile(id: number): Promise<boolean>;
@@ -244,6 +245,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.files.values()).filter(
       (file) => file.projectId === projectId
     );
+  }
+  
+  async getAllFiles(): Promise<File[]> {
+    return Array.from(this.files.values());
   }
 
   async createFile(insertFile: InsertFile): Promise<File> {
@@ -562,6 +567,10 @@ export class DatabaseStorage implements IStorage {
 
   async getFilesByProject(projectId: number): Promise<File[]> {
     return await db.select().from(files).where(eq(files.projectId, projectId));
+  }
+  
+  async getAllFiles(): Promise<File[]> {
+    return await db.select().from(files);
   }
 
   async createFile(insertFile: InsertFile): Promise<File> {

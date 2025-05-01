@@ -41,6 +41,7 @@ export const files = pgTable("files", {
   uploadedById: integer("uploaded_by_id").notNull(),
   version: integer("version").notNull().default(1),
   isLatestVersion: boolean("is_latest_version").notNull().default(true),
+  shareToken: text("share_token"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

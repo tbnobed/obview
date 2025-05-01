@@ -918,7 +918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user has access to the project
-      if (req.user.role !== "admin") {
+      if (req.user && req.user.role !== "admin") {
         const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
         if (!projectUser) {
           return res.status(403).json({ message: "You don't have access to this file" });
@@ -943,7 +943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user has access to the project
-      if (req.user.role !== "admin") {
+      if (req.user && req.user.role !== "admin") {
         const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
         if (!projectUser) {
           return res.status(403).json({ message: "You don't have access to this file" });
@@ -951,10 +951,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Set content disposition to force download
-      res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
       
       // Send the file
       res.sendFile(file.filePath, { root: '/' });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Public share link - only serves the video content without authentication
+  app.get("/public/share/:token", async (req, res, next) => {
+    try {
+      const token = req.params.token;
+      // Find file by share token
+      const files = await storage.getAllFiles();
+      const file = files.find(f => f.shareToken === token);
+      
+      if (!file) {
+        return res.status(404).json({ message: "Shared file not found" });
+      }
+      
+      // Send only the file content
+      res.sendFile(file.filePath, { root: '/' });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Create public share link
+  app.post("/api/files/:fileId/share", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      const file = await storage.getFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check if user has access to the project
+      if (req.user && req.user.role !== "admin") {
+        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
+        if (!projectUser) {
+          return res.status(403).json({ message: "You don't have access to this file" });
+        }
+      }
+      
+      // Generate a random token if one doesn't exist
+      if (!file.shareToken) {
+        const token = generateToken(32);
+        await storage.updateFile(fileId, { shareToken: token });
+        file.shareToken = token;
+      }
+      
+      // Return share URL
+      const shareUrl = `${req.protocol}://${req.get('host')}/public/share/${file.shareToken}`;
+      res.json({ shareUrl });
     } catch (error) {
       next(error);
     }
