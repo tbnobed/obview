@@ -1,4 +1,4 @@
-import sgMail from '@sendgrid/mail';
+import { MailService } from '@sendgrid/mail';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -59,8 +59,9 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     const apiKeyLength = apiKey.length;
     logToFile(`Using SendGrid API key (${apiKeyLength} characters)`);
     
-    // Set the API key on the SendGrid client for this request
-    sgMail.setApiKey(apiKey);
+    // Create a new Mail Service instance for this request
+    const mailService = new MailService();
+    mailService.setApiKey(apiKey);
     logToFile(`API key set for this request`);
     
     // Prepare email data with configurable sandbox mode
@@ -78,7 +79,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     };
     
     logToFile(`Sending email via SendGrid...`);
-    const response = await sgMail.send(emailData);
+    const response = await mailService.send(emailData);
     
     // Log success and response details
     const successMsg = `Email sent successfully to ${params.to}`;
