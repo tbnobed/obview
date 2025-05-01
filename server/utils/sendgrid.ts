@@ -198,38 +198,17 @@ export async function sendInvitationEmail(
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // Third priority: REPLIT_DOMAINS or REPLIT_DEV_DOMAIN (most accurate for Replit)
-    else if (process.env.REPLIT_DOMAINS) {
-      baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
-      logToFile(`Using REPLIT_DOMAINS environment variable: ${baseUrl}`);
-    }
-    // Fourth priority: REPLIT_DEV_DOMAIN
-    else if (process.env.REPLIT_DEV_DOMAIN) {
-      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-      logToFile(`Using REPLIT_DEV_DOMAIN environment variable: ${baseUrl}`);
-    }
-    // Fifth priority: REPLIT environment with various environment variable combinations
-    else if (process.env.REPL_ID) {
-      // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (backup method)
-      if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
-        baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-        logToFile(`Using Replit environment URL (slug+owner): ${baseUrl}`);
-      }
-      // Second try: Use the REPLIT_SLUG alone with .replit.app domain (newer Replit format)
-      else if (process.env.REPLIT_SLUG) {
-        baseUrl = `https://${process.env.REPLIT_SLUG}.replit.app`;
-        logToFile(`Using Replit environment URL (slug): ${baseUrl}`);
-      }
-      // Last resort: Use the REPL_ID directly
-      else {
-        baseUrl = `https://${process.env.REPL_ID}.repl.co`;
-        logToFile(`Using Replit environment URL (ID): ${baseUrl}`);
-      }
-    }
-    // Final fallback: Local development
+    // Third priority (fallback): Local development or container host
     else {
-      baseUrl = `http://localhost:5000`;
-      logToFile(`Using fallback local development URL: ${baseUrl}`);
+      // Default to secured production URL if in production mode
+      if (process.env.NODE_ENV === 'production') {
+        baseUrl = 'https://obview.io';
+        logToFile(`Using production domain: ${baseUrl}`);
+      } else {
+        // Use localhost with port 5000 for development
+        baseUrl = 'http://localhost:5000';
+        logToFile(`Using development URL: ${baseUrl}`);
+      }
     }
     
     const inviteUrl = `${baseUrl}/invite/${token}`;
