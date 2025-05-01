@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { Loader2, Paperclip, Image, Smile } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import EmojiPicker from "emoji-picker-react";
 
 // Create a comment schema with only the fields we need for the form
 const commentFormSchema = z.object({
@@ -38,6 +39,10 @@ export default function CommentForm({
   const { user } = useAuth();
   const { toast } = useToast();
   const [includeTimestamp, setIncludeTimestamp] = useState(currentTime !== undefined && !parentId);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   
   // Format time (seconds to MM:SS)
   const formatTime = (time: number) => {
@@ -45,6 +50,20 @@ export default function CommentForm({
     const seconds = Math.floor(time % 60);
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
+  
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Form setup
   const form = useForm<CommentFormValues>({
@@ -87,6 +106,35 @@ export default function CommentForm({
     },
   });
 
+  // Handler for inserting an emoji
+  const handleEmojiClick = (emojiData: any) => {
+    const currentContent = form.getValues("content");
+    form.setValue("content", currentContent + emojiData.emoji);
+    setShowEmojiPicker(false);
+    
+    // Focus the textarea after inserting emoji
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+  
+  // Handler for file/image selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    // Display image upload notification since we're not implementing the full upload feature
+    toast({
+      title: "Feature in development",
+      description: "File/image upload will be implemented in a future update.",
+    });
+    
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
   // Submit handler
   const onSubmit = (data: CommentFormValues) => {
     createCommentMutation.mutate(data);
@@ -109,6 +157,7 @@ export default function CommentForm({
           <div className="border border-neutral-300 rounded-lg overflow-hidden focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
             <Textarea 
               {...form.register("content")}
+              ref={textareaRef}
               rows={2} 
               className="block w-full px-3 py-2 border-0 resize-none focus:ring-0 text-xs sm:text-sm" 
               placeholder={
@@ -124,15 +173,74 @@ export default function CommentForm({
               <div className="flex space-x-1">
                 {/* Show only timestamp button on small screens */}
                 <div className="hidden sm:flex space-x-1">
-                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100">
+                  {/* Paperclip button */}
+                  <Button 
+                    type="button" 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Paperclip className="h-3.5 w-3.5" />
                   </Button>
-                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100">
+                  
+                  {/* File input (hidden) */}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    onChange={handleFileSelect}
+                    accept=".pdf,.doc,.docx,.txt"
+                  />
+                  
+                  {/* Image button */}
+                  <Button 
+                    type="button" 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
+                    onClick={() => {
+                      const imageInput = document.createElement('input');
+                      imageInput.type = 'file';
+                      imageInput.accept = 'image/*';
+                      imageInput.onchange = (e) => {
+                        if (e && e.target) {
+                          handleFileSelect(e as unknown as React.ChangeEvent<HTMLInputElement>);
+                        }
+                      };
+                      imageInput.click();
+                    }}
+                  >
                     <Image className="h-3.5 w-3.5" />
                   </Button>
-                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100">
-                    <Smile className="h-3.5 w-3.5" />
-                  </Button>
+                  
+                  {/* Emoji button */}
+                  <div className="relative">
+                    <Button 
+                      type="button" 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    >
+                      <Smile className="h-3.5 w-3.5" />
+                    </Button>
+                    
+                    {/* Emoji picker popup */}
+                    {showEmojiPicker && (
+                      <div 
+                        className="absolute bottom-9 right-0 z-50" 
+                        ref={emojiPickerRef}
+                      >
+                        <EmojiPicker 
+                          onEmojiClick={handleEmojiClick} 
+                          width={280} 
+                          height={350} 
+                          previewConfig={{ showPreview: false }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 {!parentId && currentTime !== undefined && (
