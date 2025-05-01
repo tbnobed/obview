@@ -116,6 +116,9 @@ export default function CommentForm({
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
+    
+    // Trigger form validation after updating content
+    form.trigger("content");
   };
   
   // Handler for file/image selection
@@ -231,12 +234,25 @@ export default function CommentForm({
                       <div 
                         className="absolute bottom-9 right-0 z-50" 
                         ref={emojiPickerRef}
+                        style={{ 
+                          position: 'absolute', 
+                          bottom: '100%', 
+                          right: '0', 
+                          zIndex: 1000,
+                          boxShadow: '0 0 10px rgba(0,0,0,0.2)',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          marginBottom: '8px'
+                        }}
                       >
                         <EmojiPicker 
                           onEmojiClick={handleEmojiClick} 
                           width={280} 
                           height={350} 
                           previewConfig={{ showPreview: false }}
+                          searchDisabled={true}
+                          skinTonesDisabled={true}
+                          lazyLoadEmojis={false}
                         />
                       </div>
                     )}
