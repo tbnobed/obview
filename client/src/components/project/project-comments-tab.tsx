@@ -57,22 +57,37 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
     return 0;
   });
   
-  // Function to navigate to file with timestamp
+  // Function to navigate to file with timestamp - DIRECT METHOD
   const navigateToComment = (comment: Comment & { file?: any }) => {
     console.log("Navigating to comment:", comment);
     
     if (comment.timestamp !== null && comment.file?.id) {
-      // IMPORTANT: We need to store the target in sessionStorage because
-      // navigating with hash state isn't working reliably.
-      // The media tab's useEffect will check for this
-      sessionStorage.setItem('OBview_jumpToMedia', JSON.stringify({
+      // Direct approach: set a global variable on the window object
+      // This is more reliable than sessionStorage across different origins
+      (window as any).OBview_jumpToMedia = {
         fileId: comment.file.id,
         timestamp: comment.timestamp,
-        projectId: projectId
-      }));
+        projectId: projectId,
+        timestamp_ms: Date.now() // Add timestamp to ensure it's detected as a new event
+      };
       
-      // First navigate to the project page with media tab active
-      window.location.href = `/projects/${projectId}#media`;
+      // Use direct window location change with hash fragment and query params
+      // This ensures both the tab is activated AND we have the parameters available
+      const url = `/projects/${projectId}?media=${comment.file.id}&time=${comment.timestamp}#media`;
+      
+      if (window.location.pathname.includes(`/projects/${projectId}`)) {
+        // If we're already on the project page, just replace the URL and dispatch a custom event
+        window.history.replaceState(null, '', url);
+        
+        // Dispatch a custom event to notify the page that we want to navigate
+        const jumpEvent = new CustomEvent('obview_jump_to_timestamp', { 
+          detail: { fileId: comment.file.id, timestamp: comment.timestamp }
+        });
+        window.dispatchEvent(jumpEvent);
+      } else {
+        // If we're on a different page, navigate to the new URL
+        window.location.href = url;
+      }
     } else {
       console.log("Comment cannot be navigated to because:", 
         comment.timestamp === null ? "timestamp is null" : "file.id is missing");

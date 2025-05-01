@@ -91,6 +91,49 @@ export default function ProjectPage() {
     }
   }, [files, selectedFileId]);
   
+  // Listen for custom event for timestamp navigation
+  useEffect(() => {
+    // Handler for the custom event
+    const handleJumpEvent = (event: any) => {
+      console.log("⚡ Received custom jump event:", event.detail);
+      const { fileId, timestamp } = event.detail;
+      
+      if (fileId && timestamp !== undefined) {
+        setSelectedFileId(fileId);
+        setInitialTime(timestamp);
+        setActiveTab("media");
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('obview_jump_to_timestamp', handleJumpEvent);
+    
+    // Also check for our global window variable
+    const checkWindowVar = () => {
+      const jumpData = (window as any).OBview_jumpToMedia;
+      if (jumpData && jumpData.projectId === projectId) {
+        console.log("⚡ Found global jump data:", jumpData);
+        setSelectedFileId(jumpData.fileId);
+        setInitialTime(jumpData.timestamp);
+        setActiveTab("media");
+        // Clear it so it's only used once
+        delete (window as any).OBview_jumpToMedia;
+      }
+    };
+    
+    // Check when component mounts
+    checkWindowVar();
+    
+    // Check periodically in case it's set after we've mounted
+    const intervalId = setInterval(checkWindowVar, 500);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('obview_jump_to_timestamp', handleJumpEvent);
+      clearInterval(intervalId);
+    };
+  }, [projectId]);
+  
   // Parse URL parameters for file ID and timestamp
   useEffect(() => {
     // Check for hash in URL to set active tab
@@ -101,36 +144,16 @@ export default function ProjectPage() {
       }
     }
     
-    // First check for stored jump data from comments tab
-    const jumpData = sessionStorage.getItem('OBview_jumpToMedia');
-    if (jumpData) {
-      try {
-        console.log("Found stored jump data:", jumpData);
-        const { fileId, timestamp, projectId: jumpProjectId } = JSON.parse(jumpData);
-        
-        // Make sure the project ID matches (in case of multiple projects open in tabs)
-        if (jumpProjectId === projectId) {
-          console.log("Setting media parameters from stored jump data:", { fileId, timestamp });
-          setSelectedFileId(fileId);
-          setInitialTime(timestamp);
-          setActiveTab("media");
-          
-          // Clear the stored data to prevent repeated jumps
-          sessionStorage.removeItem('OBview_jumpToMedia');
-          return;
-        }
-      } catch (e) {
-        console.error("Error parsing jump data:", e);
-        sessionStorage.removeItem('OBview_jumpToMedia');
-      }
-    }
-    
-    // If no stored data, parse URL query parameters
+    // Parse URL query parameters (always do this regardless of hash)
     if (location) {
       console.log("Parsing URL params from location:", location);
       const url = new URL(window.location.href);
       const searchParams = new URLSearchParams(url.search);
       console.log("Search params:", Object.fromEntries(searchParams.entries()));
+      
+      // Always prioritize query parameters if they exist
+      let hasTimeParam = false;
+      let hasMediaParam = false;
       
       // Check for time parameter
       const timeParam = searchParams.get('time');
@@ -139,7 +162,7 @@ export default function ProjectPage() {
         console.log("Found time parameter:", time);
         if (!isNaN(time)) {
           setInitialTime(time);
-          setActiveTab("media");
+          hasTimeParam = true;
         }
       }
       
@@ -154,11 +177,16 @@ export default function ProjectPage() {
           // Always set the file ID even if it's not in the current files list yet
           // The files list might not be loaded yet
           setSelectedFileId(mediaId);
-          setActiveTab("media");
+          hasMediaParam = true;
         }
       }
+      
+      // If we found any media parameters, always switch to media tab
+      if (hasTimeParam || hasMediaParam) {
+        setActiveTab("media");
+      }
     }
-  }, [location, files, projectId]);
+  }, [location, files]);
 
   const selectedFile = files?.find(file => file.id === selectedFileId);
   
