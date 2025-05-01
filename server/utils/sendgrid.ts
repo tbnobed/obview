@@ -170,7 +170,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
  * @param projectName Name of the project
  * @param role Role granted in the project
  * @param token Invitation token
- * @param appUrl Base URL of the application
+ * @param appUrl Base URL of the application (most reliable method, should be formatted as protocol://host)
  * @returns Promise<boolean> Success status
  */
 export async function sendInvitationEmail(
@@ -188,10 +188,10 @@ export async function sendInvitationEmail(
     // Determine the correct invite URL using the best available option
     let baseUrl: string;
     
-    // First priority: Explicitly provided appUrl parameter
+    // First priority: Explicitly provided appUrl parameter (from request protocol and host)
     if (appUrl) {
       baseUrl = appUrl;
-      logToFile(`Using explicitly provided app URL: ${baseUrl}`);
+      logToFile(`Using explicitly provided app URL from request: ${baseUrl}`);
     }
     // Second priority: APP_HOST_URL environment variable - this is the same as what we use for file sharing
     else if (process.env.APP_HOST_URL) {

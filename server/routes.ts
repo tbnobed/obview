@@ -1541,13 +1541,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Sending invitation email to ${email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email
+            // Send the invitation email with request-based URL
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
             emailSent = await sendInvitationEmail(
               email,
               inviter.name,
               project.name,
               role,
-              token
+              token,
+              baseUrl
             );
             
             if (emailSent) {
@@ -1926,13 +1928,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email
+            // Send the invitation email with request-based URL
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
             emailSent = await sendInvitationEmail(
               invitation.email,
               inviter.name,
               project.name,
               invitation.role,
-              invitation.token
+              invitation.token,
+              baseUrl
             );
             
             if (emailSent) {
