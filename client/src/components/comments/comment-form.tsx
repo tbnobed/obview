@@ -105,29 +105,121 @@ export default function CommentForm({
     },
   });
 
-  // List of common emojis
-  const commonEmojis = [
-    "👍", "👎", "❤️", "😊", "😂", "😍", 
-    "🙂", "😉", "🤔", "👏", "🔥", "✅",
-    "❌", "⭐", "🎉", "👀", "💯", "🙏"
-  ];
+  // Emojis organized by category for the emoji picker
+  const [activeEmojiCategory, setActiveEmojiCategory] = useState<string>("quickAccess");
+  
+  const emojiCategories = {
+    quickAccess: [
+      "👍", "👎", "❤️", "😊", "😂", "😍", "🙂", "😉", "🤔", "👏", "🔥", "✅",
+      "❌", "⭐", "🎉", "👀", "💯", "🙏"
+    ],
+    smileys: [
+      "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", 
+      "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "😚", "😙",
+      "😋", "😛", "😜", "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐"
+    ],
+    people: [
+      "👍", "👎", "👌", "✌️", "🤞", "🤟", "🤘", "🤙", "👋", "🖐️", 
+      "👏", "🙌", "👐", "🤲", "🙏", "🤝", "💪", "👊", "✊", "🤜"
+    ],
+    nature: [
+      "🌱", "🌲", "🌳", "🌴", "🌵", "🌷", "🌸", "🌹", "🌺", "🌻",
+      "🍀", "🌿", "☘️", "🍃", "🍂", "🍁", "🌾", "🌞", "🌝", "🌚"
+    ],
+    symbols: [
+      "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
+      "✝️", "☪️", "🕉️", "☸️", "✡️", "🔯", "⚠️", "✅", "❌", "⭕"
+    ]
+  };
+  
+  // Category labels for UI
+  const categoryLabels: Record<string, string> = {
+    quickAccess: "Quick Access",
+    smileys: "Smileys",
+    people: "People",
+    nature: "Nature",
+    symbols: "Symbols"
+  };
   
   // No longer needed as we're handling emoji clicks inline
   
-  // Handler for file/image selection
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handler for file/image selection and upload
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
-    // Display image upload notification since we're not implementing the full upload feature
-    toast({
-      title: "Feature in development",
-      description: "File/image upload will be implemented in a future update.",
-    });
-    
-    // Reset the file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    try {
+      setIsUploading(true);
+      
+      const file = files[0];
+      const isImage = file.type.startsWith('image/');
+      
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Upload file to server
+      const response = await fetch(`/api/projects/${fileId}/upload`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload file');
+      }
+      
+      const uploadedFile = await response.json();
+      
+      // Add file reference to comment
+      const currentContent = form.getValues("content") || "";
+      const fileRef = isImage 
+        ? `\n![${file.name}](/api/files/${uploadedFile.id}/content)\n` 
+        : `\n[${file.name}](/api/files/${uploadedFile.id}/content)\n`;
+      
+      // Update textarea with file reference
+      if (textareaRef.current) {
+        // Get current caret position
+        const start = textareaRef.current.selectionStart || 0;
+        const end = textareaRef.current.selectionEnd || 0;
+        
+        // Insert file reference at cursor position
+        const newValue = currentContent.substring(0, start) + 
+                        fileRef + 
+                        currentContent.substring(end);
+        
+        // Set textarea value and update form
+        textareaRef.current.value = newValue;
+        form.setValue("content", newValue);
+        
+        // Trigger form validation
+        form.trigger("content");
+        
+        // Focus the textarea and position cursor after insertion
+        textareaRef.current.focus();
+        const newPosition = start + fileRef.length;
+        textareaRef.current.setSelectionRange(newPosition, newPosition);
+      }
+      
+      toast({
+        title: `${isImage ? 'Image' : 'File'} uploaded`,
+        description: `${file.name} has been uploaded and added to your comment.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
   
@@ -176,8 +268,13 @@ export default function CommentForm({
                     variant="ghost" 
                     className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
                   >
-                    <Paperclip className="h-3.5 w-3.5" />
+                    {isUploading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Paperclip className="h-3.5 w-3.5" />
+                    )}
                   </Button>
                   
                   {/* File input (hidden) */}
@@ -232,62 +329,88 @@ export default function CommentForm({
                           bottom: '100%', 
                           right: '0', 
                           zIndex: 1000,
-                          width: '220px',
+                          width: '300px',
                           marginBottom: '8px'
                         }}
                       >
-                        <div className="grid grid-cols-6 gap-2 emoji-grid p-2">
-                          {commonEmojis.map((emoji, index) => (
-                            <div
-                              key={index}
-                              className="p-1 rounded cursor-pointer text-center hover:bg-gray-100 text-lg"
-                              onClick={() => {
-                                console.log("Emoji clicked:", emoji);
-                                
-                                // Get the textarea DOM element directly
-                                if (textareaRef.current) {
-                                  // Get current caret position
-                                  const start = textareaRef.current.selectionStart || 0;
-                                  const end = textareaRef.current.selectionEnd || 0;
+                        <div className="emoji-picker-container">
+                          {/* Emoji Category Tabs */}
+                          <div className="border-b border-gray-200 flex overflow-x-auto">
+                            {Object.keys(emojiCategories).map((category) => (
+                              <button
+                                key={category}
+                                type="button"
+                                className={`px-2 py-1 text-xs font-medium ${
+                                  activeEmojiCategory === category
+                                    ? "text-primary-600 border-b-2 border-primary-600"
+                                    : "text-gray-500 hover:text-gray-700"
+                                }`}
+                                onClick={() => setActiveEmojiCategory(category)}
+                              >
+                                {categoryLabels[category]}
+                              </button>
+                            ))}
+                          </div>
+                          
+                          {/* Emoji Grid */}
+                          <div className="grid grid-cols-6 gap-2 emoji-grid p-3 max-h-[180px] overflow-y-auto">
+                            {emojiCategories[activeEmojiCategory as keyof typeof emojiCategories].map((emoji, index) => (
+                              <div
+                                key={index}
+                                className="p-1 rounded cursor-pointer text-center hover:bg-gray-100 text-lg"
+                                onClick={() => {
+                                  // Get the textarea DOM element directly
+                                  if (textareaRef.current) {
+                                    // Get current caret position
+                                    const start = textareaRef.current.selectionStart || 0;
+                                    const end = textareaRef.current.selectionEnd || 0;
+                                    
+                                    // Get current value
+                                    const currentValue = textareaRef.current.value;
+                                    
+                                    // Build new value with emoji inserted at cursor position
+                                    const newValue = currentValue.substring(0, start) + 
+                                                    emoji + 
+                                                    currentValue.substring(end);
+                                    
+                                    // Set new value directly on the textarea
+                                    textareaRef.current.value = newValue;
+                                    
+                                    // Update the cursor position to after the emoji
+                                    const newPosition = start + emoji.length;
+                                    textareaRef.current.setSelectionRange(newPosition, newPosition);
+                                    
+                                    // Trigger an input event to ensure react-hook-form updates
+                                    const event = new Event('input', { bubbles: true });
+                                    textareaRef.current.dispatchEvent(event);
+                                    
+                                    // Also update the form value to be safe
+                                    form.setValue("content", newValue);
+                                    
+                                    // Focus the textarea
+                                    textareaRef.current.focus();
+                                    
+                                    // Make sure to update the form validation
+                                    form.trigger("content");
+                                  }
                                   
-                                  // Get current value
-                                  const currentValue = textareaRef.current.value;
-                                  
-                                  // Build new value with emoji inserted at cursor position
-                                  const newValue = currentValue.substring(0, start) + 
-                                                  emoji + 
-                                                  currentValue.substring(end);
-                                  
-                                  // Set new value directly on the textarea
-                                  textareaRef.current.value = newValue;
-                                  
-                                  // Update the cursor position to after the emoji
-                                  const newPosition = start + emoji.length;
-                                  textareaRef.current.setSelectionRange(newPosition, newPosition);
-                                  
-                                  // Trigger an input event to ensure react-hook-form updates
-                                  const event = new Event('input', { bubbles: true });
-                                  textareaRef.current.dispatchEvent(event);
-                                  
-                                  // Also update the form value to be safe
-                                  form.setValue("content", newValue);
-                                  
-                                  // Focus the textarea
-                                  textareaRef.current.focus();
-                                  
-                                  // Make sure to update the form validation
-                                  form.trigger("content");
-                                }
-                                
-                                // Close the emoji picker after selection
-                                setTimeout(() => {
-                                  setShowEmojiPicker(false);
-                                }, 100);
-                              }}
-                            >
-                              {emoji}
+                                  // Close the emoji picker after selection
+                                  setTimeout(() => {
+                                    setShowEmojiPicker(false);
+                                  }, 100);
+                                }}
+                              >
+                                {emoji}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Search box placeholder for future enhancement */}
+                          <div className="px-3 pb-2 pt-1 border-t border-gray-200">
+                            <div className="text-xs text-gray-500 text-center">
+                              Click an emoji to add it
                             </div>
-                          ))}
+                          </div>
                         </div>
                       </div>
                     )}
