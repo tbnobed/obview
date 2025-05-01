@@ -62,6 +62,14 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     logToFile(`  - Text length: ${params.text?.length || 0} characters`);
     logToFile(`  - HTML length: ${params.html?.length || 0} characters`);
     
+    // Log a sample of the content for debugging
+    if (params.html) {
+      const htmlSample = params.html.length > 500 
+        ? params.html.substring(0, 500) + '...' 
+        : params.html;
+      logToFile(`  - HTML sample: ${htmlSample}`);
+    }
+    
     // Verify API key exists - use the module scoped variable
     if (!apiKey) {
       const error = "Cannot send email: No SendGrid API key is set";
