@@ -8,8 +8,7 @@ export function useShareLink() {
 
   const createShareLinkMutation = useMutation({
     mutationFn: async (fileId: number) => {
-      const response = await apiRequest("POST", `/api/files/${fileId}/share`);
-      return await response.json();
+      return await apiRequest("POST", `/api/files/${fileId}/share`);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
