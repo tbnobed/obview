@@ -1938,14 +1938,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email with client domain (if provided)
+            // Send the invitation email with app URL (if provided)
             emailSent = await sendInvitationEmail(
               invitation.email,
               inviter.name,
               project.name,
               invitation.role,
               invitation.token,
-              clientDomain // Pass the client domain (undefined if not provided)
+              appUrl // Pass the client app URL (undefined if not provided)
             );
             
             if (emailSent) {
