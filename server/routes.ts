@@ -1529,10 +1529,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Checking SendGrid API key availability for invitation to ${email}`);
       console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
-      // Get client's origin URL for the invitation link
-      const clientUrl = req.body.clientUrl || null;
-      console.log(`Client URL provided: ${clientUrl || 'none'}`);
-      
       if (process.env.SENDGRID_API_KEY) {
         console.log(`SendGrid API key is available, preparing to send invitation email to ${email}`);
         try {
@@ -1545,14 +1541,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Sending invitation email to ${email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email, passing the client URL
+            // Send the invitation email
             emailSent = await sendInvitationEmail(
               email,
               inviter.name,
               project.name,
               role,
-              token,
-              clientUrl
+              token
             );
             
             if (emailSent) {
@@ -1726,30 +1721,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized. Only admins can access this endpoint." });
       }
       
-      const { to, checkOnly = false } = req.body;
+      const { to } = req.body;
       
-      if (!to && !checkOnly) {
+      if (!to) {
         return res.status(400).json({ message: "Email address is required" });
-      }
-      
-      console.log(`SendGrid diagnostic requested by ${req.user.name} (${req.user.email})`);
-      console.log(`API Key present: ${process.env.SENDGRID_API_KEY ? 'Yes' : 'No'}`);
-      console.log(`API Key length: ${process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.length : 0} characters`);
-      console.log(`Sandbox Mode: ${process.env.SENDGRID_SANDBOX === 'true' ? 'Enabled' : 'Disabled'}`);
-      console.log(`From Email: ${process.env.EMAIL_FROM || 'alerts@obedtv.com'}`);
-      
-      // If checkOnly is true, just return the diagnostic info without sending an email
-      if (checkOnly) {
-        return res.status(200).json({
-          diagnosticOnly: true,
-          apiKeyPresent: process.env.SENDGRID_API_KEY ? true : false,
-          apiKeyLength: process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.length : 0,
-          fromEmail: process.env.EMAIL_FROM || 'alerts@obedtv.com',
-          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? true : false,
-          environment: process.env.NODE_ENV || 'not set',
-          emailEndpoint: '/api/debug/send-test-email',
-          message: 'Email configuration checked (no email sent)'
-        });
       }
       
       // Import the sendEmail function
@@ -1757,55 +1732,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Sending test email to ${to}`);
       
-      const timestamp = new Date().toISOString();
-      const emailSubject = `OBview Test Email - ${timestamp}`;
-      const emailText = `This is a test email from OBview.io sent at ${timestamp}`;
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #6366f1; color: white; padding: 20px; text-align: center;">
-            <h1 style="margin: 0; font-size: 24px;">OBview Test Email</h1>
-          </div>
-          <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
-            <p>This is a test email from OBview.io sent at ${timestamp}</p>
-            <p>If you received this email, it means your email configuration is working correctly.</p>
-            <p><strong>Sent by:</strong> ${req.user.name} (${req.user.email})</p>
-            <p><strong>Environment:</strong> ${process.env.NODE_ENV || 'not set'}</p>
-            <p><strong>From:</strong> ${process.env.EMAIL_FROM || 'alerts@obedtv.com'}</p>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-            <p style="color: #64748b; font-size: 12px;">This is a diagnostic email for testing purposes.</p>
-          </div>
-        </div>
-      `;
-      
       const emailSent = await sendEmail({
         to: to,
         from: process.env.EMAIL_FROM || 'alerts@obedtv.com',
-        subject: emailSubject,
-        text: emailText,
-        html: emailHtml
+        subject: 'Test Email from ObedTV',
+        text: 'This is a test email sent directly from the /api/debug/send-test-email endpoint.',
+        html: '<p>This is a test email sent directly from the <code>/api/debug/send-test-email</code> endpoint.</p>'
       });
       
       if (emailSent) {
         res.json({ 
           success: true, 
           message: `Test email sent to ${to}. Check the logs for details.`,
-          apiKeyPresent: process.env.SENDGRID_API_KEY ? true : false,
-          apiKeyLength: process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.length : 0,
-          fromEmail: process.env.EMAIL_FROM || 'alerts@obedtv.com',
-          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? true : false,
-          environment: process.env.NODE_ENV || 'not set',
-          timestamp: timestamp
+          apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled" 
         });
       } else {
         res.status(500).json({ 
           success: false, 
           message: `Failed to send test email to ${to}. Check the logs for details.`,
-          apiKeyPresent: process.env.SENDGRID_API_KEY ? true : false,
-          apiKeyLength: process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.length : 0,
-          fromEmail: process.env.EMAIL_FROM || 'alerts@obedtv.com',
-          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? true : false,
-          environment: process.env.NODE_ENV || 'not set',
-          timestamp: timestamp
+          apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
         });
       }
     } catch (error) {
@@ -1971,10 +1918,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Attempting to resend invitation email to ${invitation.email}`);
       console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
-      // Get client's origin URL for the invitation link
-      const clientUrl = req.body.clientUrl || null;
-      console.log(`Client URL provided for resend: ${clientUrl || 'none'}`);
-      
       if (process.env.SENDGRID_API_KEY) {
         try {
           // Import the sendInvitationEmail function from utils/sendgrid
@@ -1983,14 +1926,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email with client URL
+            // Send the invitation email
             emailSent = await sendInvitationEmail(
               invitation.email,
               inviter.name,
               project.name,
               invitation.role,
-              invitation.token,
-              clientUrl
+              invitation.token
             );
             
             if (emailSent) {

@@ -27,15 +27,10 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
 
   const inviteMutation = useMutation({
     mutationFn: async () => {
-      // Include the current window origin for email links to work across all environments
-      const clientUrl = window.location.origin;
-      console.log(`Using client URL for invitation: ${clientUrl}`);
-      
       return await apiRequest("POST", "/api/invite", {
         email,
         projectId,
         role,
-        clientUrl,
       });
     },
     onSuccess: (response) => {
@@ -53,12 +48,7 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
         // Using an immediately invoked async function
         (async () => {
           try {
-            // Include the client URL in the resend request too
-            const clientUrl = window.location.origin;
-            console.log(`Using client URL for resending invitation: ${clientUrl}`);
-            const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
-              clientUrl
-            });
+            const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
             console.log("Auto-resend response:", resendResponse);
             
             const emailSent = resendResponse?.emailSent;

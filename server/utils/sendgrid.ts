@@ -77,14 +77,6 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     
     // Prepare email data with configurable sandbox mode
     // The account now has a verified sender (alerts@obedtv.com)
-    const isSandboxEnabled = process.env.SENDGRID_SANDBOX === 'true';
-    logToFile(`SendGrid sandbox mode is ${isSandboxEnabled ? 'ENABLED' : 'DISABLED'}`);
-    
-    // Check SendGrid account status
-    if (process.env.NODE_ENV === 'development') {
-      logToFile(`Running in development mode - some email providers may filter development emails`);
-    }
-    
     const emailData = {
       to: params.to,
       from: params.from,
@@ -93,19 +85,10 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html || '',
       mail_settings: {
         sandbox_mode: {
-          enable: isSandboxEnabled
+          enable: process.env.SENDGRID_SANDBOX === 'true' ? true : false
         }
       }
     };
-    
-    // Log more information about the email delivery
-    console.log(`Sending email to ${params.to} from ${params.from} with subject: ${params.subject}`);
-    logToFile(`Environment: ${process.env.NODE_ENV || 'not set'}`);
-    logToFile(`Email delivery might be affected by: 
-    - Email provider spam filters
-    - SendGrid delivery delays
-    - SendGrid account restrictions
-    - Receiving server filtering`);
     
     logToFile(`Sending email via SendGrid...`);
     const response = await mailService.send(emailData);
@@ -187,7 +170,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
  * @param projectName Name of the project
  * @param role Role granted in the project
  * @param token Invitation token
- * @param clientUrl The URL provided by the client (highest priority)
+ * @param appUrl Base URL of the application
  * @returns Promise<boolean> Success status
  */
 export async function sendInvitationEmail(
@@ -196,28 +179,19 @@ export async function sendInvitationEmail(
   projectName: string,
   role: string,
   token: string,
-  clientUrl?: string
+  appUrl?: string
 ): Promise<boolean> {
   try {
     logToFile(`Preparing invitation email to ${to} for project "${projectName}" from "${inviterName}" with role "${role}"`);
     logToFile(`Token: ${token}`);
-    logToFile(`Client URL provided: ${clientUrl || 'none'}`);
     
     // Determine the correct invite URL using the best available option
     let baseUrl: string;
     
-    // First priority: Explicitly provided clientUrl parameter from the browser
-    if (clientUrl) {
-      // Extract the origin part (protocol + hostname + port) to ensure we only use the base URL
-      try {
-        const url = new URL(clientUrl);
-        baseUrl = url.origin;
-        logToFile(`Using client-provided URL origin: ${baseUrl}`);
-      } catch (e) {
-        // If URL parsing fails, use the client URL as-is
-        baseUrl = clientUrl;
-        logToFile(`Using client-provided URL (unparseable): ${baseUrl}`);
-      }
+    // First priority: Explicitly provided appUrl parameter
+    if (appUrl) {
+      baseUrl = appUrl;
+      logToFile(`Using explicitly provided app URL: ${baseUrl}`);
     }
     // Second priority: APP_URL environment variable
     else if (process.env.APP_URL) {
