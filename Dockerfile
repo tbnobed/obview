@@ -13,24 +13,29 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Verify the structure before building
+RUN ls -la && echo "Content of server directory:" && ls -la server/
+
+# Build the application with more verbose output
+RUN npm run build && echo "Build completed successfully" && ls -la dist/ && ls -la dist/server/ || echo "Build failed"
 
 # Production stage
 FROM node:20-alpine as production
 
-# Install PostgreSQL client for health checks
-RUN apk add --no-cache postgresql-client
+# Install PostgreSQL client for health checks and utilities
+RUN apk add --no-cache postgresql-client curl
 
 WORKDIR /app
 
-# Copy built assets from builder
+# Copy all server source files first (needed for proper operation)
+COPY --from=builder /app/server ./server
+
+# Copy built assets from builder - maintain the entire structure
 COPY --from=builder /app/dist ./dist
-# Create server directory and copy migration script
-RUN mkdir -p ./server
-COPY --from=builder /app/server/db-migrate.cjs ./server/db-migrate.cjs
-# Make sure the server directory has the migration scripts in both .js and .cjs formats
-# (for backward compatibility and to work with ES modules)
+COPY --from=builder /app/client ./client
+COPY --from=builder /app/shared ./shared
+
+# Copy dependencies and configuration files
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/uploads ./uploads
@@ -58,5 +63,5 @@ VOLUME /app/uploads
 # Set entrypoint to our initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
-# Start the application
-CMD ["node", "dist/server/index.js"]
+# Start the application with fallback support
+CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; else node dist/server/index.js; fi"]

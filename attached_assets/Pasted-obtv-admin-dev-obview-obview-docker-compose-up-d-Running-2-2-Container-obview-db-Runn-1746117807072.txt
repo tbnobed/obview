@@ -1,0 +1,1180 @@
+obtv-admin@dev-obview:~/obview$ docker compose up -d
+[+] Running 2/2
+ ✔ Container obview_db   Running                                                                                                                                                                        0.0s
+ ✔ Container obview_app  Started                                                                                                                                                                        0.3s
+obtv-admin@dev-obview:~/obview$ docker-compose logs -f
+obview_db  | The files belonging to this database system will be owned by user "postgres".
+obview_db  | This user must also own the server process.
+obview_db  |
+obview_db  | The database cluster will be initialized with locale "en_US.utf8".
+obview_db  | The default database encoding has accordingly been set to "UTF8".
+obview_db  | The default text search configuration will be set to "english".
+obview_db   |
+obview_db   | Data page checksums are disabled.
+obview_app  | Waiting for database to be ready...
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_db   |
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+obview_db   | creating subdirectories ... ok
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | selecting dynamic shared memory implementation ... posix
+obview_db   | selecting default max_connections ... 100
+obview_db   | selecting default shared_buffers ... 128MB
+obview_db   | selecting default time zone ... UTC
+obview_db   | creating configuration files ... ok
+obview_db   | running bootstrap script ... ok
+obview_db   | sh: locale: not found
+obview_db   | 2025-05-01 09:13:54.225 UTC [35] WARNING:  no usable system locales were found
+obview_db   | performing post-bootstrap initialization ... ok
+obview_db   | initdb: warning: enabling "trust" authentication for local connections
+obview_db   | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | syncing data to disk ... ok
+obview_db   |
+obview_db   |
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_db   | Success. You can now start the database server using:
+obview_db   |
+obview_db   |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+obview_db   |
+obview_db   | waiting for server to start....2025-05-01 09:13:55.529 UTC [41] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db   | 2025-05-01 09:13:55.530 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2025-05-01 09:13:55.535 UTC [44] LOG:  database system was shut down at 2025-05-01 09:13:55 UTC
+obview_db   | 2025-05-01 09:13:55.542 UTC [41] LOG:  database system is ready to accept connections
+obview_db   |  done
+obview_db   | server started
+obview_db   | CREATE DATABASE
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-schema.sql
+obview_db   | CREATE EXTENSION
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_db   | CREATE TABLE
+obview_db   | DO
+obview_db   | GRANT
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Creating admin user: admin
+obview_app  | Admin user created successfully
+obview_app  | Setup completed successfully
+obview_app  | ERROR: Application server file not found. Build may have failed.
+obview_app  | Expected file: /app/dist/server/index.js
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/02-init-db.sh
+obview_db   | Running database migrations...
+obview_db   | /docker-entrypoint-initdb.d/02-init-db.sh: line 6: cd: /app: No such file or directory
+obview_db   |
+obview_db   | PostgreSQL Database directory appears to contain a database; Skipping initialization
+obview_db   |
+obview_db   | 2025-05-01 09:13:56.218 UTC [1] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db   | 2025-05-01 09:13:56.218 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_app  | ls: /app/dist/server: No such file or directory
+obview_db   | 2025-05-01 09:13:56.218 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_app  | Server directory does not exist
+obview_app  | Waiting for database to be ready...
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_db   | 2025-05-01 09:13:56.221 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2025-05-01 09:13:56.226 UTC [29] LOG:  database system was interrupted; last known up at 2025-05-01 09:13:55 UTC
+obview_db   | 2025-05-01 09:13:56.449 UTC [29] LOG:  database system was not properly shut down; automatic recovery in progress
+obview_db   | 2025-05-01 09:13:56.452 UTC [29] LOG:  redo starts at 0/14EFCE8
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 09:13:56.484 UTC [29] LOG:  invalid record length at 0/1921288: expected at least 24, got 0
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 09:13:56.484 UTC [29] LOG:  redo done at 0/1921240 system usage: CPU: user: 0.00 s, system: 0.01 s, elapsed: 0.03 s
+obview_db   | 2025-05-01 09:13:56.488 UTC [27] LOG:  checkpoint starting: end-of-recovery immediate wait
+obview_db   | 2025-05-01 09:13:56.558 UTC [30] FATAL:  the database system is not yet accepting connections
+obview_db   | 2025-05-01 09:13:56.558 UTC [30] DETAIL:  Consistent recovery state has not been yet reached.
+obview_db   | 2025-05-01 09:13:56.568 UTC [27] LOG:  checkpoint complete: wrote 927 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.033 s, sync=0.043 s, total=0.082 s; sync files=306, longest=0.002 s, average=0.001 s; distance=4293 kB, estimate=4293 kB; lsn=0/1921288, redo lsn=0/1921288
+obview_db   | 2025-05-01 09:13:56.574 UTC [1] LOG:  database system is ready to accept connections
+obview_db   | 2025-05-01 16:31:21.370 UTC [19584] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:21.370 UTC [19584] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:31:22.110 UTC [19586] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:22.110 UTC [19586] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | ERROR: Application server file not found. Build may have failed.
+obview_app  | Expected file: /app/dist/server/index.js
+obview_app  | ls: /app/dist/server: No such file or directory
+obview_app  | Server directory does not exist
+obview_app  | Waiting for database to be ready...
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:31:23.048 UTC [19588] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:23.048 UTC [19588] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_app  | Connecting to database...
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:31:24.379 UTC [19590] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:24.379 UTC [19590] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:31:26.518 UTC [19599] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:26.518 UTC [19599] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:31:30.253 UTC [19601] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:30.253 UTC [19601] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | ERROR: Application server file not found. Build may have failed.
+obview_app  | Expected file: /app/dist/server/index.js
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | ls: /app/dist/server: No such file or directory
+obview_app  | Server directory does not exist
+obview_app  | Waiting for database to be ready...
+obview_db   | 2025-05-01 16:31:37.208 UTC [19610] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:37.208 UTC [19610] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:31:50.532 UTC [19620] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:50.532 UTC [19620] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   |   )
+obview_db   | 2025-05-01 16:32:16.660 UTC [19644] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:32:16.660 UTC [19644] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | ERROR: Application server file not found. Build may have failed.
+obview_app  | Expected file: /app/dist/server/index.js
+obview_app  | ls: /app/dist/server: No such file or directory
+obview_app  | Server directory does not exist
+obview_app  | Waiting for database to be ready...
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_db   |   )
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_db   | 2025-05-01 16:33:08.382 UTC [19682] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:33:08.382 UTC [19682] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:34:04.563 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2025-05-01 16:34:08.927 UTC [19728] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:34:08.927 UTC [19728] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:34:11.822 UTC [27] LOG:  checkpoint complete: wrote 73 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=7.246 s, sync=0.009 s, total=7.260 s; sync files=86, longest=0.002 s, average=0.001 s; distance=378 kB, estimate=3902 kB; lsn=0/198E448, redo lsn=0/197FBC8
+obview_db   | 2025-05-01 16:35:09.458 UTC [19775] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:35:09.458 UTC [19775] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | ERROR: Application server file not found. Build may have failed.
+obview_app  | Expected file: /app/dist/server/index.js
+obview_app  | ls: /app/dist/server: No such file or directory
+obview_app  | Server directory does not exist
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:36:09.974 UTC [19821] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:36:09.974 UTC [19821] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:37:10.499 UTC [19867] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:37:10.499 UTC [19867] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:38:11.018 UTC [19913] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:38:11.018 UTC [19913] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:39:04.923 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2025-05-01 16:39:06.136 UTC [27] LOG:  checkpoint complete: wrote 13 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.205 s, sync=0.005 s, total=1.214 s; sync files=17, longest=0.001 s, average=0.001 s; distance=72 kB, estimate=3519 kB; lsn=0/1991F68, redo lsn=0/1991F30
+obview_db   | 2025-05-01 16:39:11.547 UTC [19959] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:39:11.547 UTC [19959] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:40:12.076 UTC [20005] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:40:12.076 UTC [20005] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:12.620 UTC [20051] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:41:12.620 UTC [20051] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:53.498 UTC [20082] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:41:53.498 UTC [20082] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:53.524 UTC [20083] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 16:41:53.524 UTC [20083] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:53.545 UTC [20084] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 16:41:53.545 UTC [20084] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:53.565 UTC [20085] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 16:41:53.565 UTC [20085] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:53.586 UTC [20086] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 16:41:53.586 UTC [20086] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:53.605 UTC [20087] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 16:41:53.605 UTC [20087] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:53.624 UTC [20088] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 16:41:53.624 UTC [20088] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:53.643 UTC [20089] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 16:41:53.643 UTC [20089] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:54.594 UTC [20092] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:41:54.594 UTC [20092] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:54.619 UTC [20093] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 16:41:54.619 UTC [20093] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:54.642 UTC [20094] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 16:41:54.642 UTC [20094] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:54.661 UTC [20095] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 16:41:54.661 UTC [20095] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:54.682 UTC [20096] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 16:41:54.682 UTC [20096] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:54.701 UTC [20097] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 16:41:54.701 UTC [20097] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:54.721 UTC [20098] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 16:41:54.721 UTC [20098] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:54.739 UTC [20099] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 16:41:54.739 UTC [20099] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:55.685 UTC [20102] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:41:55.685 UTC [20102] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:55.710 UTC [20103] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 16:41:55.710 UTC [20103] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:55.731 UTC [20104] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 16:41:55.731 UTC [20104] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:55.751 UTC [20105] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 16:41:55.751 UTC [20105] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:55.770 UTC [20106] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 16:41:55.770 UTC [20106] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:55.790 UTC [20107] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 16:41:55.790 UTC [20107] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:55.810 UTC [20108] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 16:41:55.810 UTC [20108] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:55.829 UTC [20109] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 16:41:55.829 UTC [20109] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:56.981 UTC [20112] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:41:56.981 UTC [20112] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:57.006 UTC [20113] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 16:41:57.006 UTC [20113] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:57.028 UTC [20114] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 16:41:57.028 UTC [20114] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:57.048 UTC [20115] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 16:41:57.048 UTC [20115] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:57.069 UTC [20116] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 16:41:57.069 UTC [20116] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:57.088 UTC [20117] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 16:41:57.088 UTC [20117] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:57.108 UTC [20118] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 16:41:57.108 UTC [20118] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:57.126 UTC [20119] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 16:41:57.126 UTC [20119] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:58.682 UTC [20122] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:41:58.682 UTC [20122] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:58.707 UTC [20123] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 16:41:58.707 UTC [20123] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:58.728 UTC [20124] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 16:41:58.728 UTC [20124] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:58.750 UTC [20125] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 16:41:58.750 UTC [20125] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:58.770 UTC [20126] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 16:41:58.770 UTC [20126] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:58.790 UTC [20127] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 16:41:58.790 UTC [20127] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:58.810 UTC [20128] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 16:41:58.810 UTC [20128] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-01 16:41:58.829 UTC [20129] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 16:41:58.829 UTC [20129] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 16:42:01.155 UTC [20139] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:42:01.155 UTC [20139] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:01.181 UTC [20140] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 16:42:01.181 UTC [20140] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:01.203 UTC [20141] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 16:42:01.203 UTC [20141] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:01.222 UTC [20142] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 16:42:01.222 UTC [20142] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:01.243 UTC [20143] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 16:42:01.243 UTC [20143] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:01.262 UTC [20144] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 16:42:01.262 UTC [20144] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:01.282 UTC [20145] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 16:42:01.282 UTC [20145] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:01.300 UTC [20146] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 16:42:01.300 UTC [20146] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | ERROR: Application server file not found. Build may have failed.
+obview_app  | Expected file: /app/dist/server/index.js
+obview_app  | ls: /app/dist/server: No such file or directory
+obview_app  | Server directory does not exist
+obview_app exited with code 1
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 16:42:05.260 UTC [20149] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:42:05.260 UTC [20149] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:05.287 UTC [20150] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-01 16:42:05.287 UTC [20150] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:05.310 UTC [20151] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-01 16:42:05.310 UTC [20151] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:05.331 UTC [20152] ERROR:  relation "files" already exists
+obview_db   | 2025-05-01 16:42:05.331 UTC [20152] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:05.351 UTC [20153] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-01 16:42:05.351 UTC [20153] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:05.371 UTC [20154] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-01 16:42:05.371 UTC [20154] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:05.391 UTC [20155] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-01 16:42:05.391 UTC [20155] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_db   | 2025-05-01 16:42:05.410 UTC [20156] ERROR:  relation "users" already exists
+obview_db   | 2025-05-01 16:42:05.410 UTC [20156] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | ERROR: Application server file not found. Build may have failed.
+obview_app  | Expected file: /app/dist/server/index.js
+obview_app  | ls: /app/dist/server: No such file or directory
+obview_app  | Server directory does not exist
+obview_app exited with code 1
+^Ccanceled

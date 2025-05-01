@@ -386,6 +386,51 @@ If you continue to experience issues with migrations, consider these options:
    \d+ table_name
    ```
 
+### Build and Directory Structure Issues
+
+If you encounter errors about missing files or directories in the Docker container, try these solutions:
+
+1. **Rebuild Docker Image**: Ensure your Dockerfile is properly copying all necessary files:
+   ```bash
+   # Build with verbose output to debug issues
+   docker-compose build --no-cache --progress=plain app
+   ```
+
+2. **Check File Structure**: Inspect the container's filesystem:
+   ```bash
+   # Start a shell in the application container
+   docker-compose exec app sh
+   
+   # Inside the container, check critical directories
+   ls -la /app
+   ls -la /app/dist
+   ls -la /app/server
+   ```
+   
+3. **Manually Trigger Build**: Sometimes you need to force a build inside the container:
+   ```bash
+   # Access container shell
+   docker-compose exec app sh
+   
+   # Inside the container, try building
+   npm run build
+   ```
+
+4. **Copy Build Output**: If your local build works but the Docker build fails:
+   ```bash
+   # Build locally first
+   npm run build
+   
+   # Create a special Dockerfile.fix
+   echo "FROM obview_app
+   COPY ./dist /app/dist" > Dockerfile.fix
+   
+   # Build fixed image
+   docker build -t obview_app_fixed -f Dockerfile.fix .
+   
+   # Update your docker-compose.yml to use obview_app_fixed
+   ```
+
 ### Container Health Check Failures
 
 The Docker Compose setup includes health checks for both app and database containers. If health checks fail:
