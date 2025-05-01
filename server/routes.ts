@@ -297,7 +297,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
-    // Test email sending endpoint
+    // Test email sending endpoint - supports both GET and POST
+    app.post("/api/debug/send-test-email", isAuthenticated, isAdmin, async (req, res, next) => {
+      try {
+        console.log("Sending test email - POST method");
+        const to = req.body.to || 'test@example.com';
+        console.log(`Sending test email to ${to}`);
+        
+        // Check if SendGrid API key is set
+        if (!process.env.SENDGRID_API_KEY) {
+          console.error("SendGrid API key is not set");
+          return res.status(500).json({ 
+            success: false, 
+            message: "SendGrid API key is not set", 
+            apiKey: "API key is missing",
+            sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
+          });
+        }
+        
+        console.log(`Using API key: ${process.env.SENDGRID_API_KEY.substring(0, 5)}...`);
+        
+        // Import the sendEmail function
+        const { sendEmail } = await import('./utils/sendgrid');
+        
+        // Send the test email
+        const result = await sendEmail({
+          to,
+          from: process.env.EMAIL_FROM || 'alerts@obedtv.com',
+          subject: 'Test Email from ObView.io',
+          text: 'This is a test email to verify SendGrid functionality.',
+          html: '<h1>Test Email</h1><p>This is a test email to verify SendGrid functionality.</p><p>If you received this, email sending is working correctly!</p>'
+        });
+        
+        if (result) {
+          console.log(`Test email successfully sent to ${to}`);
+          return res.json({ 
+            success: true, 
+            message: `Test email sent to ${to}. Check the logs for details.`,
+            apiKey: "API key is set",
+            sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
+          });
+        } else {
+          console.error(`Failed to send test email to ${to}`);
+          return res.status(500).json({ 
+            success: false, 
+            message: `Failed to send test email to ${to}. Check the logs for details.`,
+            apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+            sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
+          });
+        }
+      } catch (error) {
+        console.error("Error in email test endpoint:", error);
+        next(error);
+      }
+    });
+    
+    // Original GET endpoint maintained for backward compatibility
     app.get("/api/debug/send-test-email", async (req, res) => {
       try {
         const { sendEmail } = await import('./utils/sendgrid');
