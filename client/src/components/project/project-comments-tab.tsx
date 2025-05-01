@@ -61,23 +61,30 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
   const navigateToComment = (comment: Comment & { file?: any }) => {
     console.log("Navigating to comment:", comment);
     
-    if (comment.timestamp !== null && comment.file?.id) {
+    // Allow navigation for any comment that has a valid file ID, even if timestamp is null
+    if (comment.file?.id) {
+      // If timestamp is null, default to 0 (beginning of the file)
+      const timestamp = comment.timestamp !== null ? comment.timestamp : 0;
+      
+      console.log(`Navigating to file ${comment.file.id} at timestamp ${timestamp} (original timestamp: ${comment.timestamp})`);
+      
       // Use multiple approaches to ensure cross-browser compatibility
       
       // 1. Direct approach: set a global variable on the window object
       try {
         (window as any).OBview_jumpToMedia = {
           fileId: comment.file.id,
-          timestamp: comment.timestamp,
+          timestamp: timestamp,
           projectId: projectId,
-          timestamp_ms: Date.now() // Add timestamp to ensure it's detected as a new event
+          timestamp_ms: Date.now(), // Add timestamp to ensure it's detected as a new event
+          originalComment: comment.id // Add comment ID for tracing
         };
       } catch (e) {
         console.error("Failed to set global variable:", e);
       }
       
       // 2. Use direct window location change with hash fragment and query params
-      const url = `/projects/${projectId}?media=${comment.file.id}&time=${comment.timestamp}#media`;
+      const url = `/projects/${projectId}?media=${comment.file.id}&time=${timestamp}#media`;
       
       if (window.location.pathname.includes(`/projects/${projectId}`)) {
         // If we're already on the project page, just replace the URL and dispatch a custom event
@@ -90,7 +97,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
         // 3. Dispatch a custom event to notify the page that we want to navigate
         try {
           const jumpEvent = new CustomEvent('obview_jump_to_timestamp', { 
-            detail: { fileId: comment.file.id, timestamp: comment.timestamp }
+            detail: { fileId: comment.file.id, timestamp: timestamp, commentId: comment.id }
           });
           window.dispatchEvent(jumpEvent);
           
@@ -98,7 +105,8 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
           const backupEvent = document.createEvent('CustomEvent');
           backupEvent.initCustomEvent('obview_jump_to_timestamp_backup', true, true, { 
             fileId: comment.file.id, 
-            timestamp: comment.timestamp 
+            timestamp: timestamp,
+            commentId: comment.id
           });
           document.dispatchEvent(backupEvent);
         } catch (e) {
@@ -112,7 +120,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
           setTimeout(() => {
             const videoElement = document.querySelector('video');
             if (videoElement) {
-              videoElement.currentTime = comment.timestamp || 0;
+              videoElement.currentTime = timestamp;
               videoElement.play().catch(e => console.error("Failed to play video:", e));
             }
           }, 300);
@@ -124,8 +132,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
         window.location.href = url;
       }
     } else {
-      console.log("Comment cannot be navigated to because:", 
-        comment.timestamp === null ? "timestamp is null" : "file.id is missing");
+      console.log("Comment cannot be navigated to because file.id is missing");
     }
   };
   
@@ -134,9 +141,9 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
       {sortedComments.map((comment: Comment & { user?: any, file?: any }) => (
         <div 
           key={comment.id} 
-          className={`border rounded-lg p-4 ${comment.timestamp !== null && comment.file?.id ? 'cursor-pointer hover:bg-neutral-50 hover:border-primary-400 hover:shadow-sm transition-all' : ''}`}
+          className={`border rounded-lg p-4 ${comment.file?.id ? 'cursor-pointer hover:bg-neutral-50 hover:border-primary-400 hover:shadow-sm transition-all' : ''}`}
           onClick={() => navigateToComment(comment)}
-          title={comment.timestamp !== null && comment.file?.id ? `Click to view at ${formatTime(comment.timestamp)} in ${comment.file.filename}` : ''}
+          title={comment.file?.id ? `Click to view ${comment.timestamp !== null ? `at ${formatTime(comment.timestamp)}` : ''} in ${comment.file.filename}` : ''}
         >
           <div className="flex items-start gap-4">
             <Avatar>
@@ -171,7 +178,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                   <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Resolved</Badge>
                 )}
                 
-                {comment.timestamp !== null && comment.file?.id && (
+                {comment.file?.id && (
                   <Button 
                     size="sm" 
                     variant="outline"
@@ -182,7 +189,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                     }}
                   >
                     <Play className="h-3 w-3 mr-1" />
-                    Jump to timestamp
+                    {comment.timestamp !== null ? 'Jump to timestamp' : 'View media'}
                   </Button>
                 )}
               </div>
