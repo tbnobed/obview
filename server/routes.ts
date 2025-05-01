@@ -907,6 +907,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Get a file's project information (useful for uploading related files)
+  app.get("/api/files/:fileId/project", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      const file = await storage.getFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check if user has access to the project
+      if (req.user && req.user.role !== "admin") {
+        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
+        if (!projectUser) {
+          return res.status(403).json({ message: "You don't have access to this file's project" });
+        }
+      }
+      
+      const project = await storage.getProject(file.projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      res.json(project);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Serve file content
   app.get("/api/files/:fileId/content", isAuthenticated, async (req, res, next) => {

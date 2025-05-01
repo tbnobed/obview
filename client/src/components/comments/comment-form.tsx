@@ -168,8 +168,42 @@ export default function CommentForm({
       const formData = new FormData();
       formData.append('file', file);
       
-      // Upload file to server
-      const response = await fetch(`/api/projects/${fileId}/upload`, {
+      // Upload file to server - this endpoint expects the file upload for a project
+      // but we're using it in the comment context, so we're using the file's associated projectId
+      let projectId: number;
+      
+      try {
+        // First try to get the project ID from the file information
+        const currentFile = await fetch(`/api/files/${fileId}`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        
+        if (currentFile.ok) {
+          const fileData = await currentFile.json();
+          projectId = fileData.projectId;
+        } else {
+          // If we can't get the file, try to get the project directly from the file's parent project
+          const fileProjects = await fetch(`/api/files/${fileId}/project`, {
+            method: 'GET',
+            credentials: 'include'
+          });
+          
+          if (fileProjects.ok) {
+            const projectData = await fileProjects.json();
+            projectId = projectData.id;
+          } else {
+            // Fallback - this is likely not optimal but allows us to still try the upload
+            throw new Error('Failed to get project information for this file');
+          }
+        }
+      } catch (error) {
+        console.error('Error getting project ID:', error);
+        throw new Error('Failed to determine which project this file belongs to');
+      }
+      
+      // Now use the correct project ID for the upload
+      const response = await fetch(`/api/projects/${projectId}/upload`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
