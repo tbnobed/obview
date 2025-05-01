@@ -170,7 +170,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
  * @param projectName Name of the project
  * @param role Role granted in the project
  * @param token Invitation token
- * @param appUrl Base URL of the application
+ * @param clientUrl The URL provided by the client (highest priority)
  * @returns Promise<boolean> Success status
  */
 export async function sendInvitationEmail(
@@ -179,19 +179,28 @@ export async function sendInvitationEmail(
   projectName: string,
   role: string,
   token: string,
-  appUrl?: string
+  clientUrl?: string
 ): Promise<boolean> {
   try {
     logToFile(`Preparing invitation email to ${to} for project "${projectName}" from "${inviterName}" with role "${role}"`);
     logToFile(`Token: ${token}`);
+    logToFile(`Client URL provided: ${clientUrl || 'none'}`);
     
     // Determine the correct invite URL using the best available option
     let baseUrl: string;
     
-    // First priority: Explicitly provided appUrl parameter
-    if (appUrl) {
-      baseUrl = appUrl;
-      logToFile(`Using explicitly provided app URL: ${baseUrl}`);
+    // First priority: Explicitly provided clientUrl parameter from the browser
+    if (clientUrl) {
+      // Extract the origin part (protocol + hostname + port) to ensure we only use the base URL
+      try {
+        const url = new URL(clientUrl);
+        baseUrl = url.origin;
+        logToFile(`Using client-provided URL origin: ${baseUrl}`);
+      } catch (e) {
+        // If URL parsing fails, use the client URL as-is
+        baseUrl = clientUrl;
+        logToFile(`Using client-provided URL (unparseable): ${baseUrl}`);
+      }
     }
     // Second priority: APP_URL environment variable
     else if (process.env.APP_URL) {
