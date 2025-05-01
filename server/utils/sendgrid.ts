@@ -2,6 +2,7 @@ import { MailService } from '@sendgrid/mail';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { config } from './config';
 
 // In ES modules, __dirname is not defined, so we need to create it
 const __filename = fileURLToPath(import.meta.url);
