@@ -27,10 +27,12 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
 
   const inviteMutation = useMutation({
     mutationFn: async () => {
+      // Include the client's current origin for the invite URL
       return await apiRequest("POST", "/api/invite", {
         email,
         projectId,
         role,
+        clientDomain: window.location.origin,
       });
     },
     onSuccess: (response) => {
