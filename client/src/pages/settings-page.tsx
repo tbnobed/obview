@@ -10,7 +10,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Settings as SettingsIcon, Mail, Shield } from "lucide-react";
+import { EmailTestDialog } from "@/components/admin/email-test-dialog";
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
