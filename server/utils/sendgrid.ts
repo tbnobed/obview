@@ -1,4 +1,4 @@
-import { MailService } from '@sendgrid/mail';
+import * as sendgrid from '@sendgrid/mail';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -19,35 +19,6 @@ function logToFile(message: string): void {
   const timestamp = new Date().toISOString();
   const logMessage = `${timestamp} - ${message}\n`;
   fs.appendFileSync(logFilePath, logMessage);
-}
-
-// Check for both possible API key environment variables
-const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
-
-if (!apiKey) {
-  const warning = "No SendGrid API key found. Email functionality will not work.";
-  console.warn(warning);
-  logToFile(warning);
-} else {
-  logToFile(`SendGrid API key is set (${apiKey.length} characters). Email functionality should be working.`);
-  
-  // Detect which environment variable was used
-  if (process.env.NEW_SENDGRID_API_KEY) {
-    logToFile("Using NEW_SENDGRID_API_KEY environment variable");
-  } else {
-    logToFile("Using SENDGRID_API_KEY environment variable");
-  }
-}
-
-// Initialize the SendGrid mail service with API key
-const mailService = new MailService();
-
-if (apiKey) {
-  mailService.setApiKey(apiKey);
-  logToFile("API key set in mail service constructor");
-} else {
-  logToFile("WARNING: Initializing mail service with empty API key");
-  mailService.setApiKey('');
 }
 
 interface EmailParams {
@@ -73,7 +44,10 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     logToFile(`  - Text length: ${params.text?.length || 0} characters`);
     logToFile(`  - HTML length: ${params.html?.length || 0} characters`);
     
-    // Verify API key exists - use the module scoped variable
+    // Get API key - check for both environment variables
+    const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
+    
+    // Verify API key exists
     if (!apiKey) {
       const error = "Cannot send email: No SendGrid API key is set";
       console.error(error);
@@ -85,12 +59,11 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     const apiKeyLength = apiKey.length;
     logToFile(`Using SendGrid API key (${apiKeyLength} characters)`);
     
-    // Ensure the API key is properly set in the mail service
-    mailService.setApiKey(apiKey);
-    logToFile(`API key set in mail service`);
+    // Set the API key on the SendGrid client for this request
+    sendgrid.setApiKey(apiKey);
+    logToFile(`API key set for this request`);
     
     // Prepare email data with configurable sandbox mode
-    // The account now has a verified sender (alerts@obedtv.com)
     const emailData = {
       to: params.to,
       from: params.from,
@@ -99,13 +72,13 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html || '',
       mail_settings: {
         sandbox_mode: {
-          enable: process.env.SENDGRID_SANDBOX === 'true' ? true : false
+          enable: process.env.SENDGRID_SANDBOX === 'true'
         }
       }
     };
     
     logToFile(`Sending email via SendGrid...`);
-    const response = await mailService.send(emailData);
+    const response = await sendgrid.send(emailData);
     
     // Log success and response details
     const successMsg = `Email sent successfully to ${params.to}`;
@@ -151,19 +124,6 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
               if (err.message) {
                 console.error(`SendGrid specific error: ${err.message}`);
                 logToFile(`SendGrid specific error: ${err.message}`);
-              }
-              
-              // Help with common error codes
-              if (err.field === 'from' && err.message?.includes('does not exist')) {
-                console.error('IMPORTANT: Your sender email is not verified with SendGrid.');
-                logToFile('IMPORTANT: Your sender email is not verified with SendGrid.');
-                logToFile('Try using a sendgrid.net address or verify your domain/email with SendGrid.');
-              }
-              
-              if (err.message?.includes('forbidden')) {
-                console.error('IMPORTANT: Your SendGrid API key may have insufficient permissions or your account needs verification.');
-                logToFile('IMPORTANT: Your SendGrid API key may have insufficient permissions or your account needs verification.');
-                logToFile('Try using sandbox mode or check your SendGrid account status.');
               }
             });
           }
