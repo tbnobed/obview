@@ -343,7 +343,9 @@ When deploying the application using Docker, ensure the following configuration 
    - If you see `"/app/drizzle": not found`, update the Dockerfile to use migrations directory
    - If you see `Cannot find module '/app/dist/server/db-migrate.js'`, ensure the server directory and script are correctly copied
    - If you see `ReferenceError: require is not defined in ES module scope`, this indicates a module system incompatibility. Rename affected scripts from `.js` to `.cjs` and update all references accordingly
-   - If you see `Error: connect ECONNREFUSED 172.18.0.2:443` or WebSocket errors, this is caused by @neondatabase/serverless trying to use WSS connections in Docker. Make sure db-migrate.cjs includes conditional code for Docker environment (check for IS_DOCKER=true) and uses the regular pg package instead of Neon Serverless
+   - If you see `Error: connect ECONNREFUSED 172.18.0.2:443` or WebSocket errors, this is caused by @neondatabase/serverless trying to use WSS connections in Docker. Make sure db-migrate.cjs and setup.cjs use the regular pg package instead of Neon Serverless
+   - If you see `Error: All attempts to open a WebSocket to connect to the database failed`, this is the same WebSocket connectivity issue. Replace `const { Pool } = require('@neondatabase/serverless');` with `const { Pool } = require('pg');` in the affected scripts
+   - If you see `error: relation "activity_logs" already exists`, this means migrations are being run multiple times. Update your db-migrate.cjs to handle the case where tables already exist (add try/catch logic that skips the 42P07 error code)
    - If you see `Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-core/migrator' is not defined by "exports"`, the drizzle-orm package exports have changed. Use a simplified direct SQL approach for running migrations instead of depending on the drizzle-orm migrator
    - If you see `WARN[0000] /home/.../docker-compose.yml: the attribute 'version' is obsolete`, remove the `version` key from your docker-compose.yml file as it's no longer needed in Docker Compose V2
 

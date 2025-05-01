@@ -1,0 +1,523 @@
+ ✔ Container obview_db   Running                                                                                                                                                                        0.0s
+ ✔ Container obview_app  Started                                                                                                                                                                        0.3s
+obtv-admin@dev-obview:~/obview$ docker-compose logs -f
+obview_db  | The files belonging to this database system will be owned by user "postgres".
+obview_db  | This user must also own the server process.
+obview_db  |
+obview_db  | The database cluster will be initialized with locale "en_US.utf8".
+obview_db  | The default database encoding has accordingly been set to "UTF8".
+obview_db  | The default text search configuration will be set to "english".
+obview_db  |
+obview_db  | Data page checksums are disabled.
+obview_db  |
+obview_db  | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+obview_db  | creating subdirectories ... ok
+obview_db  | selecting dynamic shared memory implementation ... posix
+obview_db  | selecting default max_connections ... 100
+obview_db  | selecting default shared_buffers ... 128MB
+obview_db  | selecting default time zone ... UTC
+obview_db  | creating configuration files ... ok
+obview_db  | running bootstrap script ... ok
+obview_db  | sh: locale: not found
+obview_db  | 2025-05-01 09:13:54.225 UTC [35] WARNING:  no usable system locales were found
+obview_db  | performing post-bootstrap initialization ... ok
+obview_db  | initdb: warning: enabling "trust" authentication for local connections
+obview_db  | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+obview_db  | syncing data to disk ... ok
+obview_db  |
+obview_db  |
+obview_db  | Success. You can now start the database server using:
+obview_db  |
+obview_db  |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+obview_db  |
+obview_db  | waiting for server to start....2025-05-01 09:13:55.529 UTC [41] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db  | 2025-05-01 09:13:55.530 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db  | 2025-05-01 09:13:55.535 UTC [44] LOG:  database system was shut down at 2025-05-01 09:13:55 UTC
+obview_db  | 2025-05-01 09:13:55.542 UTC [41] LOG:  database system is ready to accept connections
+obview_db  |  done
+obview_db  | server started
+obview_db  | CREATE DATABASE
+obview_db  |
+obview_db  |
+obview_db  | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-schema.sql
+obview_db  | CREATE EXTENSION
+obview_db  | CREATE TABLE
+obview_db  | DO
+obview_db  | GRANT
+obview_db  |
+obview_db  |
+obview_db  | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/02-init-db.sh
+obview_db  | Running database migrations...
+obview_db  | /docker-entrypoint-initdb.d/02-init-db.sh: line 6: cd: /app: No such file or directory
+obview_db  |
+obview_db  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+obview_db  |
+obview_db  | 2025-05-01 09:13:56.218 UTC [1] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db  | 2025-05-01 09:13:56.218 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db  | 2025-05-01 09:13:56.218 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db  | 2025-05-01 09:13:56.221 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db  | 2025-05-01 09:13:56.226 UTC [29] LOG:  database system was interrupted; last known up at 2025-05-01 09:13:55 UTC
+obview_db  | 2025-05-01 09:13:56.449 UTC [29] LOG:  database system was not properly shut down; automatic recovery in progress
+obview_db  | 2025-05-01 09:13:56.452 UTC [29] LOG:  redo starts at 0/14EFCE8
+obview_db  | 2025-05-01 09:13:56.484 UTC [29] LOG:  invalid record length at 0/1921288: expected at least 24, got 0
+obview_db  | 2025-05-01 09:13:56.484 UTC [29] LOG:  redo done at 0/1921240 system usage: CPU: user: 0.00 s, system: 0.01 s, elapsed: 0.03 s
+obview_db  | 2025-05-01 09:13:56.488 UTC [27] LOG:  checkpoint starting: end-of-recovery immediate wait
+obview_db  | 2025-05-01 09:13:56.558 UTC [30] FATAL:  the database system is not yet accepting connections
+obview_db  | 2025-05-01 09:13:56.558 UTC [30] DETAIL:  Consistent recovery state has not been yet reached.
+obview_db  | 2025-05-01 09:13:56.568 UTC [27] LOG:  checkpoint complete: wrote 927 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.033 s, sync=0.043 s, total=0.082 s; sync files=306, longest=0.002 s, average=0.001 s; distance=4293 kB, estimate=4293 kB; lsn=0/1921288, redo lsn=0/1921288
+obview_db  | 2025-05-01 09:13:56.574 UTC [1] LOG:  database system is ready to accept connections
+obview_db  | 2025-05-01 16:31:21.370 UTC [19584] ERROR:  relation "activity_logs" already exists
+obview_db  | 2025-05-01 16:31:21.370 UTC [19584] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db  |            "id" serial PRIMARY KEY NOT NULL,
+obview_db  |            "action" text NOT NULL,
+obview_db  |            "entity_type" text NOT NULL,
+obview_db  |            "entity_id" integer NOT NULL,
+obview_db  |            "user_id" integer NOT NULL,
+obview_db  |            "metadata" json,
+obview_db  |            "created_at" timestamp DEFAULT now() NOT NULL
+obview_db  |    )
+obview_db  | 2025-05-01 16:31:22.110 UTC [19586] ERROR:  relation "activity_logs" already exists
+obview_db  | 2025-05-01 16:31:22.110 UTC [19586] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db  |            "id" serial PRIMARY KEY NOT NULL,
+obview_db  |            "action" text NOT NULL,
+obview_db  |            "entity_type" text NOT NULL,
+obview_db  |            "entity_id" integer NOT NULL,
+obview_db  |            "user_id" integer NOT NULL,
+obview_db  |            "metadata" json,
+obview_db  |            "created_at" timestamp DEFAULT now() NOT NULL
+obview_db  |    )
+obview_db  | 2025-05-01 16:31:23.048 UTC [19588] ERROR:  relation "activity_logs" already exists
+obview_db  | 2025-05-01 16:31:23.048 UTC [19588] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db  |            "id" serial PRIMARY KEY NOT NULL,
+obview_db  |            "action" text NOT NULL,
+obview_db  |            "entity_type" text NOT NULL,
+obview_db  |            "entity_id" integer NOT NULL,
+obview_db  |            "user_id" integer NOT NULL,
+obview_db  |            "metadata" json,
+obview_db  |            "created_at" timestamp DEFAULT now() NOT NULL
+obview_db  |    )
+obview_db  | 2025-05-01 16:31:24.379 UTC [19590] ERROR:  relation "activity_logs" already exists
+obview_db  | 2025-05-01 16:31:24.379 UTC [19590] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db  |            "id" serial PRIMARY KEY NOT NULL,
+obview_db  |            "action" text NOT NULL,
+obview_db  |            "entity_type" text NOT NULL,
+obview_db  |            "entity_id" integer NOT NULL,
+obview_db  |            "user_id" integer NOT NULL,
+obview_db  |            "metadata" json,
+obview_db  |            "created_at" timestamp DEFAULT now() NOT NULL
+obview_db  |    )
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Error creating admin user: Error: All attempts to open a WebSocket to connect to the database failed. Please refer to https://github.com/neondatabase/serverless/blob/main/CONFIG.md#websocketconstructor-typeof-websocket--undefined. Details: fetch failed
+obview_app  |     at /app/node_modules/@neondatabase/serverless/index.js:1345:74
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async main (/app/scripts/setup.cjs:36:32)
+obview_app  | Setup failed: Error: All attempts to open a WebSocket to connect to the database failed. Please refer to https://github.com/neondatabase/serverless/blob/main/CONFIG.md#websocketconstructor-typeof-websocket--undefined. Details: fetch failed
+obview_app  |     at /app/node_modules/@neondatabase/serverless/index.js:1345:74
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async main (/app/scripts/setup.cjs:36:32)
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Migration error: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Migration script failed: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Migration error: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Migration script failed: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Migration error: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Migration script failed: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Migration error: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Migration script failed: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 16:31:26.518 UTC [19599] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:26.518 UTC [19599] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Migration error: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Migration script failed: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 16:31:30.253 UTC [19601] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:30.253 UTC [19601] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Migration error: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Migration script failed: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_db   | 2025-05-01 16:31:37.208 UTC [19610] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-01 16:31:37.208 UTC [19610] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_app  | Migration error: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app  | Migration script failed: error: relation "activity_logs" already exists
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async runMigrations (/app/server/db-migrate.cjs:38:11) {
+obview_app  |   length: 107,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42P07',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: undefined,
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'heap.c',
+obview_app  |   line: '1149',
+obview_app  |   routine: 'heap_create_with_catalog'
+obview_app  | }
+obview_app exited with code 1

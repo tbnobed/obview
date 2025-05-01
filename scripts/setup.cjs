@@ -1,5 +1,6 @@
 // Script to set up initial admin user
-const { Pool } = require('@neondatabase/serverless');
+// Use pg for Docker compatibility instead of @neondatabase/serverless
+const { Pool } = require('pg');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -32,6 +33,19 @@ async function main() {
   const pool = new Pool({ connectionString: DATABASE_URL });
   
   try {
+    // First check if the users table exists
+    try {
+      console.log('Checking if users table exists...');
+      await pool.query('SELECT 1 FROM users LIMIT 1');
+      console.log('Users table found');
+    } catch (err) {
+      if (err.code === '42P01') { // Relation does not exist
+        console.error('Users table does not exist. Please run migrations first.');
+        return;
+      }
+      throw err; // Other errors should be propagated
+    }
+    
     // Check if admin user already exists
     const existingUserResult = await pool.query(
       'SELECT * FROM users WHERE username = $1 OR email = $2',
@@ -48,12 +62,25 @@ async function main() {
     
     // Create admin user
     console.log(`Creating admin user: ${ADMIN_USERNAME}`);
-    await pool.query(
-      'INSERT INTO users (username, password, email, name, role, "createdAt") VALUES ($1, $2, $3, $4, $5, NOW())',
-      [ADMIN_USERNAME, hashedPassword, ADMIN_EMAIL, ADMIN_NAME, 'admin']
-    );
-    
-    console.log('Admin user created successfully');
+    try {
+      await pool.query(
+        'INSERT INTO users (username, password, email, name, role, "created_at") VALUES ($1, $2, $3, $4, $5, NOW())',
+        [ADMIN_USERNAME, hashedPassword, ADMIN_EMAIL, ADMIN_NAME, 'admin']
+      );
+      console.log('Admin user created successfully');
+    } catch (err) {
+      // Try the alternate column name format if the first one fails
+      if (err.message.includes('created_at')) {
+        console.log('Trying alternate column name format...');
+        await pool.query(
+          'INSERT INTO users (username, password, email, name, role, "createdAt") VALUES ($1, $2, $3, $4, $5, NOW())',
+          [ADMIN_USERNAME, hashedPassword, ADMIN_EMAIL, ADMIN_NAME, 'admin']
+        );
+        console.log('Admin user created successfully with alternate column format');
+      } else {
+        throw err;
+      }
+    }
   } catch (error) {
     console.error('Error creating admin user:', error);
     throw error;

@@ -35,7 +35,17 @@ async function runMigrations() {
       
       for (const statement of statements) {
         if (statement.trim()) {
-          await pool.query(statement);
+          try {
+            await pool.query(statement);
+          } catch (err) {
+            // If the error is for a table/relation already existing, we can skip it
+            if (err.code === '42P07') {
+              console.log(`Skipping: ${err.message} (table already exists)`);
+            } else {
+              // For other errors, we want to fail the migration
+              throw err;
+            }
+          }
         }
       }
       

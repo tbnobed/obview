@@ -22,6 +22,8 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - ADMIN_NAME=${ADMIN_NAME:-Administrator}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      # Flag to signal a Docker environment to use proper database connection strategy
+      - IS_DOCKER=true
     volumes:
       - uploads:/app/uploads
     networks:
