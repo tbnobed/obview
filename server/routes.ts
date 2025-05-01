@@ -2190,15 +2190,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // Debug route for frontend invite paths
-  app.get("/invite/:token", (req, res) => {
-    console.log(`FRONTEND ROUTE: Received request for invitation page with token: ${req.params.token}`);
-    console.log(`Request URL: ${req.url}, Original URL: ${req.originalUrl}`);
-    console.log(`Request headers: ${JSON.stringify(req.headers)}`);
-    
-    // Forward to the SPA
-    res.sendFile(path.resolve("./dist/index.html"));
+  // Handle frontend client-side routes explicitly to make debugging easier
+  const clientRoutes = [
+    "/invite/:token",
+    "/auth",
+    "/projects",
+    "/projects/new",
+    "/projects/:id",
+    "/projects/:id/upload",
+    "/settings",
+    "/admin"
+  ];
+  
+  // Register each client route
+  clientRoutes.forEach(route => {
+    app.get(route, (req, res) => {
+      console.log(`FRONTEND ROUTE: Received request for ${route} route, params:`, req.params);
+      console.log(`Request URL: ${req.url}, Original URL: ${req.originalUrl}`);
+      
+      // Forward to the SPA - in development mode, use the client's index file directly
+      const indexPath = process.env.NODE_ENV === "development" 
+        ? path.resolve("./client/index.html") 
+        : path.resolve("./dist/index.html");
+      
+      console.log(`Serving SPA from: ${indexPath}`);
+      res.sendFile(indexPath);
+    });
   });
+  
+  // API endpoint to get invitation details
+  app.get("/api/invite/:token", async (req, res, next) => {
+    try {
+      const { token } = req.params;
+      console.log(`Getting invitation details for token: ${token}`);
+      
+      // Retrieve the invitation
+      const invitation = await storage.getInvitationByToken(token);
+      
+      if (!invitation) {
+        console.log(`Invitation not found for token: ${token}`);
+        return res.status(404).json({ message: "Invitation not found or invalid link" });
+      }
+      
+      // Check if the invitation has expired
+      const now = new Date();
+      const isExpired = now > invitation.expiresAt;
+      console.log(`Invitation expiry check: now=${now.toISOString()}, expiresAt=${invitation.expiresAt}, isExpired=${isExpired}`);
+      
+      if (isExpired) {
+        return res.status(400).json({ message: "This invitation has expired" });
+      }
+      
+      // Get related data
+      const project = invitation.projectId ? await storage.getProject(invitation.projectId) : null;
+      const creator = await storage.getUser(invitation.createdById);
+      
+      // Return invitation details (exclude sensitive data)
+      res.status(200).json({
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        isAccepted: invitation.isAccepted,
+        expiresAt: invitation.expiresAt,
+        creator: creator ? {
+          id: creator.id,
+          name: creator.name,
+          email: creator.email
+        } : null,
+        project: project ? {
+          id: project.id,
+          name: project.name
+        } : null
+      });
+    } catch (error) {
+      console.error("Error retrieving invitation details:", error);
+      next(error);
+    }
+  });
+  
+  // We're removing the catch-all route since it interferes with Vite in development
+  // Vite will handle serving the frontend in development, and the static middleware will handle it in production
+  // This approach allows our specific frontend routes to work while letting Vite handle the rest
 
   const httpServer = createServer(app);
 
