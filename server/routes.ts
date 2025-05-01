@@ -1529,6 +1529,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Checking SendGrid API key availability for invitation to ${email}`);
       console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
+      // Get client's origin URL for the invitation link
+      const clientUrl = req.body.clientUrl || null;
+      console.log(`Client URL provided: ${clientUrl || 'none'}`);
+      
       if (process.env.SENDGRID_API_KEY) {
         console.log(`SendGrid API key is available, preparing to send invitation email to ${email}`);
         try {
@@ -1541,13 +1545,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Sending invitation email to ${email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email
+            // Send the invitation email, passing the client URL
             emailSent = await sendInvitationEmail(
               email,
               inviter.name,
               project.name,
               role,
-              token
+              token,
+              clientUrl
             );
             
             if (emailSent) {
@@ -1918,6 +1923,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Attempting to resend invitation email to ${invitation.email}`);
       console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
+      // Get client's origin URL for the invitation link
+      const clientUrl = req.body.clientUrl || null;
+      console.log(`Client URL provided for resend: ${clientUrl || 'none'}`);
+      
       if (process.env.SENDGRID_API_KEY) {
         try {
           // Import the sendInvitationEmail function from utils/sendgrid
@@ -1926,13 +1935,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email
+            // Send the invitation email with client URL
             emailSent = await sendInvitationEmail(
               invitation.email,
               inviter.name,
               project.name,
               invitation.role,
-              invitation.token
+              invitation.token,
+              clientUrl
             );
             
             if (emailSent) {
