@@ -224,6 +224,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Gather environment variables related to URL construction
         const envVars = {
+          REPLIT_DOMAINS: process.env.REPLIT_DOMAINS || 'not set',
+          REPLIT_DEV_DOMAIN: process.env.REPLIT_DEV_DOMAIN || 'not set',
           REPL_ID: process.env.REPL_ID || 'not set',
           REPL_OWNER: process.env.REPL_OWNER || 'not set',
           REPLIT_SLUG: process.env.REPLIT_SLUG || 'not set',
@@ -238,6 +240,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (process.env.APP_URL) {
           baseUrl = process.env.APP_URL;
         }
+        // Use REPLIT_DOMAINS (most reliable for modern Replit)
+        else if (process.env.REPLIT_DOMAINS) {
+          baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
+        }
+        // Use REPLIT_DEV_DOMAIN (also reliable for modern Replit)
+        else if (process.env.REPLIT_DEV_DOMAIN) {
+          baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+        }
+        // Legacy REPLIT environment variables
         else if (process.env.REPL_ID) {
           if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
             baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
