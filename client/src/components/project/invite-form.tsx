@@ -27,10 +27,14 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
 
   const inviteMutation = useMutation({
     mutationFn: async () => {
+      // Get the current domain from the browser window
+      const origin = window.location.origin;
+      
       return await apiRequest("POST", "/api/invite", {
         email,
         projectId,
         role,
+        appUrl: origin, // Send the current domain to the server
       });
     },
     onSuccess: (response) => {
@@ -48,7 +52,12 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
         // Using an immediately invoked async function
         (async () => {
           try {
-            const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
+            // Get the current domain from the browser window
+            const origin = window.location.origin;
+            
+            const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
+              appUrl: origin // Send the current domain to the server
+            });
             console.log("Auto-resend response:", resendResponse);
             
             const emailSent = resendResponse?.emailSent;

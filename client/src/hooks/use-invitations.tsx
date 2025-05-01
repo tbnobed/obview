@@ -161,7 +161,12 @@ export function useResendInvitation() {
   return useMutation({
     mutationFn: async (invitationId: number) => {
       try {
-        const data = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
+        // Get the current domain from the browser window
+        const origin = window.location.origin;
+        
+        const data = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
+          appUrl: origin // Send the current domain to the server
+        });
         return data;
       } catch (error) {
         console.error("Error resending invitation:", error);
