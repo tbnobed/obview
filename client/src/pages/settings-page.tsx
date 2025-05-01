@@ -85,9 +85,17 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="account" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className={`grid w-full ${user?.role === 'admin' ? 'grid-cols-3' : 'grid-cols-2'} mb-8`}>
             <TabsTrigger value="account">Account</TabsTrigger>
             <TabsTrigger value="password">Password</TabsTrigger>
+            {user?.role === 'admin' && (
+              <TabsTrigger value="admin">
+                <div className="flex items-center">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Admin
+                </div>
+              </TabsTrigger>
+            )}
           </TabsList>
           
           <TabsContent value="account">
@@ -192,6 +200,84 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
+          
+          {user?.role === 'admin' && (
+            <TabsContent value="admin">
+              <div className="grid gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Email Configuration</CardTitle>
+                    <CardDescription>
+                      Test and monitor email delivery services
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="font-medium">SendGrid Integration</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Verify email service is properly configured and working
+                        </p>
+                      </div>
+                      <EmailTestDialog />
+                    </div>
+                    
+                    <div className="rounded-md bg-blue-50 p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <Mail className="h-5 w-5 text-blue-400" aria-hidden="true" />
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-blue-800">Email Delivery Notes</h3>
+                          <div className="mt-2 text-sm text-blue-700">
+                            <ul className="list-disc space-y-1 pl-5">
+                              <li>
+                                Emails are sent through SendGrid and accepted with a 202 status code
+                              </li>
+                              <li>
+                                Email delivery to inboxes depends on various factors including spam filters, 
+                                sending domain reputation, and recipient server policies
+                              </li>
+                              <li>
+                                For testing invitations, you can copy the token from the logs and 
+                                manually create the invite URL
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>System Information</CardTitle>
+                    <CardDescription>
+                      Review current system settings and configuration
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="font-medium">Environment</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {process.env.NODE_ENV || "development"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="font-medium">Base URL</h3>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {window.location.origin}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </AppLayout>
