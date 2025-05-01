@@ -183,9 +183,10 @@ export default function CommentForm({
       
       // Add file reference to comment
       const currentContent = form.getValues("content") || "";
+      // Create simple reference without extra new lines to avoid nesting issues
       const fileRef = isImage 
-        ? `\n![${file.name}](/api/files/${uploadedFile.id}/content)\n` 
-        : `\n[${file.name}](/api/files/${uploadedFile.id}/content)\n`;
+        ? `![${file.name}](/api/files/${uploadedFile.id}/content)` 
+        : `[${file.name}](/api/files/${uploadedFile.id}/content)`;
       
       // Update textarea with file reference
       if (textareaRef.current) {
@@ -194,8 +195,15 @@ export default function CommentForm({
         const end = textareaRef.current.selectionEnd || 0;
         
         // Insert file reference at cursor position
+        // Add a space before if we're not at the beginning and there's no space before the cursor
+        const needsSpaceBefore = start > 0 && currentContent.charAt(start - 1) !== ' ' && currentContent.charAt(start - 1) !== '\n';
+        // Add a space after if we're not at the end and there's no space after the cursor
+        const needsSpaceAfter = end < currentContent.length && currentContent.charAt(end) !== ' ' && currentContent.charAt(end) !== '\n';
+        
         const newValue = currentContent.substring(0, start) + 
+                        (needsSpaceBefore ? ' ' : '') + 
                         fileRef + 
+                        (needsSpaceAfter ? ' ' : '') + 
                         currentContent.substring(end);
         
         // Set textarea value and update form
@@ -207,7 +215,9 @@ export default function CommentForm({
         
         // Focus the textarea and position cursor after insertion
         textareaRef.current.focus();
-        const newPosition = start + fileRef.length;
+        // Calculate new cursor position accounting for added spaces
+        const spacesBefore = needsSpaceBefore ? 1 : 0;
+        const newPosition = start + spacesBefore + fileRef.length;
         textareaRef.current.setSelectionRange(newPosition, newPosition);
       }
       
@@ -390,16 +400,23 @@ export default function CommentForm({
                                       // Get current value
                                       const currentValue = textareaRef.current.value;
                                       
+                                      // Add spaces around emoji if needed for better readability
+                                      const needsSpaceBefore = start > 0 && currentValue.charAt(start - 1) !== ' ' && currentValue.charAt(start - 1) !== '\n';
+                                      const needsSpaceAfter = end < currentValue.length && currentValue.charAt(end) !== ' ' && currentValue.charAt(end) !== '\n';
+                                      
                                       // Build new value with emoji inserted at cursor position
                                       const newValue = currentValue.substring(0, start) + 
+                                                      (needsSpaceBefore ? ' ' : '') + 
                                                       emoji + 
+                                                      (needsSpaceAfter ? ' ' : '') + 
                                                       currentValue.substring(end);
                                       
                                       // Set new value directly on the textarea
                                       textareaRef.current.value = newValue;
                                       
                                       // Update the cursor position to after the emoji
-                                      const newPosition = start + emoji.length;
+                                      const spacesBefore = needsSpaceBefore ? 1 : 0;
+                                      const newPosition = start + spacesBefore + emoji.length;
                                       textareaRef.current.setSelectionRange(newPosition, newPosition);
                                       
                                       // Trigger an input event to ensure react-hook-form updates
