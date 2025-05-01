@@ -29,6 +29,8 @@ COPY --from=builder /app/dist ./dist
 # Create server directory and copy migration script
 RUN mkdir -p ./server
 COPY --from=builder /app/server/db-migrate.cjs ./server/db-migrate.cjs
+# Make sure the server directory has the migration scripts in both .js and .cjs formats
+# (for backward compatibility and to work with ES modules)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/uploads ./uploads

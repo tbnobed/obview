@@ -1,0 +1,1329 @@
+docker compose up -d
+WARN[0000] /home/obtv-admin/obview/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 63.5s (26/26) FINISHED                                                                                                      docker:default
+ => [app internal] load build definition from Dockerfile                                                                                           0.0s
+ => => transferring dockerfile: 1.42kB                                                                                                             0.0s
+ => WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 1)                                                                     0.0s
+ => WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 20)                                                                    0.0s
+ => [app internal] load metadata for docker.io/library/node:20-alpine                                                                              0.5s
+ => [app internal] load .dockerignore                                                                                                              0.0s
+ => => transferring context: 425B                                                                                                                  0.0s
+ => [app internal] load build context                                                                                                              0.1s
+ => => transferring context: 49.35kB                                                                                                               0.1s
+ => CACHED [app builder 1/7] FROM docker.io/library/node:20-alpine@sha256:c628bdc7ebc7f95b1b23249a445eb415ce68ae9def8b68364b35ee15e3065b0f         0.0s
+ => [app builder 2/7] RUN apk add --no-cache python3 make g++ libc6-compat                                                                         5.4s
+ => [app production  2/14] RUN apk add --no-cache postgresql-client                                                                                1.5s
+ => [app production  3/14] WORKDIR /app                                                                                                            0.0s
+ => [app builder 3/7] WORKDIR /app                                                                                                                 0.0s
+ => [app builder 4/7] COPY package*.json ./                                                                                                        0.0s
+ => [app builder 5/7] RUN npm ci                                                                                                                  20.7s
+ => [app builder 6/7] COPY . .                                                                                                                     0.4s
+ => [app builder 7/7] RUN npm run build                                                                                                           13.1s
+ => [app production  4/14] COPY --from=builder /app/dist ./dist                                                                                    0.0s
+ => [app production  5/14] RUN mkdir -p ./server                                                                                                   0.2s
+ => [app production  6/14] COPY --from=builder /app/server/db-migrate.js ./server/db-migrate.js                                                    0.0s
+ => [app production  7/14] COPY --from=builder /app/node_modules ./node_modules                                                                    6.6s
+ => [app production  8/14] COPY --from=builder /app/package*.json ./                                                                               0.6s
+ => [app production  9/14] COPY --from=builder /app/uploads ./uploads                                                                              0.1s
+ => [app production 10/14] COPY --from=builder /app/drizzle.config.ts ./                                                                           0.0s
+ => [app production 11/14] COPY --from=builder /app/migrations ./migrations                                                                        0.0s
+ => [app production 12/14] COPY --from=builder /app/scripts ./scripts                                                                              0.0s
+ => [app production 13/14] COPY --from=builder /app/.env* ./                                                                                       0.7s
+ => [app production 14/14] RUN chmod +x ./scripts/*.sh                                                                                             0.2s
+ => [app] exporting to image                                                                                                                       7.5s
+ => => exporting layers                                                                                                                            7.5s
+ => => writing image sha256:8c1b26f2167b914e6bf8cc1402cd669ad70fa2364980fb599b7b4e5c2d20e80d                                                       0.0s
+ => => naming to docker.io/library/obview-app                                                                                                      0.0s
+ => [app] resolving provenance for metadata file                                                                                                   0.0s
+[+] Building 1/1
+ ✔ app  Built                                                                                                                                      0.0s
+WARN[0000] /home/obtv-admin/obview/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+[+] Running 5/5
+ ✔ Network obview_app_network     Created                                                                                                          0.1s
+ ✔ Volume "obview_uploads"        Created                                                                                                          0.0s
+ ✔ Volume "obview_postgres_data"  Created                                                                                                          0.0s
+ ✔ Container obview_db            Started                                                                                                          0.4s
+ ✔ Container obview_app           Started                                                                                                          0.5s
+obtv-admin@dev-obview:~/obview$ docker-compose logs -f
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | psql: error: connection to server at "db" (172.18.0.2), port 5432 failed: Connection refused
+obview_app  |   Is the server running on that host and accepting TCP/IP connections?
+obview_app  | PostgreSQL is unavailable - sleeping for 1 second
+obview_app  | psql: error: connection to server at "db" (172.18.0.2), port 5432 failed: Connection refused
+obview_app  |   Is the server running on that host and accepting TCP/IP connections?
+obview_app  | PostgreSQL is unavailable - sleeping for 1 second
+obview_app  | psql: error: connection to server at "db" (172.18.0.2), port 5432 failed: Connection refused
+obview_app  |   Is the server running on that host and accepting TCP/IP connections?
+obview_app  | PostgreSQL is unavailable - sleeping for 1 second
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_db   | The files belonging to this database system will be owned by user "postgres".
+obview_db   | This user must also own the server process.
+obview_db   |
+obview_db   | The database cluster will be initialized with locale "en_US.utf8".
+obview_db   | The default database encoding has accordingly been set to "UTF8".
+obview_db   | The default text search configuration will be set to "english".
+obview_db   |
+obview_db   | Data page checksums are disabled.
+obview_db   |
+obview_db   | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+obview_db   | creating subdirectories ... ok
+obview_db   | selecting dynamic shared memory implementation ... posix
+obview_db   | selecting default max_connections ... 100
+obview_db   | selecting default shared_buffers ... 128MB
+obview_db   | selecting default time zone ... UTC
+obview_db   | creating configuration files ... ok
+obview_db   | running bootstrap script ... ok
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_db   | sh: locale: not found
+obview_db   | 2025-05-01 08:59:26.185 UTC [35] WARNING:  no usable system locales were found
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_db   | performing post-bootstrap initialization ... ok
+obview_db   | initdb: warning: enabling "trust" authentication for local connections
+obview_db   | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+obview_db   | syncing data to disk ... ok
+obview_db   |
+obview_db   |
+obview_db   | Success. You can now start the database server using:
+obview_db   |
+obview_db   |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_db   |
+obview_db   | waiting for server to start....2025-05-01 08:59:27.394 UTC [41] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_db   | 2025-05-01 08:59:27.395 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2025-05-01 08:59:27.402 UTC [44] LOG:  database system was shut down at 2025-05-01 08:59:27 UTC
+obview_db   | 2025-05-01 08:59:27.408 UTC [41] LOG:  database system is ready to accept connections
+obview_db   |  done
+obview_db   | server started
+obview_db   | CREATE DATABASE
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-schema.sql
+obview_db   | CREATE EXTENSION
+obview_db   | CREATE TABLE
+obview_db   | DO
+obview_db   | GRANT
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/02-init-db.sh
+obview_db   | /docker-entrypoint-initdb.d/02-init-db.sh: line 6: cd: /app: No such file or directory
+obview_db   | Running database migrations...
+obview_db   |
+obview_db   | PostgreSQL Database directory appears to contain a database; Skipping initialization
+obview_db   |
+obview_db   | 2025-05-01 08:59:28.083 UTC [1] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db   | 2025-05-01 08:59:28.083 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db   | 2025-05-01 08:59:28.083 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db   | 2025-05-01 08:59:28.086 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2025-05-01 08:59:28.091 UTC [29] LOG:  database system was interrupted; last known up at 2025-05-01 08:59:27 UTC
+obview_db   | 2025-05-01 08:59:28.223 UTC [29] LOG:  database system was not properly shut down; automatic recovery in progress
+obview_db   | 2025-05-01 08:59:28.225 UTC [29] LOG:  redo starts at 0/14EFCE8
+obview_db   | 2025-05-01 08:59:28.256 UTC [29] LOG:  invalid record length at 0/1921288: expected at least 24, got 0
+obview_db   | 2025-05-01 08:59:28.256 UTC [29] LOG:  redo done at 0/1921240 system usage: CPU: user: 0.00 s, system: 0.01 s, elapsed: 0.03 s
+obview_db   | 2025-05-01 08:59:28.260 UTC [27] LOG:  checkpoint starting: end-of-recovery immediate wait
+obview_db   | 2025-05-01 08:59:28.344 UTC [27] LOG:  checkpoint complete: wrote 927 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.034 s, sync=0.047 s, total=0.086 s; sync files=306, longest=0.002 s, average=0.001 s; distance=4293 kB, estimate=4293 kB; lsn=0/1921288, redo lsn=0/1921288
+obview_db   | 2025-05-01 08:59:28.351 UTC [1] LOG:  database system is ready to accept connections
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | file:///app/server/db-migrate.js:2
+obview_app  | const { drizzle } = require('drizzle-orm/neon-serverless');
+obview_app  |                     ^
+obview_app  |
+obview_app  | ReferenceError: require is not defined in ES module scope, you can use import instead
+obview_app  | This file is being treated as an ES module because it has a '.js' file extension and '/app/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
+obview_app  |     at file:///app/server/db-migrate.js:2:21
+obview_app  |     at ModuleJob.run (node:internal/modules/esm/module_job:263:25)
+obview_app  |     at async ModuleLoader.import (node:internal/modules/esm/loader:540:24)
+obview_app  |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app exited with code 1
+^Ccanceled
+obtv-admin@dev-obview:~/obview$ docker-compose down -v
+[+] Running 5/5
+ ✔ Container obview_app         Removed                                                                                                            0.0s
+ ✔ Container obview_db          Removed                                                                                                            0.2s
+ ✔ Volume obview_postgres_data  Removed                                                                                                            0.1s
+ ✔ Volume obview_uploads        Removed                                                                                                            0.1s
+ ✔ Network obview_app_network   Removed                                                                                                            0.2s
+obtv-admin@dev-obview:~/obview$ git pull
+Username for 'https://github.com': tbnobed
+Password for 'https://tbnobed@github.com':
+remote: Enumerating objects: 20, done.
+remote: Counting objects: 100% (20/20), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 13 (delta 11), reused 13 (delta 11), pack-reused 0 (from 0)
+Unpacking objects: 100% (13/13), 4.10 KiB | 700.00 KiB/s, done.
+From https://github.com/tbnobed/obview
+   ac2fa91..85b5da1  main       -> origin/main
+Updating ac2fa91..85b5da1
+Fast-forward
+ DEPLOYMENT.md                                                                             |  18 ++++-
+ Dockerfile                                                                                |   2 +-
+ attached_assets/Pasted--Running-5-5-Network-obview-app-network-Created--1746090015820.txt | 207 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ scripts/docker-entrypoint.sh                                                              |   4 +-
+ scripts/setup.cjs                                                                         |  74 +++++++++++++++++++
+ server/db-migrate.cjs                                                                     |  43 ++++++++++++
+ 6 files changed, 344 insertions(+), 4 deletions(-)
+ create mode 100644 attached_assets/Pasted--Running-5-5-Network-obview-app-network-Created--1746090015820.txt
+ create mode 100644 scripts/setup.cjs
+ create mode 100644 server/db-migrate.cjs
+obtv-admin@dev-obview:~/obview$ docker compose build --no-cache^C
+obtv-admin@dev-obview:~/obview$ ^C
+obtv-admin@dev-obview:~/obview$ docker compose build --no-cache
+docker compose up -d
+WARN[0000] /home/obtv-admin/obview/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 65.0s (26/26) FINISHED                                                                                                      docker:default
+ => [app internal] load build definition from Dockerfile                                                                                           0.0s
+ => => transferring dockerfile: 1.42kB                                                                                                             0.0s
+ => WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 1)                                                                     0.0s
+ => WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 20)                                                                    0.0s
+ => [app internal] load metadata for docker.io/library/node:20-alpine                                                                              0.5s
+ => [app internal] load .dockerignore                                                                                                              0.0s
+ => => transferring context: 425B                                                                                                                  0.0s
+ => [app internal] load build context                                                                                                              0.1s
+ => => transferring context: 66.24kB                                                                                                               0.1s
+ => CACHED [app builder 1/7] FROM docker.io/library/node:20-alpine@sha256:c628bdc7ebc7f95b1b23249a445eb415ce68ae9def8b68364b35ee15e3065b0f         0.0s
+ => [app builder 2/7] RUN apk add --no-cache python3 make g++ libc6-compat                                                                         5.6s
+ => [app production  2/14] RUN apk add --no-cache postgresql-client                                                                                1.7s
+ => [app production  3/14] WORKDIR /app                                                                                                            0.0s
+ => [app builder 3/7] WORKDIR /app                                                                                                                 0.0s
+ => [app builder 4/7] COPY package*.json ./                                                                                                        0.0s
+ => [app builder 5/7] RUN npm ci                                                                                                                  21.2s
+ => [app builder 6/7] COPY . .                                                                                                                     0.4s
+ => [app builder 7/7] RUN npm run build                                                                                                           12.7s
+ => [app production  4/14] COPY --from=builder /app/dist ./dist                                                                                    0.1s
+ => [app production  5/14] RUN mkdir -p ./server                                                                                                   0.2s
+ => [app production  6/14] COPY --from=builder /app/server/db-migrate.cjs ./server/db-migrate.cjs                                                  0.0s
+ => [app production  7/14] COPY --from=builder /app/node_modules ./node_modules                                                                    6.5s
+ => [app production  8/14] COPY --from=builder /app/package*.json ./                                                                               0.7s
+ => [app production  9/14] COPY --from=builder /app/uploads ./uploads                                                                              0.1s
+ => [app production 10/14] COPY --from=builder /app/drizzle.config.ts ./                                                                           0.1s
+ => [app production 11/14] COPY --from=builder /app/migrations ./migrations                                                                        0.0s
+ => [app production 12/14] COPY --from=builder /app/scripts ./scripts                                                                              0.0s
+ => [app production 13/14] COPY --from=builder /app/.env* ./                                                                                       0.7s
+ => [app production 14/14] RUN chmod +x ./scripts/*.sh                                                                                             0.3s
+ => [app] exporting to image                                                                                                                       8.0s
+ => => exporting layers                                                                                                                            8.0s
+ => => writing image sha256:b43ec5efdd16ef43cb575522634111d7cbd3aa41bd040346d6c0e987536bc395                                                       0.0s
+ => => naming to docker.io/library/obview-app                                                                                                      0.0s
+ => [app] resolving provenance for metadata file                                                                                                   0.0s
+[+] Building 1/1
+ ✔ app  Built                                                                                                                                      0.0s
+WARN[0000] /home/obtv-admin/obview/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+[+] Running 5/5
+ ✔ Network obview_app_network     Created                                                                                                          0.1s
+ ✔ Volume "obview_uploads"        Created                                                                                                          0.0s
+ ✔ Volume "obview_postgres_data"  Created                                                                                                          0.0s
+ ✔ Container obview_db            Started                                                                                                          0.4s
+ ✔ Container obview_app           Started                                                                                                          0.5s
+obtv-admin@dev-obview:~/obview$ docker-compose logs -f
+obview_db  | The files belonging to this database system will be owned by user "postgres".
+obview_db  | This user must also own the server process.
+obview_db  |
+obview_db  | The database cluster will be initialized with locale "en_US.utf8".
+obview_db  | The default database encoding has accordingly been set to "UTF8".
+obview_db  | The default text search configuration will be set to "english".
+obview_db  |
+obview_db  | Data page checksums are disabled.
+obview_db  |
+obview_db  | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+obview_db  | creating subdirectories ... ok
+obview_db  | selecting dynamic shared memory implementation ... posix
+obview_db  | selecting default max_connections ... 100
+obview_db  | selecting default shared_buffers ... 128MB
+obview_db  | selecting default time zone ... UTC
+obview_db  | creating configuration files ... ok
+obview_db  | running bootstrap script ... ok
+obview_db  | sh: locale: not found
+obview_db  | 2025-05-01 09:05:22.625 UTC [35] WARNING:  no usable system locales were found
+obview_db  | performing post-bootstrap initialization ... ok
+obview_db  | syncing data to disk ... ok
+obview_db  | initdb: warning: enabling "trust" authentication for local connections
+obview_db  | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+obview_db  |
+obview_db  |
+obview_db  | Success. You can now start the database server using:
+obview_db  |
+obview_db  |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+obview_db  |
+obview_db  | waiting for server to start....2025-05-01 09:05:23.907 UTC [41] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db  | 2025-05-01 09:05:23.908 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db  | 2025-05-01 09:05:23.913 UTC [44] LOG:  database system was shut down at 2025-05-01 09:05:23 UTC
+obview_db  | 2025-05-01 09:05:23.920 UTC [41] LOG:  database system is ready to accept connections
+obview_db  |  done
+obview_db  | server started
+obview_db  | CREATE DATABASE
+obview_db  |
+obview_db  |
+obview_db  | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-schema.sql
+obview_db  | CREATE EXTENSION
+obview_db  | CREATE TABLE
+obview_db  | DO
+obview_db  | GRANT
+obview_db  |
+obview_db  |
+obview_db  | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/02-init-db.sh
+obview_db  | Running database migrations...
+obview_db  | /docker-entrypoint-initdb.d/02-init-db.sh: line 6: cd: /app: No such file or directory
+obview_db  |
+obview_db  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+obview_db  |
+obview_db  | 2025-05-01 09:05:24.607 UTC [1] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db  | 2025-05-01 09:05:24.608 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db  | 2025-05-01 09:05:24.608 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db  | 2025-05-01 09:05:24.610 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db  | 2025-05-01 09:05:24.615 UTC [29] LOG:  database system was interrupted; last known up at 2025-05-01 09:05:23 UTC
+obview_db  | 2025-05-01 09:05:24.745 UTC [29] LOG:  database system was not properly shut down; automatic recovery in progress
+obview_db  | 2025-05-01 09:05:24.747 UTC [29] LOG:  redo starts at 0/14EFCE8
+obview_db  | 2025-05-01 09:05:24.779 UTC [29] LOG:  invalid record length at 0/1921288: expected at least 24, got 0
+obview_db  | 2025-05-01 09:05:24.779 UTC [29] LOG:  redo done at 0/1921240 system usage: CPU: user: 0.01 s, system: 0.01 s, elapsed: 0.03 s
+obview_db  | 2025-05-01 09:05:24.783 UTC [27] LOG:  checkpoint starting: end-of-recovery immediate wait
+obview_db  | 2025-05-01 09:05:24.845 UTC [27] LOG:  checkpoint complete: wrote 927 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.034 s, sync=0.026 s, total=0.064 s; sync files=306, longest=0.001 s, average=0.001 s; distance=4293 kB, estimate=4293 kB; lsn=0/1921288, redo lsn=0/1921288
+obview_db  | 2025-05-01 09:05:24.852 UTC [1] LOG:  database system is ready to accept connections
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | psql: error: connection to server at "db" (172.18.0.2), port 5432 failed: Connection refused
+obview_app  |   Is the server running on that host and accepting TCP/IP connections?
+obview_app  | PostgreSQL is unavailable - sleeping for 1 second
+obview_app  | psql: error: connection to server at "db" (172.18.0.2), port 5432 failed: Connection refused
+obview_app  |   Is the server running on that host and accepting TCP/IP connections?
+obview_app  | PostgreSQL is unavailable - sleeping for 1 second
+obview_app  | psql: error: connection to server at "db" (172.18.0.2), port 5432 failed: Connection refused
+obview_app  |   Is the server running on that host and accepting TCP/IP connections?
+obview_app  | PostgreSQL is unavailable - sleeping for 1 second
+obview_app  | Running database migrations...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _sender: null,
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _socket: null,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1

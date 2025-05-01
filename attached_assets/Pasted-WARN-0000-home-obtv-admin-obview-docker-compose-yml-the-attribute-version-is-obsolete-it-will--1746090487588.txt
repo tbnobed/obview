@@ -1,0 +1,926 @@
+WARN[0000] /home/obtv-admin/obview/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+[+] Running 5/5
+ ✔ Network obview_app_network     Created                                                                                                          0.1s
+ ✔ Volume "obview_uploads"        Created                                                                                                          0.0s
+ ✔ Volume "obview_postgres_data"  Created                                                                                                          0.0s
+ ✔ Container obview_db            Started                                                                                                          0.4s
+ ✔ Container obview_app           Started                                                                                                          0.5s
+obtv-admin@dev-obview:~/obview$ docker-compose logs -f
+obview_db  | The files belonging to this database system will be owned by user "postgres".
+obview_db  | This user must also own the server process.
+obview_db  |
+obview_db  | The database cluster will be initialized with locale "en_US.utf8".
+obview_db  | The default database encoding has accordingly been set to "UTF8".
+obview_db  | The default text search configuration will be set to "english".
+obview_db  |
+obview_db  | Data page checksums are disabled.
+obview_db  |
+obview_db  | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+obview_db  | creating subdirectories ... ok
+obview_db  | selecting dynamic shared memory implementation ... posix
+obview_db  | selecting default max_connections ... 100
+obview_db  | selecting default shared_buffers ... 128MB
+obview_db  | selecting default time zone ... UTC
+obview_db  | creating configuration files ... ok
+obview_db  | running bootstrap script ... ok
+obview_db  | sh: locale: not found
+obview_db  | 2025-05-01 09:05:22.625 UTC [35] WARNING:  no usable system locales were found
+obview_db  | performing post-bootstrap initialization ... ok
+obview_db  | syncing data to disk ... ok
+obview_db  | initdb: warning: enabling "trust" authentication for local connections
+obview_db  | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+obview_db  |
+obview_db  |
+obview_db  | Success. You can now start the database server using:
+obview_db  |
+obview_db  |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+obview_db  |
+obview_db  | waiting for server to start....2025-05-01 09:05:23.907 UTC [41] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db  | 2025-05-01 09:05:23.908 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db  | 2025-05-01 09:05:23.913 UTC [44] LOG:  database system was shut down at 2025-05-01 09:05:23 UTC
+obview_db  | 2025-05-01 09:05:23.920 UTC [41] LOG:  database system is ready to accept connections
+obview_db  |  done
+obview_db  | server started
+obview_db  | CREATE DATABASE
+obview_db  |
+obview_db  |
+obview_db  | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-schema.sql
+obview_db  | CREATE EXTENSION
+obview_db  | CREATE TABLE
+obview_db  | DO
+obview_db  | GRANT
+obview_db  |
+obview_db  |
+obview_db  | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/02-init-db.sh
+obview_db  | Running database migrations...
+obview_db  | /docker-entrypoint-initdb.d/02-init-db.sh: line 6: cd: /app: No such file or directory
+obview_db  |
+obview_db  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+obview_db  |
+obview_db  | 2025-05-01 09:05:24.607 UTC [1] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db  | 2025-05-01 09:05:24.608 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db  | 2025-05-01 09:05:24.608 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db  | 2025-05-01 09:05:24.610 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db  | 2025-05-01 09:05:24.615 UTC [29] LOG:  database system was interrupted; last known up at 2025-05-01 09:05:23 UTC
+obview_db  | 2025-05-01 09:05:24.745 UTC [29] LOG:  database system was not properly shut down; automatic recovery in progress
+obview_db  | 2025-05-01 09:05:24.747 UTC [29] LOG:  redo starts at 0/14EFCE8
+obview_db  | 2025-05-01 09:05:24.779 UTC [29] LOG:  invalid record length at 0/1921288: expected at least 24, got 0
+obview_db  | 2025-05-01 09:05:24.779 UTC [29] LOG:  redo done at 0/1921240 system usage: CPU: user: 0.01 s, system: 0.01 s, elapsed: 0.03 s
+obview_db  | 2025-05-01 09:05:24.783 UTC [27] LOG:  checkpoint starting: end-of-recovery immediate wait
+obview_db  | 2025-05-01 09:05:24.845 UTC [27] LOG:  checkpoint complete: wrote 927 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.034 s, sync=0.026 s, total=0.064 s; sync files=306, longest=0.001 s, average=0.001 s; distance=4293 kB, estimate=4293 kB; lsn=0/1921288, redo lsn=0/1921288
+obview_db  | 2025-05-01 09:05:24.852 UTC [1] LOG:  database system is ready to accept connections
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | psql: error: connection to server at "db" (172.18.0.2), port 5432 failed: Connection refused
+obview_app  |   Is the server running on that host and accepting TCP/IP connections?
+obview_app  | PostgreSQL is unavailable - sleeping for 1 second
+obview_app  | psql: error: connection to server at "db" (172.18.0.2), port 5432 failed: Connection refused
+obview_app  |   Is the server running on that host and accepting TCP/IP connections?
+obview_app  | PostgreSQL is unavailable - sleeping for 1 second
+obview_app  | psql: error: connection to server at "db" (172.18.0.2), port 5432 failed: Connection refused
+obview_app  |   Is the server running on that host and accepting TCP/IP connections?
+obview_app  | PostgreSQL is unavailable - sleeping for 1 second
+obview_app  | Running database migrations...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _sender: null,
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _socket: null,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Running migrations...
+obview_app  | Migration error: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app  | Migration script failed: ErrorEvent {
+obview_app  |   [Symbol(kTarget)]: WebSocket {
+obview_app  |     _events: [Object: null prototype] {
+obview_app  |       error: [Function],
+obview_app  |       message: [Function],
+obview_app  |       close: [Function],
+obview_app  |       open: [Function]
+obview_app  |     },
+obview_app  |     _eventsCount: 4,
+obview_app  |     _maxListeners: undefined,
+obview_app  |     _binaryType: 'arraybuffer',
+obview_app  |     _closeCode: 1006,
+obview_app  |     _closeFrameReceived: false,
+obview_app  |     _closeFrameSent: false,
+obview_app  |     _closeMessage: <Buffer >,
+obview_app  |     _closeTimer: null,
+obview_app  |     _errorEmitted: true,
+obview_app  |     _extensions: {},
+obview_app  |     _paused: false,
+obview_app  |     _protocol: '',
+obview_app  |     _readyState: 3,
+obview_app  |     _receiver: null,
+obview_app  |     _sender: null,
+obview_app  |     _socket: null,
+obview_app  |     _bufferedAmount: 0,
+obview_app  |     _isServer: false,
+obview_app  |     _redirects: 0,
+obview_app  |     _autoPong: true,
+obview_app  |     _url: 'wss://db/v2',
+obview_app  |     _req: null,
+obview_app  |     [Symbol(shapeMode)]: false,
+obview_app  |     [Symbol(kCapture)]: false
+obview_app  |   },
+obview_app  |   [Symbol(kType)]: 'error',
+obview_app  |   [Symbol(kError)]: Error: connect ECONNREFUSED 172.18.0.2:443
+obview_app  |       at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1611:16) {
+obview_app  |     errno: -111,
+obview_app  |     code: 'ECONNREFUSED',
+obview_app  |     syscall: 'connect',
+obview_app  |     address: '172.18.0.2',
+obview_app  |     port: 443
+obview_app  |   },
+obview_app  |   [Symbol(kMessage)]: 'connect ECONNREFUSED 172.18.0.2:443'
+obview_app  | }
+obview_app exited with code 1
