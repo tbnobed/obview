@@ -29,9 +29,6 @@ import { ProjectTeamMembers } from "@/components/project/project-team-members";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShareUrlInput } from "@/components/share-url-input";
-
-
 
 
 
@@ -127,21 +124,18 @@ export default function ProjectPage() {
   
   // Share project handler
   const handleShareProject = () => {
-    // Use the utility function to get a consistent URL
-    import("@/lib/utils/url-utils").then(({ getProjectShareUrl }) => {
-      const shareUrl = getProjectShareUrl(projectId);
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        toast({
-          title: "Link copied to clipboard",
-          description: "You can now share this link with others",
-        });
-        setShareDialogOpen(false);
-      }).catch(() => {
-        toast({
-          title: "Failed to copy link",
-          description: "Please try again or copy the link manually",
-          variant: "destructive",
-        });
+    const shareUrl = `${window.location.origin}/projects/${projectId}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      toast({
+        title: "Link copied to clipboard",
+        description: "You can now share this link with others",
+      });
+      setShareDialogOpen(false);
+    }).catch(() => {
+      toast({
+        title: "Failed to copy link",
+        description: "Please try again or copy the link manually",
+        variant: "destructive",
       });
     });
   };
@@ -272,7 +266,11 @@ export default function ProjectPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex items-center space-x-2 py-4">
-                  <ShareUrlInput projectId={projectId} />
+                  <Input 
+                    readOnly
+                    value={`${window.location.origin}/projects/${projectId}`}
+                    className="flex-1"
+                  />
                   <Button type="button" onClick={handleShareProject} className="shrink-0">
                     Copy Link
                   </Button>

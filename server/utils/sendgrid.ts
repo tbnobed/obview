@@ -21,6 +21,21 @@ function logToFile(message: string): void {
   fs.appendFileSync(logFilePath, logMessage);
 }
 
+// Use a single standard API key variable
+const apiKey = process.env.SENDGRID_API_KEY;
+
+if (!apiKey) {
+  const warning = "No SendGrid API key found. Email functionality will not work.";
+  console.warn(warning);
+  logToFile(warning);
+} else {
+  logToFile("SendGrid API key is set. Email functionality should be working.");
+}
+
+// Initialize the SendGrid mail service with API key
+const mailService = new MailService();
+mailService.setApiKey(apiKey || '');
+
 interface EmailParams {
   to: string;
   from: string;
@@ -44,10 +59,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     logToFile(`  - Text length: ${params.text?.length || 0} characters`);
     logToFile(`  - HTML length: ${params.html?.length || 0} characters`);
     
-    // Get API key - check for both environment variables
-    const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
-    
-    // Verify API key exists
+    // Verify API key exists - use the module scoped variable
     if (!apiKey) {
       const error = "Cannot send email: No SendGrid API key is set";
       console.error(error);
@@ -59,12 +71,12 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     const apiKeyLength = apiKey.length;
     logToFile(`Using SendGrid API key (${apiKeyLength} characters)`);
     
-    // Create a new Mail Service instance for this request
-    const mailService = new MailService();
+    // Ensure the API key is properly set in the mail service
     mailService.setApiKey(apiKey);
-    logToFile(`API key set for this request`);
+    logToFile(`API key set in mail service`);
     
     // Prepare email data with configurable sandbox mode
+    // The account now has a verified sender (alerts@obedtv.com)
     const emailData = {
       to: params.to,
       from: params.from,
@@ -73,7 +85,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html || '',
       mail_settings: {
         sandbox_mode: {
-          enable: process.env.SENDGRID_SANDBOX === 'true'
+          enable: process.env.SENDGRID_SANDBOX === 'true' ? true : false
         }
       }
     };
@@ -126,6 +138,19 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
                 console.error(`SendGrid specific error: ${err.message}`);
                 logToFile(`SendGrid specific error: ${err.message}`);
               }
+              
+              // Help with common error codes
+              if (err.field === 'from' && err.message?.includes('does not exist')) {
+                console.error('IMPORTANT: Your sender email is not verified with SendGrid.');
+                logToFile('IMPORTANT: Your sender email is not verified with SendGrid.');
+                logToFile('Try using a sendgrid.net address or verify your domain/email with SendGrid.');
+              }
+              
+              if (err.message?.includes('forbidden')) {
+                console.error('IMPORTANT: Your SendGrid API key may have insufficient permissions or your account needs verification.');
+                logToFile('IMPORTANT: Your SendGrid API key may have insufficient permissions or your account needs verification.');
+                logToFile('Try using sandbox mode or check your SendGrid account status.');
+              }
             });
           }
         }
@@ -160,30 +185,41 @@ export async function sendInvitationEmail(
     logToFile(`Preparing invitation email to ${to} for project "${projectName}" from "${inviterName}" with role "${role}"`);
     logToFile(`Token: ${token}`);
     
-    // For SendGrid emails we need to be extra careful about URLs
-    // We can't use window.location.origin because this runs on the server side
+    // Determine the correct invite URL using the best available option
     let baseUrl: string;
     
-    // First priority: Explicitly provided appUrl parameter in the function call
+    // First priority: Explicitly provided appUrl parameter
     if (appUrl) {
       baseUrl = appUrl;
       logToFile(`Using explicitly provided app URL: ${baseUrl}`);
     }
-    // Second priority: APP_URL environment variable 
+    // Second priority: APP_URL environment variable
     else if (process.env.APP_URL) {
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // For all other environments in production, we must have APP_URL set
-    else if (process.env.NODE_ENV === 'production') {
-      console.warn('WARNING: Missing APP_URL in production environment. Using fallback URL, but links in emails may not work properly.');
-      logToFile('WARNING: Missing APP_URL in production. Email links may not work properly.');
-      baseUrl = 'https://app.obview.io'; // Use a sensible default but log a warning
+    // Third priority: REPLIT environment with various environment variable combinations
+    else if (process.env.REPL_ID) {
+      // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (most reliable)
+      if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
+        baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+        logToFile(`Using Replit environment URL (slug+owner): ${baseUrl}`);
+      }
+      // Second try: Use the REPLIT_SLUG alone with .replit.app domain (newer Replit format)
+      else if (process.env.REPLIT_SLUG) {
+        baseUrl = `https://${process.env.REPLIT_SLUG}.replit.app`;
+        logToFile(`Using Replit environment URL (slug): ${baseUrl}`);
+      }
+      // Last resort: Use the REPL_ID directly
+      else {
+        baseUrl = `https://${process.env.REPL_ID}.repl.co`;
+        logToFile(`Using Replit environment URL (ID): ${baseUrl}`);
+      }
     }
-    // Last priority (fallback): Development environment
+    // Final fallback: Local development
     else {
-      baseUrl = 'http://localhost:5000';
-      logToFile(`Using development URL: ${baseUrl}`);
+      baseUrl = `http://localhost:5000`;
+      logToFile(`Using fallback local development URL: ${baseUrl}`);
     }
     
     const inviteUrl = `${baseUrl}/invite/${token}`;

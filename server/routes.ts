@@ -238,15 +238,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (process.env.APP_URL) {
           baseUrl = process.env.APP_URL;
         }
-        // First priority for Replit: REPLIT_DOMAINS (most reliable and current)
-        else if (process.env.REPLIT_DOMAINS) {
-          baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
-        }
-        // Second priority for Replit: REPLIT_DEV_DOMAIN
-        else if (process.env.REPLIT_DEV_DOMAIN) {
-          baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-        }
-        // Fallback for older Replit environments 
         else if (process.env.REPL_ID) {
           if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
             baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
@@ -297,62 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
-    // Test email sending endpoint - supports both GET and POST
-    app.post("/api/debug/send-test-email", isAuthenticated, isAdmin, async (req, res, next) => {
-      try {
-        console.log("Sending test email - POST method");
-        const to = req.body.to || 'test@example.com';
-        console.log(`Sending test email to ${to}`);
-        
-        // Check if SendGrid API key is set
-        if (!process.env.SENDGRID_API_KEY) {
-          console.error("SendGrid API key is not set");
-          return res.status(500).json({ 
-            success: false, 
-            message: "SendGrid API key is not set", 
-            apiKey: "API key is missing",
-            sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
-          });
-        }
-        
-        console.log(`Using API key: ${process.env.SENDGRID_API_KEY.substring(0, 5)}...`);
-        
-        // Import the sendEmail function
-        const { sendEmail } = await import('./utils/sendgrid');
-        
-        // Send the test email
-        const result = await sendEmail({
-          to,
-          from: process.env.EMAIL_FROM || 'alerts@obedtv.com',
-          subject: 'Test Email from ObView.io',
-          text: 'This is a test email to verify SendGrid functionality.',
-          html: '<h1>Test Email</h1><p>This is a test email to verify SendGrid functionality.</p><p>If you received this, email sending is working correctly!</p>'
-        });
-        
-        if (result) {
-          console.log(`Test email successfully sent to ${to}`);
-          return res.json({ 
-            success: true, 
-            message: `Test email sent to ${to}. Check the logs for details.`,
-            apiKey: "API key is set",
-            sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
-          });
-        } else {
-          console.error(`Failed to send test email to ${to}`);
-          return res.status(500).json({ 
-            success: false, 
-            message: `Failed to send test email to ${to}. Check the logs for details.`,
-            apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
-            sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
-          });
-        }
-      } catch (error) {
-        console.error("Error in email test endpoint:", error);
-        next(error);
-      }
-    });
-    
-    // Original GET endpoint maintained for backward compatibility
+    // Test email sending endpoint
     app.get("/api/debug/send-test-email", async (req, res) => {
       try {
         const { sendEmail } = await import('./utils/sendgrid');
@@ -1069,24 +1005,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         file.shareToken = token;
       }
       
-      // Determine the base URL for sharing
-      let baseUrl;
-      
-      // First priority: Use the REPLIT_DOMAINS environment variable (most reliable for Replit)
-      if (process.env.REPLIT_DOMAINS) {
-        baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
-      }
-      // Second priority: Use the REPLIT_DEV_DOMAIN environment variable
-      else if (process.env.REPLIT_DEV_DOMAIN) {
-        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-      }
-      // Third priority: Fallback to request-based URL construction
-      else {
-        baseUrl = `${req.protocol}://${req.get('host')}`;
-      }
-      
       // Return share URL
-      const shareUrl = `${baseUrl}/public/share/${file.shareToken}`;
+      const shareUrl = `${req.protocol}://${req.get('host')}/public/share/${file.shareToken}`;
       res.json({ shareUrl });
     } catch (error) {
       next(error);
@@ -2006,27 +1926,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Determine the best URL to use in the email based on the current request
-            let appUrl = process.env.APP_URL;
-            
-            if (!appUrl) {
-              // Detect protocol (may be proxied through a secure connection)
-              const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-              // Get host, which includes domain and possibly port
-              const host = req.headers.host || 'localhost:5000';
-              // Construct the full base URL
-              appUrl = `${protocol}://${host}`;
-              console.log(`Using detected URL from request: ${appUrl}`);
-            }
-            
-            // Send the invitation email with the detected URL
+            // Send the invitation email
             emailSent = await sendInvitationEmail(
               invitation.email,
               inviter.name,
               project.name,
               invitation.role,
-              invitation.token,
-              appUrl
+              invitation.token
             );
             
             if (emailSent) {
