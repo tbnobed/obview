@@ -1,6 +1,6 @@
 # OBview.io Deployment Guide
 
-This guide explains how to deploy the OBview.io application on an Ubuntu server using Docker and Docker Compose.
+This guide explains how to deploy the OBview.io application either using Docker (recommended for production) or directly from the Git repository (for development or customization).
 
 ## Prerequisites
 
@@ -32,7 +32,11 @@ For high-traffic deployment or large media file storage needs, consider:
 - Configuring regular offsite backup procedures
 - Monitoring disk usage with alerts at 80% capacity
 
-## Installation Steps
+## Installation Options
+
+OBview.io can be deployed in two ways: using Docker (recommended for production) or directly from the Git repository (useful for development or customization).
+
+## Option 1: Docker Deployment (Recommended for Production)
 
 ### 1. Install Docker and Docker Compose
 
@@ -420,6 +424,196 @@ docker-compose exec app /app/scripts/restore-db.sh /path/to/backup/obview_backup
 
 # Verify application functionality
 curl http://localhost:3000/api/health
+```
+
+## Option 2: Direct Deployment from Git Repository
+
+For development environments or if you need to customize the application, you can deploy directly from the Git repository without Docker.
+
+### 1. System Requirements
+
+- Node.js 18.x or newer
+- PostgreSQL 14.x or newer
+- Git
+
+### 2. Clone the Repository
+
+```bash
+git clone <repository-url> obview
+cd obview
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+### 4. Set Up Environment Variables
+
+Create a `.env` file with the necessary environment variables:
+
+```bash
+# Database connection
+DATABASE_URL=postgresql://username:password@localhost:5432/obview
+SESSION_SECRET=your_secure_random_string
+
+# Email (optional)
+SENDGRID_API_KEY=your_sendgrid_api_key
+EMAIL_FROM=your-verified-sender@example.com
+
+# Application URL for links in emails
+APP_URL=http://localhost:5000
+```
+
+### 5. Create and Migrate the Database
+
+```bash
+# Create PostgreSQL database
+sudo -u postgres createdb obview
+
+# Run database migrations
+npm run db:push
+```
+
+### 6. Start the Application
+
+```bash
+# Development mode with hot reloading
+npm run dev
+
+# Production mode
+npm run build
+npm start
+```
+
+The application will be available at:
+- Development: http://localhost:5000
+- Production: http://localhost:5000 (or the port specified in your environment)
+
+### 7. Handling File Paths
+
+When deploying from Git, pay special attention to file paths:
+
+1. The `uploads` directory should be created in the project root:
+
+```bash
+mkdir -p uploads
+chmod 755 uploads
+```
+
+2. Make sure all paths in the code use relative paths or process.cwd():
+
+```js
+// Example (already implemented in the codebase)
+const uploadsDir = path.join(process.cwd(), 'uploads');
+```
+
+### 8. Production Considerations
+
+For a production environment:
+
+1. Use a proper process manager like PM2:
+
+```bash
+# Install PM2
+npm install -g pm2
+
+# Start the application with PM2
+pm2 start npm --name "obview" -- start
+
+# Set up auto-restart on server reboot
+pm2 startup
+pm2 save
+```
+
+2. Set up Nginx as a reverse proxy (similar to Docker deployment)
+
+3. Set up regular database backups:
+
+```bash
+# Create a backup script
+echo '#!/bin/bash
+BACKUP_DIR="/path/to/backups"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+pg_dump -U postgres obview > "$BACKUP_DIR/obview_backup_$TIMESTAMP.sql"
+# Keep only the 5 most recent backups
+ls -t "$BACKUP_DIR"/obview_backup_*.sql | tail -n +6 | xargs -r rm
+' > /path/to/backup-script.sh
+chmod +x /path/to/backup-script.sh
+
+# Set up cron job for daily backups
+(crontab -l 2>/dev/null; echo "0 2 * * * /path/to/backup-script.sh") | crontab -
+```
+
+### 9. Troubleshooting Git Repository Deployment
+
+Here are solutions to common issues when deploying directly from the Git repository:
+
+#### TypeScript Compilation Errors
+
+If you see TypeScript errors during build:
+
+```bash
+# Check for TypeScript errors
+npm run check
+
+# If you need to fix type issues, look at the StorageFile type alias
+# See the section on TypeScript Type Checking below
+```
+
+#### Path Issues
+
+If file uploads or content delivery fails:
+
+```bash
+# Make sure upload paths are correct
+ls -la uploads/
+
+# Verify permissions
+chmod 755 uploads/
+
+# Check file paths in routes.ts
+grep -r "sendFile" server/
+```
+
+#### Port Configuration
+
+If the application fails to start on the expected port:
+
+```bash
+# Check for port conflicts
+netstat -tuln | grep 5000
+
+# Change the port if needed by setting PORT in your .env file
+echo "PORT=5001" >> .env
+```
+
+#### Database Migration Failures
+
+If database migrations fail:
+
+```bash
+# Check database connection
+node -e "const { Pool } = require('@neondatabase/serverless'); \
+const pool = new Pool({ connectionString: process.env.DATABASE_URL }); \
+pool.query('SELECT 1').then(res => console.log('Connected!')).catch(err => console.error(err));"
+
+# Run migrations manually
+node server/db-migrate.js
+```
+
+#### Node.js Version Issues
+
+If you encounter compatibility issues:
+
+```bash
+# Check your Node.js version
+node -v
+
+# Use nvm to install the recommended version
+nvm install 18
+nvm use 18
 ```
 
 ## Development Notes
