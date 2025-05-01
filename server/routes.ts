@@ -117,9 +117,48 @@ async function hasProjectEditAccess(req: Request, res: Response, next: NextFunct
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Health check endpoint for Docker
-  app.get("/api/health", (req, res) => {
-    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  // Health check endpoint for Docker and monitoring
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Check database connectivity
+      let dbStatus = "unknown";
+      let dbError = null;
+      try {
+        await db.execute(sql`SELECT 1`);
+        dbStatus = "connected";
+      } catch (error) {
+        dbStatus = "disconnected";
+        dbError = error instanceof Error ? error.message : "Unknown error";
+      }
+
+      // Gather system info
+      const memoryUsage = process.memoryUsage();
+      const uptime = process.uptime();
+
+      res.status(200).json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        version: process.env.npm_package_version || "unknown",
+        environment: process.env.NODE_ENV,
+        uptime: Math.floor(uptime),
+        database: {
+          status: dbStatus,
+          error: dbError
+        },
+        memory: {
+          rss: Math.floor(memoryUsage.rss / 1024 / 1024) + "MB",
+          heapTotal: Math.floor(memoryUsage.heapTotal / 1024 / 1024) + "MB",
+          heapUsed: Math.floor(memoryUsage.heapUsed / 1024 / 1024) + "MB"
+        }
+      });
+    } catch (error) {
+      console.error("Health check error:", error);
+      res.status(500).json({
+        status: "error",
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
   });
   // Set up authentication
   setupAuth(app);

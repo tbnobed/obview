@@ -9,6 +9,18 @@ This guide explains how to deploy the OBview.io application on an Ubuntu server 
 - Git (to clone the repository)
 - Domain name pointed to your server (optional but recommended)
 
+## System Requirements
+
+**Minimum:**
+- 2 CPU cores
+- 4GB RAM
+- 20GB storage (more if you plan to handle large media files)
+
+**Recommended:**  
+- 4 CPU cores
+- 8GB RAM
+- 50GB+ storage for production use with multiple projects
+
 ## Installation Steps
 
 ### 1. Install Docker and Docker Compose
@@ -113,6 +125,9 @@ server {
         proxy_cache_bypass $http_upgrade;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Set larger client_max_body_size for file uploads
+        client_max_body_size 100M;
     }
 }
 
@@ -156,6 +171,21 @@ docker-compose exec db pg_dump -U postgres obview > backup_$(date +%Y-%m-%d).sql
 
 ## Troubleshooting
 
+### Container Health Check Failures
+
+The Docker Compose setup includes health checks for both app and database containers. If health checks fail:
+
+```bash
+# Check the status of all containers to see which one failed
+docker-compose ps
+
+# View app container logs for health check failures
+docker-compose logs app
+
+# Manually test app health endpoint
+curl http://localhost:3000/api/health
+```
+
 ### Database Connectivity Issues
 
 If the application can't connect to the database, check:
@@ -169,6 +199,9 @@ docker-compose logs db
 
 # Check if the environment variables are correct
 docker-compose exec app env | grep DATABASE_URL
+
+# Test database connectivity directly
+docker-compose exec db psql -U postgres -c "SELECT 1"
 ```
 
 ### Email Sending Issues
@@ -176,5 +209,27 @@ docker-compose exec app env | grep DATABASE_URL
 If emails aren't being sent properly:
 
 1. Verify your SendGrid API key is correct
-2. Check that the sender email address is verified in SendGrid
+2. Check that the sender email address is verified in SendGrid 
 3. Check the application logs for any SendGrid-related errors:
+   ```bash
+   docker-compose logs app | grep -i sendgrid
+   ```
+
+### Upload Storage Issues
+
+If file uploads fail or uploaded files are not accessible:
+
+1. Verify the uploads volume is properly mounted:
+   ```bash
+   docker-compose exec app ls -la /app/uploads
+   ```
+   
+2. Check file permissions:
+   ```bash
+   docker-compose exec app stat -c '%a %n' /app/uploads
+   ```
+
+3. Make sure the uploads directory is writable by the app:
+   ```bash
+   docker-compose exec app touch /app/uploads/test_file && docker-compose exec app rm /app/uploads/test_file
+   ```
