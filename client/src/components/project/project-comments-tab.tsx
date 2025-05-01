@@ -1,10 +1,11 @@
 import { useProjectComments } from "@/hooks/use-comments";
-import { Loader2, FileVideo, Clock } from "lucide-react";
+import { Loader2, FileVideo, Clock, Play } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import type { Comment } from "@shared/schema";
 import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
 
 // Format time (seconds to MM:SS)
 const formatTime = (time: number | null) => {
@@ -69,8 +70,9 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
       {sortedComments.map((comment: Comment & { user?: any, file?: any }) => (
         <div 
           key={comment.id} 
-          className={`border rounded-lg p-4 ${comment.timestamp !== null && comment.file?.id ? 'cursor-pointer hover:bg-neutral-50' : ''}`}
+          className={`border rounded-lg p-4 ${comment.timestamp !== null && comment.file?.id ? 'cursor-pointer hover:bg-neutral-50 hover:border-primary-400 hover:shadow-sm transition-all' : ''}`}
           onClick={() => navigateToComment(comment)}
+          title={comment.timestamp !== null && comment.file?.id ? `Click to view at ${formatTime(comment.timestamp)} in ${comment.file.filename}` : ''}
         >
           <div className="flex items-start gap-4">
             <Avatar>
@@ -103,6 +105,21 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                 
                 {comment.isResolved && (
                   <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Resolved</Badge>
+                )}
+                
+                {comment.timestamp !== null && comment.file?.id && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="h-6 px-2 py-0 text-xs bg-primary-100 text-primary hover:text-primary-600 hover:bg-primary-200 border-primary-200"
+                    onClick={(e) => {
+                      e.stopPropagation();  // Prevent parent div click
+                      navigateToComment(comment);
+                    }}
+                  >
+                    <Play className="h-3 w-3 mr-1" />
+                    Jump to timestamp
+                  </Button>
                 )}
               </div>
             </div>
