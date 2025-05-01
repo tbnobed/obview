@@ -471,8 +471,24 @@ docker-compose ps
 # View app container logs for health check failures
 docker-compose logs app
 
-# Manually test app health endpoint
-curl http://localhost:3000/api/health
+# Manually test app health endpoint - use port 5000 as the application runs on this port
+curl http://localhost:5000/api/health
+```
+
+If you get "Connection refused" errors when trying to access the application from the host machine:
+
+```bash
+# Check if the container's internal health check is passing
+docker inspect obview_app | grep -A 10 Health
+
+# Check the application logs to see which port it's actually listening on
+docker-compose logs app | grep -i "serving on port"
+
+# See if the application is binding to 0.0.0.0 instead of localhost inside container
+docker-compose exec app netstat -tuln | grep 5000
+
+# Verify port mapping is correct
+docker-compose port app 5000
 ```
 
 ### Database Connectivity Issues
@@ -586,7 +602,7 @@ docker-compose up -d
 docker-compose exec app /app/scripts/restore-db.sh /path/to/backup/obview_backup_YYYYMMDD.sql
 
 # Verify application functionality
-curl http://localhost:3000/api/health
+curl http://localhost:5000/api/health
 ```
 
 ## Option 2: Direct Deployment from Git Repository

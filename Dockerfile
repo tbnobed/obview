@@ -60,11 +60,11 @@ COPY --from=builder /app/.env* ./
 RUN chmod +x ./scripts/*.sh
 
 # Expose port
-EXPOSE 3000
+EXPOSE 5000
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=5000
 ENV IS_DOCKER=true
 
 # Create a volume for uploads
