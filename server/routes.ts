@@ -219,84 +219,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Debug endpoint for email testing (only in development)
   if (process.env.NODE_ENV === 'development') {
-    // Email detailed debugging endpoint
-    app.get("/api/debug/email-detailed", isAuthenticated, isAdmin, async (req, res) => {
-      try {
-        const { sendEmail } = await import('./utils/sendgrid');
-        
-        const to = req.query.to as string || 'test@example.com';
-        const testUrl = `https://${process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/test-link`;
-        
-        console.log(`Sending detailed DEBUG email to: ${to}`);
-        
-        const html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #6366f1; color: white; padding: 20px; text-align: center;">
-              <h1 style="margin: 0; font-size: 24px;">Email Debugging Test</h1>
-            </div>
-            <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
-              <p>Hello,</p>
-              <p>This is a detailed test email to verify SendGrid functionality and link rendering.</p>
-              <p>Test URL (as plain text): ${testUrl}</p>
-              <p>Test URL (as link): <a href="${testUrl}">${testUrl}</a></p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${testUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Test Button</a>
-              </div>
-              <p>Environment information:</p>
-              <ul>
-                <li>REPLIT_DOMAINS: ${process.env.REPLIT_DOMAINS || 'not set'}</li>
-                <li>REPLIT_DEV_DOMAIN: ${process.env.REPLIT_DEV_DOMAIN || 'not set'}</li>
-                <li>REPL_ID: ${process.env.REPL_ID || 'not set'}</li>
-                <li>SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'set' : 'not set'}</li>
-                <li>NEW_SENDGRID_API_KEY: ${process.env.NEW_SENDGRID_API_KEY ? 'set' : 'not set'}</li>
-                <li>Current time: ${new Date().toISOString()}</li>
-              </ul>
-            </div>
-          </div>
-        `;
-        
-        const result = await sendEmail({
-          to,
-          from: 'alerts@obedtv.com',
-          subject: 'Detailed Email Debug Test from OBView',
-          text: `Debug email test. Test URL: ${testUrl}`,
-          html
-        });
-        
-        if (result) {
-          console.log(`Detailed test email successfully sent to ${to}`);
-          res.json({ 
-            success: true, 
-            message: `Detailed test email sent successfully to ${to}`,
-            emailContent: {
-              to,
-              from: 'alerts@obedtv.com',
-              subject: 'Detailed Email Debug Test from OBView',
-              testUrl,
-              htmlExcerpt: html.substring(0, 200) + '...'
-            }
-          });
-        } else {
-          console.error(`Failed to send detailed test email to ${to}`);
-          res.status(500).json({ success: false, message: "Failed to send detailed test email" });
-        }
-      } catch (error) {
-        console.error('Error sending detailed test email:', error);
-        res.status(500).json({ 
-          success: false, 
-          message: "Error sending detailed test email", 
-          error: error instanceof Error ? error.message : String(error) 
-        });
-      }
-    });
-    
     // Email configuration debug endpoint
     app.get("/api/debug/email-config", isAuthenticated, isAdmin, async (req, res) => {
       try {
         // Gather environment variables related to URL construction
         const envVars = {
-          REPLIT_DOMAINS: process.env.REPLIT_DOMAINS || 'not set',
-          REPLIT_DEV_DOMAIN: process.env.REPLIT_DEV_DOMAIN || 'not set',
           REPL_ID: process.env.REPL_ID || 'not set',
           REPL_OWNER: process.env.REPL_OWNER || 'not set',
           REPLIT_SLUG: process.env.REPLIT_SLUG || 'not set',
@@ -311,15 +238,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (process.env.APP_URL) {
           baseUrl = process.env.APP_URL;
         }
-        // Use REPLIT_DOMAINS (most reliable for modern Replit)
-        else if (process.env.REPLIT_DOMAINS) {
-          baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
-        }
-        // Use REPLIT_DEV_DOMAIN (also reliable for modern Replit)
-        else if (process.env.REPLIT_DEV_DOMAIN) {
-          baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-        }
-        // Legacy REPLIT environment variables
         else if (process.env.REPL_ID) {
           if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
             baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;

@@ -21,18 +21,15 @@ function logToFile(message: string): void {
   fs.appendFileSync(logFilePath, logMessage);
 }
 
-// Use a single standard API key variable - try NEW_SENDGRID_API_KEY first, then fall back to SENDGRID_API_KEY
-const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
+// Use a single standard API key variable
+const apiKey = process.env.SENDGRID_API_KEY;
 
 if (!apiKey) {
   const warning = "No SendGrid API key found. Email functionality will not work.";
   console.warn(warning);
   logToFile(warning);
 } else {
-  const keySource = process.env.NEW_SENDGRID_API_KEY 
-    ? "NEW_SENDGRID_API_KEY" 
-    : "SENDGRID_API_KEY";
-  logToFile(`SendGrid API key is set from ${keySource}. Email functionality should be working.`);
+  logToFile("SendGrid API key is set. Email functionality should be working.");
 }
 
 // Initialize the SendGrid mail service with API key
@@ -62,14 +59,6 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     logToFile(`  - Text length: ${params.text?.length || 0} characters`);
     logToFile(`  - HTML length: ${params.html?.length || 0} characters`);
     
-    // Log a sample of the content for debugging
-    if (params.html) {
-      const htmlSample = params.html.length > 500 
-        ? params.html.substring(0, 500) + '...' 
-        : params.html;
-      logToFile(`  - HTML sample: ${htmlSample}`);
-    }
-    
     // Verify API key exists - use the module scoped variable
     if (!apiKey) {
       const error = "Cannot send email: No SendGrid API key is set";
@@ -80,10 +69,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     
     // Log API key state (not the actual key for security)
     const apiKeyLength = apiKey.length;
-    const keySource = process.env.NEW_SENDGRID_API_KEY 
-      ? "NEW_SENDGRID_API_KEY" 
-      : "SENDGRID_API_KEY";
-    logToFile(`Using SendGrid API key from ${keySource} (${apiKeyLength} characters)`);
+    logToFile(`Using SendGrid API key (${apiKeyLength} characters)`);
     
     // Ensure the API key is properly set in the mail service
     mailService.setApiKey(apiKey);
@@ -212,24 +198,14 @@ export async function sendInvitationEmail(
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // Third priority: REPLIT environment - use REPLIT_DOMAINS (most reliable for modern Replit)
-    else if (process.env.REPLIT_DOMAINS) {
-      baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
-      logToFile(`Using REPLIT_DOMAINS environment variable: ${baseUrl}`);
-    }
-    // Fourth priority: REPLIT_DEV_DOMAIN (also reliable for modern Replit)
-    else if (process.env.REPLIT_DEV_DOMAIN) {
-      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-      logToFile(`Using REPLIT_DEV_DOMAIN environment variable: ${baseUrl}`);
-    }
-    // Fifth priority: Legacy REPLIT environment variables
+    // Third priority: REPLIT environment with various environment variable combinations
     else if (process.env.REPL_ID) {
-      // First try: Use the standard REPLIT_SLUG and REPL_OWNER format
+      // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (most reliable)
       if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
         baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
         logToFile(`Using Replit environment URL (slug+owner): ${baseUrl}`);
       }
-      // Second try: Use the REPLIT_SLUG alone with .replit.app domain
+      // Second try: Use the REPLIT_SLUG alone with .replit.app domain (newer Replit format)
       else if (process.env.REPLIT_SLUG) {
         baseUrl = `https://${process.env.REPLIT_SLUG}.replit.app`;
         logToFile(`Using Replit environment URL (slug): ${baseUrl}`);
