@@ -22,8 +22,8 @@ function logToFile(message: string): void {
   fs.appendFileSync(logFilePath, logMessage);
 }
 
-// Use a single standard API key variable
-const apiKey = process.env.SENDGRID_API_KEY;
+// Get SendGrid API key from environment
+const apiKey = process.env.SENDGRID_API_KEY || process.env.NEW_SENDGRID_API_KEY;
 
 if (!apiKey) {
   const warning = "No SendGrid API key found. Email functionality will not work.";
@@ -86,7 +86,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html || '',
       mail_settings: {
         sandbox_mode: {
-          enable: process.env.SENDGRID_SANDBOX === 'true' ? true : false
+          enable: config.sendgridSandbox
         }
       }
     };
@@ -186,42 +186,9 @@ export async function sendInvitationEmail(
     logToFile(`Preparing invitation email to ${to} for project "${projectName}" from "${inviterName}" with role "${role}"`);
     logToFile(`Token: ${token}`);
     
-    // Determine the correct invite URL using the best available option
-    let baseUrl: string;
-    
-    // First priority: Client domain (used when sending from browser)
-    if (appUrl) {
-      baseUrl = appUrl;
-      logToFile(`Using client domain for invitation URL: ${baseUrl}`);
-    }
-    // Second priority: APP_URL environment variable
-    else if (process.env.APP_URL) {
-      baseUrl = process.env.APP_URL;
-      logToFile(`Using APP_URL environment variable: ${baseUrl}`);
-    }
-    // Third priority: REPLIT environment with various environment variable combinations
-    else if (process.env.REPL_ID) {
-      // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (most reliable)
-      if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
-        baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
-        logToFile(`Using Replit environment URL (slug+owner): ${baseUrl}`);
-      }
-      // Second try: Use the REPLIT_SLUG alone with .replit.app domain (newer Replit format)
-      else if (process.env.REPLIT_SLUG) {
-        baseUrl = `https://${process.env.REPLIT_SLUG}.replit.app`;
-        logToFile(`Using Replit environment URL (slug): ${baseUrl}`);
-      }
-      // Last resort: Use the REPL_ID directly
-      else {
-        baseUrl = `https://${process.env.REPL_ID}.repl.co`;
-        logToFile(`Using Replit environment URL (ID): ${baseUrl}`);
-      }
-    }
-    // Final fallback: Local development
-    else {
-      baseUrl = `http://localhost:5000`;
-      logToFile(`Using fallback local development URL: ${baseUrl}`);
-    }
+    // Use the application domain from our config
+    const baseUrl = config.appDomain;
+    logToFile(`Using application domain from config: ${baseUrl}`);
     
     const inviteUrl = `${baseUrl}/invite/${token}`;
     logToFile(`Generated invite URL: ${inviteUrl}`);
@@ -262,7 +229,7 @@ export async function sendInvitationEmail(
     
     // Use the verified sender identity for your SendGrid account
     // alerts@obedtv.com is already verified with SendGrid
-    const sender = process.env.EMAIL_FROM || 'alerts@obedtv.com';
+    const sender = config.emailFrom;
     logToFile(`Using sender email: ${sender}`);
     
     return await sendEmail({
