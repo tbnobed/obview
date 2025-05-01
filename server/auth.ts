@@ -23,10 +23,26 @@ export async function hashPassword(password: string) {
 }
 
 export async function comparePasswords(supplied: string, stored: string) {
+  console.log(`Comparing passwords - supplied length: ${supplied.length}, stored: ${stored.substring(0, 20)}...`);
+  
+  if (!stored || !stored.includes('.')) {
+    console.error('Invalid stored password format - missing salt separator');
+    throw new Error('Invalid password format');
+  }
+  
   const [hashed, salt] = stored.split(".");
+  console.log(`Split password - hashed: ${hashed.substring(0, 20)}..., salt: ${salt?.substring(0, 10)}...`);
+  
+  if (!salt) {
+    console.error('Salt is undefined after splitting');
+    throw new Error('Invalid password format - missing salt');
+  }
+  
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  const result = timingSafeEqual(hashedBuf, suppliedBuf);
+  console.log(`Password comparison result: ${result}`);
+  return result;
 }
 
 export function generateToken(length = 32): string {
@@ -54,15 +70,33 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        console.log(`Authenticating with username: ${username}`);
         const user = await storage.getUserByUsername(username) || 
                     await storage.getUserByEmail(username);
                     
-        if (!user || !(await comparePasswords(password, user.password))) {
+        if (!user) {
+          console.log(`No user found with username/email: ${username}`);
           return done(null, false, { message: "Invalid username or password" });
         }
         
-        return done(null, user);
+        console.log(`User found: ${user.id}, ${user.username}`);
+        console.log(`Password format: ${user.password.slice(0, 20)}...`);
+        
+        try {
+          const isPasswordValid = await comparePasswords(password, user.password);
+          console.log(`Password validation result: ${isPasswordValid}`);
+          
+          if (!isPasswordValid) {
+            return done(null, false, { message: "Invalid username or password" });
+          }
+          
+          return done(null, user);
+        } catch (passwordError) {
+          console.error("Password comparison error:", passwordError);
+          return done(passwordError);
+        }
       } catch (err) {
+        console.error("Authentication error:", err);
         return done(err);
       }
     }),
