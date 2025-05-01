@@ -8,6 +8,7 @@ import path from "path";
 import fs from "fs/promises";
 import * as fsSync from "fs";
 import { z } from "zod";
+import { File as StorageFile } from "@shared/schema";
 
 // Extended Request type to handle file uploads
 // Using declaration merging with Express namespace
@@ -966,7 +967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = req.params.token;
       // Find file by share token
       const files = await storage.getAllFiles();
-      const file = files.find((f: File) => f.shareToken === token);
+      const file = files.find((f: StorageFile) => f.shareToken === token);
       
       if (!file) {
         return res.status(404).json({ message: "Shared file not found" });
