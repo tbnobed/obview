@@ -2006,13 +2006,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email
+            // Determine the best URL to use in the email based on the current request
+            let appUrl = process.env.APP_URL;
+            
+            if (!appUrl) {
+              // Detect protocol (may be proxied through a secure connection)
+              const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+              // Get host, which includes domain and possibly port
+              const host = req.headers.host || 'localhost:5000';
+              // Construct the full base URL
+              appUrl = `${protocol}://${host}`;
+              console.log(`Using detected URL from request: ${appUrl}`);
+            }
+            
+            // Send the invitation email with the detected URL
             emailSent = await sendInvitationEmail(
               invitation.email,
               inviter.name,
               project.name,
               invitation.role,
-              invitation.token
+              invitation.token,
+              appUrl
             );
             
             if (emailSent) {

@@ -199,10 +199,11 @@ export async function sendInvitationEmail(
     logToFile(`Preparing invitation email to ${to} for project "${projectName}" from "${inviterName}" with role "${role}"`);
     logToFile(`Token: ${token}`);
     
-    // Determine the correct invite URL using the best available option
+    // For SendGrid emails we need to be extra careful about URLs
+    // We can't use window.location.origin because this runs on the server side
     let baseUrl: string;
     
-    // First priority: Explicitly provided appUrl parameter
+    // First priority: Explicitly provided appUrl parameter in the function call
     if (appUrl) {
       baseUrl = appUrl;
       logToFile(`Using explicitly provided app URL: ${baseUrl}`);
@@ -212,26 +213,16 @@ export async function sendInvitationEmail(
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // Third priority: Replit-specific environment (REPLIT_DOMAINS or REPLIT_DEV_DOMAIN)
-    else if (process.env.REPLIT_DOMAINS) {
-      baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
-      logToFile(`Using Replit domain (REPLIT_DOMAINS): ${baseUrl}`);
+    // For all other environments in production, we must have APP_URL set
+    else if (process.env.NODE_ENV === 'production') {
+      console.warn('WARNING: Missing APP_URL in production environment. Using fallback URL, but links in emails may not work properly.');
+      logToFile('WARNING: Missing APP_URL in production. Email links may not work properly.');
+      baseUrl = 'https://app.obview.io'; // Use a sensible default but log a warning
     }
-    else if (process.env.REPLIT_DEV_DOMAIN) {
-      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-      logToFile(`Using Replit domain (REPLIT_DEV_DOMAIN): ${baseUrl}`);
-    }
-    // Fourth priority (fallback): Local development or container host
+    // Last priority (fallback): Development environment
     else {
-      // Default to secured production URL if in production mode
-      if (process.env.NODE_ENV === 'production') {
-        baseUrl = 'https://obview.io';
-        logToFile(`Using production domain: ${baseUrl}`);
-      } else {
-        // Use localhost with port 5000 for development
-        baseUrl = 'http://localhost:5000';
-        logToFile(`Using development URL: ${baseUrl}`);
-      }
+      baseUrl = 'http://localhost:5000';
+      logToFile(`Using development URL: ${baseUrl}`);
     }
     
     const inviteUrl = `${baseUrl}/invite/${token}`;
