@@ -324,9 +324,25 @@ When deploying the application using Docker, ensure the following configuration 
    await migrate(db, { migrationsFolder: 'migrations' });
    ```
 
-5. **Common Docker Errors**:
+5. **Module System Compatibility**:
+   When using ES modules (`"type": "module"` in package.json), scripts using CommonJS-style `require()` statements need to use the `.cjs` extension:
+   
+   ```bash
+   # Migration script
+   # Change: node /app/server/db-migrate.js
+   # To: node /app/server/db-migrate.cjs
+   
+   # Setup script
+   # Change: node /app/scripts/setup.js
+   # To: node /app/scripts/setup.cjs
+   ```
+   
+   Make sure to create these files in your repo with the `.cjs` extension and update references in docker-entrypoint.sh.
+   
+6. **Common Docker Errors**:
    - If you see `"/app/drizzle": not found`, update the Dockerfile to use migrations directory
    - If you see `Cannot find module '/app/dist/server/db-migrate.js'`, ensure the server directory and script are correctly copied
+   - If you see `ReferenceError: require is not defined in ES module scope`, this indicates a module system incompatibility. Rename affected scripts from `.js` to `.cjs` and update all references accordingly
 
 ### Container Health Check Failures
 

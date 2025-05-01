@@ -11,7 +11,7 @@ node /app/server/db-migrate.cjs
 
 # Create admin user if not exists
 echo "Setting up admin user if needed..."
-node /app/scripts/setup.js
+node /app/scripts/setup.cjs
 
 # Start the application
 echo "Starting the application..."
