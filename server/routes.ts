@@ -931,6 +931,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Download file
+  app.get("/api/files/:fileId/download", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      const file = await storage.getFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check if user has access to the project
+      if (req.user.role !== "admin") {
+        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
+        if (!projectUser) {
+          return res.status(403).json({ message: "You don't have access to this file" });
+        }
+      }
+      
+      // Set content disposition to force download
+      res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+      
+      // Send the file
+      res.sendFile(file.filePath, { root: '/' });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Delete a file
   app.delete("/api/files/:fileId", isAuthenticated, async (req, res, next) => {
