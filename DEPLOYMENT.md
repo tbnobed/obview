@@ -297,21 +297,36 @@ For production environments, consider setting up cron jobs for regular backups a
 
 ## Troubleshooting
 
-### Important Note About Migrations Directory
+### Important Note About Docker Deployment Configuration
 
-The application uses the `migrations` directory for database migrations, not the `drizzle` directory. When deploying the application, ensure that:
+When deploying the application using Docker, ensure the following configuration is correct:
 
-1. The Dockerfile references the correct migrations directory:
+1. **Migrations Directory**: The application uses the `migrations` directory for database migrations, not the `drizzle` directory. The Dockerfile should have:
    ```
    COPY --from=builder /app/migrations ./migrations
    ```
 
-2. The database migration script (server/db-migrate.js) points to the correct directory:
+2. **Migration Script Path**: The docker-entrypoint.sh script must point to the correct path for the migration script:
+   ```bash
+   # Correct path in docker-entrypoint.sh
+   node /app/server/db-migrate.js
+   ```
+   
+3. **Server Directory**: Make sure the server directory is created and the migration script is copied:
+   ```
+   # Create server directory and copy migration script
+   RUN mkdir -p ./server
+   COPY --from=builder /app/server/db-migrate.js ./server/db-migrate.js
+   ```
+
+4. **Migration Folder Setting**: The database migration script must point to the correct directory:
    ```javascript
    await migrate(db, { migrationsFolder: 'migrations' });
    ```
 
-3. If you're experiencing Docker build failures with the message `"/app/drizzle": not found`, you need to update the Dockerfile to reference the correct directory as mentioned above.
+5. **Common Docker Errors**:
+   - If you see `"/app/drizzle": not found`, update the Dockerfile to use migrations directory
+   - If you see `Cannot find module '/app/dist/server/db-migrate.js'`, ensure the server directory and script are correctly copied
 
 ### Container Health Check Failures
 

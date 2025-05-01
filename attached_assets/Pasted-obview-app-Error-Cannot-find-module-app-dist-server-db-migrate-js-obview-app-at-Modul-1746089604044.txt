@@ -1,0 +1,46 @@
+obview_app  | Error: Cannot find module '/app/dist/server/db-migrate.js'
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | node:internal/modules/cjs/loader:1215
+obview_app  |   throw err;
+obview_app  |   ^
+obview_app  |
+obview_app  | Error: Cannot find module '/app/dist/server/db-migrate.js'
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_app  |
+obview_app  | Node.js v20.19.1
+obview_app  | Waiting for database to be ready...
+obview_app  | Waiting for PostgreSQL to become available on db:5432...
+obview_app  | PostgreSQL is up - continuing
+obview_app  | Running database migrations...
+obview_app  | node:internal/modules/cjs/loader:1215
+obview_app  |   throw err;
+obview_app  |   ^
+obview_app  |
+obview_app  | Error: Cannot find module '/app/dist/server/db-migrate.js'
+obview_app  |     at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+obview_app  |     at Module._load (node:internal/modules/cjs/loader:1043:27)
+obview_app  |     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+obview_app  |     at node:internal/main/run_main_module:28:49 {
+obview_app  |   code: 'MODULE_NOT_FOUND',
+obview_app  |   requireStack: []
+obview_app  | }
+obview_app  |
+obview_app  | Node.js v20.19.1
