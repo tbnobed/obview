@@ -23,6 +23,8 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - ADMIN_NAME=${ADMIN_NAME:-Administrator}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      # URL to use in emails and invitations (critical for email clickable links)
+      - APP_URL=${APP_URL:-https://obview.io}
       # Flag to signal a Docker environment to use proper database connection strategy
       - IS_DOCKER=true
     volumes:
