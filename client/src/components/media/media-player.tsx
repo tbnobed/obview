@@ -54,21 +54,40 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
   
   // Effect to handle initialTime changes
   useEffect(() => {
+    console.log("initialTime changed:", initialTime);
+    
     if (videoRef.current && initialTime !== null && initialTime !== undefined) {
+      console.log("Setting video time to:", initialTime);
       videoRef.current.currentTime = initialTime;
       setCurrentTime(initialTime);
+      
+      // Auto-play when jumping to a specific time
+      if (!isPlaying) {
+        console.log("Auto-playing video at timestamp");
+        videoRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch(err => console.error("Failed to auto-play:", err));
+      }
     }
   }, [initialTime]);
 
   // Handle metadata loaded
   const handleMetadataLoaded = () => {
     if (videoRef.current) {
+      console.log("Video metadata loaded, duration:", videoRef.current.duration);
       setDuration(videoRef.current.duration);
       
       // If initialTime is provided, set the video to that time
       if (initialTime !== null && initialTime !== undefined) {
+        console.log("Setting initial time on metadata load:", initialTime);
         videoRef.current.currentTime = initialTime;
         setCurrentTime(initialTime);
+        
+        // Auto-play when setting initial time
+        console.log("Auto-playing on metadata load");
+        videoRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch(err => console.error("Failed to auto-play on metadata load:", err));
       }
     }
   };

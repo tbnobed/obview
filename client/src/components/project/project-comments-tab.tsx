@@ -59,9 +59,23 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
   
   // Function to navigate to file with timestamp
   const navigateToComment = (comment: Comment & { file?: any }) => {
+    console.log("Navigating to comment:", comment);
+    
     if (comment.timestamp !== null && comment.file?.id) {
-      // Update URL to include time parameter for the specific file
-      navigate(`/projects/${projectId}?time=${comment.timestamp}&media=${comment.file.id}`);
+      // IMPORTANT: We need to store the target in sessionStorage because
+      // navigating with hash state isn't working reliably.
+      // The media tab's useEffect will check for this
+      sessionStorage.setItem('OBview_jumpToMedia', JSON.stringify({
+        fileId: comment.file.id,
+        timestamp: comment.timestamp,
+        projectId: projectId
+      }));
+      
+      // First navigate to the project page with media tab active
+      window.location.href = `/projects/${projectId}#media`;
+    } else {
+      console.log("Comment cannot be navigated to because:", 
+        comment.timestamp === null ? "timestamp is null" : "file.id is missing");
     }
   };
   

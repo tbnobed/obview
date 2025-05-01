@@ -93,15 +93,50 @@ export default function ProjectPage() {
   
   // Parse URL parameters for file ID and timestamp
   useEffect(() => {
-    // Parse the URL for potential media ID and timestamp parameters
+    // Check for hash in URL to set active tab
+    if (location.includes('#')) {
+      const hash = location.split('#')[1];
+      if (hash) {
+        setActiveTab(hash);
+      }
+    }
+    
+    // First check for stored jump data from comments tab
+    const jumpData = sessionStorage.getItem('OBview_jumpToMedia');
+    if (jumpData) {
+      try {
+        console.log("Found stored jump data:", jumpData);
+        const { fileId, timestamp, projectId: jumpProjectId } = JSON.parse(jumpData);
+        
+        // Make sure the project ID matches (in case of multiple projects open in tabs)
+        if (jumpProjectId === projectId) {
+          console.log("Setting media parameters from stored jump data:", { fileId, timestamp });
+          setSelectedFileId(fileId);
+          setInitialTime(timestamp);
+          setActiveTab("media");
+          
+          // Clear the stored data to prevent repeated jumps
+          sessionStorage.removeItem('OBview_jumpToMedia');
+          return;
+        }
+      } catch (e) {
+        console.error("Error parsing jump data:", e);
+        sessionStorage.removeItem('OBview_jumpToMedia');
+      }
+    }
+    
+    // If no stored data, parse URL query parameters
     if (location) {
+      console.log("Parsing URL params from location:", location);
       const url = new URL(window.location.href);
       const searchParams = new URLSearchParams(url.search);
+      console.log("Search params:", Object.fromEntries(searchParams.entries()));
       
       // Check for time parameter
       const timeParam = searchParams.get('time');
       if (timeParam) {
         const time = parseFloat(timeParam);
+        console.log("Found time parameter:", time);
         if (!isNaN(time)) {
           setInitialTime(time);
           setActiveTab("media");
@@ -110,15 +145,20 @@ export default function ProjectPage() {
       
       // Check for media ID parameter
       const mediaParam = searchParams.get('media');
-      if (mediaParam && files && files.length > 0) {
+      if (mediaParam) {
         const mediaId = parseInt(mediaParam);
-        if (!isNaN(mediaId) && files.some(file => file.id === mediaId)) {
+        console.log("Found media parameter:", mediaId);
+        console.log("Available files:", files);
+        
+        if (!isNaN(mediaId)) {
+          // Always set the file ID even if it's not in the current files list yet
+          // The files list might not be loaded yet
           setSelectedFileId(mediaId);
           setActiveTab("media");
         }
       }
     }
-  }, [location, files]);
+  }, [location, files, projectId]);
 
   const selectedFile = files?.find(file => file.id === selectedFileId);
   
