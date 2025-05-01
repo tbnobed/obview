@@ -1606,6 +1606,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { token } = req.params;
       console.log(`Retrieving invitation details for token: ${token}`);
+      console.log(`Request headers: ${JSON.stringify(req.headers)}`);
+      console.log(`Request URL: ${req.url}, Original URL: ${req.originalUrl}`);
+      console.log(`Request method: ${req.method}, Protocol: ${req.protocol}, Host: ${req.get('host')}`);
       
       // Find the invitation
       const invitation = await storage.getInvitationByToken(token);
