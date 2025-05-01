@@ -5,6 +5,7 @@ import { setupAuth, generateToken, hashPassword } from "./auth";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
+import * as fsSync from "fs";
 import { z } from "zod";
 import { 
   insertProjectSchema,
@@ -13,6 +14,8 @@ import {
   insertProjectUserSchema,
   insertApprovalSchema
 } from "@shared/schema";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -237,10 +240,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const logDir = path.join(__dirname, 'logs');
           const logFilePath = path.join(logDir, 'sendgrid.log');
           
-          if (fs.existsSync(logFilePath)) {
+          if (fsSync.existsSync(logFilePath)) {
             // Get last 20 lines of log file
-            const logContent = fs.readFileSync(logFilePath, 'utf8');
-            const logLines = logContent.split('\n').filter(line => line.trim());
+            const logContent = fsSync.readFileSync(logFilePath, 'utf8');
+            const logLines = logContent.split('\n').filter((line: string) => line.trim());
             logs = logLines.slice(-20).join('\n');
           }
         } catch (error) {
