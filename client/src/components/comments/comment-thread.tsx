@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { Comment } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
 import CommentForm from "./comment-form";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
-import { useDeleteComment, useToggleCommentResolution } from "@/hooks/use-comments";
+import { useDeleteComment } from "@/hooks/use-comments";
 
 interface CommentThreadProps {
   comment: Comment & { user?: any };
@@ -26,9 +28,6 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
   // Delete comment mutation
   const deleteCommentMutation = useDeleteComment(comment.fileId);
   
-  // Toggle comment resolution mutation
-  const toggleResolutionMutation = useToggleCommentResolution(comment.fileId);
-  
   // Find replies to this comment
   const replies = comments.filter(c => c.parentId === comment.id);
   
@@ -40,12 +39,33 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // Toggle comment resolution status mutation
+  const toggleResolutionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PATCH", `/api/comments/${comment.id}`, {
+        isResolved: !comment.isResolved
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: comment.isResolved ? "Comment marked as unresolved" : "Comment marked as resolved",
+        description: "",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/files/${comment.fileId}/comments`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update comment",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle resolve/unresolve comment
   const handleToggleResolution = () => {
-    toggleResolutionMutation.mutate({ 
-      commentId: comment.id, 
-      isResolved: !comment.isResolved 
-    });
+    toggleResolutionMutation.mutate();
   };
   
   // Handle delete comment
@@ -95,8 +115,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
           onTimeClick(comment.timestamp);
         }
       }}
-      ref={isActive ? commentsRef : undefined}
-    >
+      ref={isActive ? commentsRef : undefined}>
       <div className="flex space-x-2">
         <Avatar className="h-7 w-7 mt-0.5 hidden sm:block">
           <AvatarFallback className="bg-primary-100 text-primary-700 text-xs">

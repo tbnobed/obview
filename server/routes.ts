@@ -1541,15 +1541,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Sending invitation email to ${email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email with request-based URL
-            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            // Send the invitation email
             emailSent = await sendInvitationEmail(
               email,
               inviter.name,
               project.name,
               role,
-              token,
-              baseUrl
+              token
             );
             
             if (emailSent) {
@@ -1606,9 +1604,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { token } = req.params;
       console.log(`Retrieving invitation details for token: ${token}`);
-      console.log(`Request headers: ${JSON.stringify(req.headers)}`);
-      console.log(`Request URL: ${req.url}, Original URL: ${req.originalUrl}`);
-      console.log(`Request method: ${req.method}, Protocol: ${req.protocol}, Host: ${req.get('host')}`);
       
       // Find the invitation
       const invitation = await storage.getInvitationByToken(token);
@@ -1718,63 +1713,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // DEBUG Endpoint: Test SendGrid invitation email directly
-  // This endpoint is for development/testing only and should be removed in production
-  app.post("/api/debug/send-test-invitation", isAuthenticated, async (req, res, next) => {
-    try {
-      if (req.user.role !== "admin") {
-        return res.status(403).json({ message: "Unauthorized. Only admins can access this endpoint." });
-      }
-      
-      const { to, projectName = "Test Project", inviterName = "Test User" } = req.body;
-      
-      if (!to) {
-        return res.status(400).json({ message: "Email address is required" });
-      }
-      
-      // Import the sendInvitationEmail function
-      const { sendInvitationEmail } = await import('./utils/sendgrid');
-      
-      console.log(`Sending test invitation email to ${to}`);
-      console.log(`Request protocol: ${req.protocol}, host: ${req.get('host')}`);
-      
-      // Generate a fake token for testing
-      const testToken = "test-invitation-token-" + Date.now();
-      
-      // Pass in the current req protocol and host for the base URL
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      console.log(`Using base URL: ${baseUrl}`);
-      
-      const emailSent = await sendInvitationEmail(
-        to,
-        inviterName,
-        projectName,
-        "viewer",
-        testToken,
-        baseUrl
-      );
-      
-      if (emailSent) {
-        res.json({ 
-          success: true, 
-          message: `Test invitation email sent to ${to}. Check the logs for details.`,
-          inviteUrl: `${baseUrl}/invite/${testToken}`,
-          apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
-          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled" 
-        });
-      } else {
-        res.status(500).json({ 
-          success: false, 
-          message: `Failed to send test invitation email to ${to}. Check the logs for details.`,
-          apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
-          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
-        });
-      }
-    } catch (error) {
-      next(error);
-    }
-  });
-  
   // DEBUG Endpoint: Test SendGrid email directly 
   // This endpoint is for development/testing only and should be removed in production
   app.post("/api/debug/send-test-email", isAuthenticated, async (req, res, next) => {
@@ -1988,15 +1926,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email with request-based URL
-            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            // Send the invitation email
             emailSent = await sendInvitationEmail(
               invitation.email,
               inviter.name,
               project.name,
               invitation.role,
-              invitation.token,
-              baseUrl
+              invitation.token
             );
             
             if (emailSent) {
@@ -2189,88 +2125,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       user: req.user || null
     });
   });
-  
-  // Handle frontend client-side routes explicitly to make debugging easier
-  const clientRoutes = [
-    "/invite/:token",
-    "/auth",
-    "/projects",
-    "/projects/new",
-    "/projects/:id",
-    "/projects/:id/upload",
-    "/settings",
-    "/admin"
-  ];
-  
-  // Register each client route
-  clientRoutes.forEach(route => {
-    app.get(route, (req, res) => {
-      console.log(`FRONTEND ROUTE: Received request for ${route} route, params:`, req.params);
-      console.log(`Request URL: ${req.url}, Original URL: ${req.originalUrl}`);
-      
-      // Forward to the SPA - in development mode, use the client's index file directly
-      const indexPath = process.env.NODE_ENV === "development" 
-        ? path.resolve("./client/index.html") 
-        : path.resolve("./dist/index.html");
-      
-      console.log(`Serving SPA from: ${indexPath}`);
-      res.sendFile(indexPath);
-    });
-  });
-  
-  // API endpoint to get invitation details
-  app.get("/api/invite/:token", async (req, res, next) => {
-    try {
-      const { token } = req.params;
-      console.log(`Getting invitation details for token: ${token}`);
-      
-      // Retrieve the invitation
-      const invitation = await storage.getInvitationByToken(token);
-      
-      if (!invitation) {
-        console.log(`Invitation not found for token: ${token}`);
-        return res.status(404).json({ message: "Invitation not found or invalid link" });
-      }
-      
-      // Check if the invitation has expired
-      const now = new Date();
-      const isExpired = now > invitation.expiresAt;
-      console.log(`Invitation expiry check: now=${now.toISOString()}, expiresAt=${invitation.expiresAt}, isExpired=${isExpired}`);
-      
-      if (isExpired) {
-        return res.status(400).json({ message: "This invitation has expired" });
-      }
-      
-      // Get related data
-      const project = invitation.projectId ? await storage.getProject(invitation.projectId) : null;
-      const creator = await storage.getUser(invitation.createdById);
-      
-      // Return invitation details (exclude sensitive data)
-      res.status(200).json({
-        id: invitation.id,
-        email: invitation.email,
-        role: invitation.role,
-        isAccepted: invitation.isAccepted,
-        expiresAt: invitation.expiresAt,
-        creator: creator ? {
-          id: creator.id,
-          name: creator.name,
-          email: creator.email
-        } : null,
-        project: project ? {
-          id: project.id,
-          name: project.name
-        } : null
-      });
-    } catch (error) {
-      console.error("Error retrieving invitation details:", error);
-      next(error);
-    }
-  });
-  
-  // We're removing the catch-all route since it interferes with Vite in development
-  // Vite will handle serving the frontend in development, and the static middleware will handle it in production
-  // This approach allows our specific frontend routes to work while letting Vite handle the rest
 
   const httpServer = createServer(app);
 

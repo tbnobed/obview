@@ -170,7 +170,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
  * @param projectName Name of the project
  * @param role Role granted in the project
  * @param token Invitation token
- * @param appUrl Base URL of the application (most reliable method, should be formatted as protocol://host)
+ * @param appUrl Base URL of the application
  * @returns Promise<boolean> Success status
  */
 export async function sendInvitationEmail(
@@ -188,22 +188,17 @@ export async function sendInvitationEmail(
     // Determine the correct invite URL using the best available option
     let baseUrl: string;
     
-    // First priority: Explicitly provided appUrl parameter (from request protocol and host)
+    // First priority: Explicitly provided appUrl parameter
     if (appUrl) {
       baseUrl = appUrl;
-      logToFile(`Using explicitly provided app URL from request: ${baseUrl}`);
+      logToFile(`Using explicitly provided app URL: ${baseUrl}`);
     }
-    // Second priority: APP_HOST_URL environment variable - this is the same as what we use for file sharing
-    else if (process.env.APP_HOST_URL) {
-      baseUrl = process.env.APP_HOST_URL;
-      logToFile(`Using APP_HOST_URL environment variable: ${baseUrl}`);
-    }
-    // Third priority: APP_URL environment variable
+    // Second priority: APP_URL environment variable
     else if (process.env.APP_URL) {
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // Fourth priority: REPLIT environment with various environment variable combinations
+    // Third priority: REPLIT environment with various environment variable combinations
     else if (process.env.REPL_ID) {
       // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (most reliable)
       if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
