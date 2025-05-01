@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -8,8 +9,8 @@ from config import Config
 # Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
-login_manager = LoginManager()
-login_manager.login_view = 'auth.login'
+login = LoginManager()
+login.login_view = 'auth.login'
 socketio = SocketIO()
 
 def create_app(config_class=Config):
@@ -19,8 +20,11 @@ def create_app(config_class=Config):
     # Initialize extensions with app
     db.init_app(app)
     migrate.init_app(app, db)
-    login_manager.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*")
+    login.init_app(app)
+    socketio.init_app(app, cors_allowed_origins="*")  # Allow all origins for websocket
+    
+    # Create upload directory if it doesn't exist
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
     # Register blueprints
     from app.auth import bp as auth_bp
@@ -32,10 +36,7 @@ def create_app(config_class=Config):
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
     
-    # Create upload folder if it doesn't exist
-    import os
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    
     return app
 
-from app import models
+# Import models to ensure they are registered with SQLAlchemy
+from app.models import user, project, file, comment, approval
