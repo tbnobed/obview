@@ -29,24 +29,9 @@ import { ProjectTeamMembers } from "@/components/project/project-team-members";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { ShareUrlInput } from "@/components/share-url-input";
 
-// Component to display share URL with proper environment detection
-function ShareUrlInput({ projectId }: { projectId: number }) {
-  const [shareUrl, setShareUrl] = useState("");
-  
-  useEffect(() => {
-    // Get the proper URL for the current environment
-    setShareUrl(getProjectShareUrl(projectId));
-  }, [projectId]);
-  
-  return (
-    <Input 
-      readOnly
-      value={shareUrl}
-      className="flex-1"
-    />
-  );
-}
+
 
 
 
