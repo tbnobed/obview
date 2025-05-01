@@ -1469,10 +1469,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new invitation
   app.post("/api/invite", isAuthenticated, async (req, res, next) => {
     try {
-      const { email, projectId, role = "viewer" } = req.body;
+      const { email, projectId, role = "viewer", clientDomain } = req.body;
       
       if (!email || !projectId) {
         return res.status(400).json({ message: "Email and projectId are required" });
+      }
+      
+      // Log the client domain if provided
+      if (clientDomain) {
+        console.log(`Client domain provided for invitation: ${clientDomain}`);
       }
       
       const project = await storage.getProject(parseInt(projectId));
@@ -1541,13 +1546,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Sending invitation email to ${email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email
+            // Send the invitation email (with client domain if provided)
             emailSent = await sendInvitationEmail(
               email,
               inviter.name,
               project.name,
               role,
-              token
+              token,
+              clientDomain // Pass the client domain (undefined if not provided)
             );
             
             if (emailSent) {
@@ -1889,6 +1895,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/invite/:id/resend", isAuthenticated, async (req, res, next) => {
     try {
       const invitationId = parseInt(req.params.id);
+      const { clientDomain } = req.body; // Get client domain from request body
+      
+      // Log the client domain if provided
+      if (clientDomain) {
+        console.log(`Client domain provided for resending invitation: ${clientDomain}`);
+      }
       
       // Get the invitation
       const invitation = await storage.getInvitationById(invitationId);
@@ -1926,13 +1938,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (inviter && project) {
             console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
             
-            // Send the invitation email
+            // Send the invitation email with client domain (if provided)
             emailSent = await sendInvitationEmail(
               invitation.email,
               inviter.name,
               project.name,
               invitation.role,
-              invitation.token
+              invitation.token,
+              clientDomain // Pass the client domain (undefined if not provided)
             );
             
             if (emailSent) {

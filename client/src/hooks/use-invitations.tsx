@@ -161,8 +161,10 @@ export function useResendInvitation() {
   return useMutation({
     mutationFn: async (invitationId: number) => {
       try {
-        // apiRequest already returns parsed JSON, no need to call .json() again
-        const data = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
+        // Include the client's domain for constructing the invite URL
+        const data = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
+          clientDomain: window.location.origin
+        });
         return data;
       } catch (error) {
         console.error("Error resending invitation:", error);
