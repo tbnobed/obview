@@ -11,19 +11,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("account");
 
-  const formSchema = z.object({
+  // Create separate schema for each tab
+  const accountFormSchema = z.object({
     name: z.string().min(2, {
       message: "Name must be at least 2 characters.",
     }),
     email: z.string().email({
       message: "Please enter a valid email address.",
     }),
+  });
+  
+  const passwordFormSchema = z.object({
     currentPassword: z.string().min(6, {
       message: "Current password must be at least 6 characters.",
     }),
@@ -37,6 +42,19 @@ export default function SettingsPage() {
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
+  
+  // Combined schema with all fields
+  const formSchema = z.object({
+    name: z.string().min(2, {
+      message: "Name must be at least 2 characters.",
+    }),
+    email: z.string().email({
+      message: "Please enter a valid email address.",
+    }),
+    currentPassword: z.string().optional(),
+    newPassword: z.string().optional(),
+    confirmPassword: z.string().optional(),
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,19 +67,61 @@ export default function SettingsPage() {
     },
   });
 
+  const [isUpdating, setIsUpdating] = useState(false);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) return;
+    
+    setIsUpdating(true);
     try {
-      // Here you would call an API to update the user's profile
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
-      });
-    } catch (error) {
+      // Separate account update from password update based on active tab
+      if (activeTab === "account") {
+        // Only send name and email for account update
+        const response = await fetch(`/api/users/${user.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: values.name,
+            email: values.email,
+          }),
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to update profile');
+        }
+        
+        // Update the user data in auth context
+        const updatedUser = await response.json();
+        // This will trigger a refetch of user data
+        queryClient.setQueryData(["/api/user"], updatedUser);
+        
+        toast({
+          title: "Profile updated",
+          description: "Your account information has been updated successfully.",
+        });
+      } else if (activeTab === "password") {
+        // Password update logic would go here
+        // This would typically require a separate endpoint
+        // that validates the current password before allowing changes
+        
+        toast({
+          title: "Password update not implemented",
+          description: "Password update functionality is not fully implemented yet.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "There was an error updating your profile.",
+        description: error.message || "There was an error updating your profile.",
         variant: "destructive",
       });
+    } finally {
+      setIsUpdating(false);
     }
   }
 
@@ -130,7 +190,16 @@ export default function SettingsPage() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit">Update account</Button>
+                    <Button type="submit" disabled={isUpdating}>
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Update account"
+                      )}
+                    </Button>
                   </form>
                 </Form>
               </CardContent>
@@ -185,7 +254,16 @@ export default function SettingsPage() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit">Change password</Button>
+                    <Button type="submit" disabled={isUpdating}>
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Change password"
+                      )}
+                    </Button>
                   </form>
                 </Form>
               </CardContent>
