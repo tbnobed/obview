@@ -32,7 +32,7 @@ COPY --from=builder /app/uploads ./uploads
 COPY --from=builder /app/drizzle.config.ts ./
 
 # Add database migration files and scripts
-COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/.env* ./
 
