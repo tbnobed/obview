@@ -21,15 +21,15 @@ function logToFile(message: string): void {
   fs.appendFileSync(logFilePath, logMessage);
 }
 
-// Use the API key, prioritizing NEW_SENDGRID_API_KEY if available
-const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
+// Use a single standard API key variable
+const apiKey = process.env.SENDGRID_API_KEY;
 
 if (!apiKey) {
   const warning = "No SendGrid API key found. Email functionality will not work.";
   console.warn(warning);
   logToFile(warning);
 } else {
-  logToFile(`SendGrid API key is set (${apiKey === process.env.NEW_SENDGRID_API_KEY ? 'using NEW_SENDGRID_API_KEY' : 'using SENDGRID_API_KEY'}). Email functionality should be working.`);
+  logToFile("SendGrid API key is set. Email functionality should be working.");
 }
 
 // Initialize the SendGrid mail service with API key
@@ -77,6 +77,14 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     
     // Prepare email data with configurable sandbox mode
     // The account now has a verified sender (alerts@obedtv.com)
+    const isSandboxEnabled = process.env.SENDGRID_SANDBOX === 'true';
+    logToFile(`SendGrid sandbox mode is ${isSandboxEnabled ? 'ENABLED' : 'DISABLED'}`);
+    
+    // Check SendGrid account status
+    if (process.env.NODE_ENV === 'development') {
+      logToFile(`Running in development mode - some email providers may filter development emails`);
+    }
+    
     const emailData = {
       to: params.to,
       from: params.from,
@@ -85,10 +93,19 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html || '',
       mail_settings: {
         sandbox_mode: {
-          enable: process.env.SENDGRID_SANDBOX === 'true' ? true : false
+          enable: isSandboxEnabled
         }
       }
     };
+    
+    // Log more information about the email delivery
+    console.log(`Sending email to ${params.to} from ${params.from} with subject: ${params.subject}`);
+    logToFile(`Environment: ${process.env.NODE_ENV || 'not set'}`);
+    logToFile(`Email delivery might be affected by: 
+    - Email provider spam filters
+    - SendGrid delivery delays
+    - SendGrid account restrictions
+    - Receiving server filtering`);
     
     logToFile(`Sending email via SendGrid...`);
     const response = await mailService.send(emailData);
