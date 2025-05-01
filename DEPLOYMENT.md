@@ -297,6 +297,22 @@ For production environments, consider setting up cron jobs for regular backups a
 
 ## Troubleshooting
 
+### Important Note About Migrations Directory
+
+The application uses the `migrations` directory for database migrations, not the `drizzle` directory. When deploying the application, ensure that:
+
+1. The Dockerfile references the correct migrations directory:
+   ```
+   COPY --from=builder /app/migrations ./migrations
+   ```
+
+2. The database migration script (server/db-migrate.js) points to the correct directory:
+   ```javascript
+   await migrate(db, { migrationsFolder: 'migrations' });
+   ```
+
+3. If you're experiencing Docker build failures with the message `"/app/drizzle": not found`, you need to update the Dockerfile to reference the correct directory as mentioned above.
+
 ### Container Health Check Failures
 
 The Docker Compose setup includes health checks for both app and database containers. If health checks fail:

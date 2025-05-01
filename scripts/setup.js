@@ -49,7 +49,7 @@ async function main() {
     // Create admin user
     console.log(`Creating admin user: ${ADMIN_USERNAME}`);
     await pool.query(
-      'INSERT INTO users (username, password, email, name, role, "createdAt") VALUES ($1, $2, $3, $4, $5, NOW())',
+      'INSERT INTO users (username, password, email, name, role, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
       [ADMIN_USERNAME, hashedPassword, ADMIN_EMAIL, ADMIN_NAME, 'admin']
     );
     
