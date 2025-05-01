@@ -21,15 +21,18 @@ function logToFile(message: string): void {
   fs.appendFileSync(logFilePath, logMessage);
 }
 
-// Use a single standard API key variable
-const apiKey = process.env.SENDGRID_API_KEY;
+// Use a single standard API key variable - try NEW_SENDGRID_API_KEY first, then fall back to SENDGRID_API_KEY
+const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
 
 if (!apiKey) {
   const warning = "No SendGrid API key found. Email functionality will not work.";
   console.warn(warning);
   logToFile(warning);
 } else {
-  logToFile("SendGrid API key is set. Email functionality should be working.");
+  const keySource = process.env.NEW_SENDGRID_API_KEY 
+    ? "NEW_SENDGRID_API_KEY" 
+    : "SENDGRID_API_KEY";
+  logToFile(`SendGrid API key is set from ${keySource}. Email functionality should be working.`);
 }
 
 // Initialize the SendGrid mail service with API key
@@ -69,7 +72,10 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     
     // Log API key state (not the actual key for security)
     const apiKeyLength = apiKey.length;
-    logToFile(`Using SendGrid API key (${apiKeyLength} characters)`);
+    const keySource = process.env.NEW_SENDGRID_API_KEY 
+      ? "NEW_SENDGRID_API_KEY" 
+      : "SENDGRID_API_KEY";
+    logToFile(`Using SendGrid API key from ${keySource} (${apiKeyLength} characters)`);
     
     // Ensure the API key is properly set in the mail service
     mailService.setApiKey(apiKey);
