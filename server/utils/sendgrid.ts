@@ -207,12 +207,21 @@ export async function sendInvitationEmail(
       baseUrl = appUrl;
       logToFile(`Using explicitly provided app URL: ${baseUrl}`);
     }
-    // Second priority: APP_URL environment variable
+    // Second priority: APP_URL environment variable 
     else if (process.env.APP_URL) {
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // Third priority (fallback): Local development or container host
+    // Third priority: Replit-specific environment (REPLIT_DOMAINS or REPLIT_DEV_DOMAIN)
+    else if (process.env.REPLIT_DOMAINS) {
+      baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
+      logToFile(`Using Replit domain (REPLIT_DOMAINS): ${baseUrl}`);
+    }
+    else if (process.env.REPLIT_DEV_DOMAIN) {
+      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+      logToFile(`Using Replit domain (REPLIT_DEV_DOMAIN): ${baseUrl}`);
+    }
+    // Fourth priority (fallback): Local development or container host
     else {
       // Default to secured production URL if in production mode
       if (process.env.NODE_ENV === 'production') {
