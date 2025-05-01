@@ -1718,6 +1718,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DEBUG Endpoint: Test SendGrid invitation email directly
+  // This endpoint is for development/testing only and should be removed in production
+  app.post("/api/debug/send-test-invitation", isAuthenticated, async (req, res, next) => {
+    try {
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Unauthorized. Only admins can access this endpoint." });
+      }
+      
+      const { to, projectName = "Test Project", inviterName = "Test User" } = req.body;
+      
+      if (!to) {
+        return res.status(400).json({ message: "Email address is required" });
+      }
+      
+      // Import the sendInvitationEmail function
+      const { sendInvitationEmail } = await import('./utils/sendgrid');
+      
+      console.log(`Sending test invitation email to ${to}`);
+      console.log(`Request protocol: ${req.protocol}, host: ${req.get('host')}`);
+      
+      // Generate a fake token for testing
+      const testToken = "test-invitation-token-" + Date.now();
+      
+      // Pass in the current req protocol and host for the base URL
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      console.log(`Using base URL: ${baseUrl}`);
+      
+      const emailSent = await sendInvitationEmail(
+        to,
+        inviterName,
+        projectName,
+        "viewer",
+        testToken,
+        baseUrl
+      );
+      
+      if (emailSent) {
+        res.json({ 
+          success: true, 
+          message: `Test invitation email sent to ${to}. Check the logs for details.`,
+          inviteUrl: `${baseUrl}/invite/${testToken}`,
+          apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled" 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: `Failed to send test invitation email to ${to}. Check the logs for details.`,
+          apiKey: process.env.SENDGRID_API_KEY ? "API key is set" : "API key is missing",
+          sandboxMode: process.env.SENDGRID_SANDBOX === 'true' ? "enabled" : "disabled"
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+  
   // DEBUG Endpoint: Test SendGrid email directly 
   // This endpoint is for development/testing only and should be removed in production
   app.post("/api/debug/send-test-email", isAuthenticated, async (req, res, next) => {
@@ -2131,6 +2188,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       session: req.session,
       user: req.user || null
     });
+  });
+  
+  // Debug route for frontend invite paths
+  app.get("/invite/:token", (req, res) => {
+    console.log(`FRONTEND ROUTE: Received request for invitation page with token: ${req.params.token}`);
+    console.log(`Request URL: ${req.url}, Original URL: ${req.originalUrl}`);
+    console.log(`Request headers: ${JSON.stringify(req.headers)}`);
+    
+    // Forward to the SPA
+    res.sendFile(path.resolve("./dist/index.html"));
   });
 
   const httpServer = createServer(app);
