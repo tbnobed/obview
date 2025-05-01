@@ -56,7 +56,8 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
       });
       
       // Force a refetch by invalidating the comments query
-      queryClient.invalidateQueries({ queryKey: [`/api/files/${comment.fileId}/comments`] });
+      // Use array-format query key to match the format used in the hooks
+      queryClient.invalidateQueries({ queryKey: ['/api/files', comment.fileId, 'comments'] });
       
       // Also invalidate any project comments queries that might exist
       queryClient.invalidateQueries({ queryKey: ['/api/projects', null, 'comments'] });
