@@ -1,5 +1,6 @@
 from flask import render_template, jsonify, current_app
 from flask_login import login_required
+from flask_socketio import join_room, leave_room
 from app.main import bp
 from app import socketio
 
@@ -32,7 +33,7 @@ def handle_join(data):
     """Join a room for real-time updates"""
     room = data.get('room')
     if room:
-        socketio.join_room(room)
+        join_room(room)
         print(f'Client joined room: {room}')
 
 @socketio.on('leave')
@@ -40,5 +41,5 @@ def handle_leave(data):
     """Leave a room"""
     room = data.get('room')
     if room:
-        socketio.leave_room(room)
+        leave_room(room)
         print(f'Client left room: {room}')

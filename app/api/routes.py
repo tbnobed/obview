@@ -3,6 +3,7 @@ from functools import wraps
 import uuid
 from flask import jsonify, request, current_app, g, send_file
 from flask_login import current_user, login_required
+from flask_socketio import emit
 from werkzeug.utils import secure_filename
 from app import db, socketio
 from app.api import bp
