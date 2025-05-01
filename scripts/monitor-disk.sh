@@ -39,8 +39,18 @@ get_uploads_details() {
 
 # Get database size
 get_db_size() {
+  # First try to use Docker Compose to get DB size info
+  if command -v docker-compose &> /dev/null; then
+    echo "Database size info (via Docker):"
+    if docker-compose ps | grep -q db; then
+      docker-compose exec -T db psql -U postgres -d obview -c "SELECT pg_size_pretty(pg_database_size('obview')) AS db_size;"
+      return
+    fi
+  fi
+  
+  # Fallback to direct connection if Docker Compose not available
   if [ -n "$DATABASE_URL" ]; then
-    echo "Database size info:"
+    echo "Database size info (via direct connection):"
     # Extract connection info from DATABASE_URL
     DB_USER=$(echo $DATABASE_URL | sed -e 's/^.*:\/\/\(.*\):.*@.*$/\1/')
     DB_PASSWORD=$(echo $DATABASE_URL | sed -e 's/^.*:\/\/.*:\(.*\)@.*$/\1/')
@@ -50,7 +60,7 @@ get_db_size() {
     
     PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT pg_size_pretty(pg_database_size('$DB_NAME')) AS db_size;"
   else
-    echo "DATABASE_URL not set. Skipping database size check."
+    echo "DATABASE_URL not set and Docker not available. Skipping database size check."
   fi
 }
 

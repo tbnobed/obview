@@ -218,7 +218,9 @@ docker-compose up -d
 
 #### Backup and Restore Database
 
-OBview.io includes automated scripts for database backup and restoration:
+OBview.io includes automated scripts for comprehensive backup and restoration:
+
+##### Database Backups
 
 ```bash
 # Backup the database using the automated script (maintains the last 5 backups)
@@ -237,11 +239,56 @@ docker-compose exec app /app/scripts/restore-db.sh /app/backups/obview_backup_20
 cat backup_file.sql | docker-compose exec -T db psql -U postgres -d obview
 ```
 
-For production environments, consider setting up a cron job for regular backups:
+##### Volume Backups (for uploads and database data)
 
 ```bash
-# Add to crontab (backup daily at 2 AM)
+# Stop the application first for consistent backups
+docker-compose stop
+
+# Backup all volumes
+/app/scripts/backup-volumes.sh /path/to/backup/directory
+
+# Restart the application
+docker-compose start
+
+# Restore volumes from backup (with application stopped)
+docker-compose stop
+/app/scripts/restore-volumes.sh /path/to/backup/directory/obview_volumes_20250501_123045.tar.gz
+docker-compose start
+```
+
+**Important:** The backup scripts target Docker volumes named `workspace_postgres_data` and `workspace_uploads` by default. If your Docker Compose project directory has a different name, the volume names will be prefixed differently. Edit the scripts before using them:
+
+```bash
+# To see your actual Docker volume names
+docker volume ls
+
+# Edit the scripts if needed
+nano /app/scripts/backup-volumes.sh
+nano /app/scripts/restore-volumes.sh
+```
+
+##### Disk Space Monitoring
+
+```bash
+# Check disk space usage with alerts
+/app/scripts/monitor-disk.sh
+
+# View detailed disk usage information
+docker-compose exec app df -h
+```
+
+For production environments, consider setting up cron jobs for regular backups and monitoring:
+
+```bash
+# Add to crontab - Database backup daily at 2 AM
 0 2 * * * docker-compose -f /path/to/docker-compose.yml exec -T app /app/scripts/backup-db.sh >> /var/log/obview-backup.log 2>&1
+
+# Add to crontab - Volume backup weekly on Sunday at 3 AM
+0 3 * * 0 cd /path/to/obview && /app/scripts/backup-volumes.sh >> /var/log/obview-volume-backup.log 2>&1
+
+# Add to crontab - Disk space monitoring hourly
+0 * * * * /app/scripts/monitor-disk.sh >> /var/log/obview-disk-monitor.log 2>&1
 ```
 
 ## Troubleshooting
@@ -308,3 +355,69 @@ If file uploads fail or uploaded files are not accessible:
    ```bash
    docker-compose exec app touch /app/uploads/test_file && docker-compose exec app rm /app/uploads/test_file
    ```
+
+## Disaster Recovery
+
+OBview.io includes a comprehensive disaster recovery strategy to help you quickly restore operations in case of failures.
+
+### Complete System Recovery
+
+In case of a complete system failure, follow these steps to recover:
+
+1. Install Docker and Docker Compose on the new system (follow installation instructions above)
+2. Clone the repository and set up environment variables
+3. Restore the database and volumes from backups:
+
+```bash
+# Copy backup files to the new server
+scp obview_backup_YYYYMMDD.sql new-server:/tmp/
+scp obview_volumes_YYYYMMDD.tar.gz new-server:/tmp/
+
+# On the new server
+mkdir -p /path/to/obview
+cd /path/to/obview
+
+# Set up environment
+cp .env.example .env
+nano .env  # Configure environment variables
+
+# Restore volumes from backup
+./scripts/restore-volumes.sh /tmp/obview_volumes_YYYYMMDD.tar.gz
+
+# Start containers
+docker-compose up -d
+
+# Restore database
+docker-compose exec app /app/scripts/restore-db.sh /tmp/obview_backup_YYYYMMDD.sql
+```
+
+### Recovery Time Objectives
+
+The OBview.io disaster recovery process is designed to minimize downtime:
+
+- **RTO (Recovery Time Objective)**: 30-60 minutes for a complete system restore from backups
+- **RPO (Recovery Point Objective)**: Depends on backup frequency - daily backups mean maximum 24 hours of data loss
+
+### Testing Disaster Recovery
+
+It's recommended to regularly test the disaster recovery process:
+
+```bash
+# Create a test environment
+mkdir -p /path/to/test-recovery
+cd /path/to/test-recovery
+
+# Clone the repository
+git clone <repository-url> .
+
+# Copy your production .env file (adjust sensitive values for testing)
+cp /path/to/production/.env .
+
+# Test the restoration process
+./scripts/restore-volumes.sh /path/to/backup/obview_volumes_YYYYMMDD.tar.gz
+docker-compose up -d
+docker-compose exec app /app/scripts/restore-db.sh /path/to/backup/obview_backup_YYYYMMDD.sql
+
+# Verify application functionality
+curl http://localhost:3000/api/health
+```
