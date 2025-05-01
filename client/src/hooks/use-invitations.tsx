@@ -161,8 +161,12 @@ export function useResendInvitation() {
   return useMutation({
     mutationFn: async (invitationId: number) => {
       try {
+        // Include the current window origin for email links to work across all environments
+        const clientUrl = window.location.origin;
+        console.log(`Using client URL for resending invitation: ${clientUrl}`);
+        
         // apiRequest already returns parsed JSON, no need to call .json() again
-        const data = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
+        const data = await apiRequest("POST", `/api/invite/${invitationId}/resend`, { clientUrl });
         return data;
       } catch (error) {
         console.error("Error resending invitation:", error);

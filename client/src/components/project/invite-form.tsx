@@ -54,11 +54,11 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
         (async () => {
           try {
             // Include the client URL in the resend request too
-const clientUrl = window.location.origin;
-console.log(`Using client URL for resending invitation: ${clientUrl}`);
-const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
-  clientUrl
-});
+            const clientUrl = window.location.origin;
+            console.log(`Using client URL for resending invitation: ${clientUrl}`);
+            const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
+              clientUrl
+            });
             console.log("Auto-resend response:", resendResponse);
             
             const emailSent = resendResponse?.emailSent;
