@@ -3,7 +3,7 @@ import { File, Comment } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Share, DownloadCloud, Play, Pause, Volume2, Maximize, Type, Layers, Check, AlertCircle } from "lucide-react";
+import { Play, Pause, Volume2, Maximize, Type, Layers, Check, AlertCircle } from "lucide-react";
 import TimelineComments from "./timeline-comments";
 import { useApprovals, useComments } from "@/hooks/use-comments";
 import { useMutation } from "@tanstack/react-query";
@@ -13,6 +13,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ShareLinkButton } from "@/components/share-link-button";
+import { DownloadButton } from "@/components/download-button";
 
 interface MediaPlayerProps {
   file?: File;

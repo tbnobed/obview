@@ -966,7 +966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = req.params.token;
       // Find file by share token
       const files = await storage.getAllFiles();
-      const file = files.find(f => f.shareToken === token);
+      const file = files.find((f: File) => f.shareToken === token);
       
       if (!file) {
         return res.status(404).json({ message: "Shared file not found" });
