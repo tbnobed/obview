@@ -367,14 +367,21 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
               </div>
               
               <div className="flex space-x-2">
-                <Button variant="outline" size="sm" className="flex items-center">
-                  <Download className="h-4 w-4 mr-1.5" />
-                  Download
-                </Button>
-                <Button variant="outline" size="sm" className="flex items-center">
-                  <Share className="h-4 w-4 mr-1.5" />
-                  Share
-                </Button>
+                {file && (
+                  <>
+                    <DownloadButton 
+                      fileId={file.id} 
+                      filename={file.filename} 
+                      size="sm" 
+                      variant="outline" 
+                    />
+                    <ShareLinkButton 
+                      fileId={file.id} 
+                      size="sm" 
+                      variant="outline" 
+                    />
+                  </>
+                )}
               </div>
             </div>
             
@@ -462,7 +469,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium">File Versions</h3>
                   <Button className="flex items-center" size="sm">
-                    <DownloadCloud className="h-4 w-4 mr-1.5" />
+                    <Layers className="h-4 w-4 mr-1.5" />
                     Upload New Version
                   </Button>
                 </div>
