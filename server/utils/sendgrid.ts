@@ -21,34 +21,20 @@ function logToFile(message: string): void {
   fs.appendFileSync(logFilePath, logMessage);
 }
 
-// Check for both possible API key environment variables
-const apiKey = process.env.NEW_SENDGRID_API_KEY || process.env.SENDGRID_API_KEY;
+// Use a single standard API key variable
+const apiKey = process.env.SENDGRID_API_KEY;
 
 if (!apiKey) {
   const warning = "No SendGrid API key found. Email functionality will not work.";
   console.warn(warning);
   logToFile(warning);
 } else {
-  logToFile(`SendGrid API key is set (${apiKey.length} characters). Email functionality should be working.`);
-  
-  // Detect which environment variable was used
-  if (process.env.NEW_SENDGRID_API_KEY) {
-    logToFile("Using NEW_SENDGRID_API_KEY environment variable");
-  } else {
-    logToFile("Using SENDGRID_API_KEY environment variable");
-  }
+  logToFile("SendGrid API key is set. Email functionality should be working.");
 }
 
 // Initialize the SendGrid mail service with API key
 const mailService = new MailService();
-
-if (apiKey) {
-  mailService.setApiKey(apiKey);
-  logToFile("API key set in mail service constructor");
-} else {
-  logToFile("WARNING: Initializing mail service with empty API key");
-  mailService.setApiKey('');
-}
+mailService.setApiKey(apiKey || '');
 
 interface EmailParams {
   to: string;

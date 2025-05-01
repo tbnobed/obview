@@ -25,65 +25,38 @@ export function EmailTestForm() {
 
     setLoading(true);
     try {
-      // Send the test email request
-      console.log(`Sending test email to ${email}`);
-      
       const response = await apiRequest('POST', '/api/debug/send-test-email', { to: email });
-      
-      // Handle the response
       let data;
-      const contentType = response.headers.get('content-type');
       
-      if (contentType && contentType.includes('application/json')) {
-        try {
-          data = await response.json();
-          console.log('Parsed JSON response:', data);
-        } catch (jsonError) {
-          console.error('Error parsing JSON response:', jsonError);
-          data = { 
-            success: false, 
-            message: 'Server returned invalid JSON',
-            error: jsonError instanceof Error ? jsonError.message : String(jsonError)
-          };
-        }
-      } else {
-        const textResponse = await response.text();
-        console.log('Server returned non-JSON response:', textResponse);
-        data = { 
-          success: response.ok, 
-          message: response.ok ? 'Email request processed (non-JSON response)' : 'Server error',
-          responseText: textResponse,
-          status: response.status
-        };
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        data = { success: false, message: 'Invalid response format from server' };
       }
       
-      // Update state and show toast
       setResult(data);
       
-      if (response.ok) {
+      if (data && data.success) {
         toast({
-          title: 'Test Email Processed',
-          description: `Request to send email to ${email} was accepted. Check spam folder if not received.`,
+          title: 'Test Email Sent',
+          description: `Email was sent to ${email}. Check logs for details.`,
         });
       } else {
         toast({
           title: 'Test Email Failed',
-          description: (data && data.message) ? data.message : `Server error: ${response.status}`,
+          description: (data && data.message) ? data.message : 'Failed to send test email. Check logs for details.',
           variant: 'destructive',
         });
       }
     } catch (error) {
       console.error('Error sending test email:', error);
       toast({
-        title: 'Network Error',
-        description: error instanceof Error ? error.message : 'Failed to connect to server',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
-      setResult({ 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        errorType: error?.constructor?.name || typeof error
-      });
+      setResult({ error: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
       setLoading(false);
     }
