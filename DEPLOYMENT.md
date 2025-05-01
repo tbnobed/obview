@@ -21,6 +21,17 @@ This guide explains how to deploy the OBview.io application on an Ubuntu server 
 - 8GB RAM
 - 50GB+ storage for production use with multiple projects
 
+**Storage Allocation Guide:**
+- Database: ~5GB base + growth based on number of projects
+- Media uploads: Allocate at least 25GB for production use
+- Application and system: ~5GB
+- Database backups: ~15GB (if storing locally)
+
+For high-traffic deployment or large media file storage needs, consider:
+- Setting up a separate storage volume for uploads
+- Configuring regular offsite backup procedures
+- Monitoring disk usage with alerts at 80% capacity
+
 ## Installation Steps
 
 ### 1. Install Docker and Docker Compose
@@ -140,33 +151,97 @@ sudo systemctl reload nginx
 sudo certbot --nginx -d obview.io -d www.obview.io
 ```
 
-### 7. Maintenance Tasks
+### 7. Monitoring and Maintenance
+
+#### Application Monitoring
+
+OBview.io includes a health check API that provides detailed system information:
+
+```bash
+# Check application health
+curl http://localhost:3000/api/health
+
+# Set up continuous monitoring with watch (refreshes every 5 seconds)
+watch -n 5 'curl -s http://localhost:3000/api/health'
+```
+
+The health endpoint provides:
+- Application status
+- Database connectivity
+- Memory usage
+- Uptime statistics
+- Environment information
+
+Consider using monitoring solutions like Prometheus or Grafana for production deployments.
 
 #### View logs
 
 ```bash
+# View all logs
 docker-compose logs -f
+
+# View only app container logs
+docker-compose logs -f app
+
+# View database logs
+docker-compose logs -f db
+
+# Filter logs for errors
+docker-compose logs -f | grep -i error
 ```
 
 #### Restart the application
 
 ```bash
+# Restart all services
 docker-compose restart
+
+# Restart only the application (not the database)
+docker-compose restart app
 ```
 
 #### Update the application
 
 ```bash
+# Pull the latest code
 git pull
+
+# Take down the existing containers 
 docker-compose down
+
+# Rebuild the application
 docker-compose build
+
+# Start everything up again
 docker-compose up -d
 ```
 
-#### Backup the database
+#### Backup and Restore Database
+
+OBview.io includes automated scripts for database backup and restoration:
 
 ```bash
+# Backup the database using the automated script (maintains the last 5 backups)
+docker-compose exec app /app/scripts/backup-db.sh
+
+# Backup to a specific directory
+docker-compose exec app /app/scripts/backup-db.sh /path/to/backup/directory
+
+# Manual backup if needed
 docker-compose exec db pg_dump -U postgres obview > backup_$(date +%Y-%m-%d).sql
+
+# Restore from backup using the automated script
+docker-compose exec app /app/scripts/restore-db.sh /app/backups/obview_backup_20250501_123045.sql
+
+# Manual restore if needed
+cat backup_file.sql | docker-compose exec -T db psql -U postgres -d obview
+```
+
+For production environments, consider setting up a cron job for regular backups:
+
+```bash
+# Add to crontab (backup daily at 2 AM)
+0 2 * * * docker-compose -f /path/to/docker-compose.yml exec -T app /app/scripts/backup-db.sh >> /var/log/obview-backup.log 2>&1
 ```
 
 ## Troubleshooting
