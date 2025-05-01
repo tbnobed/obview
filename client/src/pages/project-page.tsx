@@ -30,6 +30,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
+// Component to display share URL with proper environment detection
+function ShareUrlInput({ projectId }: { projectId: number }) {
+  const [shareUrl, setShareUrl] = useState("");
+  
+  useEffect(() => {
+    // Get the proper URL for the current environment
+    setShareUrl(getProjectShareUrl(projectId));
+  }, [projectId]);
+  
+  return (
+    <Input 
+      readOnly
+      value={shareUrl}
+      className="flex-1"
+    />
+  );
+}
+
 
 
 export default function ProjectPage() {
@@ -124,18 +142,21 @@ export default function ProjectPage() {
   
   // Share project handler
   const handleShareProject = () => {
-    const shareUrl = `${window.location.origin}/projects/${projectId}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      toast({
-        title: "Link copied to clipboard",
-        description: "You can now share this link with others",
-      });
-      setShareDialogOpen(false);
-    }).catch(() => {
-      toast({
-        title: "Failed to copy link",
-        description: "Please try again or copy the link manually",
-        variant: "destructive",
+    // Use the utility function to get a consistent URL
+    import("@/lib/utils/url-utils").then(({ getProjectShareUrl }) => {
+      const shareUrl = getProjectShareUrl(projectId);
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast({
+          title: "Link copied to clipboard",
+          description: "You can now share this link with others",
+        });
+        setShareDialogOpen(false);
+      }).catch(() => {
+        toast({
+          title: "Failed to copy link",
+          description: "Please try again or copy the link manually",
+          variant: "destructive",
+        });
       });
     });
   };
@@ -266,11 +287,7 @@ export default function ProjectPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex items-center space-x-2 py-4">
-                  <Input 
-                    readOnly
-                    value={`${window.location.origin}/projects/${projectId}`}
-                    className="flex-1"
-                  />
+                  <ShareUrlInput projectId={projectId} />
                   <Button type="button" onClick={handleShareProject} className="shrink-0">
                     Copy Link
                   </Button>
