@@ -186,9 +186,9 @@ export async function sendInvitationEmail(
     logToFile(`Preparing invitation email to ${to} for project "${projectName}" from "${inviterName}" with role "${role}"`);
     logToFile(`Token: ${token}`);
     
-    // Use the application domain from our config
-    const baseUrl = config.appDomain;
-    logToFile(`Using application domain from config: ${baseUrl}`);
+    // Use the client-provided URL if available, otherwise fall back to config
+    const baseUrl = appUrl || config.appDomain;
+    logToFile(`Using base URL for invitation: ${baseUrl}`);
     
     const inviteUrl = `${baseUrl}/invite/${token}`;
     logToFile(`Generated invite URL: ${inviteUrl}`);
