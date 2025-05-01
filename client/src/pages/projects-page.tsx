@@ -49,31 +49,10 @@ export default function ProjectsPage() {
           </div>
           
           {isEditor && (
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Project
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Project</DialogTitle>
-                </DialogHeader>
-                <ProjectForm 
-                  onSuccess={(projectId) => {
-                    console.log("Project created with ID:", projectId);
-                    setCreateDialogOpen(false);
-                    
-                    // Delay navigation to ensure state updates
-                    setTimeout(() => {
-                      console.log("Navigating to:", `/projects/${projectId}`);
-                      navigate(`/projects/${projectId}`);
-                    }, 500);
-                  }} 
-                />
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => navigate("/projects/new")}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Button>
           )}
         </div>
 
@@ -160,7 +139,7 @@ export default function ProjectsPage() {
                   Create your first project to start reviewing media files
                 </p>
                 {isEditor && (
-                  <Button onClick={() => setCreateDialogOpen(true)}>
+                  <Button onClick={() => navigate("/projects/new")}>
                     <Plus className="mr-2 h-4 w-4" />
                     Create Project
                   </Button>

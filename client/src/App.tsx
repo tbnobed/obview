@@ -24,10 +24,10 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/projects" component={ProjectsPage} />
-      <ProtectedRoute path="/projects/:id" component={ProjectPage} />
-      <ProtectedRoute path="/projects/:id/upload" component={FileUploadPage} />
-      <ProtectedRoute path="/project/:id" component={ProjectPage} /> {/* Keep this for backward compatibility */}
       <ProtectedRoute path="/projects/new" component={NewProjectPage} />
+      <ProtectedRoute path="/projects/:id/upload" component={FileUploadPage} />
+      <ProtectedRoute path="/projects/:id" component={ProjectPage} />
+      <ProtectedRoute path="/project/:id" component={ProjectPage} /> {/* Keep this for backward compatibility */}
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/debug" component={DebugPage} />
