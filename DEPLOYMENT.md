@@ -349,6 +349,43 @@ When deploying the application using Docker, ensure the following configuration 
    - If you see `Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './pg-core/migrator' is not defined by "exports"`, the drizzle-orm package exports have changed. Use a simplified direct SQL approach for running migrations instead of depending on the drizzle-orm migrator
    - If you see `WARN[0000] /home/.../docker-compose.yml: the attribute 'version' is obsolete`, remove the `version` key from your docker-compose.yml file as it's no longer needed in Docker Compose V2
 
+### Database Migration Issues
+
+If you continue to experience issues with migrations, consider these options:
+
+1. **Completely Reset Database**: If you're in development and can afford to start from scratch:
+   ```bash
+   # Stop and remove all containers
+   docker-compose down
+   
+   # Remove the volume containing database data
+   docker volume rm obview_postgres_data
+   
+   # Start everything up again
+   docker-compose up -d
+   ```
+
+2. **Manual Migration**: Connect to the database and execute the SQL directly:
+   ```bash
+   # Connect to the database container
+   docker-compose exec db psql -U postgres -d obview
+   
+   # Inside the PostgreSQL terminal, manually execute the migrations
+   \i /docker-entrypoint-initdb.d/01-init-schema.sql
+   ```
+
+3. **Database Inspection**: Check if tables exist and their structure:
+   ```bash
+   # Connect to the database
+   docker-compose exec db psql -U postgres -d obview
+   
+   # List all tables
+   \dt
+   
+   # Show table structure
+   \d+ table_name
+   ```
+
 ### Container Health Check Failures
 
 The Docker Compose setup includes health checks for both app and database containers. If health checks fail:
