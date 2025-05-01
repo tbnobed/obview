@@ -151,8 +151,6 @@ export default function CommentForm({
     symbols: "Symbols"
   };
   
-  // No longer needed as we're handling emoji clicks inline
-  
   // Handler for file/image selection and upload
   const [isUploading, setIsUploading] = useState(false);
   
@@ -338,98 +336,106 @@ export default function CommentForm({
                     
                     {/* Emoji picker popup */}
                     {showEmojiPicker && (
-                      <div 
-                        className="absolute bottom-9 right-0 z-50 bg-white rounded-md border border-gray-200 shadow-lg" 
-                        ref={emojiPickerRef}
-                        style={{ 
-                          position: 'absolute', 
-                          bottom: '100%', 
-                          right: '0', 
-                          zIndex: 1000,
-                          width: '320px',
-                          marginBottom: '8px'
-                        }}
-                      >
-                        <div className="emoji-picker-container">
-                          {/* Emoji Category Tabs */}
-                          <div className="border-b border-gray-200 flex overflow-x-auto">
-                            {Object.keys(emojiCategories).map((category) => (
-                              <button
-                                key={category}
-                                type="button"
-                                className={`px-2 py-1 text-xs font-medium ${
-                                  activeEmojiCategory === category
-                                    ? "text-primary-600 border-b-2 border-primary-600"
-                                    : "text-gray-500 hover:text-gray-700"
-                                }`}
-                                onClick={() => setActiveEmojiCategory(category)}
-                              >
-                                {categoryLabels[category]}
-                              </button>
-                            ))}
-                          </div>
-                          
-                          {/* Emoji Grid */}
-                          <div className="grid grid-cols-6 gap-1 emoji-grid p-2 max-h-[180px] overflow-y-auto">
-                            {emojiCategories[activeEmojiCategory as keyof typeof emojiCategories].map((emoji, index) => (
-                              <div
-                                key={index}
-                                className="p-1.5 rounded cursor-pointer flex items-center justify-center hover:bg-gray-100 text-xl"
-                                onClick={() => {
-                                  // Get the textarea DOM element directly
-                                  if (textareaRef.current) {
-                                    // Get current caret position
-                                    const start = textareaRef.current.selectionStart || 0;
-                                    const end = textareaRef.current.selectionEnd || 0;
+                      <>
+                        {/* Overlay to capture outside clicks */}
+                        <div 
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowEmojiPicker(false)}
+                        />
+                        <div 
+                          className="fixed z-50 bg-white rounded-md border border-gray-200 shadow-lg" 
+                          ref={emojiPickerRef}
+                          style={{ 
+                            position: 'fixed', 
+                            bottom: 'auto',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 1000,
+                            width: '320px',
+                          }}
+                        >
+                          <div className="emoji-picker-container">
+                            {/* Emoji Category Tabs */}
+                            <div className="border-b border-gray-200 flex overflow-x-auto">
+                              {Object.keys(emojiCategories).map((category) => (
+                                <button
+                                  key={category}
+                                  type="button"
+                                  className={`px-2 py-1 text-xs font-medium ${
+                                    activeEmojiCategory === category
+                                      ? "text-primary-600 border-b-2 border-primary-600"
+                                      : "text-gray-500 hover:text-gray-700"
+                                  }`}
+                                  onClick={() => setActiveEmojiCategory(category)}
+                                >
+                                  {categoryLabels[category]}
+                                </button>
+                              ))}
+                            </div>
+                            
+                            {/* Emoji Grid */}
+                            <div className="grid grid-cols-6 gap-1 emoji-grid p-2 max-h-[180px] overflow-y-auto">
+                              {emojiCategories[activeEmojiCategory as keyof typeof emojiCategories].map((emoji, index) => (
+                                <div
+                                  key={index}
+                                  className="p-1.5 rounded cursor-pointer flex items-center justify-center hover:bg-gray-100 text-xl"
+                                  onClick={() => {
+                                    // Get the textarea DOM element directly
+                                    if (textareaRef.current) {
+                                      // Get current caret position
+                                      const start = textareaRef.current.selectionStart || 0;
+                                      const end = textareaRef.current.selectionEnd || 0;
+                                      
+                                      // Get current value
+                                      const currentValue = textareaRef.current.value;
+                                      
+                                      // Build new value with emoji inserted at cursor position
+                                      const newValue = currentValue.substring(0, start) + 
+                                                      emoji + 
+                                                      currentValue.substring(end);
+                                      
+                                      // Set new value directly on the textarea
+                                      textareaRef.current.value = newValue;
+                                      
+                                      // Update the cursor position to after the emoji
+                                      const newPosition = start + emoji.length;
+                                      textareaRef.current.setSelectionRange(newPosition, newPosition);
+                                      
+                                      // Trigger an input event to ensure react-hook-form updates
+                                      const event = new Event('input', { bubbles: true });
+                                      textareaRef.current.dispatchEvent(event);
+                                      
+                                      // Also update the form value to be safe
+                                      form.setValue("content", newValue);
+                                      
+                                      // Focus the textarea
+                                      textareaRef.current.focus();
+                                      
+                                      // Make sure to update the form validation
+                                      form.trigger("content");
+                                    }
                                     
-                                    // Get current value
-                                    const currentValue = textareaRef.current.value;
-                                    
-                                    // Build new value with emoji inserted at cursor position
-                                    const newValue = currentValue.substring(0, start) + 
-                                                    emoji + 
-                                                    currentValue.substring(end);
-                                    
-                                    // Set new value directly on the textarea
-                                    textareaRef.current.value = newValue;
-                                    
-                                    // Update the cursor position to after the emoji
-                                    const newPosition = start + emoji.length;
-                                    textareaRef.current.setSelectionRange(newPosition, newPosition);
-                                    
-                                    // Trigger an input event to ensure react-hook-form updates
-                                    const event = new Event('input', { bubbles: true });
-                                    textareaRef.current.dispatchEvent(event);
-                                    
-                                    // Also update the form value to be safe
-                                    form.setValue("content", newValue);
-                                    
-                                    // Focus the textarea
-                                    textareaRef.current.focus();
-                                    
-                                    // Make sure to update the form validation
-                                    form.trigger("content");
-                                  }
-                                  
-                                  // Close the emoji picker after selection
-                                  setTimeout(() => {
-                                    setShowEmojiPicker(false);
-                                  }, 100);
-                                }}
-                              >
-                                {emoji}
+                                    // Close the emoji picker after selection
+                                    setTimeout(() => {
+                                      setShowEmojiPicker(false);
+                                    }, 100);
+                                  }}
+                                >
+                                  {emoji}
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Search box placeholder for future enhancement */}
+                            <div className="px-3 pb-2 pt-1 border-t border-gray-200">
+                              <div className="text-xs text-gray-500 text-center">
+                                Click an emoji to add it
                               </div>
-                            ))}
-                          </div>
-                          
-                          {/* Search box placeholder for future enhancement */}
-                          <div className="px-3 pb-2 pt-1 border-t border-gray-200">
-                            <div className="text-xs text-gray-500 text-center">
-                              Click an emoji to add it
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 </div>
