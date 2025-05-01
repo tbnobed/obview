@@ -112,20 +112,7 @@ export default function CommentForm({
     "❌", "⭐", "🎉", "👀", "💯", "🙏"
   ];
   
-  // Handler for inserting an emoji
-  const handleEmojiClick = (emoji: string) => {
-    const currentContent = form.getValues("content");
-    form.setValue("content", currentContent + emoji);
-    setShowEmojiPicker(false);
-    
-    // Focus the textarea after inserting emoji
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-    }
-    
-    // Trigger form validation after updating content
-    form.trigger("content");
-  };
+  // No longer needed as we're handling emoji clicks inline
   
   // Handler for file/image selection
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,7 +247,17 @@ export default function CommentForm({
                               key={index}
                               type="button"
                               className="p-1 rounded cursor-pointer"
-                              onClick={() => handleEmojiClick(emoji)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const currentContent = form.getValues("content");
+                                form.setValue("content", currentContent + emoji);
+                                form.trigger("content");
+                                if (textareaRef.current) {
+                                  textareaRef.current.focus();
+                                }
+                                setShowEmojiPicker(false);
+                              }}
                             >
                               {emoji}
                             </button>
