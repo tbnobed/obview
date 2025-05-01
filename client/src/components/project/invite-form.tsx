@@ -50,7 +50,9 @@ export default function InviteForm({ projectId, onInviteSent }: InviteFormProps)
         // Using an immediately invoked async function
         (async () => {
           try {
-            const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`);
+            const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
+              clientDomain: window.location.origin
+            });
             console.log("Auto-resend response:", resendResponse);
             
             const emailSent = resendResponse?.emailSent;

@@ -188,10 +188,10 @@ export async function sendInvitationEmail(
     // Determine the correct invite URL using the best available option
     let baseUrl: string;
     
-    // First priority: Explicitly provided appUrl parameter
+    // First priority: Client domain (used when sending from browser)
     if (appUrl) {
       baseUrl = appUrl;
-      logToFile(`Using explicitly provided app URL: ${baseUrl}`);
+      logToFile(`Using client domain for invitation URL: ${baseUrl}`);
     }
     // Second priority: APP_URL environment variable
     else if (process.env.APP_URL) {

@@ -162,6 +162,7 @@ export function useResendInvitation() {
     mutationFn: async (invitationId: number) => {
       try {
         // Include the client's domain for constructing the invite URL
+        console.log(`Resending invitation with domain: ${window.location.origin}`);
         const data = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
           clientDomain: window.location.origin
         });
