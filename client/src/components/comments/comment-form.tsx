@@ -293,6 +293,7 @@ export default function CommentForm({
                     variant="ghost" 
                     className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
                     onClick={() => {
+                      if (isUploading) return;
                       const imageInput = document.createElement('input');
                       imageInput.type = 'file';
                       imageInput.accept = 'image/*';
@@ -303,8 +304,13 @@ export default function CommentForm({
                       };
                       imageInput.click();
                     }}
+                    disabled={isUploading}
                   >
-                    <Image className="h-3.5 w-3.5" />
+                    {isUploading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Image className="h-3.5 w-3.5" />
+                    )}
                   </Button>
                   
                   {/* Emoji button */}
@@ -314,7 +320,8 @@ export default function CommentForm({
                       size="icon" 
                       variant="ghost" 
                       className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
-                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      onClick={() => !isUploading && setShowEmojiPicker(!showEmojiPicker)}
+                      disabled={isUploading}
                     >
                       <Smile className="h-3.5 w-3.5" />
                     </Button>
