@@ -193,12 +193,17 @@ export async function sendInvitationEmail(
       baseUrl = appUrl;
       logToFile(`Using explicitly provided app URL: ${baseUrl}`);
     }
-    // Second priority: APP_URL environment variable
+    // Second priority: APP_HOST_URL environment variable - this is the same as what we use for file sharing
+    else if (process.env.APP_HOST_URL) {
+      baseUrl = process.env.APP_HOST_URL;
+      logToFile(`Using APP_HOST_URL environment variable: ${baseUrl}`);
+    }
+    // Third priority: APP_URL environment variable
     else if (process.env.APP_URL) {
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // Third priority: REPLIT environment with various environment variable combinations
+    // Fourth priority: REPLIT environment with various environment variable combinations
     else if (process.env.REPL_ID) {
       // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (most reliable)
       if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
