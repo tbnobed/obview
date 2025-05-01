@@ -16,8 +16,15 @@ COPY . .
 # Verify the structure before building
 RUN ls -la && echo "Content of server directory:" && ls -la server/
 
-# Build the application with more verbose output
-RUN npm run build && echo "Build completed successfully" && ls -la dist/ && ls -la dist/server/ || echo "Build failed"
+# Build the application with a more comprehensive approach
+RUN mkdir -p dist/server && \
+    echo "Building client..." && \
+    npm run build:client && \
+    echo "Building server..." && \
+    npm run build:server && \
+    echo "Build completed successfully" && \
+    ls -la dist/ && \
+    ls -la dist/server/ || { echo "Build failed"; exit 1; }
 
 # Production stage
 FROM node:20-alpine as production
