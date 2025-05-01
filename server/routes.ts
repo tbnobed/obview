@@ -1469,15 +1469,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new invitation
   app.post("/api/invite", isAuthenticated, async (req, res, next) => {
     try {
-      const { email, projectId, role = "viewer", appUrl } = req.body;
+      const { email, projectId, role = "viewer", clientDomain } = req.body;
       
       if (!email || !projectId) {
         return res.status(400).json({ message: "Email and projectId are required" });
       }
       
-      // Log the app URL if provided
-      if (appUrl) {
-        console.log(`App URL provided for invitation: ${appUrl}`);
+      // Log the client domain if provided
+      if (clientDomain) {
+        console.log(`Client domain provided for invitation: ${clientDomain}`);
       }
       
       const project = await storage.getProject(parseInt(projectId));

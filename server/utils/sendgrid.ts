@@ -180,14 +180,14 @@ export async function sendInvitationEmail(
   projectName: string,
   role: string,
   token: string,
-  clientDomain?: string
+  appUrl?: string
 ): Promise<boolean> {
   try {
     logToFile(`Preparing invitation email to ${to} for project "${projectName}" from "${inviterName}" with role "${role}"`);
     logToFile(`Token: ${token}`);
     
     // Use the client-provided URL if available, otherwise fall back to config
-    const baseUrl = clientDomain || config.appDomain;
+    const baseUrl = appUrl || config.appDomain;
     logToFile(`Using base URL for invitation: ${baseUrl}`);
     
     const inviteUrl = `${baseUrl}/invite/${token}`;
