@@ -1,10 +1,16 @@
 // Load environment configuration for the application
 
 // Helper to determine the appropriate domain based on environment
+// This is only a fallback - client should send their actual domain with each request
 function getDomain(): string {
-  // Always use obview.io as the domain - no matter what environment we're in
-  // This ensures invitation URLs always work for recipients
-  return 'https://obview.io';
+  // First priority: Explicitly configured APP_URL
+  if (process.env.APP_URL) {
+    return process.env.APP_URL;
+  }
+  
+  // Default: Development environment
+  const devPort = process.env.PORT || 5000;
+  return `http://localhost:${devPort}`;
 }
 
 // Export configuration object with all settings
