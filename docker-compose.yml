@@ -1,4 +1,5 @@
-version: '3.8'
+# Docker Compose configuration for OBview.io
+# Note: version key is obsolete in Compose V2 and can be removed
 
 services:
   app:

@@ -343,6 +343,8 @@ When deploying the application using Docker, ensure the following configuration 
    - If you see `"/app/drizzle": not found`, update the Dockerfile to use migrations directory
    - If you see `Cannot find module '/app/dist/server/db-migrate.js'`, ensure the server directory and script are correctly copied
    - If you see `ReferenceError: require is not defined in ES module scope`, this indicates a module system incompatibility. Rename affected scripts from `.js` to `.cjs` and update all references accordingly
+   - If you see `Error: connect ECONNREFUSED 172.18.0.2:443` or WebSocket errors, this is caused by @neondatabase/serverless trying to use WSS connections in Docker. Make sure db-migrate.cjs includes conditional code for Docker environment (check for IS_DOCKER=true) and uses the regular pg package instead of Neon Serverless
+   - If you see `WARN[0000] /home/.../docker-compose.yml: the attribute 'version' is obsolete`, remove the `version` key from your docker-compose.yml file as it's no longer needed in Docker Compose V2
 
 ### Container Health Check Failures
 

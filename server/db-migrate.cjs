@@ -1,10 +1,32 @@
 // Helper script to run database migrations
-const { drizzle } = require('drizzle-orm/neon-serverless');
-const { migrate } = require('drizzle-orm/neon-serverless/migrator');
-const { Pool, neonConfig } = require('@neondatabase/serverless');
-const ws = require('ws');
+// Determine if we're running in Docker by checking the environment
+const isDocker = process.env.IS_DOCKER === 'true' || process.env.NODE_ENV === 'production';
 
-neonConfig.webSocketConstructor = ws;
+let pool, db, migrate, drizzle;
+
+if (isDocker) {
+  // Use regular postgres for Docker environment
+  console.log('Running in Docker environment, using node-postgres');
+  const { Pool } = require('pg');
+  const { drizzle: drizzlePg } = require('drizzle-orm/pg-core');
+  const { migrate: migratePg } = require('drizzle-orm/pg-core/migrator');
+  
+  pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  drizzle = drizzlePg;
+  migrate = migratePg;
+} else {
+  // Use Neon for development environment
+  console.log('Running in development environment, using Neon Serverless');
+  const { drizzle: drizzleNeon } = require('drizzle-orm/neon-serverless');
+  const { migrate: migrateNeon } = require('drizzle-orm/neon-serverless/migrator');
+  const { Pool: NeonPool, neonConfig } = require('@neondatabase/serverless');
+  const ws = require('ws');
+  
+  neonConfig.webSocketConstructor = ws;
+  pool = new NeonPool({ connectionString: process.env.DATABASE_URL });
+  drizzle = drizzleNeon;
+  migrate = migrateNeon;
+}
 
 async function runMigrations() {
   if (!process.env.DATABASE_URL) {
@@ -12,7 +34,6 @@ async function runMigrations() {
   }
 
   console.log('Connecting to database...');
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const db = drizzle(pool);
 
   console.log('Running migrations...');

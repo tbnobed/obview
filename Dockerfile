@@ -50,6 +50,7 @@ EXPOSE 3000
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV IS_DOCKER=true
 
 # Create a volume for uploads
 VOLUME /app/uploads
