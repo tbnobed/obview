@@ -42,10 +42,9 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
   // Toggle comment resolution status mutation
   const toggleResolutionMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("PATCH", `/api/comments/${comment.id}`, {
+      return await apiRequest("PATCH", `/api/comments/${comment.id}`, {
         isResolved: !comment.isResolved
       });
-      return await res.json();
     },
     onSuccess: () => {
       toast({
