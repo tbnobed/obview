@@ -243,18 +243,41 @@ export default function CommentForm({
                               className="p-1 rounded cursor-pointer text-center hover:bg-gray-100 text-lg"
                               onClick={() => {
                                 console.log("Emoji clicked:", emoji);
-                                const currentContent = form.getValues("content") || "";
-                                console.log("Current content:", currentContent);
                                 
-                                form.setValue("content", currentContent + emoji);
-                                console.log("New content:", currentContent + emoji);
-                                
+                                // Get the textarea DOM element directly
                                 if (textareaRef.current) {
+                                  // Get current caret position
+                                  const start = textareaRef.current.selectionStart || 0;
+                                  const end = textareaRef.current.selectionEnd || 0;
+                                  
+                                  // Get current value
+                                  const currentValue = textareaRef.current.value;
+                                  
+                                  // Build new value with emoji inserted at cursor position
+                                  const newValue = currentValue.substring(0, start) + 
+                                                  emoji + 
+                                                  currentValue.substring(end);
+                                  
+                                  // Set new value directly on the textarea
+                                  textareaRef.current.value = newValue;
+                                  
+                                  // Update the cursor position to after the emoji
+                                  const newPosition = start + emoji.length;
+                                  textareaRef.current.setSelectionRange(newPosition, newPosition);
+                                  
+                                  // Trigger an input event to ensure react-hook-form updates
+                                  const event = new Event('input', { bubbles: true });
+                                  textareaRef.current.dispatchEvent(event);
+                                  
+                                  // Also update the form value to be safe
+                                  form.setValue("content", newValue);
+                                  
+                                  // Focus the textarea
                                   textareaRef.current.focus();
+                                  
+                                  // Make sure to update the form validation
+                                  form.trigger("content");
                                 }
-                                
-                                // Make sure to update the form validation
-                                form.trigger("content");
                                 
                                 // Close the emoji picker after selection
                                 setTimeout(() => {
