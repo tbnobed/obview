@@ -198,9 +198,19 @@ export async function sendInvitationEmail(
       baseUrl = process.env.APP_URL;
       logToFile(`Using APP_URL environment variable: ${baseUrl}`);
     }
-    // Third priority: REPLIT environment with various environment variable combinations
+    // Third priority: REPLIT_DOMAINS or REPLIT_DEV_DOMAIN (most accurate for Replit)
+    else if (process.env.REPLIT_DOMAINS) {
+      baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
+      logToFile(`Using REPLIT_DOMAINS environment variable: ${baseUrl}`);
+    }
+    // Fourth priority: REPLIT_DEV_DOMAIN
+    else if (process.env.REPLIT_DEV_DOMAIN) {
+      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+      logToFile(`Using REPLIT_DEV_DOMAIN environment variable: ${baseUrl}`);
+    }
+    // Fifth priority: REPLIT environment with various environment variable combinations
     else if (process.env.REPL_ID) {
-      // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (most reliable)
+      // First try: Use the standard REPLIT_SLUG and REPL_OWNER format (backup method)
       if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
         baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
         logToFile(`Using Replit environment URL (slug+owner): ${baseUrl}`);

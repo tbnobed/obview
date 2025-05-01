@@ -238,6 +238,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (process.env.APP_URL) {
           baseUrl = process.env.APP_URL;
         }
+        // First priority for Replit: REPLIT_DOMAINS (most reliable and current)
+        else if (process.env.REPLIT_DOMAINS) {
+          baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
+        }
+        // Second priority for Replit: REPLIT_DEV_DOMAIN
+        else if (process.env.REPLIT_DEV_DOMAIN) {
+          baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+        }
+        // Fallback for older Replit environments 
         else if (process.env.REPL_ID) {
           if (process.env.REPLIT_SLUG && process.env.REPL_OWNER) {
             baseUrl = `https://${process.env.REPLIT_SLUG}.${process.env.REPL_OWNER}.repl.co`;
@@ -1005,8 +1014,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         file.shareToken = token;
       }
       
+      // Determine the base URL for sharing
+      let baseUrl;
+      
+      // First priority: Use the REPLIT_DOMAINS environment variable (most reliable for Replit)
+      if (process.env.REPLIT_DOMAINS) {
+        baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
+      }
+      // Second priority: Use the REPLIT_DEV_DOMAIN environment variable
+      else if (process.env.REPLIT_DEV_DOMAIN) {
+        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+      }
+      // Third priority: Fallback to request-based URL construction
+      else {
+        baseUrl = `${req.protocol}://${req.get('host')}`;
+      }
+      
       // Return share URL
-      const shareUrl = `${req.protocol}://${req.get('host')}/public/share/${file.shareToken}`;
+      const shareUrl = `${baseUrl}/public/share/${file.shareToken}`;
       res.json({ shareUrl });
     } catch (error) {
       next(error);
