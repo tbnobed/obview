@@ -1,32 +1,10 @@
 // Helper script to run database migrations
-// Determine if we're running in Docker by checking the environment
-const isDocker = process.env.IS_DOCKER === 'true' || process.env.NODE_ENV === 'production';
+// This simplified approach doesn't use drizzle-orm's migrator
+// because it has compatibility issues in different environments
 
-let pool, db, migrate, drizzle;
-
-if (isDocker) {
-  // Use regular postgres for Docker environment
-  console.log('Running in Docker environment, using node-postgres');
-  const { Pool } = require('pg');
-  const { drizzle: drizzlePg } = require('drizzle-orm/pg-core');
-  const { migrate: migratePg } = require('drizzle-orm/pg-core/migrator');
-  
-  pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  drizzle = drizzlePg;
-  migrate = migratePg;
-} else {
-  // Use Neon for development environment
-  console.log('Running in development environment, using Neon Serverless');
-  const { drizzle: drizzleNeon } = require('drizzle-orm/neon-serverless');
-  const { migrate: migrateNeon } = require('drizzle-orm/neon-serverless/migrator');
-  const { Pool: NeonPool, neonConfig } = require('@neondatabase/serverless');
-  const ws = require('ws');
-  
-  neonConfig.webSocketConstructor = ws;
-  pool = new NeonPool({ connectionString: process.env.DATABASE_URL });
-  drizzle = drizzleNeon;
-  migrate = migrateNeon;
-}
+const fs = require('fs');
+const path = require('path');
+const { Pool } = require('pg');
 
 async function runMigrations() {
   if (!process.env.DATABASE_URL) {
@@ -34,12 +12,37 @@ async function runMigrations() {
   }
 
   console.log('Connecting to database...');
-  const db = drizzle(pool);
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-  console.log('Running migrations...');
   try {
-    await migrate(db, { migrationsFolder: 'migrations' });
-    console.log('Migrations completed successfully');
+    // Get all migration files
+    const migrationsDir = path.join(process.cwd(), 'migrations');
+    console.log(`Looking for migrations in: ${migrationsDir}`);
+    
+    const files = fs.readdirSync(migrationsDir)
+      .filter(file => file.endsWith('.sql'))
+      .sort(); // Sort to ensure migrations run in order
+    
+    console.log(`Found ${files.length} migration files: ${files.join(', ')}`);
+
+    // Run each migration file
+    for (const file of files) {
+      console.log(`Running migration: ${file}`);
+      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+      
+      // Split by semicolons to handle multiple statements
+      const statements = sql.split(';').filter(stmt => stmt.trim());
+      
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await pool.query(statement);
+        }
+      }
+      
+      console.log(`Migration ${file} completed`);
+    }
+
+    console.log('All migrations completed successfully');
   } catch (error) {
     console.error('Migration error:', error);
     throw error;
