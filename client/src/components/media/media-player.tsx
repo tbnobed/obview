@@ -1,138 +1,133 @@
 import { useState, useRef, useEffect } from "react";
-import { File, Comment } from "@shared/schema";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Pause, Volume2, Maximize, Type, Layers, Check, AlertCircle, FileX } from "lucide-react";
-import TimelineComments from "./timeline-comments";
-import { useApprovals, useComments } from "@/hooks/use-comments";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { ShareLinkButton } from "@/components/share-link-button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/hooks/use-toast";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import TimelineComments from "@/components/media/timeline-comments";
 import { DownloadButton } from "@/components/download-button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShareLinkButton } from "@/components/share-link-button";
+import { Comment, File as StorageFile } from "@shared/schema";
 
-interface MediaPlayerProps {
-  file?: File;
-  projectId: number;
-  files: File[];
+export default function MediaPlayer({
+  file,
+  files,
+  onSelectFile,
+}: {
+  file: StorageFile | null;
+  files: StorageFile[];
   onSelectFile: (fileId: number) => void;
-  initialTime?: number | null;
-}
-
-export default function MediaPlayer({ file, projectId, files, onSelectFile, initialTime = null }: MediaPlayerProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
+}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [mediaError, setMediaError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommentsTab, setShowCommentsTab] = useState(true);
-  const [activeCommentId, setActiveCommentId] = useState<number | undefined>(undefined);
-  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
   
-  const { data: approvals } = useApprovals(file?.id);
-  const { data: comments } = useComments(file?.id);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const mediaContainerRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+
+  // Fetch comments for the current file
+  const { data: comments = [] } = useQuery({
+    queryKey: ['/api/files', file?.id, 'comments'],
+    queryFn: () => file ? apiRequest('GET', `/api/files/${file.id}/comments`) : Promise.resolve([]),
+    enabled: !!file,
+  });
+
+  // Fetch approval status for the current file
+  const { data: approvals = [] } = useQuery({
+    queryKey: ['/api/files', file?.id, 'approvals'],
+    queryFn: () => file ? apiRequest('GET', `/api/files/${file.id}/approvals`) : Promise.resolve([]),
+    enabled: !!file,
+  });
   
-  // Get user's approval status for this file
-  const [userApproval, setUserApproval] = useState<any>(null);
-  
-  // Update userApproval when approvals data changes
-  useEffect(() => {
-    if (approvals && user) {
-      const currentUserApproval = approvals.find((approval: any) => approval.userId === user.id);
-      setUserApproval(currentUserApproval || null);
-    }
-  }, [approvals, user]);
+  // Find user's approval (if any)
+  const userApproval = approvals && approvals.length > 0 ? approvals[0] : null;
+
+  // Approval mutation
+  const approveMutation = useMutation({
+    mutationFn: async ({ fileId, status }: { fileId: number, status: string }) => {
+      const res = await apiRequest('POST', `/api/files/${fileId}/approve`, { status });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/files', file?.id, 'approvals'] });
+      toast({
+        title: "File approval updated",
+        description: "Your approval status has been saved.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating approval",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApprove = () => {
+    if (!file) return;
+    approveMutation.mutate({ fileId: file.id, status: 'approved' });
+  };
+
+  const handleRequestChanges = () => {
+    if (!file) return;
+    approveMutation.mutate({ fileId: file.id, status: 'changes_requested' });
+  };
 
   useEffect(() => {
-    // Reset player state when file changes
-    if (videoRef.current) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-      setCurrentTime(0);
-      setDuration(0);
-    }
-    // Reset any previous media errors when file changes
-    setMediaError(null);
-  }, [file]);
-  
-  // Effect to handle initialTime changes
-  useEffect(() => {
-    console.log("initialTime changed:", initialTime);
+    // Reset media error when file changes
+    setMediaError(false);
+    setErrorMessage("");
     
-    if (videoRef.current && initialTime !== null && initialTime !== undefined) {
-      console.log("Setting video time to:", initialTime);
-      videoRef.current.currentTime = initialTime;
-      setCurrentTime(initialTime);
-      
-      // Auto-play when jumping to a specific time
-      if (!isPlaying) {
-        console.log("Auto-playing video at timestamp");
-        videoRef.current.play()
-          .then(() => setIsPlaying(true))
-          .catch(err => console.error("Failed to auto-play:", err));
-      }
-    }
-  }, [initialTime]);
+    // Reset video state
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    
+    // Reset active comment 
+    setActiveCommentId(null);
+  }, [file?.id]);
 
-  // Handle metadata loaded
-  const handleMetadataLoaded = () => {
-    if (videoRef.current) {
-      console.log("Video metadata loaded, duration:", videoRef.current.duration);
-      setDuration(videoRef.current.duration);
-      
-      // If initialTime is provided, set the video to that time
-      if (initialTime !== null && initialTime !== undefined) {
-        console.log("Setting initial time on metadata load:", initialTime);
-        videoRef.current.currentTime = initialTime;
-        setCurrentTime(initialTime);
-        
-        // Auto-play when setting initial time
-        console.log("Auto-playing on metadata load");
-        videoRef.current.play()
-          .then(() => setIsPlaying(true))
-          .catch(err => console.error("Failed to auto-play on metadata load:", err));
-      }
+  // Handle fullscreen
+  const toggleFullscreen = () => {
+    if (!mediaContainerRef.current) return;
+    
+    if (!document.fullscreenElement) {
+      mediaContainerRef.current.requestFullscreen().catch(err => {
+        toast({
+          title: "Fullscreen error",
+          description: `Error attempting to enable fullscreen: ${err.message}`,
+          variant: "destructive",
+        });
+      });
+    } else {
+      document.exitFullscreen();
     }
   };
 
-  // Handle time update
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      const newTime = videoRef.current.currentTime;
-      setCurrentTime(newTime);
-      
-      // Find if we're at or near a comment's timestamp to highlight it
-      if (comments && comments.length > 0) {
-        // Find comments with timestamps that are close to current time (within 0.5 second)
-        const nearbyComment = comments.find((comment: any) => 
-          comment.timestamp !== null && 
-          comment.parentId === null && // Only top-level comments
-          Math.abs(comment.timestamp - newTime) < 0.5
-        );
-        
-        if (nearbyComment) {
-          setActiveCommentId(nearbyComment.id);
-        } else if (activeCommentId && comments.every((c: any) => 
-          c.id !== activeCommentId || 
-          Math.abs((c.timestamp || 0) - newTime) >= 0.5
-        )) {
-          // Clear active comment if we've moved away from all comment timestamps
-          setActiveCommentId(undefined);
-        }
-      }
-    }
-  };
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
 
-  // Handle play/pause
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   const togglePlay = () => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -141,214 +136,176 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
         videoRef.current.play();
       }
       setIsPlaying(!isPlaying);
+    } else if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
     }
   };
 
-  // Handle progress bar click
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (progressRef.current && videoRef.current) {
-      const rect = progressRef.current.getBoundingClientRect();
-      const position = (e.clientX - rect.left) / rect.width;
-      const newTime = position * duration;
-      
-      videoRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  // Handle volume change
   const handleVolumeChange = (value: string) => {
     const newVolume = parseFloat(value);
     setVolume(newVolume);
+    
     if (videoRef.current) {
       videoRef.current.volume = newVolume;
-    }
-  };
-  
-  // Handle fullscreen toggle
-  const toggleFullscreen = () => {
-    if (!videoRef.current) return;
-    
-    if (document.fullscreenElement) {
-      // Exit fullscreen
-      document.exitFullscreen().catch(err => {
-        console.error("Error exiting fullscreen:", err);
-      });
-    } else {
-      // Enter fullscreen
-      const videoElement = videoRef.current;
-      if (videoElement.requestFullscreen) {
-        videoElement.requestFullscreen().catch(err => {
-          console.error("Error requesting fullscreen:", err);
-        });
-      }
+    } else if (audioRef.current) {
+      audioRef.current.volume = newVolume;
     }
   };
 
-  // Format time (seconds to MM:SS)
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressRef.current) return;
+    
+    const rect = progressRef.current.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    const newTime = duration * pos;
+    
+    setCurrentTime(newTime);
+    
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    } else if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
+  };
+
+  // Format time (MM:SS)
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  // Approve file mutation
-  const approveMutation = useMutation({
-    mutationFn: async (status: string) => {
-      try {
-        // Prepare the request data
-        const requestData = {
-          status,
-          feedback: status === "approved" ? "Approved" : "Changes requested",
-        };
-        
-        // Use the apiRequest helper function
-        const result = await apiRequest("POST", `/api/files/${file?.id}/approvals`, requestData);
-        
-        // Return both the result and the status so we can use it in onSuccess
-        return { result, status };
-      } catch (err) {
-        console.error("Approval submission error:", err);
-        throw err; // Rethrow the error to be handled by onError
-      }
-    },
-    onSuccess: (data) => {
-      // Get the status from the returned data
-      const { status, result } = data;
-      
-      // Show a success message
-      toast({
-        title: "Success",
-        description: status === "approved" 
-          ? "You've approved this file"
-          : "You've requested changes to this file",
-      });
-      
-      // Immediately update UI state without waiting for a refetch
-      if (file) {
-        // Update the local userApproval state
-        setUserApproval({
-          id: result.id,
-          fileId: file.id,
-          userId: result.userId,
-          status: status,
-          feedback: result.feedback, 
-          createdAt: result.createdAt,
-          user: result.user
-        });
-      }
-      
-      // Also invalidate the approvals query to refresh the data
-      queryClient.invalidateQueries({ queryKey: [`/api/files/${file?.id}/approvals`] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: `Failed to submit: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle approve click
-  const handleApprove = () => {
-    if (file) {
-      approveMutation.mutate("approved");
-    }
+  // Handle media events
+  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
+    setCurrentTime(e.currentTarget.currentTime);
   };
 
-  // Handle request changes click
-  const handleRequestChanges = () => {
-    if (file) {
-      approveMutation.mutate("requested_changes");
-    }
+  const handleDurationChange = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
+    setDuration(e.currentTarget.duration);
   };
 
-  // Handle media error
-  const handleMediaError = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement | HTMLImageElement>) => {
-    console.error("Media error:", e);
-    setMediaError("This file is no longer available. It may have been deleted from the server.");
+  const handleMediaEnded = () => {
+    setIsPlaying(false);
   };
 
-  // Determine file type icon/component
+  const handleMediaError = () => {
+    setMediaError(true);
+    setErrorMessage("This file is no longer available. It may have been deleted from the server.");
+    setIsPlaying(false);
+  };
+
+  // Render appropriate media content based on file type
   const renderMediaContent = () => {
-    if (!file) return null;
-
-    // If we have a media error, show the error message instead
-    if (mediaError) {
+    if (!file) {
       return (
-        <div className="w-full h-full flex items-center justify-center bg-neutral-900 rounded-t-lg">
-          <div className="text-center max-w-md p-6">
-            <Alert variant="destructive" className="mb-4 bg-opacity-20 bg-red-900 dark:bg-red-950 dark:border-red-800">
-              <FileX className="h-10 w-10 text-red-400 mx-auto mb-4" />
-              <AlertTitle className="mb-2 text-center">File Not Available</AlertTitle>
-              <AlertDescription className="text-center">
-                {mediaError}
-              </AlertDescription>
-            </Alert>
-            <p className="text-white text-lg font-medium mb-1">{file.filename}</p>
-            <p className="text-neutral-400 text-sm">The comments and feedback for this file are still available.</p>
+        <div className="flex items-center justify-center h-full bg-neutral-900 text-white">
+          <div className="text-center p-8">
+            <File className="h-12 w-12 mx-auto mb-4 text-neutral-400" />
+            <h3 className="text-xl font-medium">No file selected</h3>
+            <p className="text-neutral-400 mt-2">Select a file to view</p>
           </div>
         </div>
       );
     }
 
-    switch (file.fileType) {
-      case 'video':
-        return (
+    if (mediaError) {
+      return (
+        <div className="flex items-center justify-center h-full bg-neutral-900 text-white">
+          <div className="text-center p-8 max-w-md">
+            <div className="bg-red-900/30 p-6 rounded-lg">
+              <File className="h-12 w-12 mx-auto mb-4 text-red-400" />
+              <h3 className="text-xl font-medium text-red-400">File Not Available</h3>
+              <p className="text-neutral-300 mt-2">{errorMessage || "This file is no longer available. It may have been deleted from the server."}</p>
+              <p className="text-neutral-400 mt-4 text-sm">{file.filename}</p>
+              <p className="text-neutral-500 mt-2 text-sm">The comments and feedback for this file are still available.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Detect file type
+    const fileType = file.fileType.toLowerCase();
+    
+    if (fileType.startsWith('image/')) {
+      // Image file
+      return (
+        <div className="flex items-center justify-center h-full bg-neutral-900">
+          <img
+            src={`/api/files/${file.id}/content`}
+            alt={file.filename}
+            className="max-h-full max-w-full object-contain"
+            onError={handleMediaError}
+          />
+        </div>
+      );
+    } else if (fileType.startsWith('video/')) {
+      // Video file
+      return (
+        <div
+          ref={mediaContainerRef}
+          className="relative h-full flex items-center justify-center bg-black"
+        >
           <video
             ref={videoRef}
-            className="w-full h-full rounded-t-lg object-contain bg-black"
             src={`/api/files/${file.id}/content`}
-            onLoadedMetadata={handleMetadataLoaded}
+            className="max-h-full max-w-full"
             onTimeUpdate={handleTimeUpdate}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
+            onDurationChange={handleDurationChange}
+            onEnded={handleMediaEnded}
             onError={handleMediaError}
-            controls={false}
           />
-        );
-      case 'audio':
-        return (
-          <div className="w-full h-full flex items-center justify-center bg-neutral-900 rounded-t-lg">
-            <div className="text-center">
-              <Volume2 className="h-20 w-20 text-neutral-400 mx-auto mb-4" />
-              <p className="text-white text-lg font-medium">{file.filename}</p>
-              <audio
-                ref={videoRef as any}
-                className="mt-4"
-                src={`/api/files/${file.id}/content`}
-                onLoadedMetadata={handleMetadataLoaded}
-                onTimeUpdate={handleTimeUpdate}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onError={handleMediaError}
-                controls={false}
+        </div>
+      );
+    } else if (fileType.startsWith('audio/')) {
+      // Audio file
+      return (
+        <div
+          ref={mediaContainerRef}
+          className="flex flex-col items-center justify-center h-full bg-neutral-900 text-white"
+        >
+          <div className="p-8 text-center">
+            <div className="bg-neutral-800 p-10 rounded-lg mb-8">
+              <File className="h-24 w-24 mx-auto text-primary dark:text-[#026d55]" />
+            </div>
+            <h3 className="text-lg font-medium">{file.filename}</h3>
+            <p className="text-sm text-neutral-400 mt-1">Audio file</p>
+          </div>
+          <audio
+            ref={audioRef}
+            src={`/api/files/${file.id}/content`}
+            className="hidden"
+            onTimeUpdate={handleTimeUpdate}
+            onDurationChange={handleDurationChange}
+            onEnded={handleMediaEnded}
+            onError={handleMediaError}
+          />
+        </div>
+      );
+    } else {
+      // Unsupported file type
+      return (
+        <div className="flex items-center justify-center h-full bg-neutral-900 text-white">
+          <div className="text-center p-8">
+            <File className="h-12 w-12 mx-auto mb-4 text-neutral-400" />
+            <h3 className="text-xl font-medium">{file.filename}</h3>
+            <p className="text-neutral-400 mt-2">This file type cannot be previewed</p>
+            <div className="mt-4">
+              <DownloadButton
+                fileId={file.id}
+                filename={file.filename}
+                size="sm"
+                variant="outline"
               />
             </div>
           </div>
-        );
-      case 'image':
-        return (
-          <div className="w-full h-full bg-neutral-900 rounded-t-lg overflow-hidden flex items-center justify-center">
-            <img
-              src={`/api/files/${file.id}/content`}
-              alt={file.filename}
-              className="max-w-full h-full object-contain"
-              onError={handleMediaError}
-            />
-          </div>
-        );
-      default:
-        return (
-          <div className="w-full h-full flex items-center justify-center bg-neutral-900 rounded-t-lg">
-            <div className="text-center">
-              <Type className="h-20 w-20 text-neutral-400 mx-auto mb-4" />
-              <p className="text-white text-lg font-medium">{file.filename}</p>
-              <p className="text-neutral-400">Unsupported file type</p>
-            </div>
-          </div>
-        );
+        </div>
+      );
     }
   };
 
@@ -361,9 +318,9 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
             {renderMediaContent()}
           </div>
           
-          {/* Video Controls - Show only when no media error */}
-          {!mediaError && (
-            <div className="bg-white dark:bg-[#0a0d14] p-4 border-t border-neutral-100 dark:border-gray-800">
+          <div className="bg-white dark:bg-[#0a0d14] p-4 border-t border-neutral-100 dark:border-gray-800">
+            {/* Media player controls - Only shown when no error */}
+            {!mediaError && (
               <div className="flex items-center mb-2 space-x-2">
                 <Button
                   onClick={togglePlay}
@@ -454,102 +411,105 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                   <Maximize className="h-5 w-5" />
                 </Button>
               </div>
+            )}
+            
+            {/* File selector and actions - Always visible regardless of error state */}
+            <div className={cn(
+              "flex justify-between items-center border-t border-neutral-100 dark:border-gray-800",
+              !mediaError ? "mt-3 pt-3" : "pt-2"
+            )}>
+              <div className="flex space-x-2 items-center">
+                <Select 
+                  value={file?.id.toString()} 
+                  onValueChange={(value) => onSelectFile(parseInt(value))}
+                >
+                  <SelectTrigger className="w-auto min-w-[180px]">
+                    <SelectValue placeholder="Select file" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {files.map((f) => (
+                      <SelectItem key={f.id} value={f.id.toString()}>
+                        {f.filename} {f.isLatestVersion && "(Latest)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {file && (
+                  <div className="text-xs text-neutral-500 dark:text-gray-400">
+                    Version {file.version}
+                  </div>
+                )}
+              </div>
               
-              {/* File selector and actions */}
-              <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-100 dark:border-gray-800">
-                <div className="flex space-x-2 items-center">
-                  <Select 
-                    value={file?.id.toString()} 
-                    onValueChange={(value) => onSelectFile(parseInt(value))}
-                  >
-                    <SelectTrigger className="w-auto min-w-[180px]">
-                      <SelectValue placeholder="Select file" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {files.map((f) => (
-                        <SelectItem key={f.id} value={f.id.toString()}>
-                          {f.filename} {f.isLatestVersion && "(Latest)"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {file && (
-                    <div className="text-xs text-neutral-500 dark:text-gray-400">
-                      Version {file.version}
+              <div className="flex space-x-2">
+                {file && (
+                  <>
+                    <DownloadButton 
+                      fileId={file.id} 
+                      filename={file.filename} 
+                      size="sm" 
+                      variant="default" 
+                    />
+                    <ShareLinkButton 
+                      fileId={file.id} 
+                      size="sm"
+                      variant="default"
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Approval actions - Only show when there's no media error */}
+            {!mediaError && file && (
+              <div className="flex justify-between items-center mt-4 pt-4 border-t border-neutral-100 dark:border-gray-800">
+                <div className="flex items-center text-sm">
+                  {userApproval && (
+                    <div className={cn(
+                      "flex items-center px-2 py-1 rounded-full",
+                      userApproval.status === "approved" 
+                        ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
+                        : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                    )}>
+                      {userApproval.status === "approved" ? (
+                        <>
+                          <Check className="h-4 w-4 mr-1" />
+                          <span>You approved this file</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="h-4 w-4 mr-1" />
+                          <span>You requested changes</span>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
-                
                 <div className="flex space-x-2">
-                  {file && (
-                    <>
-                      <DownloadButton 
-                        fileId={file.id} 
-                        filename={file.filename} 
-                        size="sm" 
-                        variant="default" 
-                      />
-                      <ShareLinkButton 
-                        fileId={file.id} 
-                        size="sm"
-                        variant="default"
-                      />
-                    </>
-                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center dark:bg-orange-900 dark:text-orange-200 dark:border-orange-900 dark:hover:bg-orange-950"
+                    onClick={handleRequestChanges}
+                    disabled={approveMutation.isPending}
+                  >
+                    <AlertCircle className="h-4 w-4 mr-1.5" />
+                    Request Changes
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="flex items-center bg-green-600 hover:bg-green-700"
+                    onClick={handleApprove}
+                    disabled={approveMutation.isPending}
+                  >
+                    <Check className="h-4 w-4 mr-1.5" />
+                    Approve
+                  </Button>
                 </div>
               </div>
-              
-              {/* Approval actions */}
-              {file && (
-                <div className="flex justify-between items-center mt-4 pt-4 border-t border-neutral-100 dark:border-gray-800">
-                  <div className="flex items-center text-sm">
-                    {userApproval && (
-                      <div className={cn(
-                        "flex items-center px-2 py-1 rounded-full",
-                        userApproval.status === "approved" 
-                          ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
-                          : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
-                      )}>
-                        {userApproval.status === "approved" ? (
-                          <>
-                            <Check className="h-4 w-4 mr-1" />
-                            <span>You approved this file</span>
-                          </>
-                        ) : (
-                          <>
-                            <AlertCircle className="h-4 w-4 mr-1" />
-                            <span>You requested changes</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center dark:bg-orange-900 dark:text-orange-200 dark:border-orange-900 dark:hover:bg-orange-950"
-                      onClick={handleRequestChanges}
-                      disabled={approveMutation.isPending}
-                    >
-                      <AlertCircle className="h-4 w-4 mr-1.5" />
-                      Request Changes
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      className="flex items-center bg-green-600 hover:bg-green-700"
-                      onClick={handleApprove}
-                      disabled={approveMutation.isPending}
-                    >
-                      <Check className="h-4 w-4 mr-1.5" />
-                      Approve
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       
@@ -570,8 +530,8 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                 duration={duration} 
                 currentTime={currentTime}
                 activeCommentId={activeCommentId}
-                onCommentSelect={(commentId) => setActiveCommentId(commentId)}
-                onTimeClick={(time) => {
+                onCommentSelect={(commentId: number) => setActiveCommentId(commentId)}
+                onTimeClick={(time: number) => {
                   if (videoRef.current) {
                     videoRef.current.currentTime = time;
                     setCurrentTime(time);
