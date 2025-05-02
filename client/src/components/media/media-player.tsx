@@ -98,6 +98,18 @@ export default function MediaPlayer({
     
     // Reset active comment 
     setActiveCommentId(null);
+
+    // If there's a video/audio element, load the content manually
+    if (file && file.isAvailable !== false) {
+      if (videoRef.current) {
+        videoRef.current.load();
+      }
+      if (audioRef.current) {
+        audioRef.current.load();
+      }
+
+      console.log("Loading media for file:", file.filename, "type:", file.fileType);
+    }
   }, [file?.id]);
 
   // Handle fullscreen
@@ -249,11 +261,12 @@ export default function MediaPlayer({
       );
     }
 
-    // Detect file type
+    // Determine file type by extension if MIME type detection fails
+    const fileExt = file.filename.split('.').pop()?.toLowerCase();
     const fileType = file.fileType.toLowerCase();
     
-    if (fileType.startsWith('image/')) {
-      // Image file
+    // Image files
+    if (fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExt || '')) {
       return (
         <div className="flex items-center justify-center h-full bg-neutral-900">
           <img
@@ -264,8 +277,9 @@ export default function MediaPlayer({
           />
         </div>
       );
-    } else if (fileType.startsWith('video/')) {
-      // Video file
+    } 
+    // Video files
+    else if (fileType.startsWith('video/') || ['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(fileExt || '')) {
       return (
         <div
           ref={mediaContainerRef}
@@ -273,20 +287,23 @@ export default function MediaPlayer({
         >
           <video
             ref={videoRef}
-            src={`/api/files/${file.id}/content`}
             className="max-h-full max-w-full"
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onEnded={handleMediaEnded}
             onError={handleMediaError}
             autoPlay={false}
-            muted={false}
-            preload="auto"
-          />
+            controls={false}
+            preload="metadata"
+          >
+            <source src={`/api/files/${file.id}/content`} type={file.fileType} />
+            Your browser does not support the video tag.
+          </video>
         </div>
       );
-    } else if (fileType.startsWith('audio/')) {
-      // Audio file
+    } 
+    // Audio files
+    else if (fileType.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(fileExt || '')) {
       return (
         <div
           ref={mediaContainerRef}
@@ -301,19 +318,34 @@ export default function MediaPlayer({
           </div>
           <audio
             ref={audioRef}
-            src={`/api/files/${file.id}/content`}
             className="hidden"
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onEnded={handleMediaEnded}
             onError={handleMediaError}
-            autoPlay={false}
-            preload="auto"
+            preload="metadata"
+          >
+            <source src={`/api/files/${file.id}/content`} type={file.fileType} />
+            Your browser does not support the audio element.
+          </audio>
+        </div>
+      );
+    } 
+    // PDF files
+    else if (fileType === 'application/pdf' || fileExt === 'pdf') {
+      return (
+        <div className="h-full w-full">
+          <iframe
+            src={`/api/files/${file.id}/content`}
+            className="h-full w-full"
+            title={file.filename}
+            onError={handleMediaError}
           />
         </div>
       );
-    } else {
-      // Unsupported file type
+    } 
+    // Default - unsupported file type
+    else {
       return (
         <div className="flex items-center justify-center h-full bg-neutral-900 text-white">
           <div className="text-center p-8">
