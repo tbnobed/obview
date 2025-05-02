@@ -5,10 +5,9 @@ import { setupAuth, generateToken, hashPassword } from "./auth";
 import multer from "multer";
 import type { Multer } from "multer"; // Import multer types
 import path from "path";
-import fs from "fs/promises";
-import * as fsSync from "fs";
 import { z } from "zod";
 import { File as StorageFile } from "@shared/schema";
+import * as fileSystem from "./utils/filesystem";
 
 // Extended Request type to handle file uploads
 // Using declaration merging with Express namespace
@@ -43,7 +42,15 @@ import { sql } from "drizzle-orm";
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads');
-fs.mkdir(uploadsDir, { recursive: true }).catch(console.error);
+// Create uploads directory if it doesn't exist
+// Don't use fs.mkdir directly to avoid ES module issues
+try {
+  if (!fsSync.existsSync(uploadsDir)) {
+    fsSync.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (error) {
+  console.error(`Error creating uploads directory: ${error}`);
+}
 
 // Configure multer storage
 const storage_config = multer.diskStorage({
@@ -1641,22 +1648,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/system/uploads", isAdmin, async (req, res, next) => {
     try {
       const uploadDir = process.env.UPLOAD_DIR || './uploads';
-      const fs = require('fs');
-      const path = require('path');
-      const { promisify } = require('util');
-      
-      // Promisify fs functions
-      const readdir = promisify(fs.readdir);
-      const stat = promisify(fs.stat);
       
       // Read directory contents
-      const files = await readdir(uploadDir);
+      const files = await fileSystem.listFiles(uploadDir);
       
       // Get details for each file
       const fileDetails = await Promise.all(
         files.map(async (filename) => {
-          const filePath = path.join(uploadDir, filename);
-          const stats = await stat(filePath);
+          const filePath = fileSystem.joinPaths(uploadDir, filename);
+          const stats = await fileSystem.getFileStats(filePath);
           
           // Try to get file metadata from database if available
           let fileMetadata = null;
@@ -1704,26 +1704,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { filename } = req.params;
       const uploadDir = process.env.UPLOAD_DIR || './uploads';
-      const fs = require('fs');
-      const path = require('path');
-      const { promisify } = require('util');
       
       // Prevent path traversal attacks
-      const sanitizedFilename = path.basename(filename);
-      const filePath = path.join(uploadDir, sanitizedFilename);
+      const sanitizedFilename = fileSystem.sanitizeFilename(filename);
+      const filePath = fileSystem.joinPaths(uploadDir, sanitizedFilename);
       
       // Check if file exists
-      const access = promisify(fs.access);
-      const unlink = promisify(fs.unlink);
-      
-      try {
-        await access(filePath, fs.constants.F_OK);
-      } catch (error) {
+      const exists = await fileSystem.fileExists(filePath);
+      if (!exists) {
         return res.status(404).json({ message: "File not found" });
       }
       
       // Delete the file
-      await unlink(filePath);
+      await fileSystem.deleteFile(filePath);
       
       // Log activity
       await storage.logActivity({
