@@ -60,13 +60,26 @@ const upload = multer({
   storage: storage_config,
   limits: {
     fileSize: 5 * 1024 * 1024 * 1024, // 5GB limit
-  },
-  // Handle multer errors
-  onError: function (err, next) {
-    console.error('Multer error:', err);
-    next(err);
   }
 });
+
+// Custom error handling middleware for multer errors
+const handleMulterErrors = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.error('Multer error:', err.code, err.message);
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ 
+        message: "File too large. Maximum file size is 5GB.",
+        error: err.message
+      });
+    }
+    return res.status(400).json({ 
+      message: "File upload error",
+      error: err.message
+    });
+  }
+  next(err);
+};
 
 // Middleware to check authentication
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
