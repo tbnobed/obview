@@ -385,7 +385,10 @@ export default function ProjectPage() {
             {/* Download Button */}
             <Dialog open={downloadDialogOpen} onOpenChange={setDownloadDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                >
                   <Download className="h-4 w-4 mr-1.5" />
                   Download
                 </Button>
@@ -482,7 +485,10 @@ export default function ProjectPage() {
               <>
                 <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="flex items-center">
+                    <Button 
+                      variant="outline" 
+                      className="flex items-center dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                    >
                       <Edit className="h-4 w-4 mr-1.5" />
                       Edit Project
                     </Button>
@@ -497,7 +503,10 @@ export default function ProjectPage() {
                     />
                   </DialogContent>
                 </Dialog>
-                <Button className="flex items-center" onClick={() => navigate(`/projects/${projectId}/upload`)}>
+                <Button 
+                  className="flex items-center dark:bg-[#026d55] dark:text-white dark:hover:bg-[#025943]" 
+                  onClick={() => navigate(`/projects/${projectId}/upload`)}
+                >
                   <Plus className="h-4 w-4 mr-1.5" />
                   Upload Media
                 </Button>
