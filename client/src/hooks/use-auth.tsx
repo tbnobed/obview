@@ -43,7 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      // The API may already return JSON, check to avoid double parsing
+      return typeof res === 'object' ? res : await res.json();
     },
     onSuccess: (user: SelectUser) => {
       // Store user data in the query cache
@@ -51,8 +52,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Apply user's theme preference if they have one
       if (user.themePreference) {
-        // Store in localStorage to ensure consistency
+        // Store in localStorage to ensure consistency across page refreshes and app restarts
         localStorage.setItem('obviu-theme', user.themePreference);
+        console.log(`Theme loaded from user profile: ${user.themePreference}`);
+      } else {
+        // If user has no preference in the database, keep using their localStorage preference
+        const localTheme = localStorage.getItem('obviu-theme');
+        if (localTheme) {
+          console.log(`Using existing localStorage theme: ${localTheme}`);
+        }
       }
       
       toast({
@@ -73,7 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
       const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
+      // The API may already return JSON, check to avoid double parsing
+      return typeof res === 'object' ? res : await res.json();
     },
     onSuccess: (user: SelectUser) => {
       // Store user data in the query cache
@@ -82,9 +91,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set default theme preference if user didn't specify one
       if (user.themePreference) {
         localStorage.setItem('obviu-theme', user.themePreference);
+        console.log(`New user with theme preference: ${user.themePreference}`);
       } else {
         // Default to system theme for new users
         localStorage.setItem('obviu-theme', 'system');
+        console.log('New user with no preference, defaulting to system theme');
+        
+        // Save the default theme preference to the database for next login
+        try {
+          apiRequest("PATCH", "/api/user/theme", { themePreference: 'system' });
+        } catch (error) {
+          console.error("Failed to save default theme preference:", error);
+        }
       }
       
       toast({
