@@ -1598,66 +1598,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new invitation
   app.post("/api/invite", isAuthenticated, async (req, res, next) => {
     try {
+      console.log("POST /api/invite - Starting invitation creation process");
+      console.log("Request body:", JSON.stringify(req.body));
+      
       const { email, projectId, role = "viewer", appUrl } = req.body;
       
       if (!email) {
+        console.error("POST /api/invite - Email is required but was not provided");
         return res.status(400).json({ message: "Email is required" });
+      }
+      
+      if (!req.user) {
+        console.error("POST /api/invite - No authenticated user found");
+        return res.status(401).json({ message: "Authentication required" });
       }
       
       // Log the client domain if provided
       if (appUrl) {
         console.log(`Client URL provided for invitation: ${appUrl}`);
+      } else {
+        console.warn("No client URL provided for invitation - using default domain");
       }
       
       // Admin invitation (system-wide) versus project-specific invitation
       const isAdminInvite = !projectId;
+      console.log(`Invitation type: ${isAdminInvite ? 'System-wide (Admin)' : 'Project-specific'}`);
+      console.log(`Inviting email: ${email} with role: ${role}`);
       
       // For project-specific invitations, perform additional checks
       if (!isAdminInvite) {
+        console.log(`Checking project ${projectId} exists`);
         const project = await storage.getProject(parseInt(projectId));
         if (!project) {
+          console.error(`Project with ID ${projectId} not found`);
           return res.status(404).json({ message: "Project not found" });
         }
         
         // Check if user has edit access to the project
         if (req.user.role !== "admin") {
+          console.log(`User role is not admin, checking project-specific permissions`);
           const projectUser = await storage.getProjectUser(parseInt(projectId), req.user.id);
           if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
+            console.error(`User ${req.user.id} does not have permission to invite users to project ${projectId}`);
             return res.status(403).json({ message: "You don't have permission to invite users to this project" });
           }
         }
         
         // Check if user already exists
+        console.log(`Checking if user with email ${email} already exists`);
         const existingUser = await storage.getUserByEmail(email);
         
         // If user exists and is already a member of the project, return an error
         if (existingUser) {
+          console.log(`User with email ${email} exists (ID: ${existingUser.id}), checking if already in project`);
           const existingMember = await storage.getProjectUser(parseInt(projectId), existingUser.id);
           if (existingMember) {
+            console.error(`User ${existingUser.id} is already a member of project ${projectId}`);
             return res.status(400).json({ message: "User is already a member of this project" });
           }
         }
         
         // Check if there's already a pending invitation for this email and project
+        console.log(`Checking for existing invitations for email ${email} in project ${projectId}`);
         const existingInvitations = await storage.getInvitationsByProject(parseInt(projectId));
         const alreadyInvited = existingInvitations.some(inv => inv.email === email && !inv.isAccepted);
         
         if (alreadyInvited) {
+          console.error(`Email ${email} already has a pending invitation to project ${projectId}`);
           return res.status(400).json({ message: "User has already been invited to this project" });
         }
       } else {
         // For admin invitations, only admins can create them
+        console.log(`System invitation - checking if user ${req.user.id} is an admin`);
         if (req.user.role !== "admin") {
+          console.error(`User ${req.user.id} with role ${req.user.role} attempted to create a system invitation`);
           return res.status(403).json({ message: "Only administrators can send system-wide invitations" });
         }
         
         // Check if user already exists with this email
+        console.log(`Checking if user with email ${email} already exists`);
         const existingUser = await storage.getUserByEmail(email);
         if (existingUser) {
+          console.error(`User with email ${email} already exists (ID: ${existingUser.id})`);
           return res.status(400).json({ message: "A user with this email already exists in the system" });
         }
         
         // For admin invites, we should check if there's a pending global invitation
+        console.log(`Checking for existing system invitations for email ${email}`);
         const allInvitations = await storage.getAllInvitations();
         const alreadyInvited = allInvitations.some(inv => 
           inv.email === email && 
@@ -1666,6 +1693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (alreadyInvited) {
+          console.error(`Email ${email} already has a pending system invitation`);
           return res.status(400).json({ message: "This email has already been invited to join the system" });
         }
       }
@@ -1674,6 +1702,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = generateToken();
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7); // Invitation expires in 7 days
+      
+      console.log(`Creating invitation for ${email} with token ${token.substring(0, 8)}...`);
       
       // Create the invitation (initially with emailSent as false)
       const invitation = await storage.createInvitation({
@@ -1686,6 +1716,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAccepted: false,
         emailSent: false
       });
+      
+      console.log(`Invitation created successfully with ID ${invitation.id}`);
       
       // If SendGrid API key is available, send an email
       let emailSent = false;
@@ -1774,6 +1806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log activity - different for admin invite vs project invite
       if (isAdminInvite) {
         // Log system-wide invitation
+        console.log(`Logging system-wide invitation activity`);
         await storage.logActivity({
           userId: req.user.id,
           action: "invited_user_to_system",
@@ -1783,6 +1816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         // Log project-specific invitation
+        console.log(`Logging project-specific invitation activity`);
         await storage.logActivity({
           userId: req.user.id,
           action: "invited_user",
@@ -1803,8 +1837,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("DEBUGGING INVITATION RESPONSE:", JSON.stringify(responseData));
       
       // Return the invitation details in a client-friendly format
-      res.status(201).json(responseData);
+      console.log(`Sending 201 response with invitation data`);
+      return res.status(201).json(responseData);
     } catch (error) {
+      console.error("Error creating invitation:", error);
+      console.error("Error details:", error instanceof Error ? error.message : String(error));
+      if (error instanceof Error && error.stack) {
+        console.error("Error stack trace:", error.stack);
+      }
       next(error);
     }
   });
@@ -2145,38 +2185,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Resend invitation email
   app.post("/api/invite/:id/resend", isAuthenticated, async (req, res, next) => {
     try {
+      console.log("POST /api/invite/:id/resend - Starting invitation resend process");
+      console.log("Request params:", req.params);
+      console.log("Request body:", JSON.stringify(req.body));
+      
+      if (!req.user) {
+        console.error("POST /api/invite/:id/resend - No authenticated user found");
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const invitationId = parseInt(req.params.id);
+      console.log(`Processing resend for invitation ID: ${invitationId}`);
+      
       const { appUrl } = req.body; // Get client app URL from request body
       
       // Log the client app URL if provided
       if (appUrl) {
         console.log(`Client URL provided for resending invitation: ${appUrl}`);
+      } else {
+        console.warn("No client URL provided for resending invitation - using default domain");
       }
       
       // Get the invitation
+      console.log(`Retrieving invitation with ID: ${invitationId}`);
       const invitation = await storage.getInvitationById(invitationId);
       
       if (!invitation) {
+        console.error(`Invitation with ID ${invitationId} not found`);
         return res.status(404).json({ message: "Invitation not found" });
       }
       
+      console.log(`Found invitation: ${JSON.stringify(invitation)}`);
+      
       // Check if the user has permission to resend the invitation
       if (req.user.role !== "admin") {
+        console.log(`User role is not admin, checking specific permissions`);
         // Check if the user is the creator of the invitation
         if (invitation.createdById !== req.user.id) {
+          console.log(`User ${req.user.id} is not the creator of this invitation, checking project permissions`);
           // Check if the user has edit access to the project
           const projectUser = await storage.getProjectUser(invitation.projectId, req.user.id);
           if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
+            console.error(`User ${req.user.id} does not have permission to resend invitation ${invitationId}`);
             return res.status(403).json({ message: "You don't have permission to resend this invitation" });
           }
         }
       }
       
       // Get the inviter data
+      console.log(`Retrieving inviter (current user) data: ${req.user.id}`);
       const inviter = await storage.getUser(req.user.id);
       
       // Check if this is a system-wide invitation (null projectId) or project-specific
       const isSystemInvite = invitation.projectId === null;
+      console.log(`Invitation type: ${isSystemInvite ? 'System-wide' : 'Project-specific'}`);
       
       // If SendGrid API key is available, send the email
       let emailSent = false;
@@ -2184,10 +2246,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
       if (process.env.SENDGRID_API_KEY) {
+        console.log(`SendGrid API key is available, preparing to resend invitation email`);
         try {
           if (inviter) {
             if (isSystemInvite) {
               // Import the sendSystemInvitationEmail function
+              console.log(`Importing sendSystemInvitationEmail from ./utils/sendgrid`);
               const { sendSystemInvitationEmail } = await import('./utils/sendgrid');
               
               console.log(`Resending system invitation email to ${invitation.email} from "${inviter.name}"`);
@@ -2205,6 +2269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`SUCCESS: System invitation email resent to ${invitation.email}`);
                 
                 // Update the invitation to record that email was sent successfully
+                console.log(`Updating invitation ${invitation.id} to record successful email delivery`);
                 await storage.updateInvitation(invitation.id, { emailSent: true });
                 invitation.emailSent = true;
               } else {
@@ -2212,10 +2277,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               // For project-specific invitations
+              console.log(`Retrieving project with ID: ${invitation.projectId}`);
               const project = await storage.getProject(invitation.projectId);
               
               if (project) {
                 // Import the sendInvitationEmail function
+                console.log(`Importing sendInvitationEmail from ./utils/sendgrid`);
                 const { sendInvitationEmail } = await import('./utils/sendgrid');
                 
                 console.log(`Resending project invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
@@ -2234,17 +2301,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.log(`SUCCESS: Project invitation email resent to ${invitation.email}`);
                   
                   // Update the invitation to record that email was sent successfully
+                  console.log(`Updating invitation ${invitation.id} to record successful email delivery`);
                   await storage.updateInvitation(invitation.id, { emailSent: true });
                   invitation.emailSent = true;
                 } else {
                   console.error(`ERROR: Failed to resend project invitation email to ${invitation.email}`);
                 }
               } else {
-                console.error(`Cannot resend invitation email: Project not found`);
+                console.error(`Cannot resend invitation email: Project ${invitation.projectId} not found`);
               }
             }
           } else {
-            console.error(`Cannot resend invitation email: Inviter not found`);
+            console.error(`Cannot resend invitation email: Inviter with ID ${req.user.id} not found`);
           }
         } catch (emailError) {
           console.error('Error resending invitation email:', emailError);
@@ -2258,7 +2326,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Log activity - different for admin invite vs project invite
+      console.log(`Logging invitation resend activity`);
       if (isSystemInvite) {
+        console.log(`Logging system-wide invitation resend activity`);
         await storage.logActivity({
           userId: req.user.id,
           action: "resent_system_invitation_email",
@@ -2267,6 +2337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           metadata: { inviteeEmail: invitation.email, emailSent }
         });
       } else {
+        console.log(`Logging project-specific invitation resend activity`);
         await storage.logActivity({
           userId: req.user.id,
           action: "resent_invitation_email",
@@ -2276,15 +2347,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.status(200).json({ 
+      // Prepare the response
+      const responseData = { 
         success: true, 
         emailSent, 
         invitation: {
           ...invitation,
           emailSent
         }
-      });
+      };
+      
+      console.log(`Resend invitation response data:`, JSON.stringify(responseData));
+      
+      // Return the success response
+      console.log(`Sending 200 response with resend data`);
+      return res.status(200).json(responseData);
     } catch (error) {
+      console.error("Error resending invitation:", error);
+      console.error("Error details:", error instanceof Error ? error.message : String(error));
+      if (error instanceof Error && error.stack) {
+        console.error("Error stack trace:", error.stack);
+      }
       next(error);
     }
   });

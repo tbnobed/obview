@@ -29,18 +29,40 @@ export default function AdminInviteForm({ onInviteSent }: AdminInviteFormProps) 
       // Get the current domain from the browser window
       const origin = window.location.origin;
       
-      return await apiRequest("POST", "/api/invite", {
+      console.log("Starting invitation creation with origin:", origin);
+      
+      // Make the POST request to create a system-wide invitation
+      const response = await apiRequest("POST", "/api/invite", {
         email,
         role,
         appUrl: origin, // Send the current domain to the server
       });
+      
+      console.log("Invitation creation raw response:", response);
+      
+      // Parse the response to JSON
+      try {
+        // If the response is already an object, return it directly
+        if (typeof response === 'object' && response !== null) {
+          return response;
+        }
+        
+        // Otherwise, try to parse it as JSON
+        return await response.json();
+      } catch (parseError) {
+        console.error("Error parsing invitation response:", parseError);
+        // If parsing fails, return the raw response
+        return response;
+      }
     },
     onSuccess: (response) => {
       // Log the complete response for debugging
-      console.log("Invitation creation response:", response);
+      console.log("Invitation creation success response:", response);
       
       // Get invitation ID for resending
       const invitationId = response?.invitationId;
+      
+      console.log("Extracted invitation ID:", invitationId);
       
       if (invitationId) {
         // Directly make the API request to resend without using a hook
@@ -52,13 +74,34 @@ export default function AdminInviteForm({ onInviteSent }: AdminInviteFormProps) 
           try {
             // Get the current domain from the browser window
             const origin = window.location.origin;
+            console.log("Resending with origin:", origin);
             
-            const resendResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
+            // Make the resend request
+            const resendRawResponse = await apiRequest("POST", `/api/invite/${invitationId}/resend`, {
               appUrl: origin // Send the current domain to the server
             });
-            console.log("Auto-resend response:", resendResponse);
+            
+            console.log("Auto-resend raw response:", resendRawResponse);
+            
+            // Parse the response
+            let resendResponse;
+            try {
+              // If the response is already an object, use it directly
+              if (typeof resendRawResponse === 'object' && resendRawResponse !== null) {
+                resendResponse = resendRawResponse;
+              } else {
+                // Otherwise, try to parse it as JSON
+                resendResponse = await resendRawResponse.json();
+              }
+            } catch (parseError) {
+              console.error("Error parsing resend response:", parseError);
+              resendResponse = resendRawResponse;
+            }
+            
+            console.log("Auto-resend parsed response:", resendResponse);
             
             const emailSent = resendResponse?.emailSent;
+            console.log("Email sent status:", emailSent);
             
             // Show appropriate toast based on email delivery status
             if (emailSent) {
@@ -85,6 +128,7 @@ export default function AdminInviteForm({ onInviteSent }: AdminInviteFormProps) 
         })();
       } else {
         // Fallback if invitationId isn't in the response
+        console.log("No invitation ID found in response, showing generic success message");
         toast({
           title: "Invitation created",
           description: `An invitation for ${email} was created and should be available in the invitations list.`,
