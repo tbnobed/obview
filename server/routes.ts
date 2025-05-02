@@ -1058,6 +1058,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Check if file is marked as unavailable
+      if (file.isAvailable === false) {
+        console.log(`File ${fileId} (${file.filename}) was requested but is marked as unavailable`);
+        return res.status(404).json({ 
+          message: "File not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
+      // Check if the file physically exists before sending
+      try {
+        await fs.access(file.filePath);
+      } catch (err) {
+        console.error(`File ${fileId} (${file.filename}) physical file not found at ${file.filePath}`);
+        
+        // If file doesn't physically exist but is not marked as unavailable, mark it now
+        if (file.isAvailable !== false) {
+          console.log(`Marking file ${fileId} as unavailable since it was not found on disk`);
+          await storage.updateFile(fileId, { isAvailable: false });
+        }
+        
+        return res.status(404).json({ 
+          message: "File not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
       // Send the file
       res.sendFile(file.filePath, { root: '/' });
     } catch (error) {
@@ -1083,6 +1112,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Check if file is marked as unavailable
+      if (file.isAvailable === false) {
+        console.log(`File ${fileId} (${file.filename}) download requested but file is marked as unavailable`);
+        return res.status(404).json({ 
+          message: "File not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
+      // Check if the file physically exists before sending
+      try {
+        await fs.access(file.filePath);
+      } catch (err) {
+        console.error(`File ${fileId} (${file.filename}) physical file not found at ${file.filePath}`);
+        
+        // If file doesn't physically exist but is not marked as unavailable, mark it now
+        if (file.isAvailable !== false) {
+          console.log(`Marking file ${fileId} as unavailable since it was not found on disk`);
+          await storage.updateFile(fileId, { isAvailable: false });
+        }
+        
+        return res.status(404).json({ 
+          message: "File not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
       // Set content disposition to force download
       res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
       
@@ -1103,6 +1161,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!file) {
         return res.status(404).json({ message: "Shared file not found" });
+      }
+      
+      // Check if file is marked as unavailable
+      if (file.isAvailable === false) {
+        console.log(`Shared file with token ${token} was requested but is marked as unavailable`);
+        return res.status(404).json({ 
+          message: "Shared file not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
+      // Check if the file physically exists before sending
+      try {
+        await fs.access(file.filePath);
+      } catch (err) {
+        console.error(`Shared file with token ${token} physical file not found at ${file.filePath}`);
+        
+        // If file doesn't physically exist but is not marked as unavailable, mark it now
+        if (file.isAvailable !== false) {
+          console.log(`Marking shared file with ID ${file.id} as unavailable since it was not found on disk`);
+          await storage.updateFile(file.id, { isAvailable: false });
+        }
+        
+        return res.status(404).json({ 
+          message: "Shared file not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
       }
       
       // Send only the file content
@@ -1717,19 +1804,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Delete the file
+      // Look for any database entries that reference this file
+      const allFiles = await storage.getAllFiles();
+      const matchingFiles = allFiles.filter(file => 
+        file.filePath.includes(sanitizedFilename) || 
+        file.filename === sanitizedFilename
+      );
+      
+      // Mark matching files as unavailable in the database
+      if (matchingFiles.length > 0) {
+        console.log(`Found ${matchingFiles.length} database references to file ${sanitizedFilename}`);
+        
+        for (const file of matchingFiles) {
+          console.log(`Marking file ID ${file.id} as unavailable`);
+          await storage.updateFile(file.id, { isAvailable: false });
+        }
+      }
+      
+      // Delete the physical file
       await fileSystem.deleteFile(filePath);
       
-      // Log activity
+      // Log activity with references to affected database entries
       await storage.logActivity({
         action: "delete",
         entityType: "file",
-        entityId: 0, // We don't have a specific ID since this is a physical file
+        entityId: matchingFiles.length > 0 ? matchingFiles[0].id : 0,
         userId: req.user.id,
-        metadata: { filename: sanitizedFilename }
+        metadata: { 
+          filename: sanitizedFilename,
+          affectedFileIds: matchingFiles.map(f => f.id),
+          filesMarkedUnavailable: matchingFiles.length
+        }
       });
       
-      res.json({ message: "File deleted successfully" });
+      res.json({ 
+        message: "File deleted successfully", 
+        databaseEntriesUpdated: matchingFiles.length
+      });
     } catch (error) {
       console.error("Error deleting file:", error);
       next(error);
