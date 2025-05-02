@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 // Create a comment schema with only the fields we need for the form
 const commentFormSchema = z.object({
-  content: z.string().min(1, "Comment cannot be empty"),
+  content: z.string().refine((val) => val.trim().length > 0, "Comment cannot be empty"),
 });
 
 type CommentFormValues = z.infer<typeof commentFormSchema>;
