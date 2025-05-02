@@ -6,6 +6,8 @@ import { formatTimeAgo } from "@/lib/utils/formatters";
 import type { Comment } from "@shared/schema";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // Format time (seconds to MM:SS)
 const formatTime = (time: number | null) => {

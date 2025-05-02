@@ -171,18 +171,32 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                     onClick={(e) => e.stopPropagation()} 
                   />
                 ),
-                // Override link rendering
-                a: ({ node, ...props }) => (
-                  <a 
-                    {...props} 
-                    className="text-primary hover:underline"
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {props.children}
-                  </a>
-                )
+                // Override link rendering with special handling for file downloads
+                a: ({ node, href, ...props }) => {
+                  // Check if this is a file download link
+                  const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
+                  
+                  return (
+                    <a 
+                      href={href}
+                      {...props} 
+                      className={`${isFileDownload ? 'text-blue-600 font-medium' : 'text-primary'} hover:underline`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // For file downloads, we want to trigger the download attribute
+                        if (isFileDownload) {
+                          e.preventDefault();
+                          window.open(href, '_blank');
+                        }
+                      }}
+                    >
+                      {isFileDownload && <span className="mr-1">📎</span>}
+                      {props.children}
+                    </a>
+                  );
+                }
               }}
             >
               {comment.content}
