@@ -94,7 +94,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
     <div className="space-y-4">
       <div className="border rounded-md divide-y dark:border-gray-800 dark:divide-gray-800">
         {teamMembers.map((member: any) => (
-          <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:bg-[#0a0d14] dark:hover:bg-[#14171e] dark:text-white">
+          <div key={member.id} className="flex items-center justify-between p-3 hover-smooth-light dark:bg-[#0a0d14] dark:text-white hover-subtle-dark">
             <div className="flex items-center gap-3">
               <Avatar>
                 <AvatarImage src={`https://avatar.vercel.sh/${member.user?.name || member.user?.email}?size=64`} />
@@ -145,7 +145,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
                           <Button 
                             size="icon" 
                             variant="ghost"
-                            className="text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-500 dark:hover:bg-red-950/20"
+                            className="text-gray-500 hover:text-red-600 hover:bg-red-50/40 dark:text-gray-400 dark:hover:text-red-500 dark:hover:bg-red-950/10"
                             onClick={() => setPendingRemoveUserId(member.userId)}
                           >
                             <Trash2 className="h-4 w-4" />

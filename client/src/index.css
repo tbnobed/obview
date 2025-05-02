@@ -66,6 +66,47 @@
     background-image: radial-gradient(circle at 25% 25%, rgba(20, 184, 166, 0.01) 0%, transparent 50%),
                       radial-gradient(circle at 75% 75%, rgba(20, 184, 166, 0.01) 0%, transparent 50%);
   }
+  
+  /* Global smooth hover transitions */
+  button, a, [role="button"], 
+  .hover-transition, 
+  select, input, textarea,
+  .card, .badge, .avatar,
+  .hover-item {
+    @apply transition-all duration-200 ease-in-out;
+  }
+}
+
+/* Custom hover styles for the entire application */
+.hover-smooth-light:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dark .hover-smooth-light:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Slightly stronger hover effect for interactive elements */
+.hover-smooth:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.dark .hover-smooth:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Subtle dark mode hover */
+.dark .hover-subtle-dark:hover {
+  background-color: rgba(20, 23, 30, 0.8); /* Subtle lighter shade */
+}
+
+/* Teal hover for dark mode */
+.dark .hover-teal:hover {
+  background-color: rgba(2, 109, 85, 0.9); /* Slightly transparent teal */
 }
 
 /* Custom emoji picker styles */

@@ -68,7 +68,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
         variant={variant} 
         size={size}
         onClick={handleOpenDialog}
-        className={`gap-1 ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-[#026d55]' : 'dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white'}`}
+        className={`gap-1 ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/50 dark:hover:text-[#026d55] hover-smooth-light' : 'dark:bg-[#026d55] dark:hover:bg-[#025943]/90 dark:text-white hover-teal'}`}
         data-variant-type={variant}
       >
         <ShareIcon className="h-4 w-4" />
@@ -97,7 +97,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
               size="icon" 
               variant="secondary"
               onClick={handleCopyLink}
-              className="dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white"
+              className="dark:bg-[#026d55] dark:hover:bg-[#025943]/90 dark:text-white hover-teal"
             >
               {copied ? (
                 <CheckIcon className="h-4 w-4" />
