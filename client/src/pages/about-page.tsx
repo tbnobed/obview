@@ -5,7 +5,7 @@ export default function AboutPage() {
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="prose lg:prose-xl mx-auto">
+        <div className="prose lg:prose-xl dark:prose-invert prose-p:dark:text-gray-200 prose-li:dark:text-gray-200 mx-auto">
           <h1 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">About Obviu.io</h1>
           
           <section className="mb-8">

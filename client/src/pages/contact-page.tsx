@@ -68,7 +68,7 @@ export default function ContactPage() {
         <div className="grid md:grid-cols-2 gap-8">
           <div>
             <h2 className="text-2xl font-semibold mb-6">Get in Touch</h2>
-            <p className="mb-8 text-gray-600">
+            <p className="mb-8 text-gray-600 dark:text-gray-200">
               Have questions about Obviu.io? Need help with your account or have feedback to share?
               We'd love to hear from you. Fill out the form and we'll get back to you as soon as possible.
             </p>
@@ -81,7 +81,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-medium">Email</h3>
-                    <p className="text-gray-600">contact@obviu.io</p>
+                    <p className="text-gray-600 dark:text-gray-300">contact@obviu.io</p>
                   </div>
                 </CardContent>
               </Card>
@@ -93,7 +93,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-medium">Phone</h3>
-                    <p className="text-gray-600">+1 (555) 123-4567</p>
+                    <p className="text-gray-600 dark:text-gray-300">+1 (555) 123-4567</p>
                   </div>
                 </CardContent>
               </Card>
@@ -105,8 +105,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-medium">Address</h3>
-                    <p className="text-gray-600">123 Media Lane, Suite 456</p>
-                    <p className="text-gray-600">San Francisco, CA 94103</p>
+                    <p className="text-gray-600 dark:text-gray-300">123 Media Lane, Suite 456</p>
+                    <p className="text-gray-600 dark:text-gray-300">San Francisco, CA 94103</p>
                   </div>
                 </CardContent>
               </Card>

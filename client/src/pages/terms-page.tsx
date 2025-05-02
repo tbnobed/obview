@@ -5,11 +5,11 @@ export default function TermsPage() {
   return (
     <PageLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="prose lg:prose-xl mx-auto">
+        <div className="prose lg:prose-xl dark:prose-invert prose-p:dark:text-gray-200 prose-li:dark:text-gray-200 mx-auto">
           <h1 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">Terms of Service</h1>
           
           <section className="mb-8">
-            <p className="text-sm text-gray-500 mb-6">Last Updated: May 2, 2025</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Last Updated: May 2, 2025</p>
             
             <p className="mb-4">
               Please read these Terms of Service carefully before using Obviu.io. Your access to and use
