@@ -94,7 +94,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
     <div className="space-y-4">
       <div className="border rounded-md divide-y dark:border-gray-800 dark:divide-gray-800">
         {teamMembers.map((member: any) => (
-          <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-[#0f1218] dark:text-white">
+          <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:bg-[#0a0d14] dark:hover:bg-[#14171e] dark:text-white">
             <div className="flex items-center gap-3">
               <Avatar>
                 <AvatarImage src={`https://avatar.vercel.sh/${member.user?.name || member.user?.email}?size=64`} />
