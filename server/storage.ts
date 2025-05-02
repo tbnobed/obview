@@ -459,6 +459,15 @@ export class MemStorage implements IStorage {
       (approval) => approval.userId === userId && approval.fileId === fileId
     );
   }
+  
+  async updateApproval(id: number, data: Partial<InsertApproval>): Promise<Approval | undefined> {
+    const approval = this.approvals.get(id);
+    if (!approval) return undefined;
+    
+    const updatedApproval: Approval = { ...approval, ...data };
+    this.approvals.set(id, updatedApproval);
+    return updatedApproval;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -846,6 +855,15 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return approval;
+  }
+  
+  async updateApproval(id: number, data: Partial<InsertApproval>): Promise<Approval | undefined> {
+    const [updatedApproval] = await db
+      .update(approvals)
+      .set(data)
+      .where(eq(approvals.id, id))
+      .returning();
+    return updatedApproval;
   }
 }
 

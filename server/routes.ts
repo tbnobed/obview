@@ -1404,7 +1404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (existingApproval) {
         // Update existing approval
-        approval = await storage.updateFile(existingApproval.id, validationResult.data);
+        approval = await storage.updateApproval(existingApproval.id, validationResult.data);
       } else {
         // Create new approval
         approval = await storage.createApproval(validationResult.data);
@@ -1458,6 +1458,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: validationResult.data.status,
         },
       });
+      
+      // Send email notification to project members if SendGrid API key is available
+      if (process.env.SENDGRID_API_KEY) {
+        try {
+          // Import the sendApprovalEmail function from utils/sendgrid
+          const { sendApprovalEmail } = await import('./utils/sendgrid');
+          
+          // Get all users in the project
+          const projectUsers = await storage.getProjectUsers(file.projectId);
+          const project = await storage.getProject(file.projectId);
+          
+          if (project && projectUsers.length > 0) {
+            // Get emails of all project members except the current user
+            const userPromises = projectUsers
+              .filter(pu => pu.userId !== req.user.id) // Exclude the current user
+              .map(async pu => {
+                const user = await storage.getUser(pu.userId);
+                return user;
+              });
+            
+            const users = await Promise.all(userPromises);
+            const validUsers = users.filter(Boolean);
+            
+            console.log(`Sending approval notification emails to ${validUsers.length} project members`);
+            
+            // Send emails in parallel
+            if (validUsers.length > 0) {
+              // Get the base URL from the request (if provided in headers)
+              const appUrl = req.headers.origin || undefined;
+              
+              // Send email to each project member
+              const emailPromises = validUsers.map(user => {
+                return sendApprovalEmail(
+                  user.email,
+                  req.user.name,
+                  project.name,
+                  file.filename,
+                  validationResult.data.status,
+                  validationResult.data.feedback,
+                  appUrl,
+                  file.projectId
+                );
+              });
+              
+              // Wait for all emails to be sent
+              const emailResults = await Promise.all(emailPromises);
+              const sentCount = emailResults.filter(Boolean).length;
+              
+              console.log(`Successfully sent ${sentCount} of ${emailResults.length} approval notification emails`);
+            }
+          }
+        } catch (emailError) {
+          console.error('Error sending approval notification emails:', emailError);
+          // Don't fail the request if emails fail to send
+        }
+      }
       
       res.status(201).json(approvalWithUser);
     } catch (error) {

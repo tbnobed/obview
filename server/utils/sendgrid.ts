@@ -174,6 +174,93 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
  * @param appUrl Base URL of the application
  * @returns Promise<boolean> Success status
  */
+/**
+ * Send approval status email for a file
+ * @param to Recipient email
+ * @param approverName Name of the person who approved/requested changes
+ * @param projectName Name of the project
+ * @param fileName Name of the file
+ * @param status Approval status ("approved" or "requested_changes")
+ * @param feedback Any feedback provided
+ * @param appUrl Base URL of the application
+ * @param projectId Project ID for constructing the URL
+ * @returns Promise<boolean> Success status
+ */
+export async function sendApprovalEmail(
+  to: string,
+  approverName: string,
+  projectName: string,
+  fileName: string,
+  status: string,
+  feedback?: string | null,
+  appUrl?: string,
+  projectId?: number
+): Promise<boolean> {
+  try {
+    logToFile(`Preparing approval email to ${to} for file "${fileName}" in project "${projectName}" from "${approverName}"`);
+    logToFile(`Status: ${status}, Feedback: ${feedback || 'None provided'}`);
+    
+    // Use the client-provided URL if available, otherwise fall back to config
+    const baseUrl = appUrl || config.appDomain;
+    logToFile(`Using base URL for approval: ${baseUrl}`);
+    
+    // Generate project URL if project ID is provided
+    const projectUrl = projectId ? `${baseUrl}/projects/${projectId}` : baseUrl;
+    
+    // Set subject and content based on approval status
+    const isApproved = status === "approved";
+    const subject = isApproved 
+      ? `${approverName} approved "${fileName}" in project "${projectName}"`
+      : `${approverName} requested changes to "${fileName}" in project "${projectName}"`;
+    
+    const actionText = isApproved ? "approved" : "requested changes to";
+    const statusColor = isApproved ? "#10b981" : "#f59e0b";
+    const statusText = isApproved ? "APPROVED" : "CHANGES REQUESTED";
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: ${statusColor}; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">${statusText}</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+          <p>Hello,</p>
+          <p><strong>${approverName}</strong> has ${actionText} <strong>${fileName}</strong> in project <strong>${projectName}</strong>.</p>
+          ${feedback ? `<p><strong>Feedback:</strong> ${feedback}</p>` : ''}
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${projectUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Project</a>
+          </div>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #64748b; font-size: 12px;">This is an automated notification from the OBview.io platform.</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+      ${approverName} has ${actionText} ${fileName} in project ${projectName}.
+      ${feedback ? `\nFeedback: ${feedback}` : ''}
+      
+      To view the project, visit: ${projectUrl}
+    `;
+    
+    // Use the verified sender identity
+    const sender = config.emailFrom;
+    logToFile(`Using sender email: ${sender}`);
+    
+    return await sendEmail({
+      to,
+      from: sender,
+      subject,
+      html,
+      text
+    });
+  } catch (error) {
+    const errorMsg = `Error preparing approval email to ${to}: ${error instanceof Error ? error.message : String(error)}`;
+    console.error(errorMsg);
+    logToFile(errorMsg);
+    return false;
+  }
+}
+
 export async function sendInvitationEmail(
   to: string,
   inviterName: string,
