@@ -29,7 +29,7 @@ export default function Header() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full">
-          <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold">
+          <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-400 font-semibold">
             {user?.name.charAt(0).toUpperCase()}
           </div>
         </Button>
@@ -38,14 +38,14 @@ export default function Header() {
         <DropdownMenuLabel>
           <div className="flex flex-col">
             <span>{user?.name}</span>
-            <span className="text-xs text-neutral-500">{user?.email}</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">{user?.email}</span>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate("/settings")}>
           Settings
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+        <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400">
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
