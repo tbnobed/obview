@@ -101,6 +101,30 @@ export default function MediaPlayer({
 
     // If there's a video/audio element, load the content manually
     if (file && file.isAvailable !== false) {
+      // Debug information about file URL 
+      const fileUrl = `/api/files/${file.id}/content`;
+      console.log(`[DEBUG] File URL: ${fileUrl}`);
+      
+      // Use fetch to directly check if the file is accessible
+      fetch(fileUrl, { credentials: 'include' })
+        .then(response => {
+          console.log(`[DEBUG] File fetch status: ${response.status} ${response.statusText}`);
+          if (!response.ok) {
+            console.error(`[DEBUG] Failed to load file: ${response.status} ${response.statusText}`);
+            setMediaError(true);
+            setErrorMessage(`Error loading file: ${response.status} ${response.statusText}`);
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          console.log(`[DEBUG] File blob type: ${blob.type}, size: ${blob.size}`);
+        })
+        .catch(error => {
+          console.error('[DEBUG] Error fetching file:', error);
+          setMediaError(true);
+          setErrorMessage(`Error loading file: ${error.message}`);
+        });
+      
       if (videoRef.current) {
         videoRef.current.load();
       }

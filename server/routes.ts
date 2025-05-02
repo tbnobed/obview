@@ -1802,6 +1802,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // DEBUG ENDPOINT: Utility endpoint to check file paths and existence
+  app.get("/api/debug/files", isAdmin, async (req, res, next) => {
+    try {
+      console.log("Running debug file check endpoint");
+      
+      // Get all files from storage
+      const files = await storage.getAllFiles();
+      
+      // Check each file's existence on disk
+      const fileDetails = await Promise.all(
+        files.map(async (file) => {
+          const exists = await fileSystem.fileExists(file.filePath);
+          
+          return {
+            id: file.id,
+            filename: file.filename,
+            filePath: file.filePath,
+            fileType: file.fileType,
+            projectId: file.projectId,
+            isAvailable: file.isAvailable,
+            exists: exists,
+            absolutePath: path.resolve(file.filePath),
+            uploadDir: process.env.UPLOAD_DIR || './uploads',
+            currentDir: process.cwd()
+          };
+        })
+      );
+      
+      res.json({
+        count: files.length,
+        files: fileDetails
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
   // Get all uploaded files (admin only)
   app.get("/api/system/uploads", isAdmin, async (req, res, next) => {
     try {
