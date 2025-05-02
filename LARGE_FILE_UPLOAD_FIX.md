@@ -1,86 +1,102 @@
-# Fixing "413 Request Entity Too Large" in Docker
+# Large File Upload Fix
 
-## Solution Overview
+This document explains the implementation of robust large file upload capabilities in Obviu.io.
 
-The "413 Request Entity Too Large" error occurs because Nginx (your reverse proxy) has a default request body size limit that is too small for your large file uploads.
+## Problem Overview
 
-## Implementation Steps
+Large file uploads (particularly video files) were failing at approximately 95% completion without any clear error messages. This occurred because:
 
-### Option 1: If you're using the Docker Compose setup with Nginx
+1. The progress tracking was simulated rather than based on actual upload progress
+2. The upload was using the fetch API, which lacks progress tracking capabilities
+3. There was no proper error handling for network timeouts
 
-1. **Copy the nginx.conf file** to the same directory as your docker-compose.yml file:
-   ```bash
-   # Make sure nginx.conf is in the same directory as docker-compose.yml
-   ```
+## Solution Implementation
 
-2. **Restart your Docker stack**:
-   ```bash
-   docker-compose down
-   docker-compose up -d
-   ```
+### 1. Server-Side Configuration
 
-### Option 2: If you're using a standalone Nginx server outside Docker
+The server is already properly configured for large file uploads with:
 
-1. **Locate your Nginx configuration file**:
-   This is typically found in one of these locations:
-   - `/etc/nginx/nginx.conf`
-   - `/etc/nginx/conf.d/default.conf`
-   - `/etc/nginx/sites-available/default`
+- 5GB file size limit in Multer:
+  ```javascript
+  const upload = multer({ 
+    storage: storage_config,
+    limits: {
+      fileSize: 5 * 1024 * 1024 * 1024, // 5GB limit
+    }
+  });
+  ```
 
-2. **Modify the Nginx configuration** to include these settings within your server block:
-   ```nginx
-   server {
-       # Existing settings...
-       
-       # Add these lines:
-       client_max_body_size 5120M;
-       client_body_timeout 3600s;
-       client_header_timeout 3600s;
-       keepalive_timeout 3600s;
-       send_timeout 3600s;
-       proxy_connect_timeout 3600s;
-       proxy_send_timeout 3600s;
-       proxy_read_timeout 3600s;
-       
-       # Existing settings...
-   }
-   ```
+- Extended request timeout (1 hour) in Express:
+  ```javascript
+  app.use((req, res, next) => {
+    res.setTimeout(3600000); // 1 hour timeout
+    next();
+  });
+  ```
 
-3. **Test and reload Nginx**:
-   ```bash
-   sudo nginx -t
-   sudo systemctl reload nginx
-   ```
+- Increased JSON body size limits:
+  ```javascript
+  app.use(express.json({ limit: '5120mb' }));
+  app.use(express.urlencoded({ extended: false, limit: '5120mb' }));
+  ```
 
-## Verification
+### 2. Client-Side Implementation
 
-After implementing either solution:
+The client-side upload implementation was enhanced to:
 
-1. Try uploading a large file (>1.5GB)
-2. The upload should now succeed without the 413 error
+- Use XMLHttpRequest instead of fetch to track real upload progress
+- Set appropriate timeout thresholds for large files
+- Provide detailed error messages for various failure scenarios
 
-## Additional Troubleshooting
+Key changes:
 
-If you still encounter issues:
+```javascript
+// Use XMLHttpRequest for real progress updates
+const xhr = new XMLHttpRequest();
 
-1. **Check Nginx logs**:
-   ```bash
-   docker logs obview_nginx  # If using Docker
-   sudo tail -f /var/log/nginx/error.log  # If using standalone Nginx
-   ```
+// Track upload progress
+xhr.upload.addEventListener('progress', (event) => {
+  if (event.lengthComputable) {
+    const percentComplete = (event.loaded / event.total) * 100;
+    setUploadProgress(percentComplete);
+  }
+});
 
-2. **Verify file size limits**:
-   - Check that both Nginx AND Express app limits are set high enough
-   - Current settings allow up to 5GB files
+// Handle timeout with a longer duration for large files
+xhr.timeout = 3600000; // 1 hour in milliseconds
 
-3. **Check for network timeouts**:
-   - Large file uploads may hit timeouts before completing
-   - The configuration includes extended timeouts (1 hour)
+// Set up timeout handler
+xhr.ontimeout = () => {
+  reject(new Error('Upload timed out. The file may be too large or your connection is slow.'));
+};
+```
 
-## Other Potential Issues
+## Benefits
 
-1. **Server memory limitations**: Ensure your server has sufficient RAM to handle large file uploads
-2. **Disk space**: Verify there's enough space on the server to store large files
-3. **Network stability**: Large uploads require stable connections
+1. **Accurate Progress Tracking**: Users now see the real upload progress rather than a simulated approximation
+2. **Improved Error Handling**: Specific error messages for network issues, timeouts, and server errors
+3. **Increased Reliability**: Uploads can complete successfully regardless of file size (up to 5GB limit)
+4. **Better User Experience**: Clear indication of progress and any issues that arise
 
-If you continue to have issues after implementing these changes, please check server resource utilization during large file uploads.
+## Troubleshooting Tips
+
+If large file uploads still fail:
+
+1. Check server logs for any memory or disk space issues
+2. Verify that any proxy or load balancer timeout settings are set to at least 1 hour
+3. Ensure there are no network interruptions during the upload
+4. For file sizes above 5GB, increase the limits in both Multer configuration and Express body parser
+
+## Docker Implementation Notes
+
+When running in Docker, ensure container resource limits are sufficient for large uploads:
+
+```yaml
+services:
+  app:
+    # ...
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+```

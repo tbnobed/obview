@@ -116,22 +116,57 @@ export default function FileUploadPage() {
     }
 
     try {
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          const newProgress = prev + Math.random() * 10;
-          return newProgress > 95 ? 95 : newProgress;
-        });
-      }, 300);
-
-      // Send the file to the server
-      const response = await fetch(`/api/projects/${projectId}/upload`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
+      // Use XMLHttpRequest for real progress updates
+      const xhr = new XMLHttpRequest();
+      
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = (event.loaded / event.total) * 100;
+          setUploadProgress(percentComplete);
+        }
       });
-
-      clearInterval(progressInterval);
+      
+      // Handle timeout with a longer duration for large files
+      xhr.timeout = 3600000; // 1 hour in milliseconds
+      
+      // Create a promise to handle the XHR request
+      const xhrPromise = new Promise<Response>((resolve, reject) => {
+        xhr.open('POST', `/api/projects/${projectId}/upload`, true);
+        
+        // Set up completion handler
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            // Create a Response object from the XHR response
+            const response = new Response(xhr.response, {
+              status: xhr.status,
+              statusText: xhr.statusText,
+              headers: new Headers({
+                'Content-Type': xhr.getResponseHeader('Content-Type') || 'application/json'
+              })
+            });
+            resolve(response);
+          } else {
+            reject(new Error(xhr.statusText || `Upload failed with status ${xhr.status}`));
+          }
+        };
+        
+        // Set up error handler
+        xhr.onerror = () => {
+          reject(new Error('Network error during upload'));
+        };
+        
+        // Set up timeout handler
+        xhr.ontimeout = () => {
+          reject(new Error('Upload timed out. The file may be too large or your connection is slow.'));
+        };
+        
+        // Send the request
+        xhr.send(formData);
+      });
+      
+      // Wait for the XHR request to complete
+      const response = await xhrPromise;
 
       if (response.ok) {
         setUploadProgress(100);
