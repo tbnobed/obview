@@ -143,7 +143,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
       {sortedComments.map((comment: Comment & { user?: any, file?: any }) => (
         <div 
           key={comment.id} 
-          className={`border rounded-lg p-4 ${comment.file?.id ? 'cursor-pointer hover:bg-neutral-50 dark:hover:bg-[#0f1218] hover:border-primary-400 dark:hover:border-[#026d55] hover:shadow-sm transition-all' : ''}`}
+          className={`border rounded-lg p-4 ${comment.file?.id ? 'cursor-pointer hover-smooth-light dark:hover-subtle-dark hover:border-primary-400 dark:hover:border-[#026d55] hover:shadow-sm transition-all duration-200' : ''}`}
           onClick={() => navigateToComment(comment)}
           title={comment.file?.id ? `Click to view ${comment.timestamp !== null ? `at ${formatTime(comment.timestamp)}` : ''} in ${comment.file.filename}` : ''}
         >
@@ -211,7 +211,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    className="h-6 px-2 py-0 text-xs bg-primary-100 text-primary hover:text-primary-600 hover:bg-primary-200 border-primary-200 dark:bg-[#026d55]/20 dark:text-[#026d55] dark:hover:bg-[#025943]/30 dark:hover:text-[#03ffc8] dark:border-[#025943]"
+                    className="h-6 px-2 py-0 text-xs bg-primary-100 text-primary hover:text-primary-600 hover:bg-primary-200 border-primary-200 dark:bg-[#026d55]/20 dark:text-[#026d55] dark:hover:bg-[#025943]/30 dark:hover:text-[#03ffc8] dark:border-[#025943] transition-all duration-200"
                     onClick={(e) => {
                       e.stopPropagation();  // Prevent parent div click
                       navigateToComment(comment);

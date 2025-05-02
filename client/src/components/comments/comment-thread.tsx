@@ -117,7 +117,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
         "mb-5 pb-5",
         comment.isResolved ? "opacity-60" : "",
         isActive ? "bg-yellow-50 dark:bg-yellow-900/20 -mx-4 px-4 py-3 rounded-md transition-all duration-300" : "",
-        comment.timestamp !== null ? "cursor-pointer hover:bg-neutral-50 dark:hover:bg-gray-800" : "",
+        comment.timestamp !== null ? "cursor-pointer hover-smooth-light dark:hover-subtle-dark" : "",
         comments.indexOf(comment) < comments.length - 1 ? "border-b border-neutral-200 dark:border-gray-800" : ""
       )}
       onClick={(e) => {
@@ -149,7 +149,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
             <div className="flex flex-wrap items-center gap-1.5">
               {comment.timestamp !== null && (
                 <button 
-                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-gray-800 text-neutral-800 dark:text-gray-300"
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-gray-800 text-neutral-800 dark:text-gray-300 transition-colors duration-200"
                   onClick={() => onTimeClick && onTimeClick(comment.timestamp || 0)}
                 >
                   <span className="font-mono">{formatTime(comment.timestamp)}</span>
