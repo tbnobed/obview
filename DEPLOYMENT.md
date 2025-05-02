@@ -213,11 +213,42 @@ git pull
 # Take down the existing containers 
 docker-compose down
 
-# Rebuild the application
-docker-compose build
+# Rebuild the application (use --no-cache to ensure all changes are included)
+docker-compose build --no-cache
 
 # Start everything up again
 docker-compose up -d
+```
+
+The application will automatically run any migrations included in the `/app/migrations` directory. However, if you're upgrading from an earlier version and find that some database schema changes weren't applied automatically, you may need to manually run SQL migrations:
+
+```bash
+# Connect to the database container
+docker-compose exec db psql -U postgres -d obviu
+
+# Once connected to the PostgreSQL prompt, you can run SQL commands.
+# For example, to add the password_resets table if missing:
+
+CREATE TABLE IF NOT EXISTS "password_resets" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "user_id" integer NOT NULL,
+  "token" text NOT NULL,
+  "expires_at" timestamp NOT NULL,
+  "is_used" boolean DEFAULT false NOT NULL,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  CONSTRAINT "password_resets_token_unique" UNIQUE("token")
+);
+
+# Add foreign key relationship
+ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_user_id_fkey" 
+FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+
+# Create indexes for better performance
+CREATE INDEX IF NOT EXISTS "IDX_password_resets_token" ON "password_resets" ("token");
+CREATE INDEX IF NOT EXISTS "IDX_password_resets_user_id" ON "password_resets" ("user_id");
+
+# Exit the PostgreSQL prompt
+\q
 ```
 
 #### Backup and Restore Database

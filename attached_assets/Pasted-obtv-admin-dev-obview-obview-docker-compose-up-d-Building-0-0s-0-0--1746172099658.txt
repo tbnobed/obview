@@ -1,0 +1,163 @@
+obtv-admin@dev-obview:~/obview$ docker-compose up -d
+[+] Building 0.0s (0/0)                                                                                                                                                                           docker:default
+[+] Running 3/3
+ ✔ Network obview_app_network  Created                                                                                                                                                                      0.1s
+ ✔ Container obview_db         Healthy                                                                                                                                                                      0.1s
+ ✔ Container obview_app        Started                                                                                                                                                                      0.0s
+obtv-admin@dev-obview:~/obview$ docker-compose logs -f
+obview_app  | Waiting for database to be ready...
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Running database migrations...
+obview_app  | Connecting to database...
+obview_app  | Looking for migrations in: /app/migrations
+obview_app  | Found 1 migration files: 0000_smooth_whistler.sql
+obview_app  | Running migration: 0000_smooth_whistler.sql
+obview_app  | Skipping: relation "activity_logs" already exists (table already exists)
+obview_app  | Skipping: relation "approvals" already exists (table already exists)
+obview_app  | Skipping: relation "comments" already exists (table already exists)
+obview_app  | Skipping: relation "files" already exists (table already exists)
+obview_app  | Skipping: relation "invitations" already exists (table already exists)
+obview_app  | Skipping: relation "project_users" already exists (table already exists)
+obview_app  | Skipping: relation "projects" already exists (table already exists)
+obview_app  | Skipping: relation "users" already exists (table already exists)
+obview_app  | Migration 0000_smooth_whistler.sql completed
+obview_app  | All migrations completed successfully
+obview_app  | Migration script completed successfully
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Checking if users table exists...
+obview_app  | Users table found
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Starting OBview.io application initialization...
+obview_app  | Found secondary entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | 7:42:03 AM [express] serving on port 5000
+obview_app  | Database connection initialized successfully
+obview_app  | Initializing PostgreSQL session store
+obview_app  | PostgreSQL session store initialized successfully
+obview_db   |
+obview_db   | PostgreSQL Database directory appears to contain a database; Skipping initialization
+obview_db   |
+obview_db   | 2025-05-02 07:41:55.998 UTC [1] LOG:  starting PostgreSQL 16.8 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db   | 2025-05-02 07:41:55.998 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db   | 2025-05-02 07:41:55.998 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db   | 2025-05-02 07:41:56.001 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2025-05-02 07:41:56.007 UTC [29] LOG:  database system was shut down at 2025-05-02 07:39:10 UTC
+obview_db   | 2025-05-02 07:41:56.019 UTC [1] LOG:  database system is ready to accept connections
+obview_db   | 2025-05-02 07:42:02.152 UTC [41] ERROR:  relation "activity_logs" already exists
+obview_db   | 2025-05-02 07:42:02.152 UTC [41] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-02 07:42:02.180 UTC [42] ERROR:  relation "approvals" already exists
+obview_db   | 2025-05-02 07:42:02.180 UTC [42] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-02 07:42:02.203 UTC [43] ERROR:  relation "comments" already exists
+obview_db   | 2025-05-02 07:42:02.203 UTC [43] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-02 07:42:02.225 UTC [44] ERROR:  relation "files" already exists
+obview_db   | 2025-05-02 07:42:02.225 UTC [44] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-02 07:42:02.246 UTC [45] ERROR:  relation "invitations" already exists
+obview_db   | 2025-05-02 07:42:02.246 UTC [45] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   )
+obview_db   | 2025-05-02 07:42:02.266 UTC [46] ERROR:  relation "project_users" already exists
+obview_db   | 2025-05-02 07:42:02.266 UTC [46] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-02 07:42:02.287 UTC [47] ERROR:  relation "projects" already exists
+obview_db   | 2025-05-02 07:42:02.287 UTC [47] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   )
+obview_db   | 2025-05-02 07:42:02.306 UTC [48] ERROR:  relation "users" already exists
+obview_db   | 2025-05-02 07:42:02.306 UTC [48] STATEMENT:
+obview_db   |   --> statement-breakpoint
+obview_db   |   CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   )
+obview_app  | 7:42:20 AM [express] GET /api/user 401 in 4ms
+obview_app  | 7:44:55 AM [express] POST /api/reset-password-request 200 in 71ms :: {"message":"If an account with …
+obview_app  | 7:45:37 AM [express] POST /api/login 200 in 134ms :: {"id":1,"username":"admin","email":"obed@obedtv…
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-06-01T07:45:37.254Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true
