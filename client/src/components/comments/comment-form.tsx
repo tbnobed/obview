@@ -326,7 +326,7 @@ export default function CommentForm({
                   type="button" 
                   size="icon" 
                   variant="ghost" 
-                  className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
+                  className="h-7 w-7 rounded text-neutral-500 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-gray-800"
                   onClick={() => {
                     if (isUploading) return;
                     const imageInput = document.createElement('input');
@@ -354,7 +354,7 @@ export default function CommentForm({
                     type="button" 
                     size="icon" 
                     variant="ghost" 
-                    className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
+                    className="h-7 w-7 rounded text-neutral-500 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-[#026d55] hover:bg-neutral-100 dark:hover:bg-gray-800"
                     onClick={() => !isUploading && setShowEmojiPicker(!showEmojiPicker)}
                     disabled={isUploading}
                   >
@@ -370,7 +370,7 @@ export default function CommentForm({
                         onClick={() => setShowEmojiPicker(false)}
                       />
                       <div 
-                        className="fixed z-50 bg-white rounded-md border border-gray-200 shadow-lg" 
+                        className="fixed z-50 bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700 shadow-lg" 
                         ref={emojiPickerRef}
                         style={{ 
                           position: 'fixed', 
@@ -384,15 +384,15 @@ export default function CommentForm({
                       >
                         <div className="emoji-picker-container">
                           {/* Emoji Category Tabs */}
-                          <div className="border-b border-gray-200 flex overflow-x-auto">
+                          <div className="border-b border-gray-200 dark:border-gray-700 flex overflow-x-auto">
                             {Object.keys(emojiCategories).map((category) => (
                               <button
                                 key={category}
                                 type="button"
                                 className={`px-2 py-1 text-xs font-medium ${
                                   activeEmojiCategory === category
-                                    ? "text-primary-600 border-b-2 border-primary-600"
-                                    : "text-gray-500 hover:text-gray-700"
+                                    ? "text-primary-600 dark:text-[#026d55] border-b-2 border-primary-600 dark:border-[#026d55]"
+                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                                 }`}
                                 onClick={() => setActiveEmojiCategory(category)}
                               >
@@ -474,7 +474,9 @@ export default function CommentForm({
                   size="sm"
                   className={cn(
                     "h-7 text-xs px-2",
-                    includeTimestamp ? "text-primary-600" : "text-neutral-500"
+                    includeTimestamp 
+                      ? "text-primary-600 dark:text-[#026d55]" 
+                      : "text-neutral-500 dark:text-gray-400 dark:hover:text-[#026d55]"
                   )}
                   onClick={() => setIncludeTimestamp(!includeTimestamp)}
                 >
@@ -486,7 +488,7 @@ export default function CommentForm({
             <Button 
               type="button" 
               size="sm"
-              className="h-7 px-3 text-xs"
+              className="h-7 px-3 text-xs dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white"
               onClick={handleSubmit}
               disabled={createCommentMutation.isPending || content.trim() === ""}
             >
