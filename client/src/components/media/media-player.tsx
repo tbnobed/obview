@@ -3,7 +3,7 @@ import { File, Comment } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Pause, Volume2, Maximize, Type, Layers, Check, AlertCircle } from "lucide-react";
+import { Play, Pause, Volume2, Maximize, Type, Layers, Check, AlertCircle, FileX } from "lucide-react";
 import TimelineComments from "./timeline-comments";
 import { useApprovals, useComments } from "@/hooks/use-comments";
 import { useMutation } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ShareLinkButton } from "@/components/share-link-button";
 import { DownloadButton } from "@/components/download-button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface MediaPlayerProps {
   file?: File;
@@ -35,6 +36,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
   const [volume, setVolume] = useState(1);
   const [showCommentsTab, setShowCommentsTab] = useState(true);
   const [activeCommentId, setActiveCommentId] = useState<number | undefined>(undefined);
+  const [mediaError, setMediaError] = useState<string | null>(null);
   
   const { data: approvals } = useApprovals(file?.id);
   const { data: comments } = useComments(file?.id);
@@ -58,6 +60,8 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
       setCurrentTime(0);
       setDuration(0);
     }
+    // Reset any previous media errors when file changes
+    setMediaError(null);
   }, [file]);
   
   // Effect to handle initialTime changes
@@ -260,9 +264,34 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
     }
   };
 
+  // Handle media error
+  const handleMediaError = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement | HTMLImageElement>) => {
+    console.error("Media error:", e);
+    setMediaError("This file is no longer available. It may have been deleted from the server.");
+  };
+
   // Determine file type icon/component
   const renderMediaContent = () => {
     if (!file) return null;
+
+    // If we have a media error, show the error message instead
+    if (mediaError) {
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-neutral-900 rounded-t-lg">
+          <div className="text-center max-w-md p-6">
+            <Alert variant="destructive" className="mb-4 bg-opacity-20 bg-red-900 dark:bg-red-950 dark:border-red-800">
+              <FileX className="h-10 w-10 text-red-400 mx-auto mb-4" />
+              <AlertTitle className="mb-2 text-center">File Not Available</AlertTitle>
+              <AlertDescription className="text-center">
+                {mediaError}
+              </AlertDescription>
+            </Alert>
+            <p className="text-white text-lg font-medium mb-1">{file.filename}</p>
+            <p className="text-neutral-400 text-sm">The comments and feedback for this file are still available.</p>
+          </div>
+        </div>
+      );
+    }
 
     switch (file.fileType) {
       case 'video':
@@ -275,6 +304,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
             onTimeUpdate={handleTimeUpdate}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
+            onError={handleMediaError}
             controls={false}
           />
         );
@@ -292,6 +322,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                 onTimeUpdate={handleTimeUpdate}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
+                onError={handleMediaError}
                 controls={false}
               />
             </div>
@@ -304,6 +335,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
               src={`/api/files/${file.id}/content`}
               alt={file.filename}
               className="max-w-full h-full object-contain"
+              onError={handleMediaError}
             />
           </div>
         );
@@ -329,193 +361,195 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
             {renderMediaContent()}
           </div>
           
-          {/* Video Controls */}
-          <div className="bg-white dark:bg-[#0a0d14] p-4 border-t border-neutral-100 dark:border-gray-800">
-            <div className="flex items-center mb-2 space-x-2">
-              <Button
-                onClick={togglePlay}
-                variant="ghost"
-                size="icon"
-                className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
-              >
-                {isPlaying ? (
-                  <Pause className="h-6 w-6" />
-                ) : (
-                  <Play className="h-6 w-6" />
-                )}
-              </Button>
-              
-              <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </span>
-              
-              <div
-                ref={progressRef}
-                className="video-progress flex-grow mx-4 relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
-                onClick={handleProgressClick}
-                onMouseMove={(e) => {
-                  if (e.buttons === 1 && progressRef.current) {
-                    // Handle dragging (mouse down + move)
-                    handleProgressClick(e);
-                  }
-                }}
-              >
-                <div
-                  className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
-                  style={{ width: `${(currentTime / duration) * 100}%` }}
-                ></div>
-                <div
-                  className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ left: `${(currentTime / duration) * 100}%` }}
-                ></div>
-                
-                {/* Timeline markers for comments */}
-                {comments && comments.length > 0 && comments.map((comment: Comment) => {
-                  // Only show markers for comments with timestamps (not replies)
-                  if (comment.timestamp === null || comment.parentId !== null) return null;
-                  
-                  // Calculate percentage position
-                  const timestamp = comment.timestamp || 0;
-                  const position = (timestamp / duration) * 100;
-                  
-                  return (
-                    <div 
-                      key={comment.id}
-                      className={`absolute top-0 h-full w-1.5 ${activeCommentId === comment.id ? 'bg-secondary' : 'bg-yellow-400'} z-10 cursor-pointer`}
-                      style={{ left: `${position}%` }}
-                      title={`${comment.content} (${formatTime(comment.timestamp)})`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Set active comment and jump to timestamp
-                        setActiveCommentId(comment.id);
-                        if (videoRef.current && comment.timestamp !== null) {
-                          videoRef.current.currentTime = comment.timestamp;
-                          setCurrentTime(comment.timestamp);
-                        }
-                      }}
-                    />
-                  );
-                })}
-              </div>
-              
-              <div className="flex items-center">
-                <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={volume}
-                  onChange={(e) => handleVolumeChange(e.target.value)}
-                  className="w-20"
-                />
-              </div>
-              
-              <Button
-                onClick={toggleFullscreen}
-                variant="ghost"
-                size="icon"
-                className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
-                title="Toggle fullscreen"
-              >
-                <Maximize className="h-5 w-5" />
-              </Button>
-            </div>
-            
-            {/* File selector and actions */}
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-100 dark:border-gray-800">
-              <div className="flex space-x-2 items-center">
-                <Select 
-                  value={file?.id.toString()} 
-                  onValueChange={(value) => onSelectFile(parseInt(value))}
+          {/* Video Controls - Show only when no media error */}
+          {!mediaError && (
+            <div className="bg-white dark:bg-[#0a0d14] p-4 border-t border-neutral-100 dark:border-gray-800">
+              <div className="flex items-center mb-2 space-x-2">
+                <Button
+                  onClick={togglePlay}
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
                 >
-                  <SelectTrigger className="w-auto min-w-[180px]">
-                    <SelectValue placeholder="Select file" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {files.map((f) => (
-                      <SelectItem key={f.id} value={f.id.toString()}>
-                        {f.filename} {f.isLatestVersion && "(Latest)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {isPlaying ? (
+                    <Pause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6" />
+                  )}
+                </Button>
                 
-                {file && (
-                  <div className="text-xs text-neutral-500 dark:text-gray-400">
-                    Version {file.version}
-                  </div>
-                )}
+                <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+                
+                <div
+                  ref={progressRef}
+                  className="video-progress flex-grow mx-4 relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
+                  onClick={handleProgressClick}
+                  onMouseMove={(e) => {
+                    if (e.buttons === 1 && progressRef.current) {
+                      // Handle dragging (mouse down + move)
+                      handleProgressClick(e);
+                    }
+                  }}
+                >
+                  <div
+                    className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
+                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                  ></div>
+                  <div
+                    className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ left: `${(currentTime / duration) * 100}%` }}
+                  ></div>
+                  
+                  {/* Timeline markers for comments */}
+                  {comments && comments.length > 0 && comments.map((comment: Comment) => {
+                    // Only show markers for comments with timestamps (not replies)
+                    if (comment.timestamp === null || comment.parentId !== null) return null;
+                    
+                    // Calculate percentage position
+                    const timestamp = comment.timestamp || 0;
+                    const position = (timestamp / duration) * 100;
+                    
+                    return (
+                      <div 
+                        key={comment.id}
+                        className={`absolute top-0 h-full w-1.5 ${activeCommentId === comment.id ? 'bg-secondary' : 'bg-yellow-400'} z-10 cursor-pointer`}
+                        style={{ left: `${position}%` }}
+                        title={`${comment.content} (${formatTime(comment.timestamp)})`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Set active comment and jump to timestamp
+                          setActiveCommentId(comment.id);
+                          if (videoRef.current && comment.timestamp !== null) {
+                            videoRef.current.currentTime = comment.timestamp;
+                            setCurrentTime(comment.timestamp);
+                          }
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                
+                <div className="flex items-center">
+                  <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={volume}
+                    onChange={(e) => handleVolumeChange(e.target.value)}
+                    className="w-20"
+                  />
+                </div>
+                
+                <Button
+                  onClick={toggleFullscreen}
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                  title="Toggle fullscreen"
+                >
+                  <Maximize className="h-5 w-5" />
+                </Button>
               </div>
               
-              <div className="flex space-x-2">
-                {file && (
-                  <>
-                    <DownloadButton 
-                      fileId={file.id} 
-                      filename={file.filename} 
-                      size="sm" 
-                      variant="default" 
-                    />
-                    <ShareLinkButton 
-                      fileId={file.id} 
-                      size="sm"
-                      variant="default"
-                    />
-                  </>
-                )}
-              </div>
-            </div>
-            
-            {/* Approval actions */}
-            {file && (
-              <div className="flex justify-between items-center mt-4 pt-4 border-t border-neutral-100 dark:border-gray-800">
-                <div className="flex items-center text-sm">
-                  {userApproval && (
-                    <div className={cn(
-                      "flex items-center px-2 py-1 rounded-full",
-                      userApproval.status === "approved" 
-                        ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
-                        : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
-                    )}>
-                      {userApproval.status === "approved" ? (
-                        <>
-                          <Check className="h-4 w-4 mr-1" />
-                          <span>You approved this file</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="h-4 w-4 mr-1" />
-                          <span>You requested changes</span>
-                        </>
-                      )}
+              {/* File selector and actions */}
+              <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-100 dark:border-gray-800">
+                <div className="flex space-x-2 items-center">
+                  <Select 
+                    value={file?.id.toString()} 
+                    onValueChange={(value) => onSelectFile(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-auto min-w-[180px]">
+                      <SelectValue placeholder="Select file" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {files.map((f) => (
+                        <SelectItem key={f.id} value={f.id.toString()}>
+                          {f.filename} {f.isLatestVersion && "(Latest)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {file && (
+                    <div className="text-xs text-neutral-500 dark:text-gray-400">
+                      Version {file.version}
                     </div>
                   )}
                 </div>
+                
                 <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center dark:bg-orange-900 dark:text-orange-200 dark:border-orange-900 dark:hover:bg-orange-950"
-                    onClick={handleRequestChanges}
-                    disabled={approveMutation.isPending}
-                  >
-                    <AlertCircle className="h-4 w-4 mr-1.5" />
-                    Request Changes
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    className="flex items-center bg-green-600 hover:bg-green-700"
-                    onClick={handleApprove}
-                    disabled={approveMutation.isPending}
-                  >
-                    <Check className="h-4 w-4 mr-1.5" />
-                    Approve
-                  </Button>
+                  {file && (
+                    <>
+                      <DownloadButton 
+                        fileId={file.id} 
+                        filename={file.filename} 
+                        size="sm" 
+                        variant="default" 
+                      />
+                      <ShareLinkButton 
+                        fileId={file.id} 
+                        size="sm"
+                        variant="default"
+                      />
+                    </>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
+              
+              {/* Approval actions */}
+              {file && (
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-neutral-100 dark:border-gray-800">
+                  <div className="flex items-center text-sm">
+                    {userApproval && (
+                      <div className={cn(
+                        "flex items-center px-2 py-1 rounded-full",
+                        userApproval.status === "approved" 
+                          ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
+                          : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                      )}>
+                        {userApproval.status === "approved" ? (
+                          <>
+                            <Check className="h-4 w-4 mr-1" />
+                            <span>You approved this file</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="h-4 w-4 mr-1" />
+                            <span>You requested changes</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center dark:bg-orange-900 dark:text-orange-200 dark:border-orange-900 dark:hover:bg-orange-950"
+                      onClick={handleRequestChanges}
+                      disabled={approveMutation.isPending}
+                    >
+                      <AlertCircle className="h-4 w-4 mr-1.5" />
+                      Request Changes
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="flex items-center bg-green-600 hover:bg-green-700"
+                      onClick={handleApprove}
+                      disabled={approveMutation.isPending}
+                    >
+                      <Check className="h-4 w-4 mr-1.5" />
+                      Approve
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       
