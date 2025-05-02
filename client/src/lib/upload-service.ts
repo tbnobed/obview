@@ -106,6 +106,24 @@ class UploadService {
     // For large files, use a more reliable approach with retries
     const isLargeFile = file.size > 100 * 1024 * 1024; // 100MB threshold
     
+    // For extremely large files (4GB+), show a special notice
+    if (file.size > 4 * 1024 * 1024 * 1024) { // 4GB
+      console.log(`[Upload] Extremely large file detected (${(file.size/1024/1024/1024).toFixed(2)} GB). Adding Docker-specific reliability measures.`);
+      
+      // Update upload status with note about very large file
+      this.uploads.set(uploadId, {
+        ...this.uploads.get(uploadId)!,
+        error: `Very large file (${(file.size/1024/1024/1024).toFixed(2)} GB). Upload may restart periodically to handle Docker limitations.`
+      });
+      this.notifyListeners();
+      
+      // In Docker, extremely large files might hit memory limits. Let's add special handling:
+      toast({
+        title: "Large file detected",
+        description: `Uploading a ${(file.size/1024/1024/1024).toFixed(2)} GB file. This may take a long time and could retry multiple times due to Docker memory constraints.`,
+      });
+    }
+    
     if (isLargeFile) {
       this.startLargeFileUpload(uploadId, file, projectId, customFilename);
     } else {
@@ -338,9 +356,14 @@ class UploadService {
             retryCount++;
             console.log(`[Upload] Connection problem detected, retrying (${retryCount}/${maxRetries})`, { uploadId, fileName: file.name });
             
+            // Show a message but maintain previous progress indication
+            // to avoid the appearance of starting from scratch
+            const prevProgress = this.uploads.get(uploadId)?.progress || 0;
+            
             this.uploads.set(uploadId, {
               ...this.uploads.get(uploadId)!,
-              progress: 0, // Reset progress
+              // Don't reset progress all the way to 0
+              progress: Math.max(prevProgress * 0.8, 2), // Keep 80% of progress but minimum 2%
               status: 'uploading',
               error: `Connection interrupted, retrying (attempt ${retryCount}/${maxRetries})...`
             });
@@ -414,9 +437,13 @@ class UploadService {
               responseText: xhr.responseText.substring(0, 100)
             });
             
+            // Keep some visual progress when retrying for better UX
+            const prevProgress = this.uploads.get(uploadId)?.progress || 0;
+            
             this.uploads.set(uploadId, {
               ...this.uploads.get(uploadId)!,
-              progress: 0, // Reset progress for retry
+              // Keep some progress indication to avoid apparent reset
+              progress: Math.max(prevProgress * 0.8, 2), 
               status: 'uploading',
               error: `Server error (${xhr.status}), retrying (attempt ${retryCount}/${maxRetries})...`
             });
@@ -481,9 +508,13 @@ class UploadService {
             ? `Connection terminated, retrying (attempt ${retryCount}/${maxRetries})...`
             : `Network error, retrying (attempt ${retryCount}/${maxRetries})...`;
           
+          // Keep some visual progress when retrying for better UX
+          const prevProgress = this.uploads.get(uploadId)?.progress || 0;
+          
           this.uploads.set(uploadId, {
             ...this.uploads.get(uploadId)!,
-            progress: 0, // Reset progress for retry
+            // Keep some progress indication to avoid apparent reset
+            progress: Math.max(prevProgress * 0.8, 2), 
             status: 'uploading',
             error: errorMsg
           });
@@ -536,9 +567,13 @@ class UploadService {
           retryCount++;
           console.log(`[Upload] Timeout, retrying (${retryCount}/${maxRetries})`, { uploadId });
           
+          // Keep some visual progress when retrying for better UX
+          const prevProgress = this.uploads.get(uploadId)?.progress || 0;
+          
           this.uploads.set(uploadId, {
             ...this.uploads.get(uploadId)!,
-            progress: 0, // Reset progress for retry
+            // Keep some progress indication to avoid apparent reset
+            progress: Math.max(prevProgress * 0.8, 2), 
             status: 'uploading',
             error: `Timeout, retrying (attempt ${retryCount}/${maxRetries})...`
           });

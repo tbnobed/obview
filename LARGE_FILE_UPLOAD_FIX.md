@@ -201,5 +201,34 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
+    # Add longer timeouts for Nginx when using as reverse proxy
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=6144
 ```
+
+### Special Considerations for 4GB+ Files in Docker
+
+For extremely large files (4GB+), additional Docker configurations are necessary:
+
+1. **Increase memory limits**: Set Docker service memory to at least 8GB
+2. **Adjust Nginx configuration** (if using Nginx as reverse proxy):
+
+```nginx
+http {
+    # Increase these values for large file uploads
+    client_max_body_size 10G;
+    proxy_read_timeout 3600s;
+    proxy_connect_timeout 3600s;
+    proxy_send_timeout 3600s;
+}
+```
+
+3. **Modify Node.js heap size**: Add environment variable `NODE_OPTIONS=--max-old-space-size=6144` 
+
+4. **User notification**: For large files, the client now shows special notices explaining that uploads may restart periodically due to Docker memory constraints.
+
+5. **Troubleshooting Docker memory issues**:
+   - Monitor Docker container memory usage with `docker stats`
+   - If uploads consistently fail at a specific percentage, consider adjusting Docker memory allocation
+   - For production deployments with frequent large uploads, consider using a dedicated storage service like S3 or Azure Blob Storage
