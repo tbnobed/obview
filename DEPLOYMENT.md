@@ -1,6 +1,6 @@
-# OBview.io Deployment Guide
+# Obviu.io Deployment Guide
 
-This guide explains how to deploy the OBview.io application either using Docker (recommended for production) or directly from the Git repository (for development or customization).
+This guide explains how to deploy the Obviu.io application either using Docker (recommended for production) or directly from the Git repository (for development or customization).
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ For high-traffic deployment or large media file storage needs, consider:
 
 ## Installation Options
 
-OBview.io can be deployed in two ways: using Docker (recommended for production) or directly from the Git repository (useful for development or customization).
+Obviu.io can be deployed in two ways: using Docker (recommended for production) or directly from the Git repository (useful for development or customization).
 
 ## Option 1: Docker Deployment (Recommended for Production)
 
