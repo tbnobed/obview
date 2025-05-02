@@ -119,6 +119,59 @@ export function UploadManager() {
 }
 ```
 
+### 4. Advanced Error Handling and Recovery for Large Files
+
+For large files, a special upload mechanism was implemented to handle various failure modes:
+
+- **Connection Termination Detection**: Automatically detects when the connection has been terminated
+- **Stalled Upload Detection**: Monitors progress and reacts if uploads stall for more than 30 seconds
+- **Automatic Retries**: Implements up to 3 retry attempts with increasing delays between attempts
+- **Detailed Logging**: Comprehensive logging of all upload steps to help diagnose issues
+- **Enhanced Status Messages**: Clearer error messages and status indicators shown to users
+
+Key implementation features:
+
+```typescript
+// Different strategies based on file size
+private startUpload(uploadId: string, file: File, projectId: number): void {
+  // For large files, use a more reliable approach with retries
+  const isLargeFile = file.size > 100 * 1024 * 1024; // 100MB threshold
+  
+  if (isLargeFile) {
+    this.startLargeFileUpload(uploadId, file, projectId);
+  } else {
+    this.startStandardUpload(uploadId, file, projectId);
+  }
+}
+
+// Handle early connection termination with status code 48
+xhr.onerror = (event) => {
+  // Status code 48 is a network error in Chrome, usually means connection terminated
+  const isConnectionTerminated = xhr.status === 48 || 
+                               connectionTerminated || 
+                               xhr.readyState < 4;
+  
+  // Check if we should retry
+  if (retryCount < maxRetries) {
+    retryCount++;
+    // Retry with appropriate delay based on error type
+    setTimeout(attemptUpload, isConnectionTerminated ? 8000 : 3000);
+  }
+};
+
+// Detect stalled uploads with progress check interval
+progressCheckInterval = window.setInterval(() => {
+  const timeSinceLastProgress = Date.now() - lastProgressTime;
+  
+  // If no progress for 30 seconds, consider it a connection problem
+  if (timeSinceLastProgress > 30000 && !connectionTerminated) {
+    connectionTerminated = true;
+    xhr.abort();
+    // Attempt retry if under max retry count
+  }
+}, 5000);
+```
+
 ## Benefits
 
 1. **Accurate Progress Tracking**: Users now see the real upload progress rather than a simulated approximation
