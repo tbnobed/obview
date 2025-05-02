@@ -137,13 +137,13 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="container py-10">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-300 dark:to-primary-500 bg-clip-text text-transparent">Settings</h1>
+      <div className="container py-10 flex flex-col items-center">
+        <div className="mb-8 text-center w-full max-w-3xl">
+          <h1 className="text-3xl font-bold text-primary-600 dark:text-teal-300">Settings</h1>
           <p className="text-muted-foreground dark:text-gray-300">Manage your account settings and preferences</p>
         </div>
 
-        <Tabs defaultValue="account" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue="account" value={activeTab} onValueChange={setActiveTab} className="w-full max-w-3xl">
           <TabsList className="grid w-full grid-cols-2 mb-8 dark:bg-gray-800/50">
             <TabsTrigger value="account" className="dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Account</TabsTrigger>
             <TabsTrigger value="password" className="dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Password</TabsTrigger>
