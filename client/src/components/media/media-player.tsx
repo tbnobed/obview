@@ -129,20 +129,39 @@ export default function MediaPlayer({
   }, []);
 
   const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
+    // Handle both video and audio playback
+    const mediaElement = videoRef.current || audioRef.current;
+    
+    if (!mediaElement) return;
+    
+    if (isPlaying) {
+      // Pause is always safe to call
+      mediaElement.pause();
+      setIsPlaying(false);
+    } else {
+      // Use the Promise returned by play() to catch any autoplay restrictions
+      const playPromise = mediaElement.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error("Error playing media:", error);
+            // Don't show error toast for user gesture errors (common with autoplay restrictions)
+            setIsPlaying(false);
+            
+            toast({
+              title: "Playback issue",
+              description: "Unable to play media. Click the play button again or check browser autoplay settings.",
+              variant: "destructive",
+            });
+          });
       } else {
-        videoRef.current.play();
+        // For older browsers that don't return a promise
+        setIsPlaying(true);
       }
-      setIsPlaying(!isPlaying);
-    } else if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -260,7 +279,9 @@ export default function MediaPlayer({
             onDurationChange={handleDurationChange}
             onEnded={handleMediaEnded}
             onError={handleMediaError}
-            controls={false}
+            autoPlay={false}
+            muted={false}
+            preload="auto"
           />
         </div>
       );
@@ -286,6 +307,8 @@ export default function MediaPlayer({
             onDurationChange={handleDurationChange}
             onEnded={handleMediaEnded}
             onError={handleMediaError}
+            autoPlay={false}
+            preload="auto"
           />
         </div>
       );
@@ -381,8 +404,9 @@ export default function MediaPlayer({
                           e.stopPropagation();
                           // Set active comment and jump to timestamp
                           setActiveCommentId(comment.id);
-                          if (videoRef.current && comment.timestamp !== null) {
-                            videoRef.current.currentTime = comment.timestamp;
+                          const mediaElement = videoRef.current || audioRef.current;
+                          if (mediaElement && comment.timestamp !== null) {
+                            mediaElement.currentTime = comment.timestamp;
                             setCurrentTime(comment.timestamp);
                           }
                         }}
@@ -536,8 +560,9 @@ export default function MediaPlayer({
                 activeCommentId={activeCommentId}
                 onCommentSelect={(commentId: number) => setActiveCommentId(commentId)}
                 onTimeClick={(time: number) => {
-                  if (videoRef.current) {
-                    videoRef.current.currentTime = time;
+                  const mediaElement = videoRef.current || audioRef.current;
+                  if (mediaElement) {
+                    mediaElement.currentTime = time;
                     setCurrentTime(time);
                   }
                 }}
