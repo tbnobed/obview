@@ -116,9 +116,9 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
       className={cn(
         "mb-5 pb-5",
         comment.isResolved ? "opacity-60" : "",
-        isActive ? "bg-yellow-50 -mx-4 px-4 py-3 rounded-md transition-all duration-300" : "",
-        comment.timestamp !== null ? "cursor-pointer hover:bg-neutral-50" : "",
-        comments.indexOf(comment) < comments.length - 1 ? "border-b border-neutral-200" : ""
+        isActive ? "bg-yellow-50 dark:bg-yellow-900/20 -mx-4 px-4 py-3 rounded-md transition-all duration-300" : "",
+        comment.timestamp !== null ? "cursor-pointer hover:bg-neutral-50 dark:hover:bg-gray-800" : "",
+        comments.indexOf(comment) < comments.length - 1 ? "border-b border-neutral-200 dark:border-gray-800" : ""
       )}
       onClick={(e) => {
         // Prevent click if we're clicking on interactive elements
@@ -143,30 +143,30 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
         
         <div className="flex-1">
           <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1">
-            <h4 className="text-xs font-medium text-neutral-900">
+            <h4 className="text-xs font-medium text-neutral-900 dark:text-white">
               {comment.user?.name || "Unknown User"}
             </h4>
             <div className="flex flex-wrap items-center gap-1.5">
               {comment.timestamp !== null && (
                 <button 
-                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 text-neutral-800"
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-gray-800 text-neutral-800 dark:text-gray-300"
                   onClick={() => onTimeClick && onTimeClick(comment.timestamp || 0)}
                 >
                   <span className="font-mono">{formatTime(comment.timestamp)}</span>
                 </button>
               )}
-              <span className="text-[10px] text-neutral-500">
+              <span className="text-[10px] text-neutral-500 dark:text-gray-400">
                 {formatTimeAgo(new Date(comment.createdAt))}
               </span>
               {comment.isResolved && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success bg-opacity-10 text-success">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success bg-opacity-10 dark:bg-success/20 text-success">
                   Resolved
                 </span>
               )}
             </div>
           </div>
           
-          <div className="mt-1 text-xs text-neutral-700 comment-content">
+          <div className="mt-1 text-xs text-neutral-700 dark:text-gray-300 comment-content">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -259,7 +259,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
           
           {/* Comment Replies */}
           {replies.length > 0 && (
-            <div className="mt-3 space-y-3 pl-3 border-l border-neutral-200">
+            <div className="mt-3 space-y-3 pl-3 border-l border-neutral-200 dark:border-gray-800">
               {replies.map(reply => (
                 <div key={reply.id} className="flex space-x-2">
                   <Avatar className="h-5 w-5 mt-0.5 hidden sm:block">
@@ -270,11 +270,11 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                   
                   <div className="flex-1">
                     <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1">
-                      <h4 className="text-xs font-medium text-neutral-900">
+                      <h4 className="text-xs font-medium text-neutral-900 dark:text-white">
                         {reply.user?.name || "Unknown User"}
                       </h4>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-neutral-500">
+                        <span className="text-[10px] text-neutral-500 dark:text-gray-400">
                           {formatTimeAgo(new Date(reply.createdAt))}
                         </span>
                         {canDelete && (
@@ -294,7 +294,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                       </div>
                     </div>
                     
-                    <div className="mt-0.5 text-xs text-neutral-700 comment-content">
+                    <div className="mt-0.5 text-xs text-neutral-700 dark:text-gray-300 comment-content">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{

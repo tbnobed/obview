@@ -499,10 +499,10 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
       
       {/* Comments Section - Takes 1/3 of the space on large screens */}
       {file && (
-        <div className="border border-neutral-200 rounded-lg h-[calc(100vh-300px)] min-h-[500px] flex flex-col">
+        <div className="border border-neutral-200 dark:border-gray-800 rounded-lg h-[calc(100vh-300px)] min-h-[500px] flex flex-col dark:bg-[#0f1218]">
           <Tabs defaultValue="comments" className="h-full flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200">
-              <TabsList>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
+              <TabsList className="dark:bg-gray-900">
                 <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
                 <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
               </TabsList>
@@ -527,7 +527,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
             <TabsContent value="versions" className="flex-grow overflow-auto px-4 py-3">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium">File Versions</h3>
+                  <h3 className="text-lg font-medium dark:text-white">File Versions</h3>
                   <Button className="flex items-center" size="sm">
                     <Layers className="h-4 w-4 mr-1.5" />
                     Upload New Version
@@ -544,16 +544,16 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                         className={cn(
                           "flex items-center justify-between p-3 rounded-md border",
                           version.id === file.id 
-                            ? "bg-primary-50 border-primary-200"
-                            : "bg-white border-neutral-200 hover:bg-neutral-50"
+                            ? "bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-900"
+                            : "bg-white dark:bg-gray-900 border-neutral-200 dark:border-gray-800 hover:bg-neutral-50 dark:hover:bg-gray-800"
                         )}
                         onClick={() => onSelectFile(version.id)}
                       >
                         <div className="flex items-center">
-                          <Layers className="h-5 w-5 mr-3 text-neutral-500" />
+                          <Layers className="h-5 w-5 mr-3 text-neutral-500 dark:text-gray-400" />
                           <div>
-                            <div className="font-medium">Version {version.version}</div>
-                            <div className="text-xs text-neutral-500">
+                            <div className="font-medium dark:text-white">Version {version.version}</div>
+                            <div className="text-xs text-neutral-500 dark:text-gray-400">
                               {new Date(version.createdAt).toLocaleDateString()}
                             </div>
                           </div>
