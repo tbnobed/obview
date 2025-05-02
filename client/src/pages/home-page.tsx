@@ -133,7 +133,7 @@ export default function HomePage() {
             <CardHeader>
               <CardTitle>Getting Started</CardTitle>
               <CardDescription>
-                Tips to help you make the most of MediaReview.io
+                Tips to help you make the most of Obviu.io
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

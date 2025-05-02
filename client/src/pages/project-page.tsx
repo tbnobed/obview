@@ -80,7 +80,7 @@ export default function ProjectPage() {
 
   useEffect(() => {
     if (project) {
-      document.title = `${project.name} | MediaReview.io`;
+      document.title = `${project.name} | Obviu.io`;
     }
   }, [project]);
 

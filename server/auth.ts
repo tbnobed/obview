@@ -35,7 +35,7 @@ export function generateToken(length = 32): string {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'mediareview-secret',
+    secret: process.env.SESSION_SECRET || 'obviu-secret',
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,

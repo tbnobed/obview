@@ -21,7 +21,7 @@ export default function AdminPage() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   
   useEffect(() => {
-    document.title = "Admin Dashboard | MediaReview.io";
+    document.title = "Admin Dashboard | Obviu.io";
   }, []);
 
   // Redirect if user is not an admin

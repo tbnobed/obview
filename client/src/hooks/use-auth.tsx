@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Registration successful",
-        description: `Welcome to MediaReview.io, ${user.name}!`,
+        description: `Welcome to Obviu.io, ${user.name}!`,
       });
       setLocation("/");
     },
