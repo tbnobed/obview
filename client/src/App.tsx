@@ -5,7 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "@/lib/theme-provider";
 import HomePage from "@/pages/home-page";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
@@ -51,14 +51,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} storageKey="obviu-theme">
-        <AuthProvider>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="system" storageKey="obviu-theme">
           <TooltipProvider>
             <Toaster />
             <Router />
           </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
