@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -17,16 +17,74 @@ export default function FileUploadPage() {
   const [_, navigate] = useLocation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const customFilenameRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const { data: project, isLoading: projectLoading } = useProject(projectId);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      
+      // When a file is selected, set the filename field to match
+      if (customFilenameRef.current) {
+        customFilenameRef.current.value = file.name;
+      }
     }
   };
+  
+  // Handle file drop
+  const handleFileDrop = useCallback((file: File) => {
+    setSelectedFile(file);
+    
+    // Update the filename field when a file is dropped
+    if (customFilenameRef.current) {
+      customFilenameRef.current.value = file.name;
+    }
+  }, []);
+  
+  // Drag and drop event handlers
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+  
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Set dropEffect to 'copy' to show a copy icon on drag
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
+    setIsDragging(true);
+  }, []);
+  
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+  
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileDrop(e.dataTransfer.files[0]);
+      
+      // Show message when file is dropped successfully
+      toast({
+        title: "File selected",
+        description: `${e.dataTransfer.files[0].name} ready to upload`,
+      });
+    }
+  }, [handleFileDrop, toast]);
 
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -43,7 +101,24 @@ export default function FileUploadPage() {
 
     // Create a FormData object to send the file
     const formData = new FormData();
-    formData.append("file", selectedFile);
+    
+    // Use the custom filename if provided
+    const customFilename = customFilenameRef.current?.value?.trim();
+    
+    // If custom filename is provided, create a new File object with the custom name
+    if (customFilename && customFilename !== selectedFile.name) {
+      // Create a new file with the custom filename but keep the original file's contents and type
+      const renamedFile = new File([selectedFile], customFilename, {
+        type: selectedFile.type,
+        lastModified: selectedFile.lastModified
+      });
+      formData.append("file", renamedFile);
+      
+      // Add the original file name as a separate parameter for server-side reference
+      formData.append("originalName", selectedFile.name);
+    } else {
+      formData.append("file", selectedFile);
+    }
 
     try {
       // Simulate progress updates
@@ -161,8 +236,13 @@ export default function FileUploadPage() {
           
           <CardContent className="space-y-6">
             <div 
-              className="border-2 border-dashed rounded-lg p-12 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+              ref={dropZoneRef}
+              className={`border-2 border-dashed rounded-lg p-12 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors ${isDragging ? 'border-primary bg-primary/5' : ''}`}
               onClick={() => fileInputRef.current?.click()}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
               {getFileTypeIcon()}
               
@@ -176,7 +256,7 @@ export default function FileUploadPage() {
                   </>
                 ) : (
                   <>
-                    <p className="font-medium">Drag and drop or click to upload</p>
+                    <p className="font-medium">{isDragging ? 'Drop file here' : 'Drag and drop or click to upload'}</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       Supports video, image, and document files
                     </p>
@@ -189,6 +269,7 @@ export default function FileUploadPage() {
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
+                accept="video/*,image/*,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               />
             </div>
             
@@ -207,7 +288,9 @@ export default function FileUploadPage() {
                 <Label htmlFor="filename">File Name (Optional)</Label>
                 <Input
                   id="filename"
+                  ref={customFilenameRef}
                   placeholder="Enter custom file name"
+                  defaultValue={selectedFile?.name || ""}
                 />
               </div>
             </div>
