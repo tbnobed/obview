@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, FileIcon, Video, Image, FileText, File, Eye } from "lucide-react";
+import { Trash2, FileIcon, Video, Image, FileText, File, Eye, RefreshCw, HardDrive, FileCheck, AlertCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +19,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface FileDetails {
   filename: string;
@@ -36,11 +44,24 @@ interface FileDetails {
   } | null;
 }
 
+interface FileScanResult {
+  message: string;
+  stats: {
+    totalDatabaseFiles: number;
+    totalFileSystemFiles: number;
+    missingFilesUpdated: number;
+    existingFilesUpdated: number;
+    errors: string[];
+  };
+}
+
 export default function FileManager() {
   const [searchText, setSearchText] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [optimisticFiles, setOptimisticFiles] = useState<string[]>([]);
+  const [showScanResults, setShowScanResults] = useState(false);
+  const [scanResults, setScanResults] = useState<FileScanResult | null>(null);
 
   // Fetch uploaded files
   const { data: files, isLoading, error } = useQuery<FileDetails[]>({
@@ -83,6 +104,34 @@ export default function FileManager() {
       toast({
         title: "Error",
         description: `Failed to delete file: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // File system scan mutation to check file availability
+  const scanMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/scan-files");
+      return response.json();
+    },
+    onSuccess: (data: FileScanResult) => {
+      setScanResults(data);
+      setShowScanResults(true);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/system/uploads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/debug/files"] });
+      
+      toast({
+        title: "File System Scan Complete",
+        description: `Updated ${data.stats.missingFilesUpdated + data.stats.existingFilesUpdated} files in the database.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Scan Failed",
+        description: `Error during file system scan: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -151,17 +200,98 @@ export default function FileManager() {
     );
   }
 
+  // Handle scan files button click
+  const handleScanFiles = () => {
+    scanMutation.mutate();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Uploaded Files Management</h2>
-        <Input
-          className="max-w-xs"
-          placeholder="Search files..."
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleScanFiles}
+            variant="outline"
+            className="flex items-center gap-2"
+            disabled={scanMutation.isPending}
+          >
+            {scanMutation.isPending ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <HardDrive className="h-4 w-4" />
+            )}
+            {scanMutation.isPending ? 'Scanning...' : 'Scan File System'}
+          </Button>
+          <Input
+            className="max-w-xs"
+            placeholder="Search files..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </div>
       </div>
+      
+      {/* Scan Results Dialog */}
+      <Dialog open={showScanResults} onOpenChange={setShowScanResults}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <FileCheck className="h-5 w-5 mr-2 text-green-500" />
+              File System Scan Results
+            </DialogTitle>
+            <DialogDescription>
+              Results of the file system scan and database updates
+            </DialogDescription>
+          </DialogHeader>
+          
+          {scanResults && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border">
+                  <h3 className="text-sm font-medium mb-2">Database Files</h3>
+                  <p className="text-2xl font-bold">{scanResults.stats.totalDatabaseFiles}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border">
+                  <h3 className="text-sm font-medium mb-2">Filesystem Files</h3>
+                  <p className="text-2xl font-bold">{scanResults.stats.totalFileSystemFiles}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900">
+                  <h3 className="text-sm font-medium mb-2 text-green-700 dark:text-green-400">Files Marked Available</h3>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{scanResults.stats.existingFilesUpdated}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900">
+                  <h3 className="text-sm font-medium mb-2 text-amber-700 dark:text-amber-400">Files Marked Unavailable</h3>
+                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{scanResults.stats.missingFilesUpdated}</p>
+                </div>
+              </div>
+              
+              {scanResults.stats.errors.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2 flex items-center">
+                    <AlertCircle className="h-4 w-4 text-red-500 mr-1" />
+                    Errors ({scanResults.stats.errors.length})
+                  </h3>
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3 text-sm text-red-800 dark:text-red-300 max-h-32 overflow-y-auto">
+                    <ul className="list-disc pl-5 space-y-1">
+                      {scanResults.stats.errors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setShowScanResults(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {filteredFiles && filteredFiles.length > 0 ? (
         <Card>
