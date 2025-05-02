@@ -40,7 +40,15 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
   const { data: comments } = useComments(file?.id);
   
   // Get user's approval status for this file
-  const userApproval = approvals?.find((approval: any) => approval.userId === user?.id);
+  const [userApproval, setUserApproval] = useState<any>(null);
+  
+  // Update userApproval when approvals data changes
+  useEffect(() => {
+    if (approvals && user) {
+      const currentUserApproval = approvals.find((approval: any) => approval.userId === user.id);
+      setUserApproval(currentUserApproval || null);
+    }
+  }, [approvals, user]);
 
   useEffect(() => {
     // Reset player state when file changes
