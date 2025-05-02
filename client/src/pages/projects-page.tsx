@@ -42,8 +42,8 @@ export default function ProjectsPage() {
       <div className="p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Projects</h1>
-            <p className="text-neutral-500 mt-1">
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Projects</h1>
+            <p className="text-neutral-500 dark:text-gray-400 mt-1">
               Manage your media review projects
             </p>
           </div>
@@ -59,10 +59,10 @@ export default function ProjectsPage() {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-gray-500" />
             <Input
               placeholder="Search projects..."
-              className="pl-9"
+              className="pl-9 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -72,6 +72,7 @@ export default function ProjectsPage() {
               variant={statusFilter === null ? "default" : "outline"} 
               size="sm"
               onClick={() => setStatusFilter(null)}
+              className={statusFilter === null ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
             >
               All
             </Button>
@@ -79,6 +80,7 @@ export default function ProjectsPage() {
               variant={statusFilter === "in_progress" ? "default" : "outline"} 
               size="sm"
               onClick={() => setStatusFilter("in_progress")}
+              className={statusFilter === "in_progress" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
             >
               In Progress
             </Button>
@@ -86,6 +88,7 @@ export default function ProjectsPage() {
               variant={statusFilter === "in_review" ? "default" : "outline"} 
               size="sm"
               onClick={() => setStatusFilter("in_review")}
+              className={statusFilter === "in_review" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
             >
               In Review
             </Button>
@@ -93,6 +96,7 @@ export default function ProjectsPage() {
               variant={statusFilter === "approved" ? "default" : "outline"} 
               size="sm"
               onClick={() => setStatusFilter("approved")}
+              className={statusFilter === "approved" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
             >
               Approved
             </Button>
@@ -102,10 +106,10 @@ export default function ProjectsPage() {
         {/* Project list */}
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-[#026d55]" />
           </div>
         ) : error ? (
-          <div className="bg-red-50 text-red-600 p-4 rounded-md">
+          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-md">
             Error loading projects: {error.message}
           </div>
         ) : filteredProjects && filteredProjects.length > 0 ? (
@@ -115,27 +119,31 @@ export default function ProjectsPage() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow">
-            <div className="h-16 w-16 rounded-full bg-primary-50 flex items-center justify-center mb-4">
-              <FileVideo className="h-8 w-8 text-primary-400" />
+          <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-900 rounded-lg shadow">
+            <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-[#026d55]/20 flex items-center justify-center mb-4">
+              <FileVideo className="h-8 w-8 text-primary-400 dark:text-[#026d55]" />
             </div>
             {searchTerm || statusFilter ? (
               <>
-                <h3 className="text-lg font-medium text-neutral-900 mb-2">No matching projects found</h3>
-                <p className="text-neutral-500 text-center mb-6 max-w-md">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">No matching projects found</h3>
+                <p className="text-neutral-500 dark:text-gray-400 text-center mb-6 max-w-md">
                   Try adjusting your search or filters to find what you're looking for
                 </p>
-                <Button variant="outline" onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter(null);
-                }}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSearchTerm("");
+                    setStatusFilter(null);
+                  }}
+                  className="dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white"
+                >
                   Clear Filters
                 </Button>
               </>
             ) : (
               <>
-                <h3 className="text-lg font-medium text-neutral-900 mb-2">No projects yet</h3>
-                <p className="text-neutral-500 text-center mb-6 max-w-md">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">No projects yet</h3>
+                <p className="text-neutral-500 dark:text-gray-400 text-center mb-6 max-w-md">
                   Create your first project to start reviewing media files
                 </p>
                 {isEditor && (
