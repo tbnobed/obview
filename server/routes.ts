@@ -1086,6 +1086,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Set appropriate content type headers for common media types
+      const fileType = file.fileType.toLowerCase();
+      const fileExt = file.filename.split('.').pop()?.toLowerCase();
+      
+      // Don't force download for media files when viewing in the player
+      // Only set Content-Type header for common media types we know
+      if (fileType.startsWith('video/') || 
+          fileType.startsWith('audio/') || 
+          fileType.startsWith('image/') ||
+          fileType === 'application/pdf') {
+        res.setHeader('Content-Type', file.fileType);
+      } else if (fileExt === 'mp4') {
+        res.setHeader('Content-Type', 'video/mp4');
+      } else if (fileExt === 'webm') {
+        res.setHeader('Content-Type', 'video/webm');
+      } else if (fileExt === 'mp3') {
+        res.setHeader('Content-Type', 'audio/mpeg');
+      } else if (fileExt === 'wav') {
+        res.setHeader('Content-Type', 'audio/wav');
+      } else if (fileExt === 'pdf') {
+        res.setHeader('Content-Type', 'application/pdf');
+      }
+      
+      // Set additional headers to help with streaming and caching
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+      
+      // Log that we're sending the file
+      console.log(`Serving file ${fileId} (${file.filename}) - type: ${file.fileType}, path: ${file.filePath}`);
+      
       // Send the file
       res.sendFile(file.filePath, { root: '/' });
     } catch (error) {
@@ -1189,7 +1219,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Send only the file content
+      // Set appropriate content type headers for common media types
+      const fileType = file.fileType.toLowerCase();
+      const fileExt = file.filename.split('.').pop()?.toLowerCase();
+      
+      // Only set Content-Type header for common media types we know
+      if (fileType.startsWith('video/') || 
+          fileType.startsWith('audio/') || 
+          fileType.startsWith('image/') ||
+          fileType === 'application/pdf') {
+        res.setHeader('Content-Type', file.fileType);
+      } else if (fileExt === 'mp4') {
+        res.setHeader('Content-Type', 'video/mp4');
+      } else if (fileExt === 'webm') {
+        res.setHeader('Content-Type', 'video/webm');
+      } else if (fileExt === 'mp3') {
+        res.setHeader('Content-Type', 'audio/mpeg');
+      } else if (fileExt === 'wav') {
+        res.setHeader('Content-Type', 'audio/wav');
+      } else if (fileExt === 'pdf') {
+        res.setHeader('Content-Type', 'application/pdf');
+      }
+      
+      // Set additional headers to help with streaming and caching
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+      
+      // Log that we're sending the file
+      console.log(`Serving shared file ${file.id} (${file.filename}) - type: ${file.fileType}, path: ${file.filePath}`);
+      
+      // Send the file content
       res.sendFile(file.filePath, { root: '/' });
     } catch (error) {
       next(error);
