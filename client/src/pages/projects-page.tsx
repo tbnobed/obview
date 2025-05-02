@@ -42,7 +42,7 @@ export default function ProjectsPage() {
       <div className="p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Projects</h1>
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-teal-300">Projects</h1>
             <p className="text-neutral-500 dark:text-gray-400 mt-1">
               Manage your media review projects
             </p>

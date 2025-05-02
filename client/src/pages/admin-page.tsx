@@ -60,7 +60,7 @@ export default function AdminPage() {
       <div className="p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600 bg-clip-text text-transparent">Admin Dashboard</h1>
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-teal-300">Admin Dashboard</h1>
             <p className="text-neutral-500 dark:text-gray-300">Manage users, projects, and system settings</p>
           </div>
           

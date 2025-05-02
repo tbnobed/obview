@@ -24,7 +24,7 @@ export default function HomePage() {
       <div className="p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-teal-300">
               Welcome back, {user?.name}
             </h1>
             <p className="mt-1 text-neutral-500 dark:text-gray-400">
