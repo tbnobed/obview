@@ -1172,9 +1172,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if the file physically exists before sending
-      try {
-        await fs.access(file.filePath);
-      } catch (err) {
+      const fileExists = await fileSystem.fileExists(file.filePath);
+      if (!fileExists) {
         console.error(`Shared file with token ${token} physical file not found at ${file.filePath}`);
         
         // If file doesn't physically exist but is not marked as unavailable, mark it now
@@ -1267,9 +1266,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Delete the actual file from disk (in a real app, handle errors properly)
+      // Delete the actual file from disk
       try {
-        await fs.unlink(file.filePath);
+        await fileSystem.deleteFile(file.filePath);
       } catch (err) {
         console.error(`Failed to delete file ${file.filePath}:`, err);
       }
