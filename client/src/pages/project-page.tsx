@@ -332,7 +332,7 @@ export default function ProjectPage() {
       <header className="bg-white shadow-sm dark:bg-[#0f1218] dark:border-b dark:border-gray-800">
         <div className="px-4 sm:px-6 lg:px-8 py-4 md:flex md:items-center md:justify-between">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">{project.name}</h1>
+            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-teal-300">{project.name}</h1>
             <div className="flex items-center mt-1">
               <span className="text-sm text-neutral-500 dark:text-gray-400">
                 Updated {formatTimeAgo(new Date(project.updatedAt))}
@@ -589,7 +589,7 @@ export default function ProjectPage() {
                 <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
                   <FileVideo className="h-8 w-8 text-primary-400" />
                 </div>
-                <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">No media files yet</h3>
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-teal-300 mb-2">No media files yet</h3>
                 <p className="text-neutral-500 dark:text-gray-400 text-center mb-6 max-w-md">
                   Upload your first media file to start the review process
                 </p>
