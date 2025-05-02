@@ -8,6 +8,7 @@ interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   resolvedTheme: 'light' | 'dark';
+  systemTheme: 'light' | 'dark';
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -112,8 +113,16 @@ export function ThemeProvider({
     applyTheme(initialTheme);
   }, [defaultTheme, storageKey]);
 
+  // Compute the current system theme
+  const systemTheme = getSystemTheme();
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
+    <ThemeContext.Provider value={{ 
+      theme, 
+      setTheme, 
+      resolvedTheme,
+      systemTheme
+    }}>
       {children}
     </ThemeContext.Provider>
   );

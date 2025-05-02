@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+
+// Import the Theme type from our theme provider
+type Theme = 'light' | 'dark' | 'system';
 
 export function ThemeToggle() {
   const { theme, setTheme, systemTheme } = useTheme();
@@ -36,7 +42,7 @@ export function ThemeToggle() {
   // Set theme based on user preference when they log in
   useEffect(() => {
     if (user?.themePreference && mounted) {
-      setTheme(user.themePreference);
+      setTheme(user.themePreference as Theme);
     }
   }, [user, mounted, setTheme]);
 
@@ -65,7 +71,7 @@ export function ThemeToggle() {
     return null;
   }
 
-  const handleThemeChange = (newTheme: string) => {
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     // Update theme locally
     setTheme(newTheme);
     
