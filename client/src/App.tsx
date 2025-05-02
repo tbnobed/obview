@@ -17,6 +17,7 @@ import FileUploadPage from "@/pages/file-upload-page";
 import AdminPage from "@/pages/admin-page";
 import SettingsPage from "@/pages/settings-page";
 import InvitePage from "@/pages/invite-page";
+import ResetPasswordPage from "@/pages/reset-password-page";
 import DebugPage from "@/pages/debug-page";
 
 function Router() {
@@ -33,6 +34,7 @@ function Router() {
       <ProtectedRoute path="/debug" component={DebugPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/invite/:token" component={InvitePage} />
+      <Route path="/reset-password/:token/:userId" component={ResetPasswordPage} />
       <Route component={NotFound} />
     </Switch>
   );

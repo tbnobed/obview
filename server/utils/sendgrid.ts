@@ -343,6 +343,86 @@ export async function sendInvitationEmail(
  * @param appUrl Base URL of the application
  * @returns Promise<boolean> Success status
  */
+/**
+ * Send a password reset email
+ * @param to Recipient email
+ * @param token Reset token
+ * @param userId User ID
+ * @param appUrl Base URL of the application
+ * @returns Promise<boolean> Success status
+ */
+export async function sendPasswordResetEmail(
+  to: string,
+  token: string,
+  userId: number,
+  appUrl?: string
+): Promise<boolean> {
+  try {
+    logToFile(`Preparing password reset email to ${to}`);
+    logToFile(`Token: ${token}, UserId: ${userId}`);
+    
+    // Use the client-provided URL if available, otherwise fall back to config
+    const baseUrl = appUrl || config.appDomain;
+    logToFile(`Using base URL for password reset: ${baseUrl}`);
+    
+    const resetUrl = `${baseUrl}/reset-password/${token}/${userId}`;
+    logToFile(`Generated reset URL: ${resetUrl}`);
+    
+    const subject = `Password Reset Request - Obviu.io`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #6366f1; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">Password Reset</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+          <p>Hello,</p>
+          <p>We received a request to reset your password for your Obviu.io account.</p>
+          <p>Click the button below to reset your password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>
+          </div>
+          <p>Or copy and paste this URL into your browser:</p>
+          <p style="word-break: break-all; color: #4f46e5;">${resetUrl}</p>
+          <p>This password reset link will expire in 1 hour.</p>
+          <p>If you didn't request a password reset, you can safely ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #64748b; font-size: 12px;">This is an automated message from Obviu.io.</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+      Password Reset Request - Obviu.io
+      
+      We received a request to reset your password for your Obviu.io account.
+      
+      To reset your password, visit: ${resetUrl}
+      
+      This password reset link will expire in 1 hour.
+      
+      If you didn't request a password reset, you can safely ignore this email.
+    `;
+    
+    // Use the verified sender identity
+    const sender = config.emailFrom;
+    logToFile(`Using sender email: ${sender}`);
+    
+    return await sendEmail({
+      to,
+      from: sender,
+      subject,
+      html,
+      text
+    });
+  } catch (error) {
+    const errorMsg = `Error preparing password reset email to ${to}: ${error instanceof Error ? error.message : String(error)}`;
+    console.error(errorMsg);
+    logToFile(errorMsg);
+    return false;
+  }
+}
+
 export async function sendSystemInvitationEmail(
   to: string,
   inviterName: string,

@@ -7,6 +7,7 @@ import {
   activityLogs,
   invitations,
   approvals,
+  passwordResets,
   type User,
   type InsertUser,
   type Project,
@@ -22,7 +23,9 @@ import {
   type Invitation,
   type InsertInvitation,
   type Approval,
-  type InsertApproval
+  type InsertApproval,
+  type PasswordReset,
+  type InsertPasswordReset
 } from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
@@ -94,6 +97,12 @@ export interface IStorage {
   getApprovalsByFile(fileId: number): Promise<Approval[]>;
   getApprovalByUserAndFile(userId: number, fileId: number): Promise<Approval | undefined>;
   updateApproval(id: number, data: Partial<InsertApproval>): Promise<Approval | undefined>;
+  
+  // Password Reset
+  createPasswordReset(passwordReset: InsertPasswordReset): Promise<PasswordReset>;
+  getPasswordResetByToken(token: string): Promise<PasswordReset | undefined>;
+  getPasswordResetsByUser(userId: number): Promise<PasswordReset[]>;
+  updatePasswordReset(id: number, data: Partial<PasswordReset>): Promise<PasswordReset | undefined>;
 
   // Session store
   sessionStore: any; // Using any to avoid type issues
@@ -887,6 +896,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(approvals.id, id))
       .returning();
     return updatedApproval;
+  }
+
+  // Password Reset methods
+  async createPasswordReset(insertPasswordReset: InsertPasswordReset): Promise<PasswordReset> {
+    const [passwordReset] = await db
+      .insert(passwordResets)
+      .values(insertPasswordReset)
+      .returning();
+    return passwordReset;
+  }
+
+  async getPasswordResetByToken(token: string): Promise<PasswordReset | undefined> {
+    const [passwordReset] = await db
+      .select()
+      .from(passwordResets)
+      .where(eq(passwordResets.token, token));
+    return passwordReset;
+  }
+
+  async getPasswordResetsByUser(userId: number): Promise<PasswordReset[]> {
+    return await db
+      .select()
+      .from(passwordResets)
+      .where(eq(passwordResets.userId, userId))
+      .orderBy(desc(passwordResets.createdAt));
+  }
+
+  async updatePasswordReset(id: number, data: Partial<PasswordReset>): Promise<PasswordReset | undefined> {
+    const [updatedPasswordReset] = await db
+      .update(passwordResets)
+      .set(data)
+      .where(eq(passwordResets.id, id))
+      .returning();
+    return updatedPasswordReset;
   }
 }
 

@@ -267,19 +267,47 @@ export function setupAuth(app: Express) {
           message: "If an account with that email exists, a reset link has been sent." 
         });
       }
-      
+
       // Generate a token
       const token = generateToken();
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiration
       
-      // In a real app, we would store this token and send an email
-      // For demo purposes, just return the token
+      try {
+        // Store the token and user ID in the database
+        await storage.createPasswordReset({
+          userId: user.id,
+          token,
+          expiresAt,
+          isUsed: false
+        });
+
+        // Import the sendPasswordResetEmail function
+        const { sendPasswordResetEmail } = await import('./utils/sendgrid');
+        
+        // Send the password reset email
+        const emailSent = await sendPasswordResetEmail(
+          email,
+          token,
+          user.id,
+          req.headers.origin as string || undefined // Pass client origin if available
+        );
+        
+        if (emailSent) {
+          console.log(`Password reset email sent to ${email}`);
+        } else {
+          console.error(`Failed to send password reset email to ${email}`);
+          // Even if email fails, don't reveal this to the client for security
+        }
+      } catch (emailError) {
+        console.error('Error sending password reset email:', emailError);
+        // Don't expose email errors to client
+      }
+      
+      // Always return success response even if email fails
+      // This prevents user enumeration attacks
       res.status(200).json({
-        message: "If an account with that email exists, a reset link has been sent.",
-        // In a real app, we wouldn't return this token in the response
-        // This is just for demo purposes
-        _debug: { token, userId: user.id }
+        message: "If an account with that email exists, a reset link has been sent."
       });
     } catch (error) {
       next(error);
@@ -294,8 +322,21 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Missing required fields" });
       }
       
-      // In a real app, we would verify the token here
-      // For demo purposes, we'll just update the password
+      // Find the password reset record by token
+      const passwordReset = await storage.getPasswordResetByToken(token);
+      
+      if (!passwordReset) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+      
+      // Verify token belongs to the user and is not expired or used
+      if (
+        passwordReset.userId !== parseInt(userId) ||
+        passwordReset.isUsed ||
+        passwordReset.expiresAt < new Date()
+      ) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
       
       // Find user by ID
       const user = await storage.getUser(parseInt(userId));
@@ -308,6 +349,10 @@ export function setupAuth(app: Express) {
       const hashedPassword = await hashPassword(password);
       await storage.updateUser(user.id, { password: hashedPassword });
       
+      // Mark token as used
+      await storage.updatePasswordReset(passwordReset.id, { isUsed: true });
+      
+      // Respond with success
       res.status(200).json({ message: "Password reset successfully" });
     } catch (error) {
       next(error);
