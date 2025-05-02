@@ -72,8 +72,8 @@ Log out and log back in for the group membership to take effect.
 ### 2. Clone the Repository
 
 ```bash
-git clone <repository-url> obview
-cd obview
+git clone <repository-url> obviu
+cd obviu
 ```
 
 ### 3. Configure Environment Variables
@@ -124,12 +124,12 @@ For production use, it's recommended to set up Nginx as a reverse proxy and enab
 sudo apt install -y nginx certbot python3-certbot-nginx
 
 # Set up Nginx configuration
-sudo nano /etc/nginx/sites-available/obview
+sudo nano /etc/nginx/sites-available/obviu
 
-# Add the following configuration (replace obview.io with your actual domain if different)
+# Add the following configuration (replace obviu.io with your actual domain if different)
 server {
     listen 80;
-    server_name obview.io www.obview.io;
+    server_name obviu.io www.obviu.io;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -147,19 +147,19 @@ server {
 }
 
 # Enable the site
-sudo ln -s /etc/nginx/sites-available/obview /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/obviu /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
 # Obtain SSL certificate
-sudo certbot --nginx -d obview.io -d www.obview.io
+sudo certbot --nginx -d obviu.io -d www.obviu.io
 ```
 
 ### 7. Monitoring and Maintenance
 
 #### Application Monitoring
 
-OBview.io includes a health check API that provides detailed system information:
+Obviu.io includes a health check API that provides detailed system information:
 
 ```bash
 # Check application health
@@ -222,7 +222,7 @@ docker-compose up -d
 
 #### Backup and Restore Database
 
-OBview.io includes automated scripts for comprehensive backup and restoration:
+Obviu.io includes automated scripts for comprehensive backup and restoration:
 
 ##### Database Backups
 
@@ -234,13 +234,13 @@ docker-compose exec app /app/scripts/backup-db.sh
 docker-compose exec app /app/scripts/backup-db.sh /path/to/backup/directory
 
 # Manual backup if needed
-docker-compose exec db pg_dump -U postgres obview > backup_$(date +%Y-%m-%d).sql
+docker-compose exec db pg_dump -U postgres obviu > backup_$(date +%Y-%m-%d).sql
 
 # Restore from backup using the automated script
-docker-compose exec app /app/scripts/restore-db.sh /app/backups/obview_backup_20250501_123045.sql
+docker-compose exec app /app/scripts/restore-db.sh /app/backups/obviu_backup_20250501_123045.sql
 
 # Manual restore if needed
-cat backup_file.sql | docker-compose exec -T db psql -U postgres -d obview
+cat backup_file.sql | docker-compose exec -T db psql -U postgres -d obviu
 ```
 
 ##### Volume Backups (for uploads and database data)
@@ -257,7 +257,7 @@ docker-compose start
 
 # Restore volumes from backup (with application stopped)
 docker-compose stop
-/app/scripts/restore-volumes.sh /path/to/backup/directory/obview_volumes_20250501_123045.tar.gz
+/app/scripts/restore-volumes.sh /path/to/backup/directory/obviu_volumes_20250501_123045.tar.gz
 docker-compose start
 ```
 
@@ -286,13 +286,13 @@ For production environments, consider setting up cron jobs for regular backups a
 
 ```bash
 # Add to crontab - Database backup daily at 2 AM
-0 2 * * * docker-compose -f /path/to/docker-compose.yml exec -T app /app/scripts/backup-db.sh >> /var/log/obview-backup.log 2>&1
+0 2 * * * docker-compose -f /path/to/docker-compose.yml exec -T app /app/scripts/backup-db.sh >> /var/log/obviu-backup.log 2>&1
 
 # Add to crontab - Volume backup weekly on Sunday at 3 AM
-0 3 * * 0 cd /path/to/obview && /app/scripts/backup-volumes.sh >> /var/log/obview-volume-backup.log 2>&1
+0 3 * * 0 cd /path/to/obviu && /app/scripts/backup-volumes.sh >> /var/log/obviu-volume-backup.log 2>&1
 
 # Add to crontab - Disk space monitoring hourly
-0 * * * * /app/scripts/monitor-disk.sh >> /var/log/obview-disk-monitor.log 2>&1
+0 * * * * /app/scripts/monitor-disk.sh >> /var/log/obviu-disk-monitor.log 2>&1
 ```
 
 ## Troubleshooting
@@ -360,7 +360,7 @@ If you continue to experience issues with migrations, consider these options:
    docker-compose down
    
    # Remove the volume containing database data
-   docker volume rm obview_postgres_data
+   docker volume rm obviu_postgres_data
    
    # Start everything up again
    docker-compose up -d
@@ -369,7 +369,7 @@ If you continue to experience issues with migrations, consider these options:
 2. **Manual Migration**: Connect to the database and execute the SQL directly:
    ```bash
    # Connect to the database container
-   docker-compose exec db psql -U postgres -d obview
+   docker-compose exec db psql -U postgres -d obviu
    
    # Inside the PostgreSQL terminal, manually execute the migrations
    \i /docker-entrypoint-initdb.d/01-init-schema.sql
@@ -378,7 +378,7 @@ If you continue to experience issues with migrations, consider these options:
 3. **Database Inspection**: Check if tables exist and their structure:
    ```bash
    # Connect to the database
-   docker-compose exec db psql -U postgres -d obview
+   docker-compose exec db psql -U postgres -d obviu
    
    # List all tables
    \dt
@@ -451,13 +451,13 @@ If you encounter errors about missing files or directories in the Docker contain
    npm run build
    
    # Create a special Dockerfile.fix
-   echo "FROM obview_app
+   echo "FROM obviu_app
    COPY ./dist /app/dist" > Dockerfile.fix
    
    # Build fixed image
-   docker build -t obview_app_fixed -f Dockerfile.fix .
+   docker build -t obviu_app_fixed -f Dockerfile.fix .
    
-   # Update your docker-compose.yml to use obview_app_fixed
+   # Update your docker-compose.yml to use obviu_app_fixed
    ```
 
 ### Container Health Check Failures
@@ -479,7 +479,7 @@ If you get "Connection refused" errors when trying to access the application fro
 
 ```bash
 # Check if the container's internal health check is passing
-docker inspect obview_app | grep -A 10 Health
+docker inspect obviu_app | grep -A 10 Health
 
 # Check the application logs to see which port it's actually listening on
 docker-compose logs app | grep -i "serving on port"
@@ -493,380 +493,249 @@ docker-compose port app 5000
 
 ### Database Connectivity Issues
 
-If the application can't connect to the database, check:
+If the application cannot connect to the database, try these solutions:
 
 ```bash
-# Verify the database container is running
-docker-compose ps
+# Check if the database is running
+docker-compose ps db
 
 # Check database logs
 docker-compose logs db
 
-# Check if the environment variables are correct
+# Try connecting manually to verify credentials
+docker-compose exec db psql -U postgres -d obviu -c "SELECT 1"
+
+# Verify the environment variables are correctly passed to the app
 docker-compose exec app env | grep DATABASE_URL
 
-# Test database connectivity directly
-docker-compose exec db psql -U postgres -c "SELECT 1"
+# Check the application's configuration to confirm it's using the correct connection details
+docker-compose exec app cat /app/.env | grep DATABASE_URL
 ```
 
-### Email Sending Issues
+### Application Boot Issues
 
-If emails aren't being sent properly:
+If the application fails to start or crashes immediately:
 
-1. Verify your SendGrid API key is correct
-2. Check that the sender email address is verified in SendGrid 
-3. Check the application logs for any SendGrid-related errors:
-   ```bash
-   docker-compose logs app | grep -i sendgrid
-   ```
+```bash
+# Check for application startup errors
+docker-compose logs app
 
-### Upload Storage Issues
+# Look for specific JavaScript errors
+docker-compose logs app | grep "Error:"
 
-If file uploads fail or uploaded files are not accessible:
+# Check memory usage (OOM errors)
+docker-compose exec app free -m
 
-1. Verify the uploads volume is properly mounted:
-   ```bash
-   docker-compose exec app ls -la /app/uploads
-   ```
-   
-2. Check file permissions:
-   ```bash
-   docker-compose exec app stat -c '%a %n' /app/uploads
-   ```
+# Verify disk space (application might fail if disk is full)
+docker-compose exec app df -h
 
-3. Make sure the uploads directory is writable by the app:
-   ```bash
-   docker-compose exec app touch /app/uploads/test_file && docker-compose exec app rm /app/uploads/test_file
-   ```
+# Try starting the application in debug mode
+docker-compose exec app node --inspect=0.0.0.0:9229 /app/server/index.js
+```
+
+### File Upload Issues
+
+If file uploads are failing:
+
+```bash
+# Check if the upload directory exists and has correct permissions
+docker-compose exec app ls -la /app/uploads
+
+# Fix upload directory permissions
+docker-compose exec app mkdir -p /app/uploads
+docker-compose exec app chmod 777 /app/uploads
+
+# Verify Nginx upload limit (if using Nginx)
+sudo nano /etc/nginx/sites-available/obviu
+# Look for: client_max_body_size 100M;
+# Increase if needed and restart Nginx
+sudo systemctl restart nginx
+```
 
 ## Disaster Recovery
 
-OBview.io includes a comprehensive disaster recovery strategy to help you quickly restore operations in case of failures.
+Obviu.io includes a comprehensive disaster recovery strategy to help you quickly restore operations in case of failures.
 
-### Complete System Recovery
+### Backup Strategy
 
-In case of a complete system failure, follow these steps to recover:
+Ensure you have:
 
-1. Install Docker and Docker Compose on the new system (follow installation instructions above)
-2. Clone the repository and set up environment variables
-3. Restore the database and volumes from backups:
+1. **Regular Database Backups**
+   - Configured the automated backup scripts
+   - Stored backups both locally and in offsite storage
+   - Verified that backups are being created
 
-```bash
-# Copy backup files to the new server
-scp obview_backup_YYYYMMDD.sql new-server:/tmp/
-scp obview_volumes_YYYYMMDD.tar.gz new-server:/tmp/
+2. **Volume/File Backups**
+   - Backed up all Docker volumes (especially uploads)
+   - Stored file backups separately from database backups
+   - Prepared for efficient access to restore from
+   
+3. **Configuration Backups**
+   - Stored a copy of .env files and Docker configuration
+   - Documented custom configurations
+   - Backed up any SSL certificates if not using Let's Encrypt
 
-# On the new server
-mkdir -p /path/to/obview
-cd /path/to/obview
+### Recovery Procedure
 
-# Set up environment
-cp .env.example .env
-nano .env  # Configure environment variables
+#### Complete System Restoration
 
-# Restore volumes from backup
-./scripts/restore-volumes.sh /tmp/obview_volumes_YYYYMMDD.tar.gz
-
-# Start containers
-docker-compose up -d
-
-# Restore database
-docker-compose exec app /app/scripts/restore-db.sh /tmp/obview_backup_YYYYMMDD.sql
-```
-
-### Recovery Time Objectives
-
-The OBview.io disaster recovery process is designed to minimize downtime:
-
-- **RTO (Recovery Time Objective)**: 30-60 minutes for a complete system restore from backups
-- **RPO (Recovery Point Objective)**: Depends on backup frequency - daily backups mean maximum 24 hours of data loss
-
-### Testing Disaster Recovery
-
-It's recommended to regularly test the disaster recovery process:
+If you need to restore the entire system to a new server:
 
 ```bash
-# Create a test environment
-mkdir -p /path/to/test-recovery
-cd /path/to/test-recovery
+# 1. Transfer backup files to the new server
+scp obviu_backup_YYYYMMDD.sql new-server:/tmp/
+scp obviu_volumes_YYYYMMDD.tar.gz new-server:/tmp/
 
-# Clone the repository
+# 2. Install Docker and Docker Compose on the new server
+# (see installation instructions above)
+
+# 3. Clone the repository
+mkdir -p /path/to/obviu
+cd /path/to/obviu
 git clone <repository-url> .
 
-# Copy your production .env file (adjust sensitive values for testing)
-cp /path/to/production/.env .
+# 4. Restore configuration
+# Create .env file with correct settings
 
-# Test the restoration process
-./scripts/restore-volumes.sh /path/to/backup/obview_volumes_YYYYMMDD.tar.gz
-docker-compose up -d
-docker-compose exec app /app/scripts/restore-db.sh /path/to/backup/obview_backup_YYYYMMDD.sql
+# 5. Start containers without initializing
+docker-compose up -d --no-start
 
-# Verify application functionality
-curl http://localhost:5000/api/health
+# 6. Restore volume data first
+./scripts/restore-volumes.sh /tmp/obviu_volumes_YYYYMMDD.tar.gz
+
+# 7. Start containers 
+docker-compose start
+
+# 8. Restore database
+docker-compose exec app /app/scripts/restore-db.sh /tmp/obviu_backup_YYYYMMDD.sql
 ```
 
-## Option 2: Direct Deployment from Git Repository
+#### Database-Only Recovery
 
-For development environments or if you need to customize the application, you can deploy directly from the Git repository without Docker.
+The Obviu.io disaster recovery process is designed to minimize downtime:
 
-### 1. System Requirements
+```bash
+# For quick database-only recovery:
+docker-compose stop app  # Stop just the application, leave DB running
+./scripts/restore-volumes.sh /path/to/backup/obviu_volumes_YYYYMMDD.tar.gz
+docker-compose exec app /app/scripts/restore-db.sh /path/to/backup/obviu_backup_YYYYMMDD.sql
+docker-compose start app  # Restart the application
+```
 
-- Node.js 18.x or newer
-- PostgreSQL 14.x or newer
-- Git
+## Option 2: Direct Deployment (Development/Customization)
+
+For development or customization purposes, you can deploy directly from the Git repository without Docker.
+
+### 1. Prerequisites
+
+```bash
+# Install Node.js v18 or newer
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Install PostgreSQL
+sudo apt install -y postgresql postgresql-contrib
+
+# Install build essentials
+sudo apt install -y build-essential
+```
 
 ### 2. Clone the Repository
 
 ```bash
-git clone <repository-url> obview
-cd obview
+git clone <repository-url> .
 ```
 
-### 3. Install Dependencies
+### 3. Configure Environment Variables
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Set the following variables at minimum:
+- `DATABASE_URL=postgresql://username:password@localhost:5432/obviu`
+- `SESSION_SECRET` (random secure string)
+- `SENDGRID_API_KEY` (for email functionality)
+
+### 4. Create PostgreSQL Database
+
+```bash
+sudo -u postgres psql
+postgres=# CREATE USER your_username WITH PASSWORD 'your_password';
+postgres=# CREATE DATABASE obviu;
+postgres=# GRANT ALL PRIVILEGES ON DATABASE obviu TO your_username;
+postgres=# \q
+```
+
+### 5. Install Dependencies and Build
 
 ```bash
 npm install
-```
-
-### 4. Set Up Environment Variables
-
-Create a `.env` file with the necessary environment variables:
-
-```bash
-# Database connection
-DATABASE_URL=postgresql://username:password@localhost:5432/obview
-SESSION_SECRET=your_secure_random_string
-
-# Email (optional)
-SENDGRID_API_KEY=your_sendgrid_api_key
-EMAIL_FROM=your-verified-sender@example.com
-
-# Application URL for links in emails
-APP_URL=http://localhost:5000
-```
-
-### 5. Create and Migrate the Database
-
-```bash
-# Create PostgreSQL database
-sudo -u postgres createdb obview
-
-# Run database migrations
-npm run db:push
-```
-
-### 6. Start the Application
-
-```bash
-# Development mode with hot reloading
-npm run dev
-
-# Production mode
 npm run build
-npm start
 ```
 
-The application will be available at:
-- Development: http://localhost:5000
-- Production: http://localhost:5000 (or the port specified in your environment)
-
-### 7. Handling File Paths
-
-When deploying from Git, pay special attention to file paths:
-
-1. The `uploads` directory should be created in the project root:
+### 6. Run Migrations and Create Initial User
 
 ```bash
-mkdir -p uploads
-chmod 755 uploads
+NODE_ENV=production npm run db:push
+node scripts/setup.js
 ```
 
-2. Make sure all paths in the code use relative paths or process.cwd():
+### 7. Start the Application
 
-```js
-// Example (already implemented in the codebase)
-const uploadsDir = path.join(process.cwd(), 'uploads');
-```
-
-### 8. Production Considerations
-
-For a production environment:
-
-1. Use a proper process manager like PM2:
-
+For development:
 ```bash
-# Install PM2
+npm run dev
+```
+
+For production:
+```bash
+# Install PM2 for process management
 npm install -g pm2
 
 # Start the application with PM2
-pm2 start npm --name "obview" -- start
-
-# Set up auto-restart on server reboot
-pm2 startup
+pm2 start npm --name "obviu" -- start
 pm2 save
+pm2 startup
 ```
 
-2. Set up Nginx as a reverse proxy (similar to Docker deployment)
-
-3. Set up regular database backups:
+### 8. Set Up Backup Cron Jobs
 
 ```bash
 # Create a backup script
-echo '#!/bin/bash
-BACKUP_DIR="/path/to/backups"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-pg_dump -U postgres obview > "$BACKUP_DIR/obview_backup_$TIMESTAMP.sql"
+mkdir -p ~/backups
+
+cat > ~/scripts/backup-db.sh << 'EOF'
+#!/bin/bash
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR=~/backups
+mkdir -p "$BACKUP_DIR"
+pg_dump -U postgres obviu > "$BACKUP_DIR/obviu_backup_$TIMESTAMP.sql"
 # Keep only the 5 most recent backups
-ls -t "$BACKUP_DIR"/obview_backup_*.sql | tail -n +6 | xargs -r rm
-' > /path/to/backup-script.sh
-chmod +x /path/to/backup-script.sh
+ls -t "$BACKUP_DIR"/obviu_backup_*.sql | tail -n +6 | xargs -r rm
+EOF
 
-# Set up cron job for daily backups
-(crontab -l 2>/dev/null; echo "0 2 * * * /path/to/backup-script.sh") | crontab -
+chmod +x ~/scripts/backup-db.sh
+
+# Add cron job
+(crontab -l 2>/dev/null; echo "0 2 * * * ~/scripts/backup-db.sh") | crontab -
 ```
 
-### 9. Troubleshooting Git Repository Deployment
+## Code Extension and Customization
 
-Here are solutions to common issues when deploying directly from the Git repository:
+The Obviu.io codebase uses TypeScript for type safety. There are some common patterns to be aware of when extending the code:
 
-#### TypeScript Compilation Errors
+1. **Schema Definition**: When adding new data models, define them in `shared/schema.ts` using Drizzle ORM's schema builder.
+2. **Server Routes**: Routes are defined in `server/routes.ts`. Use the Express.js middleware pattern for authentication and validation.
+3. **Frontend Components**: React components are in `client/src/components`. Use shadcn UI components where possible for consistency.
+4. **Media Processing**: Media processing utilities are in `server/utils`. Follow the pattern for extending functionality.
 
-If you see TypeScript errors during build:
+## Browser Compatibility
 
-```bash
-# Check for TypeScript errors
-npm run check
-
-# If you need to fix type issues, look at the StorageFile type alias
-# See the section on TypeScript Type Checking below
-```
-
-#### Path Issues
-
-If file uploads or content delivery fails:
-
-```bash
-# Make sure upload paths are correct
-ls -la uploads/
-
-# Verify permissions
-chmod 755 uploads/
-
-# Check file paths in routes.ts
-grep -r "sendFile" server/
-```
-
-#### Port Configuration
-
-If the application fails to start on the expected port:
-
-```bash
-# Check for port conflicts
-netstat -tuln | grep 5000
-
-# Change the port if needed by setting PORT in your .env file
-echo "PORT=5001" >> .env
-```
-
-#### Database Migration Failures
-
-If database migrations fail:
-
-```bash
-# Check database connection
-node -e "const { Pool } = require('@neondatabase/serverless'); \
-const pool = new Pool({ connectionString: process.env.DATABASE_URL }); \
-pool.query('SELECT 1').then(res => console.log('Connected!')).catch(err => console.error(err));"
-
-# Run migrations manually
-node server/db-migrate.js
-```
-
-#### Node.js Version Issues
-
-If you encounter compatibility issues:
-
-```bash
-# Check your Node.js version
-node -v
-
-# Use nvm to install the recommended version
-nvm install 18
-nvm use 18
-```
-
-## Development Notes
-
-### TypeScript Type Checking
-
-The OBview.io codebase uses TypeScript for type safety. There are some common patterns to be aware of when extending the code:
-
-#### File Uploads with Multer
-
-For file upload handlers using multer, always use the `FileRequest` interface defined in `server/routes.ts`:
-
-```typescript
-// Use this interface for file upload handlers
-interface FileRequest extends Request {
-  file: Express.Multer.File;
-}
-
-// In route handlers:
-app.post('/api/upload', upload.single('file'), async (req: FileRequest, res, next) => {
-  // Now req.file is properly typed
-  console.log(req.file.originalname);
-});
-```
-
-#### Authentication Type Safety
-
-When accessing `req.user` in authenticated routes, you may need to handle TypeScript's null checking:
-
-```typescript
-// Safe pattern for accessing user ID
-if (!req.isAuthenticated() || !req.user) {
-  return res.status(401).json({ message: "Unauthorized" });
-}
-const userId = req.user.id; // Now safe to use
-```
-
-#### Database ID Handling
-
-When dealing with nullable database IDs:
-
-```typescript
-// Safe pattern for handling nullable IDs
-const parentId = commentData.parentId ?? null;
-if (parentId !== null) {
-  // Safe to use as number
-}
-```
-
-### Browser Compatibility
-
-OBview.io is built with modern web standards and should work in all recent browser versions:
-
-- Chrome/Edge (latest 2 versions)
+Obviu.io is built with modern web standards and should work in all recent browser versions:
+- Chrome/Edge/Brave (latest 2 versions)
 - Firefox (latest 2 versions)
 - Safari (latest 2 versions)
 
-To update the browserslist database (which you may see warnings about in the console):
-
-```bash
-npx update-browserslist-db@latest
-```
-
-### Dependency Management
-
-When adding new packages, use the proper method to maintain compatibility:
-
-```bash
-# For server-side dependencies
-npm install package-name --save
-
-# For TypeScript type definitions
-npm install @types/package-name --save-dev
-
-# Update all dependencies (use with caution)
-npm update
-```
+For best performance, recommend Chrome or Edge to your users, especially when dealing with large media files.
