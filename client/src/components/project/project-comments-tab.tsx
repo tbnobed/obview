@@ -98,14 +98,14 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
         
         // 3. Dispatch a custom event to notify the page that we want to navigate
         try {
-          const jumpEvent = new CustomEvent('obview_jump_to_timestamp', { 
+          const jumpEvent = new CustomEvent('obviu_jump_to_timestamp', { 
             detail: { fileId: comment.file.id, timestamp: timestamp, commentId: comment.id }
           });
           window.dispatchEvent(jumpEvent);
           
           // 4. Extra backup approach - dispatch using a more traditional event
           const backupEvent = document.createEvent('CustomEvent');
-          backupEvent.initCustomEvent('obview_jump_to_timestamp_backup', true, true, { 
+          backupEvent.initCustomEvent('obviu_jump_to_timestamp_backup', true, true, { 
             fileId: comment.file.id, 
             timestamp: timestamp,
             commentId: comment.id
