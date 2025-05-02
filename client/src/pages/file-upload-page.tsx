@@ -105,16 +105,11 @@ export default function FileUploadPage() {
     // Use the custom filename if provided
     const customFilename = customFilenameRef.current?.value?.trim();
     
-    // If custom filename is provided, create a new File object with the custom name
+    // If custom filename is provided, add it as a separate field in FormData
     if (customFilename && customFilename !== selectedFile.name) {
-      // Create a new file with the custom filename but keep the original file's contents and type
-      const renamedFile = new File([selectedFile], customFilename, {
-        type: selectedFile.type,
-        lastModified: selectedFile.lastModified
-      });
-      formData.append("file", renamedFile);
-      
-      // Add the original file name as a separate parameter for server-side reference
+      // Just add the original file but include the custom filename as a separate field
+      formData.append("file", selectedFile);
+      formData.append("customFilename", customFilename);
       formData.append("originalName", selectedFile.name);
     } else {
       formData.append("file", selectedFile);

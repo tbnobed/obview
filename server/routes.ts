@@ -879,13 +879,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload a file to a project (support both endpoints for compatibility)
-  app.post(["/api/projects/:projectId/files", "/api/projects/:projectId/upload"], hasProjectEditAccess, upload.single('file'), async (req: FileRequest, res, next) => {
+  app.post(["/api/projects/:projectId/files", "/api/projects/:projectId/upload"], hasProjectEditAccess, upload.single('file'), handleMulterErrors, async (req: FileRequest, res, next) => {
     try {
       const projectId = parseInt(req.params.projectId);
       
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
+      
+      // Use custom filename if provided
+      const customFilename = req.body.customFilename;
+      const filename = customFilename || req.file.originalname;
       
       // Determine file type from mimetype
       let fileType = "other";
@@ -899,7 +903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check for existing files to determine version
       const existingFiles = await storage.getFilesByProject(projectId);
-      const similarFiles = existingFiles.filter(f => f.filename === req.file!.originalname);
+      const similarFiles = existingFiles.filter(f => f.filename === filename);
       
       // Determine version number
       const version = similarFiles.length > 0 
@@ -915,9 +919,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      // Create file record in storage
+      // Create file record in storage with custom filename if provided
       const file = await storage.createFile({
-        filename: req.file.originalname,
+        filename: filename, // Use custom filename or original filename
         fileType,
         fileSize: req.file.size,
         filePath: req.file.path,
