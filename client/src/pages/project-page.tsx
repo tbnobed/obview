@@ -345,10 +345,7 @@ export default function ProjectPage() {
             {/* Share Button */}
             <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="flex items-center dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
-                >
+                <Button variant="outline" className="flex items-center">
                   <Share2 className="h-4 w-4 mr-1.5" />
                   Share
                 </Button>
@@ -385,10 +382,7 @@ export default function ProjectPage() {
             {/* Download Button */}
             <Dialog open={downloadDialogOpen} onOpenChange={setDownloadDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="flex items-center dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
-                >
+                <Button variant="outline" className="flex items-center">
                   <Download className="h-4 w-4 mr-1.5" />
                   Download
                 </Button>
@@ -446,7 +440,10 @@ export default function ProjectPage() {
             {/* Invite Members Button */}
             <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                >
                   <UserPlus className="h-4 w-4 mr-1.5" />
                   Invite Members
                 </Button>
