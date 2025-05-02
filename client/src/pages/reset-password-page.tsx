@@ -51,9 +51,20 @@ export default function ResetPasswordPage() {
       }
 
       try {
-        // The API doesn't need to actually validate here as we'll do that on submit
-        // However, we could add a validation endpoint if needed
-        setIsValidToken(true);
+        // Call the validation endpoint
+        const response = await fetch(`/api/validate-reset-token/${token}/${userId}`);
+        const data = await response.json();
+        
+        if (data.valid) {
+          setIsValidToken(true);
+        } else {
+          setIsValidToken(false);
+          toast({
+            title: "Invalid reset link",
+            description: data.message || "The password reset link is invalid or has expired.",
+            variant: "destructive",
+          });
+        }
       } catch (error) {
         setIsValidToken(false);
         toast({
