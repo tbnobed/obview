@@ -111,7 +111,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
             <Button
               variant="outline"
               onClick={() => setIsOpen(false)}
-              className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-[#026d55]"
+              className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/50 dark:hover:text-[#026d55] hover-smooth-light"
             >
               Close
             </Button>

@@ -80,7 +80,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
         <p className="text-sm mt-1 mb-4">Invite members to collaborate on this project</p>
         <Button 
           size="sm" 
-          className="flex items-center mx-auto dark:bg-[#026d55] dark:text-white dark:hover:bg-[#025943]"
+          className="flex items-center mx-auto dark:bg-[#026d55] dark:text-white dark:hover:bg-[#025943]/90 hover-teal"
           onClick={onInviteClick}
         >
           <UserPlus className="h-4 w-4 mr-1.5" />
@@ -145,7 +145,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
                           <Button 
                             size="icon" 
                             variant="ghost"
-                            className="text-gray-500 hover:text-red-600 hover:bg-red-50/40 dark:text-gray-400 dark:hover:text-red-500 dark:hover:bg-red-950/10"
+                            className="text-gray-500 hover:text-red-600 hover:bg-red-50/40 dark:text-gray-400 dark:hover:text-red-500 dark:hover:bg-red-950/10 transition-colors duration-200"
                             onClick={() => setPendingRemoveUserId(member.userId)}
                           >
                             <Trash2 className="h-4 w-4" />

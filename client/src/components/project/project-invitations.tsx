@@ -76,7 +76,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
         {invitations.map((invitation: any) => (
           <div 
             key={invitation.id} 
-            className="flex items-center justify-between p-3 border rounded-lg bg-white dark:bg-[#0f1218] dark:border-gray-800 shadow-sm"
+            className="flex items-center justify-between p-3 border rounded-lg bg-white dark:bg-[#0f1218] dark:border-gray-800 shadow-sm hover-smooth-light dark:hover-subtle-dark"
           >
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
@@ -135,7 +135,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleResendInvitation(invitation.id)}
-                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-[#026d55] dark:hover:text-[#03ffc8] dark:hover:bg-[#025943]/30 mr-1"
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50/40 dark:text-[#026d55] dark:hover:text-[#03ffc8] dark:hover:bg-[#025943]/30 mr-1 hover-teal"
                       disabled={resendInvitationMutation.isPending}
                     >
                       {resendInvitationMutation.isPending && resendInvitationMutation.variables === invitation.id ? (
@@ -162,7 +162,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                           variant="ghost" 
                           size="icon"
                           onClick={() => setPendingDeleteId(invitation.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50/40 dark:hover:text-red-400 dark:hover:bg-red-950/20"
                         >
                           <Trash2 className="h-5 w-5" />
                         </Button>
