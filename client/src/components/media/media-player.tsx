@@ -474,7 +474,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex items-center dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                    className="flex items-center dark:bg-orange-900 dark:text-orange-200 dark:border-orange-900 dark:hover:bg-orange-950"
                     onClick={handleRequestChanges}
                     disabled={approveMutation.isPending}
                   >
