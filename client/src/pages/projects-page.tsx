@@ -21,7 +21,7 @@ export default function ProjectsPage() {
   const { data: projects, isLoading, error } = useProjects();
 
   useEffect(() => {
-    document.title = "Projects | MediaReview.io";
+    document.title = "Projects | Obviu.io";
   }, []);
 
   // Filter projects by search term and status

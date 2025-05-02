@@ -10,7 +10,7 @@ export default function NewProjectPage() {
   const [_, navigate] = useLocation();
 
   useEffect(() => {
-    document.title = "Create New Project | OBview.io";
+    document.title = "Create New Project | Obviu.io";
   }, []);
 
   return (
