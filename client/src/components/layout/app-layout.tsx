@@ -30,7 +30,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       // Set a small delay before showing the sidebar to prevent accidental triggers
       hoverTimerRef.current = window.setTimeout(() => {
         setIsHovering(true);
-      }, 200);
+      }, 150);
     }
   }, [isCollapsed, isHovering]);
 
@@ -93,10 +93,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <div 
         ref={sidebarRef}
         className={cn(
-          "hidden md:flex md:flex-shrink-0 transition-all duration-300 ease-in-out",
-          isCollapsed && !isHovering ? "md:w-0 overflow-hidden" : "md:w-auto"
+          "hidden md:flex md:flex-shrink-0 transition-all duration-500 ease-out",
+          isCollapsed && !isHovering ? "md:w-0 overflow-hidden opacity-0" : "md:w-auto opacity-100"
         )}
         onMouseLeave={handleMouseLeave}
+        style={{ maxWidth: isCollapsed && !isHovering ? '0' : '18rem' }}
       >
         <Sidebar />
       </div>
@@ -104,7 +105,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Hover sidebar - shown when hover is active */}
       {isCollapsed && isHovering && (
         <div 
-          className="hidden md:block absolute left-0 top-0 h-full z-40 shadow-xl transition-all duration-300 ease-in-out"
+          className="hidden md:block absolute left-0 top-0 h-full z-40 shadow-xl transition-all duration-500 ease-out transform-gpu animate-sidebarSlideIn"
           onMouseLeave={handleMouseLeave}
         >
           <Sidebar />
