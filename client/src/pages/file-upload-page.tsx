@@ -99,105 +99,21 @@ export default function FileUploadPage() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Create a FormData object to send the file
-    const formData = new FormData();
-    
-    // Use the custom filename if provided
+    // Get the custom filename if provided
     const customFilename = customFilenameRef.current?.value?.trim();
     
-    // If custom filename is provided, add it as a separate field in FormData
-    if (customFilename && customFilename !== selectedFile.name) {
-      // Just add the original file but include the custom filename as a separate field
-      formData.append("file", selectedFile);
-      formData.append("customFilename", customFilename);
-      formData.append("originalName", selectedFile.name);
-    } else {
-      formData.append("file", selectedFile);
-    }
-
-    try {
-      // Use XMLHttpRequest for real progress updates
-      const xhr = new XMLHttpRequest();
-      
-      // Track upload progress
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable) {
-          const percentComplete = (event.loaded / event.total) * 100;
-          setUploadProgress(percentComplete);
-        }
-      });
-      
-      // Handle timeout with a longer duration for large files
-      xhr.timeout = 3600000; // 1 hour in milliseconds
-      
-      // Create a promise to handle the XHR request
-      const xhrPromise = new Promise<Response>((resolve, reject) => {
-        xhr.open('POST', `/api/projects/${projectId}/upload`, true);
-        
-        // Set up completion handler
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            // Create a Response object from the XHR response
-            const response = new Response(xhr.response, {
-              status: xhr.status,
-              statusText: xhr.statusText,
-              headers: new Headers({
-                'Content-Type': xhr.getResponseHeader('Content-Type') || 'application/json'
-              })
-            });
-            resolve(response);
-          } else {
-            reject(new Error(xhr.statusText || `Upload failed with status ${xhr.status}`));
-          }
-        };
-        
-        // Set up error handler
-        xhr.onerror = () => {
-          reject(new Error('Network error during upload'));
-        };
-        
-        // Set up timeout handler
-        xhr.ontimeout = () => {
-          reject(new Error('Upload timed out. The file may be too large or your connection is slow.'));
-        };
-        
-        // Send the request
-        xhr.send(formData);
-      });
-      
-      // Wait for the XHR request to complete
-      const response = await xhrPromise;
-
-      if (response.ok) {
-        setUploadProgress(100);
-        const data = await response.json();
-        
-        toast({
-          title: "Upload successful",
-          description: "File has been uploaded successfully",
-        });
-
-        // Invalidate the files query to refresh the file list
-        queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
-        
-        // Navigate back to the project detail page after a short delay
-        setTimeout(() => {
-          navigate(`/projects/${projectId}`);
-        }, 1000);
-      } else {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to upload file");
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload file",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
+    // Use our uploadService to handle the upload
+    // This will continue even if the user navigates away from this page
+    uploadService.uploadFile(selectedFile, projectId, customFilename);
+    
+    // Show success toast
+    toast({
+      title: "Upload started",
+      description: "Your file is being uploaded in the background. You can navigate away from this page.",
+    });
+    
+    // Navigate back to the project page
+    navigate(`/projects/${projectId}`);
   };
 
   const getFileTypeIcon = () => {

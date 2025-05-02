@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { UploadManager } from "@/components/uploads/upload-manager";
 import HomePage from "@/pages/home-page";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
@@ -56,6 +57,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Router />
+            <UploadManager />
           </TooltipProvider>
         </ThemeProvider>
       </AuthProvider>
