@@ -92,6 +92,7 @@ export interface IStorage {
   createApproval(approval: InsertApproval): Promise<Approval>;
   getApprovalsByFile(fileId: number): Promise<Approval[]>;
   getApprovalByUserAndFile(userId: number, fileId: number): Promise<Approval | undefined>;
+  updateApproval(id: number, data: Partial<InsertApproval>): Promise<Approval | undefined>;
 
   // Session store
   sessionStore: any; // Using any to avoid type issues
