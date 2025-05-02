@@ -69,6 +69,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
         size={size}
         onClick={handleOpenDialog}
         className={`gap-1 ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-[#026d55]' : 'dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white'}`}
+        data-variant-type={variant}
       >
         <ShareIcon className="h-4 w-4" />
         <span>Share</span>
