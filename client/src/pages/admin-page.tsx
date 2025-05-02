@@ -3,11 +3,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import UserList from "@/components/admin/user-list";
+import AdminInviteForm from "@/components/admin/admin-invite-form";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import UserForm from "@/components/admin/user-form";
 import { Plus, Users, FileText, Activity, Settings, ShieldAlert, Loader2 } from "lucide-react";
 
@@ -72,15 +73,17 @@ export default function AdminPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Invite New User</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <p className="text-sm text-neutral-500">
+                  <p className="text-sm text-neutral-500 pt-2">
                     Send an invitation email to a new user.
                   </p>
-                  {/* User invitation form would go here */}
-                  <p className="text-amber-600 text-sm">
-                    Email functionality is not fully implemented in this demo
-                  </p>
+                </DialogHeader>
+                <div className="py-4">
+                  <AdminInviteForm
+                    onInviteSent={() => {
+                      setInviteDialogOpen(false);
+                      // Show success message using toast (already shown in component)
+                    }}
+                  />
                 </div>
               </DialogContent>
             </Dialog>
