@@ -4,21 +4,31 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Mutation to update user's theme preference
   const updateThemeMutation = useMutation({
     mutationFn: async (themePreference: string) => {
       const res = await apiRequest("PATCH", "/api/user/theme", { themePreference });
       return await res.json();
+    },
+    onSuccess: (data) => {
+      // Update the cached user data with the new theme preference
+      queryClient.setQueryData(["/api/user"], (oldData: any) => {
+        if (oldData) {
+          return { ...oldData, themePreference: data.themePreference };
+        }
+        return oldData;
+      });
     },
     onError: (error: Error) => {
       console.error("Failed to save theme preference:", error);
@@ -38,6 +48,21 @@ export function ThemeToggle() {
     setMounted(true);
   }, []);
 
+  // Force theme application via DOM to avoid requiring page refresh
+  useEffect(() => {
+    if (!mounted) return;
+    
+    // Get current effective theme (accounting for system preference)
+    const currentTheme = theme === 'system' ? systemTheme : theme;
+    
+    // Apply theme directly to the document element
+    if (currentTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme, systemTheme, mounted]);
+
   // Don't render anything until mounted to avoid hydration mismatch
   if (!mounted) {
     return null;
@@ -53,12 +78,15 @@ export function ThemeToggle() {
     }
   };
 
+  // Determine the active theme for display
+  const activeTheme = theme === 'system' ? systemTheme : theme;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="focus-visible:ring-0 focus-visible:ring-offset-0">
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <Sun className={`h-[1.2rem] w-[1.2rem] transition-all ${activeTheme === 'dark' ? 'rotate-90 scale-0' : 'rotate-0 scale-100'}`} />
+          <Moon className={`absolute h-[1.2rem] w-[1.2rem] transition-all ${activeTheme === 'dark' ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
