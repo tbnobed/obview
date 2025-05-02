@@ -83,7 +83,43 @@ export default function FileManager() {
       setOptimisticFiles(prev => [...prev, filename]);
       
       const response = await apiRequest("DELETE", `/api/system/uploads/${encodeURIComponent(filename)}`);
-      return response.json();
+      
+      // Handle response properly based on status code
+      if (response.status >= 200 && response.status < 300) {
+        try {
+          // Only try to parse JSON if content exists
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+          }
+          // If no JSON or empty response, just return success
+          return { success: true };
+        } catch (jsonError) {
+          console.log('Response was not JSON, but operation succeeded:', response.status);
+          return { success: true };
+        }
+      }
+      
+      // Handle error responses
+      let errorMessage = `Server error: ${response.status}`;
+      try {
+        const errorData = await response.text();
+        if (errorData) {
+          try {
+            // Try to parse as JSON
+            const jsonError = JSON.parse(errorData);
+            errorMessage = jsonError.message || jsonError.error || errorMessage;
+          } catch (e) {
+            // If not JSON, use as plain text
+            errorMessage = errorData;
+          }
+        }
+      } catch (e) {
+        // If we can't read the error, just use status
+        console.error('Could not read error response:', e);
+      }
+      
+      throw new Error(errorMessage);
     },
     onSuccess: (_, filename) => {
       // Update the cache instead of invalidating for a smoother experience
@@ -113,7 +149,12 @@ export default function FileManager() {
   const scanMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/admin/scan-files");
-      return response.json();
+      try {
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to parse scan response as JSON:', error);
+        throw new Error('Failed to parse scan results');
+      }
     },
     onSuccess: (data: FileScanResult) => {
       setScanResults(data);
