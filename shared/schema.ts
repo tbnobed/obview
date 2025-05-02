@@ -36,7 +36,7 @@ export const files = pgTable("files", {
   id: serial("id").primaryKey(),
   filename: text("filename").notNull(),
   fileType: text("file_type").notNull(), // "video", "audio", "image"
-  fileSize: bigint("file_size", { mode: "bigint" }).notNull(),
+  fileSize: bigint("file_size", { mode: "number" }).notNull(),
   filePath: text("file_path").notNull(),
   projectId: integer("project_id").notNull(),
   uploadedById: integer("uploaded_by_id").notNull(),

@@ -941,6 +941,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
       
+      // Add detailed logging for large file uploads to help debug issues
+      const isLargeFile = req.file.size > 1024 * 1024 * 1024; // > 1GB
+      if (isLargeFile) {
+        console.log(`[Upload] Processing large file upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
+      }
+      
       // Use custom filename if provided
       const customFilename = req.body.customFilename;
       const filename = customFilename || req.file.originalname;
@@ -1000,6 +1006,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(file);
     } catch (error) {
+      // Check specifically for integer overflow errors which might indicate file size issues
+      if (error.message && error.message.includes("out of range for type integer")) {
+        console.error('[Upload Error] File size error detected:', {
+          error: error.message,
+          fileName: req.file?.originalname,
+          fileSize: req.file?.size,
+          // Convert to MB for more readable logs
+          fileSizeMB: req.file ? (req.file.size / (1024 * 1024)).toFixed(2) + " MB" : "unknown"
+        });
+        
+        return res.status(500).json({
+          message: "The file is too large for the database. Please contact your administrator.",
+          details: "The file size exceeds the maximum allowed by the database schema."
+        });
+      }
+      
+      // Forward to the generic error handler
       next(error);
     }
   });
