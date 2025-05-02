@@ -74,13 +74,13 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
 
   if (teamMembers.length === 0) {
     return (
-      <div className="py-8 text-center text-gray-500 border rounded-md">
-        <Users className="h-10 w-10 mx-auto mb-2 text-gray-400" />
+      <div className="py-8 text-center text-gray-500 dark:text-gray-400 border dark:border-gray-800 rounded-md">
+        <Users className="h-10 w-10 mx-auto mb-2 text-gray-400 dark:text-gray-500" />
         <p>No team members yet</p>
         <p className="text-sm mt-1 mb-4">Invite members to collaborate on this project</p>
         <Button 
           size="sm" 
-          className="flex items-center mx-auto"
+          className="flex items-center mx-auto dark:bg-[#026d55] dark:text-white dark:hover:bg-[#025943]"
           onClick={onInviteClick}
         >
           <UserPlus className="h-4 w-4 mr-1.5" />
@@ -92,7 +92,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
 
   return (
     <div className="space-y-4">
-      <div className="border rounded-md divide-y">
+      <div className="border rounded-md divide-y dark:border-gray-800 dark:divide-gray-800">
         {teamMembers.map((member: any) => (
           <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-[#0f1218]">
             <div className="flex items-center gap-3">
@@ -145,7 +145,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
                           <Button 
                             size="icon" 
                             variant="ghost"
-                            className="text-gray-500 hover:text-red-600"
+                            className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-500"
                             onClick={() => setPendingRemoveUserId(member.userId)}
                           >
                             <Trash2 className="h-4 w-4" />
