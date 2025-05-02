@@ -23,8 +23,8 @@ export default function Sidebar() {
   const recentProjects = projects?.slice(0, 5) || [];
 
   return (
-    <div className="flex flex-col w-72 border-r border-neutral-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
-      <div className="flex items-center justify-center h-60 pt-10 flex-shrink-0 bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-700 dark:to-primary-500">
+    <div className="flex flex-col w-72 border-r border-neutral-200 dark:border-gray-900 bg-white dark:bg-[#0a0d14] shadow-sm">
+      <div className="flex items-center justify-center h-60 pt-10 flex-shrink-0 bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-900 dark:to-primary-700">
         <Logo size="lg" className="text-white scale-[3]" />
       </div>
       
@@ -97,8 +97,8 @@ export default function Sidebar() {
         </nav>
         
         {/* Project List */}
-        <div className="px-4 py-4 border-t border-neutral-200 dark:border-gray-800">
-          <h2 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Your Projects</h2>
+        <div className="px-4 py-4 border-t border-neutral-200 dark:border-gray-900">
+          <h2 className="text-xs font-semibold text-neutral-500 dark:text-neutral-300 uppercase tracking-wider">Your Projects</h2>
           {projectsLoading ? (
             <div className="flex justify-center py-4">
               <Loader2 className="h-4 w-4 animate-spin text-neutral-400 dark:text-neutral-500" />
@@ -111,7 +111,7 @@ export default function Sidebar() {
                     "group flex items-center px-2 py-2 text-sm rounded-md cursor-pointer",
                     location === `/project/${project.id}` 
                       ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400" 
-                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-gray-800"
+                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-gray-900/70"
                   )}>
                     <span className="truncate">{project.name}</span>
                   </div>
@@ -136,25 +136,25 @@ export default function Sidebar() {
       {/* User profile */}
       {user && (
         <div className="mt-auto">
-          <div className="flex flex-col px-4 py-4 border-t border-neutral-200 dark:border-gray-800">
+          <div className="flex flex-col px-4 py-4 border-t border-neutral-200 dark:border-gray-900">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-primary-400 to-primary-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-700 dark:to-primary-900 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">{user.name}</p>
+                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">{user.name}</p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
               </div>
             </div>
             
-            <div className="flex mt-3 pt-3 border-t border-neutral-100 dark:border-gray-800">
-              <Link href="/settings" className="flex items-center text-sm text-neutral-600 dark:text-neutral-400 mr-4 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            <div className="flex mt-3 pt-3 border-t border-neutral-100 dark:border-gray-900">
+              <Link href="/settings" className="flex items-center text-sm text-neutral-600 dark:text-neutral-300 mr-4 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
                 <Settings className="h-4 w-4 mr-1.5" />
                 Account
               </Link>
-              <Link href="/logout" className="flex items-center text-sm text-neutral-600 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+              <Link href="/logout" className="flex items-center text-sm text-neutral-600 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 transition-colors">
                 <LogOut className="h-4 w-4 mr-1.5" />
                 Sign out
               </Link>
