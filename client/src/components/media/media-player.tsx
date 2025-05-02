@@ -260,7 +260,17 @@ export default function MediaPlayer({
     setIsPlaying(false);
   };
 
-  const handleMediaError = () => {
+  const handleMediaError = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement | HTMLImageElement>) => {
+    console.error('[DEBUG] Media error event:', e);
+    // Try to get more detailed error info from video/audio elements
+    const mediaElement = e.target as HTMLVideoElement | HTMLAudioElement;
+    if (mediaElement && mediaElement.error) {
+      console.error('[DEBUG] Media element error details:', {
+        code: mediaElement.error.code,
+        message: mediaElement.error.message
+      });
+    }
+    
     setMediaError(true);
     setErrorMessage("This file is no longer available. It may have been deleted from the server.");
     setIsPlaying(false);
@@ -332,7 +342,23 @@ export default function MediaPlayer({
             controls={false}
             preload="metadata"
           >
-            <source src={`/api/files/${file.id}/content`} type={file.fileType} />
+            {/* Multiple sources for better compatibility */}
+            {file.fileType.toLowerCase().startsWith('video/') ? (
+              <source src={`/api/files/${file.id}/content`} type={file.fileType} />
+            ) : (
+              <>
+                {/* Add explicit MP4 type for MP4 extension files */}
+                {file.filename.toLowerCase().endsWith('.mp4') && (
+                  <source src={`/api/files/${file.id}/content`} type="video/mp4" />
+                )}
+                {/* Add WebM for better browser support */}
+                {file.filename.toLowerCase().endsWith('.webm') && (
+                  <source src={`/api/files/${file.id}/content`} type="video/webm" />
+                )}
+                {/* Fallback */}
+                <source src={`/api/files/${file.id}/content`} />
+              </>
+            )}
             Your browser does not support the video tag.
           </video>
         </div>

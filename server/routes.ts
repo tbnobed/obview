@@ -1303,37 +1303,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Set appropriate content type headers for common media types
-      const fileType = file.fileType.toLowerCase();
+      // Set appropriate content type headers based on file extension first, then fallback to stored MIME type
       const fileExt = file.filename.split('.').pop()?.toLowerCase();
+      let contentType = 'application/octet-stream'; // Default fallback
       
-      // Only set Content-Type header for common media types we know
-      if (fileType.startsWith('video/') || 
-          fileType.startsWith('audio/') || 
-          fileType.startsWith('image/') ||
-          fileType === 'application/pdf') {
-        res.setHeader('Content-Type', file.fileType);
-      } else if (fileExt === 'mp4') {
-        res.setHeader('Content-Type', 'video/mp4');
+      // Determine content type by extension first (more reliable)
+      if (fileExt === 'mp4') {
+        contentType = 'video/mp4';
       } else if (fileExt === 'webm') {
-        res.setHeader('Content-Type', 'video/webm');
+        contentType = 'video/webm';
       } else if (fileExt === 'mp3') {
-        res.setHeader('Content-Type', 'audio/mpeg');
+        contentType = 'audio/mpeg';
       } else if (fileExt === 'wav') {
-        res.setHeader('Content-Type', 'audio/wav');
+        contentType = 'audio/wav';
       } else if (fileExt === 'pdf') {
-        res.setHeader('Content-Type', 'application/pdf');
+        contentType = 'application/pdf';
+      } else if (fileExt === 'jpg' || fileExt === 'jpeg') {
+        contentType = 'image/jpeg';
+      } else if (fileExt === 'png') {
+        contentType = 'image/png';
+      } else if (fileExt === 'gif') {
+        contentType = 'image/gif';
+      } else if (fileExt === 'webp') {
+        contentType = 'image/webp';
+      } else if (fileExt === 'svg') {
+        contentType = 'image/svg+xml';
+      } else if (file.fileType && file.fileType !== 'video' && file.fileType !== 'audio') {
+        // If we didn't match by extension but have a valid MIME type in the database, use that
+        contentType = file.fileType;
       }
+      
+      // Set content type header
+      res.setHeader('Content-Type', contentType);
       
       // Set additional headers to help with streaming and caching
       res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
       
-      // Log that we're sending the file
-      console.log(`Serving shared file ${file.id} (${file.filename}) - type: ${file.fileType}, path: ${file.filePath}`);
+      // Explicitly set Cross-Origin headers to allow browser media playback
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       
-      // Send the file content
-      res.sendFile(file.filePath, { root: '/' });
+      // Log that we're sending the file
+      console.log(`Serving file ${file.id} (${file.filename}) - type: ${contentType}, path: ${file.filePath}`);
+      
+      // Send the file content with proper options
+      res.sendFile(file.filePath, { 
+        root: '/',
+        headers: {
+          'Content-Type': contentType,
+          'Accept-Ranges': 'bytes'
+        }
+      });
     } catch (error) {
       next(error);
     }
