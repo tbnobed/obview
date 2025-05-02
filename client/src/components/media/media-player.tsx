@@ -213,7 +213,8 @@ export default function MediaPlayer({
       );
     }
 
-    if (mediaError) {
+    // Check if file is marked as unavailable in the database
+    if (file.isAvailable === false || mediaError) {
       return (
         <div className="flex items-center justify-center h-full bg-neutral-900 text-white">
           <div className="text-center p-8 max-w-md">
@@ -259,6 +260,7 @@ export default function MediaPlayer({
             onDurationChange={handleDurationChange}
             onEnded={handleMediaEnded}
             onError={handleMediaError}
+            controls={false}
           />
         </div>
       );
@@ -301,6 +303,7 @@ export default function MediaPlayer({
                 filename={file.filename}
                 size="sm"
                 variant="outline"
+                isAvailable={file.isAvailable}
               />
             </div>
           </div>
@@ -449,7 +452,8 @@ export default function MediaPlayer({
                       fileId={file.id} 
                       filename={file.filename} 
                       size="sm" 
-                      variant="default" 
+                      variant="default"
+                      isAvailable={file.isAvailable}
                     />
                     <ShareLinkButton 
                       fileId={file.id} 
