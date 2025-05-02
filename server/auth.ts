@@ -108,6 +108,7 @@ export function setupAuth(app: Express) {
         email,
         name,
         role: role || "viewer", // Default role
+        themePreference: "system", // Default theme preference
       });
 
       // Remove sensitive data before returning
@@ -150,6 +151,11 @@ export function setupAuth(app: Express) {
         const userResponse = { ...user };
         delete userResponse.password;
         
+        // Ensure themePreference field exists
+        if (userResponse.themePreference === undefined) {
+          userResponse.themePreference = "system";
+        }
+        
         res.status(200).json(userResponse);
       });
     })(req, res, next);
@@ -168,6 +174,11 @@ export function setupAuth(app: Express) {
     // Remove sensitive data before returning
     const userResponse = { ...req.user };
     delete userResponse.password;
+    
+    // Ensure themePreference field exists
+    if (userResponse.themePreference === undefined) {
+      userResponse.themePreference = "system";
+    }
     
     res.json(userResponse);
   });
