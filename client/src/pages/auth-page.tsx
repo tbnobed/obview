@@ -41,6 +41,12 @@ export default function AuthPage() {
   const [showResetForm, setShowResetForm] = useState(false);
   const { user, loginMutation, registerMutation, resetPasswordRequestMutation } = useAuth();
   const [_, setLocation] = useLocation();
+  
+  // Extract invitation information from URL if coming from invitation page
+  const searchParams = new URLSearchParams(window.location.search);
+  const invitedEmail = searchParams.get("email") || "";
+  const invitedName = searchParams.get("name") || "";
+  const invitedRole = searchParams.get("role") || "viewer"; // Default to viewer if no role provided
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -56,9 +62,9 @@ export default function AuthPage() {
       username: "",
       password: "",
       confirmPassword: "",
-      email: "",
-      name: "",
-      role: "viewer",
+      email: invitedEmail, // Pre-fill with invited email if available
+      name: invitedName, // Pre-fill with invited name if available
+      role: invitedRole, // Use the role from the invitation
     },
   });
 

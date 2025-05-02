@@ -17,6 +17,7 @@ export default function InvitePage() {
   const [projectName, setProjectName] = useState("");
   const [inviterName, setInviterName] = useState("");
   const [invitationEmail, setInvitationEmail] = useState("");
+  const [invitationRole, setInvitationRole] = useState("viewer");
   const [debug, setDebug] = useState<string[]>([]);
 
   useEffect(() => {
@@ -73,8 +74,9 @@ export default function InvitePage() {
         setProjectName(invitationDetails.project?.name || "Unknown Project");
         setInviterName(invitationDetails.creator?.name || "Someone");
         setInvitationEmail(invitationDetails.email || "");
+        setInvitationRole(invitationDetails.role || "viewer");
         
-        addDebug(`Project: ${invitationDetails.project?.name}, Inviter: ${invitationDetails.creator?.name}`);
+        addDebug(`Project: ${invitationDetails.project?.name}, Inviter: ${invitationDetails.creator?.name}, Role: ${invitationDetails.role || "viewer"}`);
         
         // If user is not logged in, show login prompt
         if (!user && !authLoading) {
@@ -210,6 +212,7 @@ export default function InvitePage() {
   
   // If login is required
   if (status === "login_required") {
+    // We already have invitationRole as state
     return (
       <div className="container flex items-center justify-center min-h-[80vh]">
         <Card className="w-full max-w-md">
@@ -234,7 +237,7 @@ export default function InvitePage() {
               <Link href={`/auth?returnTo=/invite/${token}`}>Sign in to Accept</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/auth">Sign up</Link>
+              <Link href={`/auth?email=${encodeURIComponent(invitationEmail)}&role=${invitationRole}&returnTo=/invite/${token}`}>Sign up</Link>
             </Button>
           </CardFooter>
         </Card>
