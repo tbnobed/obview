@@ -248,9 +248,15 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-6 text-neutral-500">
-                  <p>Activity log functionality would be shown here</p>
-                </div>
+                {usersLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <ActivityLogList />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -264,9 +270,7 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-6 text-neutral-500">
-                  <p>System settings would be shown here</p>
-                </div>
+                <SystemSettings />
               </CardContent>
             </Card>
           </TabsContent>

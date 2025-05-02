@@ -1587,7 +1587,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== SYSTEM SETTINGS ROUTES =====
+  // Get system settings (admin only)
+  app.get("/api/system/settings", isAdmin, async (req, res, next) => {
+    try {
+      // This would be replaced with actual system settings from a configuration or database
+      // For now, we'll just return basic system information
+      const stats = {
+        systemVersion: '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        uploadDirectory: process.env.UPLOAD_DIR || './uploads',
+        maxUploadSize: parseInt(process.env.MAX_UPLOAD_SIZE || '5368709120'), // 5GB default
+        allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/quicktime', 'application/pdf'],
+        serverStartTime: new Date().toISOString(),
+        emailEnabled: !!process.env.SENDGRID_API_KEY
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
   // ===== ACTIVITY LOG ROUTES =====
+  // Get all activity logs (admin only)
+  app.get("/api/activities", isAdmin, async (req, res, next) => {
+    try {
+      const activities = await storage.getAllActivities();
+      
+      // Get user details for each activity
+      const activitiesWithUsers = await Promise.all(
+        activities.map(async (activity) => {
+          const user = await storage.getUser(activity.userId);
+          
+          if (!user) return activity;
+          
+          // Remove password from user object
+          const { password, ...userWithoutPassword } = user;
+          
+          return {
+            ...activity,
+            user: userWithoutPassword,
+          };
+        })
+      );
+      
+      res.json(activitiesWithUsers);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
   // Get activity logs for a project
   app.get("/api/projects/:projectId/activities", hasProjectAccess, async (req, res, next) => {
     try {

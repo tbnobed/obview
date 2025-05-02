@@ -79,6 +79,7 @@ export interface IStorage {
   logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
   getActivitiesByProject(projectId: number): Promise<ActivityLog[]>;
   getActivitiesByUser(userId: number): Promise<ActivityLog[]>;
+  getAllActivities(): Promise<ActivityLog[]>;
 
   // Invitations
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
@@ -390,6 +391,11 @@ export class MemStorage implements IStorage {
   async getActivitiesByUser(userId: number): Promise<ActivityLog[]> {
     return Array.from(this.activityLogs.values())
       .filter(log => log.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+  
+  async getAllActivities(): Promise<ActivityLog[]> {
+    return Array.from(this.activityLogs.values())
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -759,6 +765,13 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(activityLogs)
       .where(eq(activityLogs.userId, userId))
+      .orderBy(desc(activityLogs.createdAt));
+  }
+  
+  async getAllActivities(): Promise<ActivityLog[]> {
+    return await db
+      .select()
+      .from(activityLogs)
       .orderBy(desc(activityLogs.createdAt));
   }
 
