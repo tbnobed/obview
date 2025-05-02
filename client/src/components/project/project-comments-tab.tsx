@@ -159,7 +159,34 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                 <div className="text-sm text-neutral-500">{formatTimeAgo(new Date(comment.createdAt))}</div>
               </div>
               
-              <div className="text-neutral-700">{comment.content}</div>
+              <div className="text-neutral-700 comment-content">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: ({ node, ...props }) => (
+                      <img 
+                        {...props} 
+                        className="max-w-full h-auto rounded-md my-1 border border-gray-200"
+                        style={{ maxHeight: '200px' }}
+                        onClick={(e) => e.stopPropagation()} 
+                      />
+                    ),
+                    a: ({ node, ...props }) => (
+                      <a 
+                        {...props} 
+                        className="text-primary hover:underline"
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {props.children}
+                      </a>
+                    )
+                  }}
+                >
+                  {comment.content}
+                </ReactMarkdown>
+              </div>
               
               <div className="mt-2 flex items-center flex-wrap gap-2 text-sm">
                 <div className="bg-neutral-100 px-2 py-1 rounded text-neutral-600 flex items-center">

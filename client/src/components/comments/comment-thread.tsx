@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useDeleteComment } from "@/hooks/use-comments";
 
 interface CommentThreadProps {
@@ -156,8 +158,35 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
             </div>
           </div>
           
-          <div className="mt-1 text-xs text-neutral-700">
-            <p>{comment.content}</p>
+          <div className="mt-1 text-xs text-neutral-700 comment-content">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Override image rendering to add proper styling
+                img: ({ node, ...props }) => (
+                  <img 
+                    {...props} 
+                    className="max-w-full h-auto rounded-md my-1 border border-gray-200"
+                    style={{ maxHeight: '300px' }}
+                    onClick={(e) => e.stopPropagation()} 
+                  />
+                ),
+                // Override link rendering
+                a: ({ node, ...props }) => (
+                  <a 
+                    {...props} 
+                    className="text-primary hover:underline"
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {props.children}
+                  </a>
+                )
+              }}
+            >
+              {comment.content}
+            </ReactMarkdown>
           </div>
           
           <div className="mt-2 flex flex-wrap gap-3">
@@ -243,8 +272,33 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                       </div>
                     </div>
                     
-                    <div className="mt-0.5 text-xs text-neutral-700">
-                      <p>{reply.content}</p>
+                    <div className="mt-0.5 text-xs text-neutral-700 comment-content">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          img: ({ node, ...props }) => (
+                            <img 
+                              {...props} 
+                              className="max-w-full h-auto rounded-md my-1 border border-gray-200"
+                              style={{ maxHeight: '300px' }}
+                              onClick={(e) => e.stopPropagation()} 
+                            />
+                          ),
+                          a: ({ node, ...props }) => (
+                            <a 
+                              {...props} 
+                              className="text-primary hover:underline"
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {props.children}
+                            </a>
+                          )
+                        }}
+                      >
+                        {reply.content}
+                      </ReactMarkdown>
                     </div>
                   </div>
                 </div>
