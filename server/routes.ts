@@ -2065,56 +2065,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { filename } = req.params;
       const uploadDir = process.env.UPLOAD_DIR || './uploads';
       
+      console.log(`[DELETE] Attempting to delete file: ${filename}`);
+      console.log(`[DELETE] Upload directory: ${uploadDir}`);
+      
       // Prevent path traversal attacks
       const sanitizedFilename = fileSystem.sanitizeFilename(filename);
-      const filePath = fileSystem.joinPaths(uploadDir, sanitizedFilename);
+      let filePath = fileSystem.joinPaths(uploadDir, sanitizedFilename);
       
-      // Check if file exists
-      const exists = await fileSystem.fileExists(filePath);
+      console.log(`[DELETE] Sanitized path: ${filePath}`);
+      
+      // Check if file exists with better error handling
+      let exists = await fileSystem.fileExists(filePath);
       if (!exists) {
-        return res.status(404).json({ message: "File not found" });
+        console.log(`[DELETE ERROR] File not found at path: ${filePath}`);
+        
+        // Try alternative path in case upload directory configuration is inconsistent
+        const alternativePath = fileSystem.joinPaths('./uploads', sanitizedFilename);
+        console.log(`[DELETE RETRY] Trying alternative path: ${alternativePath}`);
+        
+        const alternativeExists = await fileSystem.fileExists(alternativePath);
+        if (alternativeExists) {
+          console.log(`[DELETE RETRY] File found at alternative path! Using: ${alternativePath}`);
+          // Use the alternative path if found
+          filePath = alternativePath;
+          exists = true;
+        } else {
+          // Try with workspace path
+          const workspacePath = fileSystem.joinPaths('/home/runner/workspace/uploads', sanitizedFilename);
+          console.log(`[DELETE RETRY] Trying workspace path: ${workspacePath}`);
+          
+          const workspaceExists = await fileSystem.fileExists(workspacePath);
+          if (workspaceExists) {
+            console.log(`[DELETE RETRY] File found at workspace path! Using: ${workspacePath}`);
+            filePath = workspacePath;
+            exists = true;
+          } else {
+            console.log(`[DELETE ERROR] File not found at any attempted paths`);
+            return res.status(404).json({ message: "File not found" });
+          }
+        }
       }
       
       // Look for any database entries that reference this file
       const allFiles = await storage.getAllFiles();
       const matchingFiles = allFiles.filter(file => 
-        file.filePath.includes(sanitizedFilename) || 
+        (file.filePath && file.filePath.includes(sanitizedFilename)) || 
         file.filename === sanitizedFilename
       );
       
+      console.log(`[DELETE] Found ${matchingFiles.length} database references to file ${sanitizedFilename}`);
+      
       // Mark matching files as unavailable in the database
       if (matchingFiles.length > 0) {
-        console.log(`Found ${matchingFiles.length} database references to file ${sanitizedFilename}`);
-        
         for (const file of matchingFiles) {
-          console.log(`Marking file ID ${file.id} as unavailable`);
+          console.log(`[DELETE] Marking file ID ${file.id} as unavailable`);
           await storage.updateFile(file.id, { isAvailable: false });
         }
       }
       
-      // Delete the physical file
-      await fileSystem.deleteFile(filePath);
+      // Delete the physical file with better error handling
+      try {
+        console.log(`[DELETE] Attempting to delete physical file at: ${filePath}`);
+        await fileSystem.deleteFile(filePath);
+        console.log(`[DELETE] Physical file deleted successfully`);
+      } catch (deleteError) {
+        console.error(`[DELETE ERROR] Failed to delete physical file:`, deleteError);
+        // Continue even if physical file deletion fails, but with warning
+        return res.status(207).json({
+          message: "Database updated but failed to delete physical file",
+          error: deleteError instanceof Error ? deleteError.message : String(deleteError),
+          databaseEntriesUpdated: matchingFiles.length
+        });
+      }
       
       // Log activity with references to affected database entries
-      await storage.logActivity({
-        action: "delete",
-        entityType: "file",
-        entityId: matchingFiles.length > 0 ? matchingFiles[0].id : 0,
-        userId: req.user.id,
-        metadata: { 
-          filename: sanitizedFilename,
-          affectedFileIds: matchingFiles.map(f => f.id),
-          filesMarkedUnavailable: matchingFiles.length
-        }
-      });
+      try {
+        await storage.logActivity({
+          action: "delete",
+          entityType: "file",
+          entityId: matchingFiles.length > 0 ? matchingFiles[0].id : 0,
+          userId: req.user?.id || 0,
+          metadata: { 
+            filename: sanitizedFilename,
+            affectedFileIds: matchingFiles.map(f => f.id),
+            filesMarkedUnavailable: matchingFiles.length
+          }
+        });
+      } catch (logError) {
+        console.error(`[DELETE WARNING] Failed to log activity:`, logError);
+        // Don't fail the request if just the logging fails
+      }
       
       res.json({ 
         message: "File deleted successfully", 
         databaseEntriesUpdated: matchingFiles.length
       });
     } catch (error) {
-      console.error("Error deleting file:", error);
-      next(error);
+      console.error(`[DELETE ERROR] Unexpected error during file deletion:`, error);
+      // Send error response instead of using next(error)
+      res.status(500).json({ 
+        message: "Failed to delete file", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
   
