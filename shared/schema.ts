@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, bigint, boolean, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -36,7 +36,7 @@ export const files = pgTable("files", {
   id: serial("id").primaryKey(),
   filename: text("filename").notNull(),
   fileType: text("file_type").notNull(), // "video", "audio", "image"
-  fileSize: integer("file_size").notNull(),
+  fileSize: bigint("file_size", { mode: "bigint" }).notNull(),
   filePath: text("file_path").notNull(),
   projectId: integer("project_id").notNull(),
   uploadedById: integer("uploaded_by_id").notNull(),

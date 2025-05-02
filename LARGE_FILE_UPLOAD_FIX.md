@@ -1,234 +1,53 @@
 # Large File Upload Fix
 
-This document explains the implementation of robust large file upload capabilities in Obviu.io.
+This document explains how to fix issues with large file uploads that result in database errors.
 
-## Problem Overview
+## Problem Description
 
-Large file uploads (particularly video files) were failing at approximately 95% completion without any clear error messages. This occurred because:
+When uploading files larger than approximately 2GB, the application may encounter a database error:
 
-1. The progress tracking was simulated rather than based on actual upload progress
-2. The upload was using the fetch API, which lacks progress tracking capabilities
-3. There was no proper error handling for network timeouts
-4. Uploads would stop if users navigated away from the upload page
-
-## Solution Implementation
-
-### 1. Server-Side Configuration
-
-The server is already properly configured for large file uploads with:
-
-- 5GB file size limit in Multer:
-  ```javascript
-  const upload = multer({ 
-    storage: storage_config,
-    limits: {
-      fileSize: 5 * 1024 * 1024 * 1024, // 5GB limit
-    }
-  });
-  ```
-
-- Extended request timeout (1 hour) in Express:
-  ```javascript
-  app.use((req, res, next) => {
-    res.setTimeout(3600000); // 1 hour timeout
-    next();
-  });
-  ```
-
-- Increased JSON body size limits:
-  ```javascript
-  app.use(express.json({ limit: '5120mb' }));
-  app.use(express.urlencoded({ extended: false, limit: '5120mb' }));
-  ```
-
-### 2. Client-Side Implementation
-
-The client-side upload implementation was enhanced to:
-
-- Use XMLHttpRequest instead of fetch to track real upload progress
-- Set appropriate timeout thresholds for large files
-- Provide detailed error messages for various failure scenarios
-- Continue uploads in the background even when navigating away from the upload page
-
-Key changes for accurate progress tracking:
-
-```javascript
-// Use XMLHttpRequest for real progress updates
-const xhr = new XMLHttpRequest();
-
-// Track upload progress
-xhr.upload.addEventListener('progress', (event) => {
-  if (event.lengthComputable) {
-    const percentComplete = (event.loaded / event.total) * 100;
-    setUploadProgress(percentComplete);
-  }
-});
-
-// Handle timeout with a longer duration for large files
-xhr.timeout = 3600000; // 1 hour in milliseconds
-
-// Set up timeout handler
-xhr.ontimeout = () => {
-  reject(new Error('Upload timed out. The file may be too large or your connection is slow.'));
-};
+```
+error: value "4112690763" is out of range for type integer
 ```
 
-### 3. Background Upload Service
+This happens because PostgreSQL's `integer` type has a maximum value of 2,147,483,647 (about 2GB), and large file sizes exceed this limit.
 
-A dedicated upload service was implemented to handle uploads independently of component lifecycles, allowing uploads to continue even when navigating away from the upload page:
+## Solution
 
-- **Upload Service**: A singleton service that manages uploads across the application
-- **Upload Manager**: A persistent UI component that displays upload progress and allows cancellation
-- **Global Integration**: The upload manager is integrated at the application root level
+We've updated the database schema to use `bigint` instead of `integer` for the `file_size` column in the `files` table. This change allows file sizes up to approximately 9 exabytes.
 
-Key components:
+### Steps to Apply the Fix
 
-```typescript
-// Upload Service (manages background uploads)
-class UploadService {
-  private uploads: Map<string, UploadProgress> = new Map();
-  private xhrInstances: Map<string, XMLHttpRequest> = new Map();
-  private listeners: Set<(uploads: UploadProgress[]) => void> = new Set();
-  
-  // Upload a file to a project and continue in background
-  uploadFile(file: File, projectId: number, customFilename?: string): string {
-    // Implementation handles the upload and notifies listeners
-  }
-  
-  // Cancel an upload that's in progress
-  cancelUpload(id: string): boolean {
-    const xhr = this.xhrInstances.get(id);
-    if (xhr) {
-      xhr.abort();
-      // Update status and notify listeners
-    }
-  }
-}
+1. **Apply Schema Changes**: The code repository includes an updated schema and a migration file. The migration needs to be applied to your database.
 
-// Upload Manager Component (displays uploads across the application)
-export function UploadManager() {
-  const [uploads, setUploads] = useState<UploadProgress[]>([]);
-  
-  // Subscribe to upload service updates
-  useEffect(() => {
-    const unsubscribe = uploadService.subscribe(setUploads);
-    return unsubscribe;
-  }, []);
-  
-  // Display upload progress and controls
-}
-```
+2. **Run the Database Migration**: Follow these steps to apply the migration:
 
-### 4. Advanced Error Handling and Recovery for Large Files
+   ```bash
+   # Option 1: If you're using the Docker setup
+   docker-compose exec obview-app sh -c "NODE_ENV=production node /app/dist/server/db-migrate.js"
 
-For large files, a special upload mechanism was implemented to handle various failure modes:
+   # Option 2: For manual execution
+   cd /path/to/obviu
+   NODE_ENV=production node server/db-migrate.js
+   ```
 
-- **Connection Termination Detection**: Automatically detects when the connection has been terminated
-- **Stalled Upload Detection**: Monitors progress and reacts if uploads stall for more than 30 seconds
-- **Automatic Retries**: Implements up to 3 retry attempts with increasing delays between attempts
-- **Detailed Logging**: Comprehensive logging of all upload steps to help diagnose issues
-- **Enhanced Status Messages**: Clearer error messages and status indicators shown to users
+3. **Restart the Application**: After applying the migration, restart the application:
 
-Key implementation features:
+   ```bash
+   docker-compose restart obview-app
+   ```
 
-```typescript
-// Different strategies based on file size
-private startUpload(uploadId: string, file: File, projectId: number): void {
-  // For large files, use a more reliable approach with retries
-  const isLargeFile = file.size > 100 * 1024 * 1024; // 100MB threshold
-  
-  if (isLargeFile) {
-    this.startLargeFileUpload(uploadId, file, projectId);
-  } else {
-    this.startStandardUpload(uploadId, file, projectId);
-  }
-}
+4. **Verify the Fix**: Upload a large file to confirm the issue is resolved. You should be able to upload files larger than 2GB without database errors.
 
-// Handle early connection termination with status code 48
-xhr.onerror = (event) => {
-  // Status code 48 is a network error in Chrome, usually means connection terminated
-  const isConnectionTerminated = xhr.status === 48 || 
-                               connectionTerminated || 
-                               xhr.readyState < 4;
-  
-  // Check if we should retry
-  if (retryCount < maxRetries) {
-    retryCount++;
-    // Retry with appropriate delay based on error type
-    setTimeout(attemptUpload, isConnectionTerminated ? 8000 : 3000);
-  }
-};
+## Technical Details
 
-// Detect stalled uploads with progress check interval
-progressCheckInterval = window.setInterval(() => {
-  const timeSinceLastProgress = Date.now() - lastProgressTime;
-  
-  // If no progress for 30 seconds, consider it a connection problem
-  if (timeSinceLastProgress > 30000 && !connectionTerminated) {
-    connectionTerminated = true;
-    xhr.abort();
-    // Attempt retry if under max retry count
-  }
-}, 5000);
-```
+The following changes were made:
 
-## Benefits
+1. Added a new migration file: `migrations/0004_update_file_size_type.sql` that alters the `file_size` column to use `BIGINT`
+2. Updated the schema definition in `shared/schema.ts` to use `bigint` type instead of `integer` for the `fileSize` field
 
-1. **Accurate Progress Tracking**: Users now see the real upload progress rather than a simulated approximation
-2. **Improved Error Handling**: Specific error messages for network issues, timeouts, and server errors
-3. **Increased Reliability**: Uploads can complete successfully regardless of file size (up to 5GB limit)
-4. **Background Uploads**: Users can navigate away from the upload page without interrupting uploads
-5. **Cancelable Uploads**: Users can cancel ongoing uploads from anywhere in the application
-6. **Better User Experience**: Clear indication of progress and any issues that arise
+The bigint type in PostgreSQL can handle values up to 9,223,372,036,854,775,807, which is far more than any practical file size.
 
-## Troubleshooting Tips
+## Potential Side Effects
 
-If large file uploads still fail:
-
-1. Check server logs for any memory or disk space issues
-2. Verify that any proxy or load balancer timeout settings are set to at least 1 hour
-3. Ensure there are no network interruptions during the upload
-4. For file sizes above 5GB, increase the limits in both Multer configuration and Express body parser
-
-## Docker Implementation Notes
-
-When running in Docker, ensure container resource limits are sufficient for large uploads:
-
-```yaml
-services:
-  app:
-    # ...
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-    # Add longer timeouts for Nginx when using as reverse proxy
-    environment:
-      - NODE_OPTIONS=--max-old-space-size=6144
-```
-
-### Special Considerations for 4GB+ Files in Docker
-
-For extremely large files (4GB+), additional Docker configurations are necessary:
-
-1. **Increase memory limits**: Set Docker service memory to at least 8GB
-2. **Adjust Nginx configuration** (if using Nginx as reverse proxy):
-
-```nginx
-http {
-    # Increase these values for large file uploads
-    client_max_body_size 10G;
-    proxy_read_timeout 3600s;
-    proxy_connect_timeout 3600s;
-    proxy_send_timeout 3600s;
-}
-```
-
-3. **Modify Node.js heap size**: Add environment variable `NODE_OPTIONS=--max-old-space-size=6144` 
-
-4. **User notification**: For large files, the client now shows special notices explaining that uploads may restart periodically due to Docker memory constraints.
-
-5. **Troubleshooting Docker memory issues**:
-   - Monitor Docker container memory usage with `docker stats`
-   - If uploads consistently fail at a specific percentage, consider adjusting Docker memory allocation
-   - For production deployments with frequent large uploads, consider using a dedicated storage service like S3 or Azure Blob Storage
+This change should be completely backward compatible with existing data. All existing integer values will be seamlessly converted to bigint values. No data migration is needed beyond running the SQL migration.
