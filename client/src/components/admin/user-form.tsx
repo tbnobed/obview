@@ -39,6 +39,8 @@ export default function UserForm({ userId, onSuccess }: UserFormProps) {
   const { toast } = useToast();
   const isEditMode = !!userId;
   
+  console.log(`UserForm initialized with userId:`, userId, `isEditMode:`, isEditMode);
+  
   // Choose schema based on whether we're editing or creating
   const formSchema = isEditMode ? editUserSchema : createUserSchema;
   type UserFormValues = z.infer<typeof formSchema>;
@@ -57,20 +59,76 @@ export default function UserForm({ userId, onSuccess }: UserFormProps) {
     mode: "onChange"
   });
 
-  // Query to get user details if in edit mode
+  // Function to directly fetch user data
+  const fetchUserData = async () => {
+    if (!userId) return null;
+    
+    console.log(`UserForm: Direct fetch for user ID ${userId}`);
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(`UserForm: Direct fetch successful:`, data);
+      
+      // Populate form with data
+      if (data && form) {
+        console.log(`UserForm: Populating form with fetched data`);
+        form.reset({
+          name: data.name,
+          username: data.username,
+          email: data.email,
+          role: data.role,
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error(`UserForm: Error in direct fetch:`, error);
+      return null;
+    }
+  };
+  
+  // Call direct fetch on component mount when in edit mode
+  useEffect(() => {
+    if (isEditMode && userId) {
+      console.log(`UserForm: Triggering direct fetch on mount`);
+      fetchUserData();
+    }
+  }, [userId, isEditMode]);
+
+  // Query to get user details if in edit mode (as backup)
   const { data: userData, isLoading: userDataLoading } = useQuery({
-    queryKey: [`/api/users/${userId}`],
+    queryKey: ['/api/users', userId],
     queryFn: async () => {
       if (!userId) return null;
-      const response = await apiRequest("GET", `/api/users/${userId}`);
-      return await response.json();
+      console.log(`UserForm: Fetching user data for ID ${userId} via TanStack Query`);
+      try {
+        const response = await apiRequest("GET", `/api/users/${userId}`);
+        const data = await response.json();
+        console.log(`UserForm: Successfully fetched user data via TanStack Query:`, data);
+        return data;
+      } catch (error) {
+        console.error(`UserForm: Error fetching user data via TanStack Query:`, error);
+        return null;
+      }
     },
-    enabled: isEditMode, // Only run this query if we're in edit mode
+    enabled: isEditMode && !!userId, // Only run this query if we're in edit mode and userId exists
   });
 
-  // Update form values when user data is loaded
+  // Update form values when user data is loaded via query
   useEffect(() => {
+    console.log("UserForm useEffect for TanStack Query data - userData:", userData);
+    console.log("UserForm useEffect for TanStack Query data - isEditMode:", isEditMode);
+    
     if (userData && isEditMode) {
+      console.log("UserForm: Populating form with TanStack Query data:", userData);
       // Don't include password fields when populating the form
       form.reset({
         name: userData.name,
@@ -78,6 +136,7 @@ export default function UserForm({ userId, onSuccess }: UserFormProps) {
         email: userData.email,
         role: userData.role,
       });
+      console.log("UserForm: Form reset completed from TanStack Query data");
     }
   }, [userData, form, isEditMode]);
 

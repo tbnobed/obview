@@ -158,7 +158,11 @@ export default function UserList() {
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => setEditUserId(user.id)}
+                          onClick={() => {
+                            console.log("Setting editUserId to:", user.id);
+                            setEditUserId(null); // First clear the ID to force component remount
+                            setTimeout(() => setEditUserId(user.id), 50); // Then set it with small delay
+                          }}
                           className="cursor-pointer"
                         >
                           <Edit className="mr-2 h-4 w-4" />
@@ -220,12 +224,20 @@ export default function UserList() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
+            <p className="text-sm text-neutral-500 pt-2">
+              Update user details. Leave password blank to keep current.
+            </p>
           </DialogHeader>
           {editUserId && (
-            <UserForm
-              userId={editUserId}
-              onSuccess={() => setEditUserId(null)}
-            />
+            <>
+              <div className="py-2 text-sm text-blue-600">
+                Editing user ID: {editUserId}
+              </div>
+              <UserForm
+                userId={editUserId}
+                onSuccess={() => setEditUserId(null)}
+              />
+            </>
           )}
         </DialogContent>
       </Dialog>
