@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
@@ -20,7 +21,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-white">
       {/* Desktop Sidebar */}
       <div className="hidden md:flex md:flex-shrink-0">
         <Sidebar />
@@ -32,9 +33,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <Header />
         
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto">
           {children}
-        </div>
+        </main>
+        
+        {/* Footer */}
+        <Footer />
       </div>
     </div>
   );
