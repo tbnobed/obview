@@ -187,13 +187,51 @@ export default function AdminPage() {
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ) : (
-                  <div className="space-y-2">
+                ) : projects && projects.length > 0 ? (
+                  <div>
                     <p className="text-sm text-neutral-500 mb-4">
                       This view shows all projects in the system. As an admin, you have access to all projects.
                     </p>
-                    <Button onClick={() => navigate("/projects")}>
-                      Go to Projects Dashboard
+                    <div className="flex justify-between items-center mb-4">
+                      <Button onClick={() => navigate("/projects")}>
+                        Go to Projects Dashboard
+                      </Button>
+                    </div>
+                    <div className="space-y-4 mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {projects.map((project) => (
+                          <Card key={project.id} className="overflow-hidden">
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-lg font-semibold truncate">
+                                {project.name}
+                              </CardTitle>
+                              <CardDescription className="text-xs">
+                                Created on {new Date(project.createdAt).toLocaleDateString()}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="pb-3">
+                              <p className="text-sm line-clamp-2 h-10">{project.description || "No description provided"}</p>
+                            </CardContent>
+                            <div className="px-6 py-2 bg-neutral-50 flex justify-between">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => navigate(`/projects/${project.id}`)}
+                              >
+                                View Details
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-neutral-500 mb-4">No projects found in the system.</p>
+                    <Button onClick={() => navigate("/projects/new")}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create New Project
                     </Button>
                   </div>
                 )}
