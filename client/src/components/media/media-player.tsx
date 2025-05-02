@@ -310,13 +310,13 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
           </div>
           
           {/* Video Controls */}
-          <div className="bg-white p-4 border-t border-neutral-100">
+          <div className="bg-white dark:bg-[#0a0d14] p-4 border-t border-neutral-100 dark:border-gray-800">
             <div className="flex items-center mb-2 space-x-2">
               <Button
                 onClick={togglePlay}
                 variant="ghost"
                 size="icon"
-                className="text-neutral-600 hover:text-neutral-900"
+                className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
               >
                 {isPlaying ? (
                   <Pause className="h-6 w-6" />
@@ -325,13 +325,13 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                 )}
               </Button>
               
-              <span className="font-mono text-sm text-neutral-600">
+              <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
               
               <div
                 ref={progressRef}
-                className="video-progress flex-grow mx-4 relative h-2 bg-neutral-200 hover:bg-neutral-300 cursor-pointer rounded-full group"
+                className="video-progress flex-grow mx-4 relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
                 onClick={handleProgressClick}
                 onMouseMove={(e) => {
                   if (e.buttons === 1 && progressRef.current) {
@@ -341,11 +341,11 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                 }}
               >
                 <div
-                  className="video-progress-fill absolute top-0 left-0 h-full bg-primary rounded-full"
+                  className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
                   style={{ width: `${(currentTime / duration) * 100}%` }}
                 ></div>
                 <div
-                  className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
                   style={{ left: `${(currentTime / duration) * 100}%` }}
                 ></div>
                 
@@ -379,7 +379,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
               </div>
               
               <div className="flex items-center">
-                <Volume2 className="h-5 w-5 text-neutral-600 mr-2" />
+                <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
                 <input
                   type="range"
                   min="0"
@@ -394,14 +394,14 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-neutral-600 hover:text-neutral-900"
+                className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
               >
                 <Maximize className="h-5 w-5" />
               </Button>
             </div>
             
             {/* File selector and actions */}
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-100">
+            <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-100 dark:border-gray-800">
               <div className="flex space-x-2 items-center">
                 <Select 
                   value={file?.id.toString()} 
@@ -420,7 +420,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                 </Select>
                 
                 {file && (
-                  <div className="text-xs text-neutral-500">
+                  <div className="text-xs text-neutral-500 dark:text-gray-400">
                     Version {file.version}
                   </div>
                 )}
@@ -447,14 +447,14 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
             
             {/* Approval actions */}
             {file && (
-              <div className="flex justify-between items-center mt-4 pt-4 border-t border-neutral-100">
+              <div className="flex justify-between items-center mt-4 pt-4 border-t border-neutral-100 dark:border-gray-800">
                 <div className="flex items-center text-sm">
                   {userApproval && (
                     <div className={cn(
                       "flex items-center px-2 py-1 rounded-full",
                       userApproval.status === "approved" 
-                        ? "bg-green-50 text-green-700" 
-                        : "bg-amber-50 text-amber-700"
+                        ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
+                        : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
                     )}>
                       {userApproval.status === "approved" ? (
                         <>
@@ -474,7 +474,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex items-center"
+                    className="flex items-center dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                     onClick={handleRequestChanges}
                     disabled={approveMutation.isPending}
                   >
@@ -483,7 +483,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                   </Button>
                   <Button 
                     size="sm" 
-                    className="flex items-center bg-green-600 hover:bg-green-700"
+                    className="flex items-center bg-green-600 hover:bg-green-700 dark:bg-[#026d55] dark:hover:bg-[#025943]"
                     onClick={handleApprove}
                     disabled={approveMutation.isPending}
                   >
