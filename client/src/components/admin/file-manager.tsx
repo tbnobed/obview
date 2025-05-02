@@ -1,6 +1,6 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -40,27 +40,46 @@ export default function FileManager() {
   const [searchText, setSearchText] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [optimisticFiles, setOptimisticFiles] = useState<string[]>([]);
 
   // Fetch uploaded files
   const { data: files, isLoading, error } = useQuery<FileDetails[]>({
     queryKey: ["/api/system/uploads"],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+  
+  // Reset optimistic files on successful query
+  useEffect(() => {
+    if (files) {
+      setOptimisticFiles([]);
+    }
+  }, [files]);
 
   // Delete file mutation
   const deleteMutation = useMutation({
     mutationFn: async (filename: string) => {
+      // Add to optimistic deletions immediately
+      setOptimisticFiles(prev => [...prev, filename]);
+      
       const response = await apiRequest("DELETE", `/api/system/uploads/${encodeURIComponent(filename)}`);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/system/uploads"] });
+    onSuccess: (_, filename) => {
+      // Update the cache instead of invalidating for a smoother experience
+      queryClient.setQueryData<FileDetails[]>(["/api/system/uploads"], (oldData) => {
+        if (!oldData) return [];
+        return oldData.filter(file => file.filename !== filename);
+      });
+      
       toast({
         title: "File Deleted",
         description: "The file was successfully deleted.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, filename) => {
+      // Remove from optimistic deletions if there was an error
+      setOptimisticFiles(prev => prev.filter(name => name !== filename));
+      
       toast({
         title: "Error",
         description: `Failed to delete file: ${error.message}`,
@@ -69,15 +88,15 @@ export default function FileManager() {
     },
   });
 
-  // Filter files based on search text
-  const filteredFiles = searchText
-    ? files?.filter(
-        (file) =>
-          file.filename.toLowerCase().includes(searchText.toLowerCase()) ||
-          (file.metadata?.projectName &&
-            file.metadata.projectName.toLowerCase().includes(searchText.toLowerCase()))
-      )
-    : files;
+  // Apply optimistic deletions and search text filter
+  const filteredFiles = files
+    ?.filter(file => !optimisticFiles.includes(file.filename)) // Remove files being deleted
+    .filter(file => 
+      !searchText || 
+      file.filename.toLowerCase().includes(searchText.toLowerCase()) ||
+      (file.metadata?.projectName &&
+       file.metadata.projectName.toLowerCase().includes(searchText.toLowerCase()))
+    );
 
   // Format file size for display
   const formatFileSize = (bytes: number) => {
