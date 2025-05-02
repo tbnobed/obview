@@ -139,14 +139,14 @@ export default function SettingsPage() {
     <AppLayout>
       <div className="container py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600 bg-clip-text text-transparent">Settings</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-300 dark:to-primary-500 bg-clip-text text-transparent">Settings</h1>
           <p className="text-muted-foreground dark:text-gray-300">Manage your account settings and preferences</p>
         </div>
 
         <Tabs defaultValue="account" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="password">Password</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-8 dark:bg-gray-800/50">
+            <TabsTrigger value="account" className="dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Account</TabsTrigger>
+            <TabsTrigger value="password" className="dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Password</TabsTrigger>
           </TabsList>
           
           <TabsContent value="account">
@@ -163,11 +163,11 @@ export default function SettingsPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Name</FormLabel>
+                          <FormLabel className="dark:text-white">Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Your name" {...field} />
+                            <Input placeholder="Your name" className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" {...field} />
                           </FormControl>
-                          <FormDescription>
+                          <FormDescription className="dark:text-gray-400">
                             This is the name that will be displayed on your profile
                           </FormDescription>
                           <FormMessage />
@@ -179,11 +179,11 @@ export default function SettingsPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel className="dark:text-white">Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="email@example.com" {...field} />
+                            <Input placeholder="email@example.com" className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" {...field} />
                           </FormControl>
-                          <FormDescription>
+                          <FormDescription className="dark:text-gray-400">
                             This email will be used for notifications and recovery
                           </FormDescription>
                           <FormMessage />
@@ -220,9 +220,9 @@ export default function SettingsPage() {
                       name="currentPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Current Password</FormLabel>
+                          <FormLabel className="dark:text-white">Current Password</FormLabel>
                           <FormControl>
-                            <Input placeholder="••••••••" type="password" {...field} />
+                            <Input placeholder="••••••••" type="password" className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -233,9 +233,9 @@ export default function SettingsPage() {
                       name="newPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>New Password</FormLabel>
+                          <FormLabel className="dark:text-white">New Password</FormLabel>
                           <FormControl>
-                            <Input placeholder="••••••••" type="password" {...field} />
+                            <Input placeholder="••••••••" type="password" className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -246,9 +246,9 @@ export default function SettingsPage() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirm New Password</FormLabel>
+                          <FormLabel className="dark:text-white">Confirm New Password</FormLabel>
                           <FormControl>
-                            <Input placeholder="••••••••" type="password" {...field} />
+                            <Input placeholder="••••••••" type="password" className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
