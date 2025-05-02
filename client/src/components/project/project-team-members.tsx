@@ -94,7 +94,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
     <div className="space-y-4">
       <div className="border rounded-md divide-y dark:border-gray-800 dark:divide-gray-800">
         {teamMembers.map((member: any) => (
-          <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-[#0f1218]">
+          <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-[#0f1218] dark:text-white">
             <div className="flex items-center gap-3">
               <Avatar>
                 <AvatarImage src={`https://avatar.vercel.sh/${member.user?.name || member.user?.email}?size=64`} />
@@ -145,7 +145,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
                           <Button 
                             size="icon" 
                             variant="ghost"
-                            className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-500"
+                            className="text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-500 dark:hover:bg-red-950/20"
                             onClick={() => setPendingRemoveUserId(member.userId)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -165,7 +165,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
                             </AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={handleRemoveTeamMember}
-                              className="bg-red-500 hover:bg-red-600"
+                              className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
                             >
                               {removeTeamMemberMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
