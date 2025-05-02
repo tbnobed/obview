@@ -339,6 +339,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Get all invitations (admin only)
+  app.get("/api/invitations", isAdmin, async (req, res, next) => {
+    try {
+      // Get all invitations (including system-wide and project-specific)
+      const allInvitations = await storage.getAllInvitations();
+      
+      // Get creator and project details for each invitation
+      const enrichedInvitations = await Promise.all(
+        allInvitations.map(async (invitation) => {
+          const creator = await storage.getUser(invitation.createdById);
+          let project = null;
+          
+          if (invitation.projectId !== null) {
+            project = await storage.getProject(invitation.projectId);
+          }
+          
+          // Remove sensitive information
+          let creatorInfo = null;
+          if (creator) {
+            const { password, ...creatorWithoutPassword } = creator;
+            creatorInfo = creatorWithoutPassword;
+          }
+          
+          return {
+            ...invitation,
+            creator: creatorInfo,
+            project: project,
+            isSystemInvite: invitation.projectId === null
+          };
+        })
+      );
+      
+      // Sort by newest first
+      const sortedInvitations = enrichedInvitations.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      res.json(sortedInvitations);
+    } catch (error) {
+      console.error("Error retrieving all invitations:", error);
+      next(error);
+    }
+  });
 
   // Get user by ID
   app.get("/api/users/:userId", isAuthenticated, async (req, res, next) => {
@@ -1727,14 +1771,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`SendGrid API key is not available, unable to send invitation email to ${email}`);
       }
       
-      // Log activity
-      await storage.logActivity({
-        userId: req.user.id,
-        action: "invited_user",
-        entityType: "project",
-        entityId: parseInt(projectId),
-        metadata: { inviteeEmail: email, role, emailSent }
-      });
+      // Log activity - different for admin invite vs project invite
+      if (isAdminInvite) {
+        // Log system-wide invitation
+        await storage.logActivity({
+          userId: req.user.id,
+          action: "invited_user_to_system",
+          entityType: "system",
+          entityId: 0, // Using 0 for system-wide actions
+          metadata: { inviteeEmail: email, role, emailSent }
+        });
+      } else {
+        // Log project-specific invitation
+        await storage.logActivity({
+          userId: req.user.id,
+          action: "invited_user",
+          entityType: "project",
+          entityId: parseInt(projectId),
+          metadata: { inviteeEmail: email, role, emailSent }
+        });
+      }
       
       // Debug the final response data
       const responseData = { 
@@ -1955,35 +2011,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Invitation validation passed, adding user ${req.user.id} to project ${invitation.projectId} with role ${invitation.role}`);
       
       try {
-        // Add the user to the project
-        const projectUser = await storage.addUserToProject({
-          projectId: invitation.projectId,
-          userId: req.user.id,
-          role: invitation.role
-        });
+        // Check if this is a system-wide invitation (null projectId) or project-specific
+        const isSystemInvite = invitation.projectId === null;
         
-        console.log(`User successfully added to project: ${JSON.stringify(projectUser)}`);
-        
-        // Mark the invitation as accepted
-        const updatedInvitation = await storage.updateInvitation(invitation.id, { isAccepted: true });
-        console.log(`Invitation marked as accepted: ${JSON.stringify(updatedInvitation)}`);
-        
-        // Log activity
-        await storage.logActivity({
-          userId: req.user.id,
-          action: "joined_project",
-          entityType: "project",
-          entityId: invitation.projectId,
-          metadata: { invitationId: invitation.id }
-        });
-        
-        // Get project details to include in response
-        const project = await storage.getProject(invitation.projectId);
-        
-        res.status(200).json({ 
-          message: "Successfully joined project",
-          project: project || { name: "Unknown Project" }
-        });
+        if (isSystemInvite) {
+          // This is a system-wide invitation for a role like "admin" or "user"
+          console.log(`Processing system invitation for user ${req.user.id} with role ${invitation.role}`);
+          
+          // Update the user's role in the system
+          await storage.updateUser(req.user.id, { role: invitation.role });
+          console.log(`User role updated to ${invitation.role}`);
+          
+          // Mark the invitation as accepted
+          const updatedInvitation = await storage.updateInvitation(invitation.id, { isAccepted: true });
+          console.log(`System invitation marked as accepted: ${JSON.stringify(updatedInvitation)}`);
+          
+          // Log activity
+          await storage.logActivity({
+            userId: req.user.id,
+            action: "accepted_system_role",
+            entityType: "system",
+            entityId: 0, // Using 0 for system-wide actions
+            metadata: { 
+              invitationId: invitation.id,
+              role: invitation.role
+            }
+          });
+          
+          res.status(200).json({ 
+            message: `Successfully accepted system role: ${invitation.role}`,
+            systemRole: invitation.role
+          });
+        } else {
+          // This is a project-specific invitation
+          // Add the user to the project
+          const projectUser = await storage.addUserToProject({
+            projectId: invitation.projectId,
+            userId: req.user.id,
+            role: invitation.role
+          });
+          
+          console.log(`User successfully added to project: ${JSON.stringify(projectUser)}`);
+          
+          // Mark the invitation as accepted
+          const updatedInvitation = await storage.updateInvitation(invitation.id, { isAccepted: true });
+          console.log(`Project invitation marked as accepted: ${JSON.stringify(updatedInvitation)}`);
+          
+          // Log activity
+          await storage.logActivity({
+            userId: req.user.id,
+            action: "joined_project",
+            entityType: "project",
+            entityId: invitation.projectId,
+            metadata: { invitationId: invitation.id }
+          });
+          
+          // Get project details to include in response
+          const project = await storage.getProject(invitation.projectId);
+          
+          res.status(200).json({ 
+            message: "Successfully joined project",
+            project: project || { name: "Unknown Project" }
+          });
+        }
       } catch (processingError) {
         console.error(`Error processing invitation acceptance:`, processingError);
         return res.status(500).json({ 
@@ -2024,14 +2114,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete the invitation
       await storage.deleteInvitation(invitationId);
       
-      // Log activity
-      await storage.logActivity({
-        userId: req.user.id,
-        action: "cancelled_invitation",
-        entityType: "project",
-        entityId: invitation.projectId,
-        metadata: { inviteeEmail: invitation.email }
-      });
+      // Check if this is a system-wide invitation (null projectId) or project-specific
+      const isSystemInvite = invitation.projectId === null;
+      
+      // Log activity - different for admin invite vs project invite
+      if (isSystemInvite) {
+        await storage.logActivity({
+          userId: req.user.id,
+          action: "cancelled_system_invitation",
+          entityType: "system",
+          entityId: 0, // Using 0 for system-wide actions
+          metadata: { inviteeEmail: invitation.email }
+        });
+      } else {
+        await storage.logActivity({
+          userId: req.user.id,
+          action: "cancelled_invitation",
+          entityType: "project",
+          entityId: invitation.projectId,
+          metadata: { inviteeEmail: invitation.email }
+        });
+      }
       
       res.status(204).end();
     } catch (error) {
@@ -2069,9 +2172,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Get the project and user data
-      const project = await storage.getProject(invitation.projectId);
+      // Get the inviter data
       const inviter = await storage.getUser(req.user.id);
+      
+      // Check if this is a system-wide invitation (null projectId) or project-specific
+      const isSystemInvite = invitation.projectId === null;
       
       // If SendGrid API key is available, send the email
       let emailSent = false;
@@ -2080,33 +2185,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (process.env.SENDGRID_API_KEY) {
         try {
-          // Import the sendInvitationEmail function from utils/sendgrid
-          const { sendInvitationEmail } = await import('./utils/sendgrid');
-          
-          if (inviter && project) {
-            console.log(`Resending invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
-            
-            // Send the invitation email with app URL (if provided)
-            emailSent = await sendInvitationEmail(
-              invitation.email,
-              inviter.name,
-              project.name,
-              invitation.role,
-              invitation.token,
-              appUrl // Pass the client app URL (undefined if not provided)
-            );
-            
-            if (emailSent) {
-              console.log(`SUCCESS: Invitation email resent to ${invitation.email}`);
+          if (inviter) {
+            if (isSystemInvite) {
+              // Import the sendSystemInvitationEmail function
+              const { sendSystemInvitationEmail } = await import('./utils/sendgrid');
               
-              // Update the invitation to record that email was sent successfully
-              await storage.updateInvitation(invitation.id, { emailSent: true });
-              invitation.emailSent = true;
+              console.log(`Resending system invitation email to ${invitation.email} from "${inviter.name}"`);
+              
+              // Send the system invitation email
+              emailSent = await sendSystemInvitationEmail(
+                invitation.email,
+                inviter.name,
+                invitation.role,
+                invitation.token,
+                appUrl // Pass the client app URL (undefined if not provided)
+              );
+              
+              if (emailSent) {
+                console.log(`SUCCESS: System invitation email resent to ${invitation.email}`);
+                
+                // Update the invitation to record that email was sent successfully
+                await storage.updateInvitation(invitation.id, { emailSent: true });
+                invitation.emailSent = true;
+              } else {
+                console.error(`ERROR: Failed to resend system invitation email to ${invitation.email}`);
+              }
             } else {
-              console.error(`ERROR: Failed to resend invitation email to ${invitation.email}`);
+              // For project-specific invitations
+              const project = await storage.getProject(invitation.projectId);
+              
+              if (project) {
+                // Import the sendInvitationEmail function
+                const { sendInvitationEmail } = await import('./utils/sendgrid');
+                
+                console.log(`Resending project invitation email to ${invitation.email} for project "${project.name}" from "${inviter.name}"`);
+                
+                // Send the invitation email with app URL (if provided)
+                emailSent = await sendInvitationEmail(
+                  invitation.email,
+                  inviter.name,
+                  project.name,
+                  invitation.role,
+                  invitation.token,
+                  appUrl // Pass the client app URL (undefined if not provided)
+                );
+                
+                if (emailSent) {
+                  console.log(`SUCCESS: Project invitation email resent to ${invitation.email}`);
+                  
+                  // Update the invitation to record that email was sent successfully
+                  await storage.updateInvitation(invitation.id, { emailSent: true });
+                  invitation.emailSent = true;
+                } else {
+                  console.error(`ERROR: Failed to resend project invitation email to ${invitation.email}`);
+                }
+              } else {
+                console.error(`Cannot resend invitation email: Project not found`);
+              }
             }
           } else {
-            console.error(`Cannot resend invitation email: ${!inviter ? 'Inviter not found' : 'Project not found'}`);
+            console.error(`Cannot resend invitation email: Inviter not found`);
           }
         } catch (emailError) {
           console.error('Error resending invitation email:', emailError);
@@ -2119,14 +2257,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`SendGrid API key is not available, unable to resend invitation email to ${invitation.email}`);
       }
       
-      // Log activity
-      await storage.logActivity({
-        userId: req.user.id,
-        action: "resent_invitation_email",
-        entityType: "project",
-        entityId: invitation.projectId,
-        metadata: { inviteeEmail: invitation.email, emailSent }
-      });
+      // Log activity - different for admin invite vs project invite
+      if (isSystemInvite) {
+        await storage.logActivity({
+          userId: req.user.id,
+          action: "resent_system_invitation_email",
+          entityType: "system",
+          entityId: 0, // Using 0 for system-wide actions
+          metadata: { inviteeEmail: invitation.email, emailSent }
+        });
+      } else {
+        await storage.logActivity({
+          userId: req.user.id,
+          action: "resent_invitation_email",
+          entityType: "project",
+          entityId: invitation.projectId,
+          metadata: { inviteeEmail: invitation.email, emailSent }
+        });
+      }
       
       res.status(200).json({ 
         success: true, 
