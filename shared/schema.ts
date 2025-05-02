@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   role: text("role").notNull().default("viewer"), // "admin", "editor", "viewer"
+  themePreference: text("theme_preference").default("system"), // "light", "dark", "system"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

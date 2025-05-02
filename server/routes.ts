@@ -466,6 +466,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user theme preference
+  app.patch("/api/user/theme", isAuthenticated, async (req, res, next) => {
+    try {
+      const { themePreference } = req.body;
+      
+      // Validate theme preference
+      if (!themePreference || !["light", "dark", "system"].includes(themePreference)) {
+        return res.status(400).json({ 
+          message: "Invalid theme preference", 
+          details: "Theme preference must be 'light', 'dark', or 'system'" 
+        });
+      }
+      
+      // Update user
+      const updatedUser = await storage.updateUser(req.user.id, { themePreference });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Create user (admin only)
   app.post("/api/users", isAdmin, async (req, res, next) => {
     try {
