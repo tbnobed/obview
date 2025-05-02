@@ -276,11 +276,11 @@ export default function CommentForm({
       </Avatar>
       
       <div className="flex-1">
-        <div className="border border-neutral-300 rounded-lg overflow-hidden focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
+        <div className="border border-neutral-300 dark:border-gray-700 rounded-lg overflow-hidden focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
           <Textarea 
             ref={textareaRef}
             rows={2} 
-            className="block w-full px-3 py-2 border-0 resize-none focus:ring-0 text-xs sm:text-sm" 
+            className="block w-full px-3 py-2 border-0 resize-none focus:ring-0 text-xs sm:text-sm dark:bg-gray-800 dark:text-gray-200" 
             placeholder={
               parentId 
                 ? "Add a reply..." 
@@ -292,7 +292,7 @@ export default function CommentForm({
             onChange={(e) => setContent(e.target.value)}
           />
           
-          <div className="p-2 bg-neutral-50 border-t border-neutral-200 flex justify-between items-center">
+          <div className="p-2 bg-neutral-50 dark:bg-gray-900 border-t border-neutral-200 dark:border-gray-700 flex justify-between items-center">
             <div className="flex space-x-1">
               {/* Tools */}
               <div className="hidden sm:flex space-x-1">
@@ -301,7 +301,7 @@ export default function CommentForm({
                   type="button" 
                   size="icon" 
                   variant="ghost" 
-                  className="h-7 w-7 rounded text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
+                  className="h-7 w-7 rounded text-neutral-500 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-gray-800"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
                 >

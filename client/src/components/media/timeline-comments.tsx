@@ -100,7 +100,7 @@ export default function TimelineComments({
   return (
     <div>
       {/* Timeline markers visualization */}
-      <div className="mb-4 bg-neutral-100 h-6 relative rounded-md" ref={timelineRef}>
+      <div className="mb-4 bg-neutral-100 dark:bg-gray-800 h-6 relative rounded-md" ref={timelineRef}>
         {/* Current time indicator */}
         <div 
           className="absolute top-0 h-full w-px bg-primary-500 z-10"
@@ -119,23 +119,23 @@ export default function TimelineComments({
         ))}
         
         {/* Time labels */}
-        <div className="absolute top-0 left-0 w-full h-full flex justify-between px-2 text-xs text-neutral-500">
+        <div className="absolute top-0 left-0 w-full h-full flex justify-between px-2 text-xs text-neutral-500 dark:text-gray-400">
           <span className="self-center text-[10px]">0:00</span>
           <span className="self-center text-[10px]">{formatTime(duration)}</span>
         </div>
       </div>
 
       <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-3">
-        <h3 className="text-sm font-medium text-neutral-900">
+        <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
           Comments ({comments?.length || 0})
         </h3>
         <div className="flex items-center">
-          <span className="text-xs text-neutral-500 mr-1.5">Filter:</span>
+          <span className="text-xs text-neutral-500 dark:text-gray-400 mr-1.5">Filter:</span>
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-full max-w-[140px] h-7 text-xs py-0">
+            <SelectTrigger className="w-full max-w-[140px] h-7 text-xs py-0 dark:bg-gray-800 dark:border-gray-700">
               <SelectValue placeholder="Filter comments" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
               <SelectItem value="all">All Comments</SelectItem>
               <SelectItem value="unresolved">Unresolved</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
@@ -157,11 +157,11 @@ export default function TimelineComments({
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : error ? (
-        <div className="p-3 bg-red-50 text-red-600 rounded-md text-xs">
+        <div className="p-3 bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 rounded-md text-xs">
           Error loading comments: {error.message}
         </div>
       ) : topLevelComments.length > 0 ? (
-        <div className="space-y-0 divide-y divide-neutral-200">
+        <div className="space-y-0 divide-y divide-neutral-200 dark:divide-gray-800">
           {topLevelComments.map((comment: any) => (
             <CommentThread 
               key={comment.id} 
@@ -173,7 +173,7 @@ export default function TimelineComments({
           ))}
         </div>
       ) : (
-        <div className="text-center py-6 text-neutral-500">
+        <div className="text-center py-6 text-neutral-500 dark:text-gray-400">
           <p className="text-xs">No comments yet.<br />Add a comment to start the conversation.</p>
         </div>
       )}
