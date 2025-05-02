@@ -8,6 +8,8 @@ import path from "path";
 import { z } from "zod";
 import { File as StorageFile } from "@shared/schema";
 import * as fileSystem from "./utils/filesystem";
+import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
 
 // Extended Request type to handle file uploads
 // Using declaration merging with Express namespace
@@ -45,8 +47,8 @@ const uploadsDir = path.join(process.cwd(), 'uploads');
 // Create uploads directory if it doesn't exist
 // Don't use fs.mkdir directly to avoid ES module issues
 try {
-  if (!fsSync.existsSync(uploadsDir)) {
-    fsSync.mkdirSync(uploadsDir, { recursive: true });
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
   }
 } catch (error) {
   console.error(`Error creating uploads directory: ${error}`);
@@ -289,9 +291,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const logDir = path.join(__dirname, 'logs');
           const logFilePath = path.join(logDir, 'sendgrid.log');
           
-          if (fsSync.existsSync(logFilePath)) {
+          if (fs.existsSync(logFilePath)) {
             // Get last 20 lines of log file
-            const logContent = fsSync.readFileSync(logFilePath, 'utf8');
+            const logContent = fs.readFileSync(logFilePath, 'utf8');
             const logLines = logContent.split('\n').filter((line: string) => line.trim());
             logs = logLines.slice(-20).join('\n');
           }

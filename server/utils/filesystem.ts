@@ -1,5 +1,5 @@
-import fs from 'fs/promises';
-import * as fsSync from 'fs';
+import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
 import path from 'path';
 
 // Interface for file details
@@ -24,22 +24,22 @@ export interface FileDetails {
  */
 export async function listFiles(directoryPath: string): Promise<string[]> {
   try {
-    return await fs.readdir(directoryPath);
+    return await fsPromises.readdir(directoryPath, { encoding: 'utf8' });
   } catch (error) {
-    console.error(`Error reading directory ${directoryPath}:`, error);
-    throw new Error(`Cannot read directory: ${error.message}`);
+    console.error(`Error reading directory ${directoryPath}:`, error instanceof Error ? error.message : String(error));
+    throw new Error(`Cannot read directory: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 /**
  * Get detailed stats for a specific file
  */
-export async function getFileStats(filePath: string): Promise<fs.Stats> {
+export async function getFileStats(filePath: string): Promise<any> {
   try {
-    return await fs.stat(filePath);
+    return await fsPromises.stat(filePath);
   } catch (error) {
-    console.error(`Error getting stats for ${filePath}:`, error);
-    throw new Error(`Cannot get file stats: ${error.message}`);
+    console.error(`Error getting stats for ${filePath}:`, error instanceof Error ? error.message : String(error));
+    throw new Error(`Cannot get file stats: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -48,7 +48,7 @@ export async function getFileStats(filePath: string): Promise<fs.Stats> {
  */
 export async function fileExists(filePath: string): Promise<boolean> {
   try {
-    await fs.access(filePath, fsSync.constants.F_OK);
+    await fsPromises.access(filePath, fs.constants.F_OK);
     return true;
   } catch {
     return false;
@@ -60,10 +60,10 @@ export async function fileExists(filePath: string): Promise<boolean> {
  */
 export async function deleteFile(filePath: string): Promise<void> {
   try {
-    await fs.unlink(filePath);
+    await fsPromises.unlink(filePath);
   } catch (error) {
-    console.error(`Error deleting file ${filePath}:`, error);
-    throw new Error(`Cannot delete file: ${error.message}`);
+    console.error(`Error deleting file ${filePath}:`, error instanceof Error ? error.message : String(error));
+    throw new Error(`Cannot delete file: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
