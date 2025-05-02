@@ -278,9 +278,14 @@ export default function CommentForm({
     }
   };
   
+  // Form watcher for content field
+  const content = form.watch("content");
+  
   // Submit handler
   const onSubmit = (data: CommentFormValues) => {
-    createCommentMutation.mutate(data);
+    if (data.content.trim() !== "") {
+      createCommentMutation.mutate(data);
+    }
   };
 
   if (!user) return null;
@@ -514,7 +519,7 @@ export default function CommentForm({
                 type="submit" 
                 size="sm"
                 className="h-7 px-3 text-xs"
-                disabled={createCommentMutation.isPending || !form.formState.isValid}
+                disabled={createCommentMutation.isPending || !content || content.trim() === ""}
               >
                 {createCommentMutation.isPending && (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
