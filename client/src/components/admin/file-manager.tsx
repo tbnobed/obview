@@ -176,8 +176,19 @@ export default function FileManager() {
   };
 
   // View file in new tab
-  const handleViewFile = (filename: string) => {
-    window.open(`/uploads/${filename}`, '_blank');
+  const handleViewFile = (file: FileDetails) => {
+    // If the file is linked to a database record, use the API endpoint
+    if (file.metadata?.id) {
+      window.open(`/api/files/${file.metadata.id}/content`, '_blank');
+    } else {
+      // If no metadata/database record, we need a direct endpoint to view system uploads
+      // Let's create a toast message about this
+      toast({
+        title: "File not viewable",
+        description: "This file is in the uploads directory but not linked to any database record. It cannot be viewed directly.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -331,8 +342,9 @@ export default function FileManager() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleViewFile(file.filename)}
+                          onClick={() => handleViewFile(file)}
                           title="View file"
+                          disabled={!file.metadata?.id}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
