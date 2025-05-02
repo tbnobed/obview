@@ -483,7 +483,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                   </Button>
                   <Button 
                     size="sm" 
-                    className="flex items-center bg-green-600 hover:bg-green-700 dark:bg-[#026d55] dark:hover:bg-[#025943]"
+                    className="flex items-center bg-green-600 hover:bg-green-700"
                     onClick={handleApprove}
                     disabled={approveMutation.isPending}
                   >
