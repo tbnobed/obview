@@ -105,34 +105,46 @@ export default function MediaPlayer({
       const fileUrl = `/api/files/${file.id}/content`;
       console.log(`[DEBUG] File URL: ${fileUrl}`);
       
-      // Use fetch to directly check if the file is accessible
-      fetch(fileUrl, { credentials: 'include' })
-        .then(response => {
-          console.log(`[DEBUG] File fetch status: ${response.status} ${response.statusText}`);
-          if (!response.ok) {
-            console.error(`[DEBUG] Failed to load file: ${response.status} ${response.statusText}`);
+      // Use HEAD request to check if the file is accessible without loading the entire file
+      const checkFileAvailability = async () => {
+        try {
+          // Only check headers to avoid double-downloading large files
+          const headResponse = await fetch(fileUrl, { 
+            method: 'HEAD',
+            credentials: 'include' 
+          });
+          
+          console.log(`[DEBUG] File HEAD check status: ${headResponse.status} ${headResponse.statusText}`);
+          
+          if (!headResponse.ok) {
+            console.error(`[DEBUG] Failed to load file: ${headResponse.status} ${headResponse.statusText}`);
             setMediaError(true);
-            setErrorMessage(`Error loading file: ${response.status} ${response.statusText}`);
+            setErrorMessage(`Error loading file: ${headResponse.status} ${headResponse.statusText}`);
+            return false;
           }
-          return response.blob();
-        })
-        .then(blob => {
-          console.log(`[DEBUG] File blob type: ${blob.type}, size: ${blob.size}`);
-        })
-        .catch(error => {
-          console.error('[DEBUG] Error fetching file:', error);
+          
+          return true;
+        } catch (error) {
+          console.error('[DEBUG] Error checking file availability:', error);
           setMediaError(true);
-          setErrorMessage(`Error loading file: ${error.message}`);
-        });
+          setErrorMessage(`Error loading file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          return false;
+        }
+      };
       
-      if (videoRef.current) {
-        videoRef.current.load();
-      }
-      if (audioRef.current) {
-        audioRef.current.load();
-      }
-
-      console.log("Loading media for file:", file.filename, "type:", file.fileType);
+      // Check file availability then load media if available
+      checkFileAvailability().then(isAvailable => {
+        if (isAvailable) {
+          console.log("[DEBUG] File is available, loading media elements");
+          if (videoRef.current) {
+            videoRef.current.load();
+          }
+          if (audioRef.current) {
+            audioRef.current.load();
+          }
+          console.log("Loading media for file:", file.filename, "type:", file.fileType);
+        }
+      });
     }
   }, [file?.id]);
 
@@ -442,13 +454,16 @@ export default function MediaPlayer({
                   ></div>
                   
                   {/* Timeline markers for comments */}
-                  {comments && comments.length > 0 && comments.map((comment: Comment) => {
+                  {comments && comments.length > 0 && duration > 0 && comments.map((comment: Comment) => {
                     // Only show markers for comments with timestamps (not replies)
                     if (comment.timestamp === null || comment.parentId !== null) return null;
                     
-                    // Calculate percentage position
+                    // Calculate percentage position - safely handle divide by zero
                     const timestamp = comment.timestamp || 0;
-                    const position = (timestamp / duration) * 100;
+                    const position = duration > 0 ? (timestamp / duration) * 100 : 0;
+                    
+                    // Skip markers that would be off the timeline
+                    if (position < 0 || position > 100) return null;
                     
                     return (
                       <div 
