@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { SidebarProvider } from "@/hooks/use-sidebar";
 import { UploadManager } from "@/components/uploads/upload-manager";
 import HomePage from "@/pages/home-page";
 import NotFound from "@/pages/not-found";
@@ -54,11 +55,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider defaultTheme="system" storageKey="obviu-theme">
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-            <UploadManager />
-          </TooltipProvider>
+          <SidebarProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+              <UploadManager />
+            </TooltipProvider>
+          </SidebarProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
