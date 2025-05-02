@@ -14,7 +14,7 @@ export default function HomePage() {
   const { data: projects, isLoading } = useProjects();
 
   useEffect(() => {
-    document.title = "Dashboard | MediaReview.io";
+    document.title = "Dashboard | Obviu.io";
   }, []);
 
   const recentProjects = projects?.slice(0, 4) || [];
