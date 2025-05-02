@@ -34,7 +34,7 @@ export default function HomePage() {
           <div className="mt-4 md:mt-0">
             <Button 
               onClick={() => navigate("/projects/new")}
-              className="flex items-center dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white"
+              className="flex items-center"
             >
               <Plus className="mr-2 h-4 w-4" />
               New Project
