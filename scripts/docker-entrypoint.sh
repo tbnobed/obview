@@ -13,24 +13,57 @@ echo "Waiting for database to be ready..."
 
 # Run migrations with error handling
 echo "Running database migrations..."
-if [ -f "/app/server/db-migrate.cjs" ]; then
-  node /app/server/db-migrate.cjs || {
-    echo "Warning: Database migrations encountered issues."
-    echo "This might be normal if tables already exist. Continuing..."
-  }
-elif [ -f "/app/server/db-migrate.js" ]; then
-  node /app/server/db-migrate.js || {
-    echo "Warning: Database migrations encountered issues."
-    echo "This might be normal if tables already exist. Continuing..."
-  }
-else
-  echo "Migration file not found. Checking for alternate locations..."
-  # Try to run the migration directly using the drizzle-kit
-  npx drizzle-kit migrate:mysql --config=drizzle.config.ts || {
-    echo "Warning: Drizzle-kit migration encountered issues."
-    echo "This might be normal if tables already exist. Continuing..."
-  }
-fi
+run_migrations() {
+  local success=0
+  
+  if [ -f "/app/server/db-migrate.cjs" ]; then
+    echo "Found db-migrate.cjs, running migrations..."
+    node /app/server/db-migrate.cjs || success=1
+  elif [ -f "/app/server/db-migrate.js" ]; then
+    echo "Found db-migrate.js, running migrations..."
+    node /app/server/db-migrate.js || success=1
+  else
+    echo "Migration file not found. Checking for alternate locations..."
+    success=1
+  fi
+  
+  # Apply any SQL migrations directly if they exist
+  if [ -d "/app/migrations" ]; then
+    echo "Found SQL migrations directory, applying SQL migrations..."
+    for migration in /app/migrations/*.sql; do
+      if [ -f "$migration" ]; then
+        echo "Applying SQL migration: $migration"
+        # Execute the SQL file against the database
+        # We'll continue even if some migrations fail as they might already be applied
+        # Parsing DATABASE_URL to extract credentials
+        DB_HOST=$(echo $DATABASE_URL | sed -E 's/.*@([^:]+)(:[0-9]+)?\/.*/\1/')
+        DB_PORT=$(echo $DATABASE_URL | sed -E 's/.*:([0-9]+)\/.*/\1/')
+        DB_NAME=$(echo $DATABASE_URL | sed -E 's/.*\/([^?]+).*/\1/')
+        DB_USER=$(echo $DATABASE_URL | sed -E 's/.*:\/\/([^:]+):.*/\1/')
+        DB_PASS=$(echo $DATABASE_URL | sed -E 's/.*:\/\/[^:]+:([^@]+).*/\1/')
+        
+        # Execute the SQL file using psql
+        PGPASSWORD=$DB_PASS psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f $migration || {
+          echo "Warning: SQL migration $migration encountered issues."
+          echo "This might be normal if the changes already exist. Continuing..."
+        }
+      fi
+    done
+  fi
+  
+  # If no migrations ran successfully, try drizzle-kit as last resort
+  if [ $success -eq 1 ]; then
+    echo "Attempting to run migrations using drizzle-kit..."
+    npx drizzle-kit push || {
+      echo "Warning: Drizzle-kit migration encountered issues."
+      echo "This might be normal if tables already exist. Continuing..."
+    }
+  fi
+  
+  echo "Database migration process completed."
+}
+
+run_migrations
 
 # Create admin user with error handling
 echo "Setting up admin user if needed..."

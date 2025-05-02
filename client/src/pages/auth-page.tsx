@@ -256,7 +256,7 @@ export default function AuthPage() {
                         </div>
                         <Button 
                           type="submit" 
-                          className="w-full"
+                          className="w-full bg-[#026d55] hover:bg-[#025a47] dark:bg-[#026d55] dark:hover:bg-[#025a47] dark:text-white text-white"
                           disabled={loginMutation.isPending}
                         >
                           {loginMutation.isPending && (
@@ -361,7 +361,7 @@ export default function AuthPage() {
                         <input type="hidden" {...registerForm.register("role")} value="viewer" />
                         <Button 
                           type="submit" 
-                          className="w-full"
+                          className="w-full bg-[#026d55] hover:bg-[#025a47] dark:bg-[#026d55] dark:hover:bg-[#025a47] dark:text-white text-white"
                           disabled={registerMutation.isPending}
                         >
                           {registerMutation.isPending && (
