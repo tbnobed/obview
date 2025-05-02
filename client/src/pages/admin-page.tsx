@@ -4,6 +4,8 @@ import { useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import UserList from "@/components/admin/user-list";
 import AdminInviteForm from "@/components/admin/admin-invite-form";
+import ActivityLogList from "@/components/admin/activity-log-list";
+import SystemSettings from "@/components/admin/system-settings";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

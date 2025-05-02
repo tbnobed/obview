@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export function ActivityLogList() {
-  const { data: activities, isLoading, error } = useQuery({
+  const { data: activities, isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/activities'],
     staleTime: 1000 * 60 * 1, // 1 minute
   });
