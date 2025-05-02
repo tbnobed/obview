@@ -507,7 +507,7 @@ export class MemStorage implements IStorage {
 
   async getPasswordResetByToken(token: string): Promise<PasswordReset | undefined> {
     return Array.from(this.passwordResets.values()).find(
-      (reset) => reset.token === token
+      (reset) => reset.token === token && !reset.isUsed
     );
   }
 
