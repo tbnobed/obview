@@ -117,6 +117,7 @@ export class MemStorage implements IStorage {
   private activityLogs: Map<number, ActivityLog>;
   private invitations: Map<number, Invitation>;
   private approvals: Map<number, Approval>;
+  private passwordResets: Map<number, PasswordReset>;
   sessionStore: any; // Using any to avoid type issues
 
   currentUserId: number;
@@ -127,6 +128,7 @@ export class MemStorage implements IStorage {
   currentActivityLogId: number;
   currentInvitationId: number;
   currentApprovalId: number;
+  currentPasswordResetId: number;
 
   constructor() {
     this.users = new Map();
@@ -137,6 +139,7 @@ export class MemStorage implements IStorage {
     this.activityLogs = new Map();
     this.invitations = new Map();
     this.approvals = new Map();
+    this.passwordResets = new Map();
     
     this.currentUserId = 1;
     this.currentProjectId = 1;
@@ -146,6 +149,7 @@ export class MemStorage implements IStorage {
     this.currentActivityLogId = 1;
     this.currentInvitationId = 1;
     this.currentApprovalId = 1;
+    this.currentPasswordResetId = 1;
 
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // prune expired entries every 24h
@@ -486,6 +490,40 @@ export class MemStorage implements IStorage {
     const updatedApproval: Approval = { ...approval, ...data };
     this.approvals.set(id, updatedApproval);
     return updatedApproval;
+  }
+
+  // Password Reset methods
+  async createPasswordReset(insertPasswordReset: InsertPasswordReset): Promise<PasswordReset> {
+    const id = this.currentPasswordResetId++;
+    const now = new Date();
+    const passwordReset: PasswordReset = {
+      ...insertPasswordReset,
+      id,
+      createdAt: now
+    };
+    this.passwordResets.set(id, passwordReset);
+    return passwordReset;
+  }
+
+  async getPasswordResetByToken(token: string): Promise<PasswordReset | undefined> {
+    return Array.from(this.passwordResets.values()).find(
+      (reset) => reset.token === token
+    );
+  }
+
+  async getPasswordResetsByUser(userId: number): Promise<PasswordReset[]> {
+    return Array.from(this.passwordResets.values()).filter(
+      (reset) => reset.userId === userId
+    );
+  }
+
+  async updatePasswordReset(id: number, data: Partial<PasswordReset>): Promise<PasswordReset | undefined> {
+    const passwordReset = this.passwordResets.get(id);
+    if (!passwordReset) return undefined;
+    
+    const updatedReset: PasswordReset = { ...passwordReset, ...data };
+    this.passwordResets.set(id, updatedReset);
+    return updatedReset;
   }
 }
 
