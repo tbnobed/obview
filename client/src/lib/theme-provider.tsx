@@ -41,10 +41,22 @@ export function ThemeProvider({
   // Mutation to update user's theme preference in the database
   const updateThemeMutation = useMutation({
     mutationFn: async (themePreference: string) => {
-      const res = await apiRequest("PATCH", "/api/user/theme", { themePreference });
-      return await res.json();
+      try {
+        const res = await apiRequest("PATCH", "/api/user/theme", { themePreference });
+        const data = await res.json();
+        return data;
+      } catch (error) {
+        // When not logged in, this will fail silently
+        // We'll still have localStorage for guest users
+        if (user) {
+          console.error("Failed to save theme preference despite being logged in:", error);
+        }
+        return null;
+      }
     },
     onSuccess: (data) => {
+      if (!data) return; // Skip if API call failed
+      
       queryClient.setQueryData(["/api/user"], (oldData: any) => {
         if (oldData) {
           return { ...oldData, themePreference: data.themePreference };
@@ -52,9 +64,6 @@ export function ThemeProvider({
         return oldData;
       });
     },
-    onError: (error) => {
-      console.error("Failed to save theme preference:", error);
-    }
   });
 
   // Public theme setter
@@ -110,18 +119,23 @@ export function ThemeProvider({
   useEffect(() => {
     setMounted(true);
     
-    // Get theme from localStorage or use user preference from profile
+    // Get theme from localStorage as default
     const savedTheme = localStorage.getItem(storageKey) as Theme | null;
     
-    if (user?.themePreference) {
-      // If user has a preference in their profile, use that
-      setThemeState(user.themePreference as Theme);
-    } else if (savedTheme) {
-      // Otherwise use localStorage if available
+    if (savedTheme) {
       setThemeState(savedTheme);
     }
-    // defaultTheme is used as fallback via the initial state
-  }, [storageKey, user, defaultTheme]);
+  }, [storageKey]);
+  
+  // Use user preference when available - separate effect to handle login/logout
+  useEffect(() => {
+    if (user?.themePreference) {
+      // If user has a preference in their profile, use that (overrides localStorage)
+      setThemeState(user.themePreference as Theme);
+      // Also update localStorage to keep them in sync
+      localStorage.setItem(storageKey, user.themePreference as Theme);
+    }
+  }, [user, storageKey]);
 
   return (
     <ThemeContext.Provider value={{ 

@@ -42,10 +42,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      return await apiRequest("POST", "/api/login", credentials);
+      const res = await apiRequest("POST", "/api/login", credentials);
+      return await res.json();
     },
     onSuccess: (user: SelectUser) => {
+      // Store user data in the query cache
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Apply user's theme preference if they have one
+      if (user.themePreference) {
+        // Store in localStorage to ensure consistency
+        localStorage.setItem('obviu-theme', user.themePreference);
+      }
+      
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.name}!`,
@@ -63,10 +72,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
-      return await apiRequest("POST", "/api/register", credentials);
+      const res = await apiRequest("POST", "/api/register", credentials);
+      return await res.json();
     },
     onSuccess: (user: SelectUser) => {
+      // Store user data in the query cache
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Set default theme preference if user didn't specify one
+      if (user.themePreference) {
+        localStorage.setItem('obviu-theme', user.themePreference);
+      } else {
+        // Default to system theme for new users
+        localStorage.setItem('obviu-theme', 'system');
+      }
+      
       toast({
         title: "Registration successful",
         description: `Welcome to Obviu.io, ${user.name}!`,
