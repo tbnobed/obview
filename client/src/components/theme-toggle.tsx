@@ -72,13 +72,9 @@ export function ThemeToggle() {
   }
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
-    // Update theme locally
+    // Update theme locally only
+    // The ThemeProvider will handle saving to the database if needed
     setTheme(newTheme);
-    
-    // If user is logged in, save preference to their profile
-    if (user) {
-      updateThemeMutation.mutate(newTheme);
-    }
   };
 
   // Determine the active theme for display

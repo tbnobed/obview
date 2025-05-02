@@ -80,7 +80,13 @@ export function ThemeProvider({
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     applyTheme(newTheme);
-    updateThemeMutation.mutate(newTheme);
+    
+    // Only attempt to update in database if user is authenticated
+    // This prevents unnecessary API calls that result in 401 errors
+    const token = document.cookie.includes('connect.sid');
+    if (token) {
+      updateThemeMutation.mutate(newTheme);
+    }
   };
 
   // Listen for system preference changes
