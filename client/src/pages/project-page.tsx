@@ -523,7 +523,7 @@ export default function ProjectPage() {
                 href="#" 
                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "media" 
-                    ? "border-primary-400 text-primary-500" 
+                    ? "border-primary-400 text-primary-500 dark:border-[#026d55] dark:text-[#026d55]" 
                     : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
                 }`}
                 onClick={(e) => { e.preventDefault(); setActiveTab("media"); }}
@@ -534,7 +534,7 @@ export default function ProjectPage() {
                 href="#" 
                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "comments" 
-                    ? "border-primary-400 text-primary-500" 
+                    ? "border-primary-400 text-primary-500 dark:border-[#026d55] dark:text-[#026d55]" 
                     : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
                 }`}
                 onClick={(e) => { e.preventDefault(); setActiveTab("comments"); }}
@@ -545,7 +545,7 @@ export default function ProjectPage() {
                 href="#" 
                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "activity" 
-                    ? "border-primary-400 text-primary-500" 
+                    ? "border-primary-400 text-primary-500 dark:border-[#026d55] dark:text-[#026d55]" 
                     : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
                 }`}
                 onClick={(e) => { e.preventDefault(); setActiveTab("activity"); }}
@@ -556,7 +556,7 @@ export default function ProjectPage() {
                 href="#" 
                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "settings" 
-                    ? "border-primary-400 text-primary-500" 
+                    ? "border-primary-400 text-primary-500 dark:border-[#026d55] dark:text-[#026d55]" 
                     : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
                 }`}
                 onClick={(e) => { e.preventDefault(); setActiveTab("settings"); }}
