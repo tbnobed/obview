@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import AppLayout from "@/components/layout/app-layout";
 import { useProject } from "@/hooks/use-projects";
 import { queryClient } from "@/lib/queryClient";
+import { uploadService } from "@/lib/upload-service";
 
 export default function FileUploadPage() {
   const { id } = useParams<{ id: string }>();
