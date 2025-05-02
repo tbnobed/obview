@@ -1089,7 +1089,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If file doesn't physically exist but is not marked as unavailable, mark it now
         if (file.isAvailable !== false) {
           console.log(`Marking file ${fileId} as unavailable since it was not found on disk`);
-          await storage.updateFile(fileId, { isAvailable: false });
+          try {
+            // Update all database records with similar file paths
+            const allFiles = await storage.getAllFiles();
+            const missingFiles = allFiles.filter(f => 
+              // Look for files with the same path
+              f.filePath === file.filePath ||
+              // Or files with the same timestamp-based filename pattern
+              (file.filePath.includes('/uploads/') && 
+               f.filePath.includes('/uploads/') &&
+               file.filePath.split('/').pop() === f.filePath.split('/').pop())
+            );
+            
+            console.log(`Found ${missingFiles.length} database records with the same missing file path`);
+            
+            // Update all these files as unavailable
+            for (const missingFile of missingFiles) {
+              await storage.updateFile(missingFile.id, { isAvailable: false });
+              console.log(`Updated file ID ${missingFile.id} (${missingFile.filename}) as unavailable`);
+            }
+          } catch (updateError) {
+            console.error('Error updating missing file statuses:', updateError);
+            // Continue with the request, just mark the current file
+            await storage.updateFile(fileId, { isAvailable: false });
+          }
         }
         
         return res.status(404).json({ 
@@ -1172,7 +1195,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If file doesn't physically exist but is not marked as unavailable, mark it now
         if (file.isAvailable !== false) {
           console.log(`Marking file ${fileId} as unavailable since it was not found on disk`);
-          await storage.updateFile(fileId, { isAvailable: false });
+          try {
+            // Update all database records with similar file paths
+            const allFiles = await storage.getAllFiles();
+            const missingFiles = allFiles.filter(f => 
+              // Look for files with the same path
+              f.filePath === file.filePath ||
+              // Or files with the same timestamp-based filename pattern
+              (file.filePath.includes('/uploads/') && 
+               f.filePath.includes('/uploads/') &&
+               file.filePath.split('/').pop() === f.filePath.split('/').pop())
+            );
+            
+            console.log(`Found ${missingFiles.length} database records with the same missing file path`);
+            
+            // Update all these files as unavailable
+            for (const missingFile of missingFiles) {
+              await storage.updateFile(missingFile.id, { isAvailable: false });
+              console.log(`Updated file ID ${missingFile.id} (${missingFile.filename}) as unavailable`);
+            }
+          } catch (updateError) {
+            console.error('Error updating missing file statuses:', updateError);
+            // Continue with the request, just mark the current file
+            await storage.updateFile(fileId, { isAvailable: false });
+          }
         }
         
         return res.status(404).json({ 
@@ -1215,14 +1261,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if the file physically exists before sending
+      console.log(`[DEBUG] Checking if shared file exists at path: ${file.filePath}`);
       const fileExists = await fileSystem.fileExists(file.filePath);
+      console.log(`[DEBUG] Shared file exists check result: ${fileExists}`);
+      
       if (!fileExists) {
         console.error(`Shared file with token ${token} physical file not found at ${file.filePath}`);
         
         // If file doesn't physically exist but is not marked as unavailable, mark it now
         if (file.isAvailable !== false) {
           console.log(`Marking shared file with ID ${file.id} as unavailable since it was not found on disk`);
-          await storage.updateFile(file.id, { isAvailable: false });
+          try {
+            // Update all database records with similar file paths
+            const missingFiles = files.filter(f => 
+              // Look for files with the same path
+              f.filePath === file.filePath ||
+              // Or files with the same timestamp-based filename pattern
+              (file.filePath.includes('/uploads/') && 
+               f.filePath.includes('/uploads/') &&
+               file.filePath.split('/').pop() === f.filePath.split('/').pop())
+            );
+            
+            console.log(`Found ${missingFiles.length} database records with the same missing file path`);
+            
+            // Update all these files as unavailable
+            for (const missingFile of missingFiles) {
+              await storage.updateFile(missingFile.id, { isAvailable: false });
+              console.log(`Updated file ID ${missingFile.id} (${missingFile.filename}) as unavailable`);
+            }
+          } catch (updateError) {
+            console.error('Error updating missing file statuses:', updateError);
+            // Continue with the request, just mark the current file
+            await storage.updateFile(file.id, { isAvailable: false });
+          }
         }
         
         return res.status(404).json({ 
@@ -1836,6 +1907,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       next(error);
+    }
+  });
+  
+  // Run a file integrity scan to update database with correct file availability
+  app.post("/api/admin/scan-files", isAdmin, async (req, res, next) => {
+    try {
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      console.log(`Starting file system scan on ${uploadsDir}`);
+      
+      // 1. Scan the uploads directory to get existing and missing files
+      const scanResults = await fileSystem.scanUploadsDirectory(uploadsDir);
+      
+      // 2. Get all files from the database
+      const allFiles = await storage.getAllFiles();
+      console.log(`Found ${allFiles.length} files in database`);
+      
+      // 3. Track statistics
+      const stats = {
+        totalDatabaseFiles: allFiles.length,
+        totalFileSystemFiles: scanResults.existingFiles.length + scanResults.missingFiles.length,
+        missingFilesUpdated: 0,
+        existingFilesUpdated: 0,
+        errors: scanResults.errors
+      };
+      
+      // 4. Mark files as unavailable if they don't exist on disk
+      const updatePromises = [];
+      
+      for (const file of allFiles) {
+        const filePath = file.filePath;
+        const fileExists = scanResults.existingFiles.includes(filePath);
+        
+        // If file doesn't exist on disk but is marked as available, update it
+        if (!fileExists && file.isAvailable !== false) {
+          console.log(`Marking file ${file.id} (${file.filename}) as unavailable`);
+          updatePromises.push(
+            storage.updateFile(file.id, { isAvailable: false })
+              .then(() => stats.missingFilesUpdated++)
+              .catch(err => {
+                console.error(`Error updating file ${file.id}:`, err);
+                stats.errors.push(`Failed to update file ${file.id}: ${err.message}`);
+              })
+          );
+        }
+        
+        // If file exists on disk but is marked as unavailable, update it
+        if (fileExists && file.isAvailable === false) {
+          console.log(`Marking file ${file.id} (${file.filename}) as available`);
+          updatePromises.push(
+            storage.updateFile(file.id, { isAvailable: true })
+              .then(() => stats.existingFilesUpdated++)
+              .catch(err => {
+                console.error(`Error updating file ${file.id}:`, err);
+                stats.errors.push(`Failed to update file ${file.id}: ${err.message}`);
+              })
+          );
+        }
+      }
+      
+      // 5. Wait for all updates to complete
+      await Promise.allSettled(updatePromises);
+      
+      console.log('File system scan complete with results:', stats);
+      
+      res.json({
+        message: 'File system scan complete',
+        stats
+      });
+    } catch (error) {
+      console.error('Error performing file system scan:', error);
+      res.status(500).json({ 
+        error: 'Server error during file scan',
+        message: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
   
