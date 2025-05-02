@@ -163,11 +163,24 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
   // Approve file mutation
   const approveMutation = useMutation({
     mutationFn: async (status: string) => {
-      const res = await apiRequest("POST", `/api/files/${file?.id}/approvals`, {
-        status,
-        feedback: status === "approved" ? "Approved" : "Changes requested",
-      });
-      return await res.json();
+      try {
+        const res = await apiRequest("POST", `/api/files/${file?.id}/approvals`, {
+          status,
+          feedback: status === "approved" ? "Approved" : "Changes requested",
+        });
+        
+        // Check if the response is valid before attempting to parse JSON
+        if (!res.ok) {
+          throw new Error(`Server responded with status: ${res.status}`);
+        }
+        
+        // Parse the JSON response safely
+        const data = await res.json();
+        return data;
+      } catch (err) {
+        console.error("Approval submission error:", err);
+        throw new Error(err instanceof Error ? err.message : "Failed to process server response");
+      }
     },
     onSuccess: () => {
       toast({
