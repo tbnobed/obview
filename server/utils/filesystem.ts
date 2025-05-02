@@ -47,10 +47,13 @@ export async function getFileStats(filePath: string): Promise<any> {
  * Check if a file exists
  */
 export async function fileExists(filePath: string): Promise<boolean> {
+  console.log(`[DEBUG] Checking file existence for path: ${filePath}`);
   try {
     await fsPromises.access(filePath, fs.constants.F_OK);
+    console.log(`[DEBUG] File exists check success for: ${filePath}`);
     return true;
-  } catch {
+  } catch (error) {
+    console.log(`[DEBUG] File exists check failed for: ${filePath}`, error);
     return false;
   }
 }

@@ -1044,11 +1044,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/files/:fileId/content", isAuthenticated, async (req, res, next) => {
     try {
       const fileId = parseInt(req.params.fileId);
+      console.log(`[DEBUG] File content requested for fileId: ${fileId}`);
+      
       const file = await storage.getFile(fileId);
       
       if (!file) {
+        console.log(`[DEBUG] No database record found for file ID: ${fileId}`);
         return res.status(404).json({ message: "File not found" });
       }
+      
+      console.log(`[DEBUG] Database record found for file ID: ${fileId}`, {
+        filename: file.filename,
+        fileType: file.fileType,
+        filePath: file.filePath,
+        isAvailable: file.isAvailable
+      });
       
       // Check if user has access to the project
       if (req.user && req.user.role !== "admin") {
@@ -1069,7 +1079,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if the file physically exists before sending
+      console.log(`[DEBUG] Checking if file exists at path: ${file.filePath}`);
       const fileExists = await fileSystem.fileExists(file.filePath);
+      console.log(`[DEBUG] File exists check result: ${fileExists}`);
+      
       if (!fileExists) {
         console.error(`File ${fileId} (${file.filename}) physical file not found at ${file.filePath}`);
         
