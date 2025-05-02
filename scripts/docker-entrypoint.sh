@@ -13,17 +13,40 @@ echo "Waiting for database to be ready..."
 
 # Run migrations with error handling
 echo "Running database migrations..."
-node /app/server/db-migrate.cjs || {
-  echo "Warning: Database migrations encountered issues."
-  echo "This might be normal if tables already exist. Continuing..."
-}
+if [ -f "/app/server/db-migrate.cjs" ]; then
+  node /app/server/db-migrate.cjs || {
+    echo "Warning: Database migrations encountered issues."
+    echo "This might be normal if tables already exist. Continuing..."
+  }
+elif [ -f "/app/server/db-migrate.js" ]; then
+  node /app/server/db-migrate.js || {
+    echo "Warning: Database migrations encountered issues."
+    echo "This might be normal if tables already exist. Continuing..."
+  }
+else
+  echo "Migration file not found. Checking for alternate locations..."
+  # Try to run the migration directly using the drizzle-kit
+  npx drizzle-kit migrate:mysql --config=drizzle.config.ts || {
+    echo "Warning: Drizzle-kit migration encountered issues."
+    echo "This might be normal if tables already exist. Continuing..."
+  }
+fi
 
 # Create admin user with error handling
 echo "Setting up admin user if needed..."
-node /app/scripts/setup.cjs || {
-  echo "Warning: Admin user setup encountered issues."
-  echo "This might be normal if the user already exists. Continuing..."
-}
+if [ -f "/app/scripts/setup.cjs" ]; then
+  node /app/scripts/setup.cjs || {
+    echo "Warning: Admin user setup encountered issues."
+    echo "This might be normal if the user already exists. Continuing..."
+  }
+elif [ -f "/app/scripts/setup.js" ]; then
+  node /app/scripts/setup.js || {
+    echo "Warning: Admin user setup encountered issues."
+    echo "This might be normal if the user already exists. Continuing..."
+  }
+else
+  echo "Setup script not found. This might cause issues if no admin user exists."
+fi
 
 # Create required directories
 mkdir -p /app/dist/server
