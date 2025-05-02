@@ -164,29 +164,35 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
   const approveMutation = useMutation({
     mutationFn: async (status: string) => {
       try {
-        const res = await apiRequest("POST", `/api/files/${file?.id}/approvals`, {
+        // Prepare the request data
+        const requestData = {
           status,
           feedback: status === "approved" ? "Approved" : "Changes requested",
-        });
+        };
         
-        // Check if the response is valid before attempting to parse JSON
-        if (!res.ok) {
-          throw new Error(`Server responded with status: ${res.status}`);
-        }
+        // Use the apiRequest helper function
+        const result = await apiRequest("POST", `/api/files/${file?.id}/approvals`, requestData);
         
-        // Parse the JSON response safely
-        const data = await res.json();
-        return data;
+        // Return both the result and the status so we can use it in onSuccess
+        return { result, status };
       } catch (err) {
         console.error("Approval submission error:", err);
-        throw new Error(err instanceof Error ? err.message : "Failed to process server response");
+        throw err; // Rethrow the error to be handled by onError
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Get the status from the returned data
+      const { status } = data;
+      
+      // Show a success message
       toast({
         title: "Success",
-        description: "Your feedback has been recorded",
+        description: status === "approved" 
+          ? "You've approved this file"
+          : "You've requested changes to this file",
       });
+      
+      // Invalidate the approvals query to refresh the data
       queryClient.invalidateQueries({ queryKey: [`/api/files/${file?.id}/approvals`] });
     },
     onError: (error: Error) => {
