@@ -182,7 +182,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
     },
     onSuccess: (data) => {
       // Get the status from the returned data
-      const { status } = data;
+      const { status, result } = data;
       
       // Show a success message
       toast({
@@ -192,7 +192,21 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
           : "You've requested changes to this file",
       });
       
-      // Invalidate the approvals query to refresh the data
+      // Immediately update UI state without waiting for a refetch
+      if (file) {
+        // Update the local userApproval state
+        setUserApproval({
+          id: result.id,
+          fileId: file.id,
+          userId: result.userId,
+          status: status,
+          feedback: result.feedback, 
+          createdAt: result.createdAt,
+          user: result.user
+        });
+      }
+      
+      // Also invalidate the approvals query to refresh the data
       queryClient.invalidateQueries({ queryKey: [`/api/files/${file?.id}/approvals`] });
     },
     onError: (error: Error) => {
