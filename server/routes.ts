@@ -1556,8 +1556,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, projectId, role = "viewer", appUrl } = req.body;
       
-      if (!email || !projectId) {
-        return res.status(400).json({ message: "Email and projectId are required" });
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
       }
       
       // Log the client domain if provided
@@ -1565,36 +1565,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Client URL provided for invitation: ${appUrl}`);
       }
       
-      const project = await storage.getProject(parseInt(projectId));
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
+      // Admin invitation (system-wide) versus project-specific invitation
+      const isAdminInvite = !projectId;
       
-      // Check if user has edit access to the project
-      if (req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(parseInt(projectId), req.user.id);
-        if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
-          return res.status(403).json({ message: "You don't have permission to invite users to this project" });
+      // For project-specific invitations, perform additional checks
+      if (!isAdminInvite) {
+        const project = await storage.getProject(parseInt(projectId));
+        if (!project) {
+          return res.status(404).json({ message: "Project not found" });
         }
-      }
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      
-      // If user exists and is already a member of the project, return an error
-      if (existingUser) {
-        const existingMember = await storage.getProjectUser(parseInt(projectId), existingUser.id);
-        if (existingMember) {
-          return res.status(400).json({ message: "User is already a member of this project" });
+        
+        // Check if user has edit access to the project
+        if (req.user.role !== "admin") {
+          const projectUser = await storage.getProjectUser(parseInt(projectId), req.user.id);
+          if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
+            return res.status(403).json({ message: "You don't have permission to invite users to this project" });
+          }
         }
-      }
-      
-      // Check if there's already a pending invitation for this email and project
-      const existingInvitations = await storage.getInvitationsByProject(parseInt(projectId));
-      const alreadyInvited = existingInvitations.some(inv => inv.email === email && !inv.isAccepted);
-      
-      if (alreadyInvited) {
-        return res.status(400).json({ message: "User has already been invited to this project" });
+        
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        
+        // If user exists and is already a member of the project, return an error
+        if (existingUser) {
+          const existingMember = await storage.getProjectUser(parseInt(projectId), existingUser.id);
+          if (existingMember) {
+            return res.status(400).json({ message: "User is already a member of this project" });
+          }
+        }
+        
+        // Check if there's already a pending invitation for this email and project
+        const existingInvitations = await storage.getInvitationsByProject(parseInt(projectId));
+        const alreadyInvited = existingInvitations.some(inv => inv.email === email && !inv.isAccepted);
+        
+        if (alreadyInvited) {
+          return res.status(400).json({ message: "User has already been invited to this project" });
+        }
+      } else {
+        // For admin invitations, only admins can create them
+        if (req.user.role !== "admin") {
+          return res.status(403).json({ message: "Only administrators can send system-wide invitations" });
+        }
+        
+        // Check if user already exists with this email
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser) {
+          return res.status(400).json({ message: "A user with this email already exists in the system" });
+        }
+        
+        // For admin invites, we should check if there's a pending global invitation
+        const allInvitations = await storage.getAllInvitations();
+        const alreadyInvited = allInvitations.some(inv => 
+          inv.email === email && 
+          !inv.isAccepted && 
+          inv.projectId === null
+        );
+        
+        if (alreadyInvited) {
+          return res.status(400).json({ message: "This email has already been invited to join the system" });
+        }
       }
       
       // Generate a unique token for this invitation
@@ -1607,7 +1636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email,
         role,
         createdById: req.user.id,
-        projectId: parseInt(projectId),
+        projectId: projectId ? parseInt(projectId) : null,
         token,
         expiresAt,
         isAccepted: false,
@@ -1619,39 +1648,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Checking SendGrid API key availability for invitation to ${email}`);
       console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
+      // For project-specific invitations, get the project
+      let projectObj;
+      if (!isAdminInvite) {
+        projectObj = await storage.getProject(parseInt(projectId));
+      }
+      
       if (process.env.SENDGRID_API_KEY) {
         console.log(`SendGrid API key is available, preparing to send invitation email to ${email}`);
         try {
           // Import the sendInvitationEmail function from utils/sendgrid
-          const { sendInvitationEmail } = await import('./utils/sendgrid');
+          const { sendInvitationEmail, sendSystemInvitationEmail } = await import('./utils/sendgrid');
           
           // Get the name of the user who created the invitation
           const inviter = await storage.getUser(req.user.id);
           
-          if (inviter && project) {
-            console.log(`Sending invitation email to ${email} for project "${project.name}" from "${inviter.name}"`);
-            
-            // Send the invitation email (with client domain if provided)
-            emailSent = await sendInvitationEmail(
-              email,
-              inviter.name,
-              project.name,
-              role,
-              token,
-              appUrl // Pass the client app URL (undefined if not provided)
-            );
-            
-            if (emailSent) {
-              console.log(`SUCCESS: Invitation email sent to ${email} for project ${project.name}`);
+          if (inviter) {
+            if (isAdminInvite) {
+              // This is a system-wide invitation from an admin
+              console.log(`Sending system invitation email to ${email} from "${inviter.name}"`);
               
-              // Update the invitation to record that email was sent successfully
-              await storage.updateInvitation(invitation.id, { emailSent: true });
-              invitation.emailSent = true;
+              // Send the system invitation email
+              emailSent = await sendSystemInvitationEmail(
+                email,
+                inviter.name,
+                role,
+                token,
+                appUrl // Pass the client app URL (undefined if not provided)
+              );
+              
+              if (emailSent) {
+                console.log(`SUCCESS: System invitation email sent to ${email}`);
+                
+                // Update the invitation to record that email was sent successfully
+                await storage.updateInvitation(invitation.id, { emailSent: true });
+                invitation.emailSent = true;
+              } else {
+                console.error(`ERROR: Failed to send system invitation email to ${email}`);
+              }
+            } 
+            else if (projectObj) {
+              // This is a project-specific invitation
+              console.log(`Sending project invitation email to ${email} for project "${projectObj.name}" from "${inviter.name}"`);
+              
+              // Send the invitation email (with client domain if provided)
+              emailSent = await sendInvitationEmail(
+                email,
+                inviter.name,
+                projectObj.name,
+                role,
+                token,
+                appUrl // Pass the client app URL (undefined if not provided)
+              );
+              
+              if (emailSent) {
+                console.log(`SUCCESS: Project invitation email sent to ${email} for project ${projectObj.name}`);
+                
+                // Update the invitation to record that email was sent successfully
+                await storage.updateInvitation(invitation.id, { emailSent: true });
+                invitation.emailSent = true;
+              } else {
+                console.error(`ERROR: Failed to send project invitation email to ${email} for project ${projectObj.name}`);
+              }
             } else {
-              console.error(`ERROR: Failed to send invitation email to ${email} for project ${project.name}`);
+              console.error(`Cannot send project invitation email: Project not found`);
             }
           } else {
-            console.error(`Cannot send invitation email: ${!inviter ? 'Inviter not found' : 'Project not found'}`);
+            console.error(`Cannot send invitation email: Inviter not found`);
           }
         } catch (emailError) {
           console.error('Error sending invitation email:', emailError);

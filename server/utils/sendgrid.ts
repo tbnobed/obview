@@ -333,3 +333,85 @@ export async function sendInvitationEmail(
     return false;
   }
 }
+
+/**
+ * Send a system-wide invitation email (without a specific project)
+ * @param to Recipient email
+ * @param inviterName Name of the admin who sent the invitation
+ * @param role Role granted in the system
+ * @param token Invitation token
+ * @param appUrl Base URL of the application
+ * @returns Promise<boolean> Success status
+ */
+export async function sendSystemInvitationEmail(
+  to: string,
+  inviterName: string,
+  role: string,
+  token: string,
+  appUrl?: string
+): Promise<boolean> {
+  try {
+    logToFile(`Preparing system invitation email to ${to} from "${inviterName}" with role "${role}"`);
+    logToFile(`Token: ${token}`);
+    
+    // Use the client-provided URL if available, otherwise fall back to config
+    const baseUrl = appUrl || config.appDomain;
+    logToFile(`Using base URL for invitation: ${baseUrl}`);
+    
+    const inviteUrl = `${baseUrl}/invite/${token}`;
+    logToFile(`Generated invite URL: ${inviteUrl}`);
+    
+    const subject = `${inviterName} invited you to join OBview.io`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #6366f1; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">System Invitation</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+          <p>Hello,</p>
+          <p><strong>${inviterName}</strong> has invited you to join the OBview.io platform as a <strong>${role}</strong>.</p>
+          <p>Click the button below to accept this invitation and create your account:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${inviteUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Accept Invitation</a>
+          </div>
+          <p>Or copy and paste this URL into your browser:</p>
+          <p style="word-break: break-all; color: #4f46e5;">${inviteUrl}</p>
+          <p>This invitation will expire in 7 days.</p>
+          <p>OBview.io is a collaborative media review platform that enables teams to efficiently review, comment, and approve media assets.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #64748b; font-size: 12px;">If you didn't expect this invitation, you can safely ignore this email.</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+      ${inviterName} has invited you to join the OBview.io platform as a ${role}.
+      
+      To accept this invitation and create your account, visit: ${inviteUrl}
+      
+      This invitation will expire in 7 days.
+      
+      OBview.io is a collaborative media review platform that enables teams to efficiently review, comment, and approve media assets.
+      
+      If you didn't expect this invitation, you can safely ignore this email.
+    `;
+    
+    // Use the verified sender identity
+    const sender = config.emailFrom;
+    logToFile(`Using sender email: ${sender}`);
+    
+    return await sendEmail({
+      to,
+      from: sender,
+      subject,
+      html,
+      text
+    });
+  } catch (error) {
+    const errorMsg = `Error preparing system invitation email to ${to}: ${error instanceof Error ? error.message : String(error)}`;
+    console.error(errorMsg);
+    logToFile(errorMsg);
+    return false;
+  }
+}

@@ -422,6 +422,10 @@ export class MemStorage implements IStorage {
     );
   }
   
+  async getAllInvitations(): Promise<Invitation[]> {
+    return Array.from(this.invitations.values());
+  }
+  
   async deleteInvitation(id: number): Promise<boolean> {
     return this.invitations.delete(id);
   }
@@ -808,6 +812,12 @@ export class DatabaseStorage implements IStorage {
           eq(invitations.isAccepted, false)
         )
       );
+  }
+  
+  async getAllInvitations(): Promise<Invitation[]> {
+    return await db
+      .select()
+      .from(invitations);
   }
   
   async deleteInvitation(id: number): Promise<boolean> {
