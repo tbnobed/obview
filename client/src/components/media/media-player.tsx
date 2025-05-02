@@ -528,7 +528,7 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium dark:text-white">File Versions</h3>
-                  <Button className="flex items-center" size="sm">
+                  <Button className="flex items-center dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" size="sm">
                     <Layers className="h-4 w-4 mr-1.5" />
                     Upload New Version
                   </Button>

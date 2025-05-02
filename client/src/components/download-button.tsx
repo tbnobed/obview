@@ -42,7 +42,7 @@ export function DownloadButton({ fileId, filename, variant = "outline", size = "
       variant={variant} 
       size={size}
       onClick={handleDownload}
-      className="gap-1 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-[#026d55]"
+      className={`gap-1 ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-[#026d55]' : 'dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white'}`}
     >
       <Download className="h-4 w-4" />
       <span>Download</span>

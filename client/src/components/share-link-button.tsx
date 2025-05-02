@@ -68,17 +68,17 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
         variant={variant} 
         size={size}
         onClick={handleOpenDialog}
-        className="gap-1 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-[#026d55]"
+        className={`gap-1 ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-[#026d55]' : 'dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white'}`}
       >
         <ShareIcon className="h-4 w-4" />
         <span>Share</span>
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:bg-gray-900 dark:border-gray-800">
           <DialogHeader>
-            <DialogTitle>Share link</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="dark:text-white">Share link</DialogTitle>
+            <DialogDescription className="dark:text-gray-400">
               Anyone with this link can view this content without authentication
             </DialogDescription>
           </DialogHeader>
@@ -88,7 +88,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
               <Input
                 readOnly
                 value={shareUrl}
-                className="w-full font-mono text-sm"
+                className="w-full font-mono text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
               />
             </div>
             <Button 
@@ -96,6 +96,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
               size="icon" 
               variant="secondary"
               onClick={handleCopyLink}
+              className="dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white"
             >
               {copied ? (
                 <CheckIcon className="h-4 w-4" />
@@ -109,6 +110,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
             <Button
               variant="outline"
               onClick={() => setIsOpen(false)}
+              className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-[#026d55]"
             >
               Close
             </Button>
