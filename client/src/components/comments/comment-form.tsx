@@ -70,6 +70,7 @@ export default function CommentForm({
     defaultValues: {
       content: "",
     },
+    mode: "onChange", // Validate on change for better UX
   });
 
   // Create comment mutation
@@ -79,17 +80,19 @@ export default function CommentForm({
         content: data.content,
         fileId,
         parentId: parentId || null,
-        timestamp: includeTimestamp && currentTime ? Math.floor(currentTime) : null,
+        timestamp: includeTimestamp && currentTime !== undefined ? Math.floor(currentTime) : null,
       };
       
+      console.log("Submitting comment:", commentData);
       return apiRequest("POST", `/api/files/${fileId}/comments`, commentData);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       form.reset();
       toast({
         title: "Comment added",
         description: "Your comment has been added successfully",
       });
+      console.log("Comment added successfully:", data);
       // Invalidate the array-format query key we're using in useComments
       queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
       // Also invalidate project comments to update the project page

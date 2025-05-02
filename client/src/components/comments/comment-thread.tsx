@@ -120,8 +120,16 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
         comment.timestamp !== null ? "cursor-pointer hover:bg-neutral-50" : "",
         comments.indexOf(comment) < comments.length - 1 ? "border-b border-neutral-200" : ""
       )}
-      onClick={() => {
-        if (comment.timestamp !== null && onTimeClick) {
+      onClick={(e) => {
+        // Prevent click if we're clicking on interactive elements
+        const target = e.target as HTMLElement;
+        const isInteractive = target.closest('button') || 
+                              target.closest('a') || 
+                              target.closest('input') ||
+                              target.closest('textarea');
+        
+        if (!isInteractive && comment.timestamp !== null && onTimeClick) {
+          console.log("Jumping to timestamp:", comment.timestamp);
           onTimeClick(comment.timestamp);
         }
       }}
