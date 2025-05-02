@@ -459,13 +459,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let updateData;
       
-      // Handle password update (allow for admins)
-      if (req.body.password && req.user.role === "admin") {
-        // Admin is updating a password - hash it first
+      // Handle password update (allow for admins or users updating their own password)
+      if (req.body.password && (req.user.role === "admin" || userId === req.user.id)) {
+        // Hash the password before storing it
         const hashedPassword = await hashPassword(req.body.password);
         const { password, ...restData } = req.body;
         updateData = { ...restData, password: hashedPassword };
-        console.log("Admin updating user password");
+        
+        if (req.user.role === "admin" && userId !== req.user.id) {
+          console.log(`Admin (id: ${req.user.id}) updating password for user (id: ${userId})`);
+        } else {
+          console.log(`User (id: ${req.user.id}) updating their own password`);
+        }
       } else {
         // Regular update without password change
         const { password, ...restData } = req.body;

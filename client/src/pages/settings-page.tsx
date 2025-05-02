@@ -23,6 +23,9 @@ export default function SettingsPage() {
     name: z.string().min(2, {
       message: "Name must be at least 2 characters.",
     }),
+    username: z.string().min(3, {
+      message: "Username must be at least 3 characters.",
+    }),
     email: z.string().email({
       message: "Please enter a valid email address.",
     }),
@@ -48,6 +51,9 @@ export default function SettingsPage() {
     name: z.string().min(2, {
       message: "Name must be at least 2 characters.",
     }),
+    username: z.string().min(3, {
+      message: "Username must be at least 3 characters.",
+    }),
     email: z.string().email({
       message: "Please enter a valid email address.",
     }),
@@ -60,6 +66,7 @@ export default function SettingsPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: user?.name || "",
+      username: user?.username || "",
       email: user?.email || "",
       currentPassword: "",
       newPassword: "",
@@ -76,7 +83,7 @@ export default function SettingsPage() {
     try {
       // Separate account update from password update based on active tab
       if (activeTab === "account") {
-        // Only send name and email for account update
+        // Send name, username and email for account update
         const response = await fetch(`/api/users/${user.id}`, {
           method: 'PATCH',
           headers: {
@@ -84,6 +91,7 @@ export default function SettingsPage() {
           },
           body: JSON.stringify({
             name: values.name,
+            username: values.username,
             email: values.email,
           }),
           credentials: 'include',
@@ -215,6 +223,22 @@ export default function SettingsPage() {
                           </FormControl>
                           <FormDescription className="dark:text-gray-400">
                             This is the name that will be displayed on your profile
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="dark:text-white">Username</FormLabel>
+                          <FormControl>
+                            <Input placeholder="username" className="dark:bg-gray-800 dark:border-gray-700 dark:text-white" {...field} />
+                          </FormControl>
+                          <FormDescription className="dark:text-gray-400">
+                            Your unique username for logging in
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
