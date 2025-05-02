@@ -182,11 +182,6 @@ export default function HomePage() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button variant="link" className="px-0" onClick={() => window.open('https://github.com/yourusername/mediareview', '_blank')}>
-                View Documentation
-              </Button>
-            </CardFooter>
           </Card>
         </div>
       </div>
