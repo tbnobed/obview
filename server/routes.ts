@@ -1870,6 +1870,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  // Alternative endpoint for approving files (used by the client)
+  app.post("/api/files/:fileId/approve", isAuthenticated, async (req, res, next) => {
+    try {
+      // Log request to help debug
+      console.log("Approval request received for file", req.params.fileId, "with status", req.body.status);
+      
+      const fileId = parseInt(req.params.fileId);
+      const file = await storage.getFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check if user has access to the project
+      if (req.user.role !== "admin") {
+        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
+        
+        if (!projectUser) {
+          return res.status(403).json({ message: "You don't have access to this file" });
+        }
+        
+        // Make sure the user is at least an editor to approve/request changes
+        if (req.body.status && ["approved", "changes_requested"].includes(req.body.status) && 
+            projectUser.role !== "editor" && projectUser.role !== "admin") {
+          console.log(`User ${req.user.id} (role: ${projectUser.role}) attempted to ${req.body.status} file ${fileId}`);
+          return res.status(403).json({ 
+            message: "Only editors and administrators can approve or request changes to files" 
+          });
+        }
+      }
+      
+      // Format the data for the approval schema
+      const approvalData = {
+        fileId,
+        userId: req.user.id,
+        status: req.body.status,
+        feedback: req.body.feedback || null
+      };
+      
+      // Validate approval data
+      const validationResult = insertApprovalSchema.safeParse(approvalData);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid approval data", 
+          errors: validationResult.error.errors 
+        });
+      }
+      
+      // Check if user already has an approval for this file
+      const existingApproval = await storage.getApprovalByUserAndFile(req.user.id, fileId);
+      
+      let approval;
+      
+      if (existingApproval) {
+        // Update existing approval
+        approval = await storage.updateApproval(existingApproval.id, validationResult.data);
+        console.log(`Updated existing approval (ID: ${existingApproval.id}) for file ${fileId}`);
+      } else {
+        // Create new approval
+        approval = await storage.createApproval(validationResult.data);
+        console.log(`Created new approval for file ${fileId}`);
+      }
+      
+      // Get user details
+      const { password, ...userWithoutPassword } = req.user;
+      
+      // Include user in response
+      const approvalWithUser = {
+        ...approval,
+        user: userWithoutPassword,
+      };
+      
+      // Update project status based on approval/rejection
+      if (validationResult.data.status === "approved") {
+        const project = await storage.getProject(file.projectId);
+        if (project) {
+          console.log(`Processing approval for project ${project.id}`);
+          
+          // Get project editors
+          const projectUsers = await storage.getProjectUsers(file.projectId);
+          const editorIds = projectUsers
+            .filter(pu => pu.role === "editor" || pu.role === "admin")
+            .map(pu => pu.userId);
+          
+          console.log(`Project has ${editorIds.length} editors that need to approve`);
+          
+          // Get approvals for this file
+          const approvals = await storage.getApprovalsByFile(fileId);
+          const approvedEditorIds = approvals
+            .filter(a => a.status === "approved")
+            .map(a => a.userId);
+          
+          console.log(`File has ${approvedEditorIds.length} editor approvals so far`);
+          
+          // Check if all editors have approved
+          const allEditorsApproved = editorIds.every(id => approvedEditorIds.includes(id));
+          
+          if (allEditorsApproved) {
+            console.log(`All editors have approved file ${fileId}, updating project status to 'approved'`);
+            await storage.updateProject(file.projectId, { status: "approved" });
+          } else {
+            console.log(`Not all editors have approved yet. Waiting for more approvals.`);
+          }
+        }
+      } else if (validationResult.data.status === "changes_requested") {
+        // If changes are requested, update project status to in_progress
+        console.log(`Changes requested for file ${fileId}, updating project status to 'in_progress'`);
+        await storage.updateProject(file.projectId, { status: "in_progress" });
+      }
+      
+      // Log activity
+      await storage.logActivity({
+        action: validationResult.data.status === "approved" ? "approve" : "request_changes",
+        entityType: "file",
+        entityId: fileId,
+        userId: req.user.id,
+        metadata: { 
+          projectId: file.projectId,
+          status: validationResult.data.status,
+        },
+      });
+      
+      // Return success response
+      console.log(`Successfully processed ${validationResult.data.status} for file ${fileId}`);
+      res.status(200).json(approvalWithUser);
+    } catch (error) {
+      console.error(`Error in file approval endpoint:`, error);
+      next(error);
+    }
+  });
 
   // ===== SYSTEM SETTINGS ROUTES =====
   // Get system settings (admin only)
