@@ -25,7 +25,7 @@ export default function Sidebar() {
   return (
     <div className="flex flex-col w-72 border-r border-neutral-200 bg-white shadow-sm">
       <div className="flex items-center justify-center h-60 pt-10 flex-shrink-0 bg-gradient-to-r from-primary-600 to-primary-400">
-        <Logo size="lg" className="text-white scale-[5]" />
+        <Logo size="lg" className="text-white scale-[3]" />
       </div>
       
       {/* Main Navigation */}

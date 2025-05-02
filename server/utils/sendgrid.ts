@@ -230,7 +230,7 @@ export async function sendApprovalEmail(
             <a href="${projectUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Project</a>
           </div>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p style="color: #64748b; font-size: 12px;">This is an automated notification from the OBview.io platform.</p>
+          <p style="color: #64748b; font-size: 12px;">This is an automated notification from the Obviu.io platform.</p>
         </div>
       </div>
     `;
@@ -361,7 +361,7 @@ export async function sendSystemInvitationEmail(
     const inviteUrl = `${baseUrl}/invite/${token}`;
     logToFile(`Generated invite URL: ${inviteUrl}`);
     
-    const subject = `${inviterName} invited you to join OBview.io`;
+    const subject = `${inviterName} invited you to join Obviu.io`;
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -370,7 +370,7 @@ export async function sendSystemInvitationEmail(
         </div>
         <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
           <p>Hello,</p>
-          <p><strong>${inviterName}</strong> has invited you to join the OBview.io platform as a <strong>${role}</strong>.</p>
+          <p><strong>${inviterName}</strong> has invited you to join the Obviu.io platform as a <strong>${role}</strong>.</p>
           <p>Click the button below to accept this invitation and create your account:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${inviteUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Accept Invitation</a>
@@ -378,7 +378,7 @@ export async function sendSystemInvitationEmail(
           <p>Or copy and paste this URL into your browser:</p>
           <p style="word-break: break-all; color: #4f46e5;">${inviteUrl}</p>
           <p>This invitation will expire in 7 days.</p>
-          <p>OBview.io is a collaborative media review platform that enables teams to efficiently review, comment, and approve media assets.</p>
+          <p>Obviu.io is a collaborative media review platform that enables teams to efficiently review, comment, and approve media assets.</p>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
           <p style="color: #64748b; font-size: 12px;">If you didn't expect this invitation, you can safely ignore this email.</p>
         </div>
@@ -386,13 +386,13 @@ export async function sendSystemInvitationEmail(
     `;
     
     const text = `
-      ${inviterName} has invited you to join the OBview.io platform as a ${role}.
+      ${inviterName} has invited you to join the Obviu.io platform as a ${role}.
       
       To accept this invitation and create your account, visit: ${inviteUrl}
       
       This invitation will expire in 7 days.
       
-      OBview.io is a collaborative media review platform that enables teams to efficiently review, comment, and approve media assets.
+      Obviu.io is a collaborative media review platform that enables teams to efficiently review, comment, and approve media assets.
       
       If you didn't expect this invitation, you can safely ignore this email.
     `;
