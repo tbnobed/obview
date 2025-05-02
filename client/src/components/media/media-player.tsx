@@ -160,6 +160,26 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
       videoRef.current.volume = newVolume;
     }
   };
+  
+  // Handle fullscreen toggle
+  const toggleFullscreen = () => {
+    if (!videoRef.current) return;
+    
+    if (document.fullscreenElement) {
+      // Exit fullscreen
+      document.exitFullscreen().catch(err => {
+        console.error("Error exiting fullscreen:", err);
+      });
+    } else {
+      // Enter fullscreen
+      const videoElement = videoRef.current;
+      if (videoElement.requestFullscreen) {
+        videoElement.requestFullscreen().catch(err => {
+          console.error("Error requesting fullscreen:", err);
+        });
+      }
+    }
+  };
 
   // Format time (seconds to MM:SS)
   const formatTime = (time: number) => {
@@ -392,9 +412,11 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
               </div>
               
               <Button
+                onClick={toggleFullscreen}
                 variant="ghost"
                 size="icon"
                 className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                title="Toggle fullscreen"
               >
                 <Maximize className="h-5 w-5" />
               </Button>
