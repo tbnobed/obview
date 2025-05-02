@@ -45,7 +45,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     // Set a small delay before hiding the sidebar to improve user experience
     hoverTimerRef.current = window.setTimeout(() => {
       setIsHovering(false);
-    }, 300);
+    }, 200);
   }, []);
 
   // Clean up timer on unmount
@@ -93,8 +93,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <div 
         ref={sidebarRef}
         className={cn(
-          "hidden md:flex md:flex-shrink-0 transition-all duration-500 ease-out",
-          isCollapsed && !isHovering ? "md:w-0 overflow-hidden opacity-0" : "md:w-auto opacity-100"
+          "hidden md:flex md:flex-shrink-0 transition-all duration-500 ease-out transform-gpu",
+          isCollapsed && !isHovering 
+            ? "md:w-0 overflow-hidden opacity-0 translate-x-[-10px]" 
+            : "md:w-auto opacity-100 translate-x-0"
         )}
         onMouseLeave={handleMouseLeave}
         style={{ maxWidth: isCollapsed && !isHovering ? '0' : '18rem' }}
