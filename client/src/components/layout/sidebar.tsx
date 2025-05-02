@@ -23,8 +23,8 @@ export default function Sidebar() {
   const recentProjects = projects?.slice(0, 5) || [];
 
   return (
-    <div className="flex flex-col w-72 border-r border-neutral-200 bg-white shadow-sm">
-      <div className="flex items-center justify-center h-60 pt-10 flex-shrink-0 bg-gradient-to-r from-primary-600 to-primary-400">
+    <div className="flex flex-col w-72 border-r border-neutral-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+      <div className="flex items-center justify-center h-60 pt-10 flex-shrink-0 bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-700 dark:to-primary-500">
         <Logo size="lg" className="text-white scale-[3]" />
       </div>
       
@@ -35,12 +35,12 @@ export default function Sidebar() {
             <div className={cn(
               "flex items-center px-4 py-3 text-sm font-medium rounded-md cursor-pointer transition-colors",
               location === "/" 
-                ? "bg-primary-50 text-primary-600" 
-                : "text-neutral-600 hover:bg-neutral-50"
+                ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400" 
+                : "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-gray-800"
             )}>
               <Home className={cn(
                 "mr-3 h-5 w-5",
-                location === "/" ? "text-primary-500" : "text-neutral-500"
+                location === "/" ? "text-primary-500 dark:text-primary-400" : "text-neutral-500 dark:text-neutral-400"
               )} />
               Dashboard
             </div>
@@ -50,14 +50,14 @@ export default function Sidebar() {
             <div className={cn(
               "flex items-center px-4 py-3 text-sm font-medium rounded-md cursor-pointer transition-colors",
               location === "/projects" || location.startsWith("/project/") 
-                ? "bg-primary-50 text-primary-600" 
-                : "text-neutral-600 hover:bg-neutral-50"
+                ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400" 
+                : "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-gray-800"
             )}>
               <FolderKanban className={cn(
                 "mr-3 h-5 w-5",
                 location === "/projects" || location.startsWith("/project/") 
-                  ? "text-primary-500" 
-                  : "text-neutral-500"
+                  ? "text-primary-500 dark:text-primary-400" 
+                  : "text-neutral-500 dark:text-neutral-400"
               )} />
               Projects
             </div>
@@ -68,12 +68,12 @@ export default function Sidebar() {
               <div className={cn(
                 "flex items-center px-4 py-3 text-sm font-medium rounded-md cursor-pointer transition-colors",
                 location === "/admin" 
-                  ? "bg-primary-50 text-primary-600" 
-                  : "text-neutral-600 hover:bg-neutral-50"
+                  ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400" 
+                  : "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-gray-800"
               )}>
                 <Users className={cn(
                   "mr-3 h-5 w-5",
-                  location === "/admin" ? "text-primary-500" : "text-neutral-500"
+                  location === "/admin" ? "text-primary-500 dark:text-primary-400" : "text-neutral-500 dark:text-neutral-400"
                 )} />
                 Admin
               </div>
@@ -84,12 +84,12 @@ export default function Sidebar() {
             <div className={cn(
               "flex items-center px-4 py-3 text-sm font-medium rounded-md cursor-pointer transition-colors",
               location === "/settings" 
-                ? "bg-primary-50 text-primary-600" 
-                : "text-neutral-600 hover:bg-neutral-50"
+                ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400" 
+                : "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-gray-800"
             )}>
               <Settings className={cn(
                 "mr-3 h-5 w-5",
-                location === "/settings" ? "text-primary-500" : "text-neutral-500"
+                location === "/settings" ? "text-primary-500 dark:text-primary-400" : "text-neutral-500 dark:text-neutral-400"
               )} />
               Settings
             </div>
@@ -97,11 +97,11 @@ export default function Sidebar() {
         </nav>
         
         {/* Project List */}
-        <div className="px-4 py-4 border-t border-neutral-200">
-          <h2 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Your Projects</h2>
+        <div className="px-4 py-4 border-t border-neutral-200 dark:border-gray-800">
+          <h2 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Your Projects</h2>
           {projectsLoading ? (
             <div className="flex justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+              <Loader2 className="h-4 w-4 animate-spin text-neutral-400 dark:text-neutral-500" />
             </div>
           ) : recentProjects.length > 0 ? (
             <div className="mt-3 space-y-2">
@@ -110,8 +110,8 @@ export default function Sidebar() {
                   <div className={cn(
                     "group flex items-center px-2 py-2 text-sm rounded-md cursor-pointer",
                     location === `/project/${project.id}` 
-                      ? "bg-primary-50 text-primary-700" 
-                      : "text-neutral-700 hover:bg-neutral-100"
+                      ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400" 
+                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-gray-800"
                   )}>
                     <span className="truncate">{project.name}</span>
                   </div>
@@ -119,11 +119,11 @@ export default function Sidebar() {
               ))}
             </div>
           ) : (
-            <div className="mt-3 px-2 py-3 text-sm text-neutral-500">
+            <div className="mt-3 px-2 py-3 text-sm text-neutral-500 dark:text-neutral-400">
               <p>No projects yet</p>
               <Button 
                 variant="link" 
-                className="px-0 py-0 h-auto text-primary-500"
+                className="px-0 py-0 h-auto text-primary-500 dark:text-primary-400"
                 onClick={() => window.location.href="/projects"}
               >
                 Create your first project
@@ -136,7 +136,7 @@ export default function Sidebar() {
       {/* User profile */}
       {user && (
         <div className="mt-auto">
-          <div className="flex flex-col px-4 py-4 border-t border-neutral-200">
+          <div className="flex flex-col px-4 py-4 border-t border-neutral-200 dark:border-gray-800">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-gradient-to-r from-primary-400 to-primary-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
@@ -144,17 +144,17 @@ export default function Sidebar() {
                 </div>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-neutral-800">{user.name}</p>
-                <p className="text-xs text-neutral-500">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
+                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">{user.name}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
               </div>
             </div>
             
-            <div className="flex mt-3 pt-3 border-t border-neutral-100">
-              <Link href="/settings" className="flex items-center text-sm text-neutral-600 mr-4 hover:text-primary-600 transition-colors">
+            <div className="flex mt-3 pt-3 border-t border-neutral-100 dark:border-gray-800">
+              <Link href="/settings" className="flex items-center text-sm text-neutral-600 dark:text-neutral-400 mr-4 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
                 <Settings className="h-4 w-4 mr-1.5" />
                 Account
               </Link>
-              <Link href="/logout" className="flex items-center text-sm text-neutral-600 hover:text-red-600 transition-colors">
+              <Link href="/logout" className="flex items-center text-sm text-neutral-600 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
                 <LogOut className="h-4 w-4 mr-1.5" />
                 Sign out
               </Link>

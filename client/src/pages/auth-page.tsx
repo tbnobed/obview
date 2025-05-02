@@ -151,7 +151,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
+    <div className="flex min-h-screen bg-neutral-50 dark:bg-gray-900">
       {/* Left Side - Forms */}
       <div className="flex flex-col justify-center flex-1 px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
         <div className="w-full max-w-sm mx-auto lg:w-96">
@@ -268,7 +268,7 @@ export default function AuthPage() {
                     </Form>
                   </CardContent>
                   <CardFooter className="flex flex-col space-y-4">
-                    <div className="text-sm text-center text-neutral-500">
+                    <div className="text-sm text-center text-neutral-500 dark:text-neutral-400">
                       Don't have an account?{" "}
                       <Button 
                         variant="link" 
@@ -373,7 +373,7 @@ export default function AuthPage() {
                     </Form>
                   </CardContent>
                   <CardFooter className="flex flex-col space-y-4">
-                    <div className="text-sm text-center text-neutral-500">
+                    <div className="text-sm text-center text-neutral-500 dark:text-neutral-400">
                       Already have an account?{" "}
                       <Button 
                         variant="link" 
