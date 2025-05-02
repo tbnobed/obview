@@ -20,6 +20,7 @@ import {
 
 export default function Header() {
   const { user, logoutMutation } = useAuth();
+  const { isCollapsed, toggleSidebar } = useSidebar();
   const [_, navigate] = useLocation();
   
   const handleLogout = () => {
@@ -80,9 +81,26 @@ export default function Header() {
       </div>
       
       {/* Desktop header - visible only on desktop */}
-      <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 items-center justify-end px-4 py-2 h-16 space-x-3">
-        <ThemeToggle />
-        {user && <UserProfileDropdown />}
+      <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 items-center justify-between px-4 py-2 h-16">
+        {/* Left side - Toggle sidebar button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-gray-800"
+          onClick={toggleSidebar}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <ChevronRight className={cn(
+            "h-5 w-5 transition-transform duration-200",
+            isCollapsed ? "" : "rotate-180"
+          )} />
+        </Button>
+        
+        {/* Right side - User controls */}
+        <div className="flex items-center space-x-3">
+          <ThemeToggle />
+          {user && <UserProfileDropdown />}
+        </div>
       </div>
     </>
   );

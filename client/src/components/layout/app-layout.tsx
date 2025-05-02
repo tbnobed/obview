@@ -81,8 +81,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-[#0a0d14]">
-      {/* Hover detection zone */}
-      {isCollapsed && !isHovering && (
+      {/* Hover detection zone - always present when sidebar is collapsed */}
+      {isCollapsed && (
         <div 
           className="hidden md:block absolute left-0 top-0 w-4 h-full z-30"
           onMouseEnter={handleMouseEnter}
@@ -99,25 +99,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
         onMouseLeave={handleMouseLeave}
       >
         <Sidebar />
-        
-        {/* Toggle sidebar button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-16 left-[18rem] z-10 bg-white dark:bg-gray-900 rounded-full border border-neutral-200 dark:border-gray-800 shadow-sm"
-          onClick={toggleSidebar}
-        >
-          <ChevronRight className={cn(
-            "h-4 w-4 transition-transform",
-            isCollapsed ? "" : "rotate-180"
-          )} />
-        </Button>
       </div>
       
-      {/* Hover sidebar */}
+      {/* Hover sidebar - shown when hover is active */}
       {isCollapsed && isHovering && (
         <div 
-          ref={sidebarRef}
           className="hidden md:block absolute left-0 top-0 h-full z-40 shadow-xl transition-all duration-300 ease-in-out"
           onMouseLeave={handleMouseLeave}
         >
