@@ -1778,7 +1778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: req.user.id,
           action: "invited_user_to_system",
           entityType: "system",
-          entityId: 0, // Using 0 for system-wide actions
+          entityId: invitation.id, // Use invitation ID as the entity ID
           metadata: { inviteeEmail: email, role, emailSent }
         });
       } else {
@@ -2031,7 +2031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: req.user.id,
             action: "accepted_system_role",
             entityType: "system",
-            entityId: 0, // Using 0 for system-wide actions
+            entityId: invitation.id, // Use invitation ID as the entity ID
             metadata: { 
               invitationId: invitation.id,
               role: invitation.role
@@ -2123,7 +2123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: req.user.id,
           action: "cancelled_system_invitation",
           entityType: "system",
-          entityId: 0, // Using 0 for system-wide actions
+          entityId: invitation.id, // Use invitation ID as the entity ID
           metadata: { inviteeEmail: invitation.email }
         });
       } else {
@@ -2263,7 +2263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: req.user.id,
           action: "resent_system_invitation_email",
           entityType: "system",
-          entityId: 0, // Using 0 for system-wide actions
+          entityId: invitation.id, // Use invitation ID as the entity ID
           metadata: { inviteeEmail: invitation.email, emailSent }
         });
       } else {
