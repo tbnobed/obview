@@ -97,7 +97,7 @@ export default function HomePage() {
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Button 
                 variant="outline" 
-                className="h-auto py-4 flex flex-col items-center justify-center text-center gap-2 dark:bg-[#0a0d14] dark:border-gray-800 dark:hover:bg-gray-800" 
+                className="h-auto py-4 flex flex-col items-center justify-center text-center gap-2 dark:bg-[#026d55] dark:border-[#026d55] dark:text-white dark:hover:bg-[#025943]" 
                 onClick={() => navigate("/projects/new")}
               >
                 <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-gray-800 flex items-center justify-center">
@@ -111,7 +111,7 @@ export default function HomePage() {
               
               <Button 
                 variant="outline" 
-                className="h-auto py-4 flex flex-col items-center justify-center text-center gap-2 dark:bg-[#026d55]" 
+                className="h-auto py-4 flex flex-col items-center justify-center text-center gap-2 dark:bg-[#026d55] dark:border-[#026d55] dark:text-white dark:hover:bg-[#025943]" 
                 onClick={() => navigate("/projects")}
               >
                 <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-white/10 flex items-center justify-center">
@@ -128,7 +128,7 @@ export default function HomePage() {
               {user?.role === "admin" && (
                 <Button 
                   variant="outline" 
-                  className="h-auto py-4 flex flex-col items-center justify-center text-center gap-2 dark:bg-[#026d55]" 
+                  className="h-auto py-4 flex flex-col items-center justify-center text-center gap-2 dark:bg-[#026d55] dark:border-[#026d55] dark:text-white dark:hover:bg-[#025943]" 
                   onClick={() => navigate("/admin")}
                 >
                   <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-white/10 flex items-center justify-center">
