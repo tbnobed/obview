@@ -74,7 +74,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
       
       // 1. Direct approach: set a global variable on the window object
       try {
-        (window as any).OBview_jumpToMedia = {
+        (window as any).Obviu_jumpToMedia = {
           fileId: comment.file.id,
           timestamp: timestamp,
           projectId: projectId,

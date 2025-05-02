@@ -118,13 +118,13 @@ export default function ProjectPage() {
     };
     
     // Add event listeners
-    window.addEventListener('obview_jump_to_timestamp', handleJumpEvent);
-    document.addEventListener('obview_jump_to_timestamp_backup', handleBackupEvent);
+    window.addEventListener('obviu_jump_to_timestamp', handleJumpEvent);
+    document.addEventListener('obviu_jump_to_timestamp_backup', handleBackupEvent);
     
     // Also check for our global window variable
     const checkWindowVar = () => {
       try {
-        const jumpData = (window as any).OBview_jumpToMedia;
+        const jumpData = (window as any).Obviu_jumpToMedia;
         if (jumpData && jumpData.projectId === projectId) {
           console.log("⚡ Found global jump data:", jumpData);
           setSelectedFileId(jumpData.fileId);
@@ -132,11 +132,11 @@ export default function ProjectPage() {
           setActiveTab("media");
           // Clear it so it's only used once
           try {
-            delete (window as any).OBview_jumpToMedia;
+            delete (window as any).Obviu_jumpToMedia;
           } catch (e) {
             console.error("Failed to delete global variable:", e);
             // Alternative approach to clear it
-            (window as any).OBview_jumpToMedia = null;
+            (window as any).Obviu_jumpToMedia = null;
           }
         }
       } catch (e) {
@@ -152,8 +152,8 @@ export default function ProjectPage() {
     
     // Clean up
     return () => {
-      window.removeEventListener('obview_jump_to_timestamp', handleJumpEvent);
-      document.removeEventListener('obview_jump_to_timestamp_backup', handleBackupEvent);
+      window.removeEventListener('obviu_jump_to_timestamp', handleJumpEvent);
+      document.removeEventListener('obviu_jump_to_timestamp_backup', handleBackupEvent);
       clearInterval(intervalId);
     };
   }, [projectId]);
