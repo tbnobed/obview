@@ -97,15 +97,15 @@ export default function HomePage() {
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Button 
                 variant="outline" 
-                className="h-auto py-4 flex flex-col items-center justify-center text-center gap-2" 
+                className="h-auto py-4 flex flex-col items-center justify-center text-center gap-2 dark:bg-[#0a0d14] dark:border-gray-800 dark:hover:bg-gray-800" 
                 onClick={() => navigate("/projects/new")}
               >
-                <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center">
-                  <Plus className="h-5 w-5 text-primary-500" />
+                <div className="h-10 w-10 rounded-full bg-primary-50 dark:bg-gray-800 flex items-center justify-center">
+                  <Plus className="h-5 w-5 text-primary-500 dark:text-white" />
                 </div>
                 <div>
-                  <div className="font-medium">New Project</div>
-                  <div className="text-xs text-neutral-500">Create a new project container</div>
+                  <div className="font-medium dark:text-white">New Project</div>
+                  <div className="text-xs text-neutral-500 dark:text-gray-400">Create a new project container</div>
                 </div>
               </Button>
               
