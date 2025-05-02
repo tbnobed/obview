@@ -457,8 +457,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only admins can change roles" });
       }
       
-      // Don't allow updating password through this endpoint
-      const { password, ...updateData } = req.body;
+      let updateData;
+      
+      // Handle password update (allow for admins)
+      if (req.body.password && req.user.role === "admin") {
+        // Admin is updating a password - hash it first
+        const hashedPassword = await hashPassword(req.body.password);
+        const { password, ...restData } = req.body;
+        updateData = { ...restData, password: hashedPassword };
+        console.log("Admin updating user password");
+      } else {
+        // Regular update without password change
+        const { password, ...restData } = req.body;
+        updateData = restData;
+      }
       
       const updatedUser = await storage.updateUser(userId, updateData);
       

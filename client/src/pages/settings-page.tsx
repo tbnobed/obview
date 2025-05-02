@@ -104,15 +104,61 @@ export default function SettingsPage() {
           description: "Your account information has been updated successfully.",
         });
       } else if (activeTab === "password") {
-        // Password update logic would go here
-        // This would typically require a separate endpoint
-        // that validates the current password before allowing changes
+        // Password update logic
+        if (!values.newPassword || !values.confirmPassword) {
+          toast({
+            title: "Missing fields",
+            description: "Please provide both new password and confirmation",
+            variant: "destructive",
+          });
+          return;
+        }
         
-        toast({
-          title: "Password update not implemented",
-          description: "Password update functionality is not fully implemented yet.",
-          variant: "destructive",
-        });
+        if (values.newPassword !== values.confirmPassword) {
+          toast({
+            title: "Passwords don't match",
+            description: "New password and confirmation must match",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        try {
+          const response = await fetch(`/api/users/${user.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              password: values.newPassword,
+            }),
+            credentials: 'include',
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update password');
+          }
+          
+          toast({
+            title: "Password updated",
+            description: "Your password has been updated successfully",
+          });
+          
+          // Reset password fields
+          form.reset({
+            ...form.getValues(),
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          });
+        } catch (error: any) {
+          toast({
+            title: "Failed to update password",
+            description: error.message || "There was an error updating your password",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error: any) {
       toast({
