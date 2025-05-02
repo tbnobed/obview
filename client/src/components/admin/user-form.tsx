@@ -1,7 +1,8 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { InsertUser, insertUserSchema } from "@shared/schema";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -11,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
 
-// Extend the schema to include confirmPassword
-const userFormSchema = insertUserSchema.extend({
+// Extend the schema for new user creation (with password requirements)
+const createUserSchema = insertUserSchema.extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(1, "Please confirm the password"),
 }).refine(data => data.password === data.confirmPassword, {
@@ -20,7 +21,14 @@ const userFormSchema = insertUserSchema.extend({
   path: ["confirmPassword"],
 });
 
-type UserFormValues = z.infer<typeof userFormSchema>;
+// Edit schema is more relaxed - passwords are optional for updates
+const editUserSchema = insertUserSchema.extend({
+  password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  confirmPassword: z.string().optional(),
+}).refine(data => !data.password || data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
 
 interface UserFormProps {
   userId?: number;
@@ -31,18 +39,47 @@ export default function UserForm({ userId, onSuccess }: UserFormProps) {
   const { toast } = useToast();
   const isEditMode = !!userId;
   
-  // Form setup
+  // Choose schema based on whether we're editing or creating
+  const formSchema = isEditMode ? editUserSchema : createUserSchema;
+  type UserFormValues = z.infer<typeof formSchema>;
+  
+  // Form setup with default values
   const form = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       username: "",
       email: "",
-      password: "",
-      confirmPassword: "",
+      password: isEditMode ? undefined : "", // Only required for new users
+      confirmPassword: isEditMode ? undefined : "",
       role: "viewer",
     },
+    mode: "onChange"
   });
+
+  // Query to get user details if in edit mode
+  const { data: userData, isLoading: userDataLoading } = useQuery({
+    queryKey: [`/api/users/${userId}`],
+    queryFn: async () => {
+      if (!userId) return null;
+      const response = await apiRequest("GET", `/api/users/${userId}`);
+      return await response.json();
+    },
+    enabled: isEditMode, // Only run this query if we're in edit mode
+  });
+
+  // Update form values when user data is loaded
+  useEffect(() => {
+    if (userData && isEditMode) {
+      // Don't include password fields when populating the form
+      form.reset({
+        name: userData.name,
+        username: userData.username,
+        email: userData.email,
+        role: userData.role,
+      });
+    }
+  }, [userData, form, isEditMode]);
 
   // Create user mutation
   const createUserMutation = useMutation({
@@ -68,11 +105,53 @@ export default function UserForm({ userId, onSuccess }: UserFormProps) {
     },
   });
 
-  // Submit handler
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async (data: Partial<UserFormValues>) => {
+      const { confirmPassword, ...updateData } = data;
+      // Only include password if it's provided
+      if (!updateData.password) {
+        delete updateData.password;
+      }
+      return await apiRequest("PATCH", `/api/users/${userId}`, updateData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "User updated",
+        description: "The user has been updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/users/${userId}`] });
+      if (onSuccess) onSuccess();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update user",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle form submission based on mode
   const onSubmit = (data: UserFormValues) => {
-    const { confirmPassword, ...userData } = data;
-    createUserMutation.mutate(userData);
+    if (isEditMode) {
+      const { confirmPassword, ...updateData } = data;
+      updateUserMutation.mutate(updateData);
+    } else {
+      const { confirmPassword, ...createData } = data;
+      createUserMutation.mutate(createData);
+    }
   };
+
+  // Show loading state when fetching user data
+  if (isEditMode && userDataLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -154,9 +233,11 @@ export default function UserForm({ userId, onSuccess }: UserFormProps) {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>
+                {isEditMode ? "New Password (leave blank to keep current)" : "Password"}
+              </FormLabel>
               <FormControl>
-                <Input type="password" {...field} />
+                <Input type="password" {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -168,9 +249,11 @@ export default function UserForm({ userId, onSuccess }: UserFormProps) {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
+              <FormLabel>
+                {isEditMode ? "Confirm New Password" : "Confirm Password"}
+              </FormLabel>
               <FormControl>
-                <Input type="password" {...field} />
+                <Input type="password" {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -180,12 +263,12 @@ export default function UserForm({ userId, onSuccess }: UserFormProps) {
         <Button 
           type="submit" 
           className="w-full"
-          disabled={createUserMutation.isPending}
+          disabled={createUserMutation.isPending || updateUserMutation.isPending}
         >
-          {createUserMutation.isPending && (
+          {(createUserMutation.isPending || updateUserMutation.isPending) && (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           )}
-          Create User
+          {isEditMode ? "Update User" : "Create User"}
         </Button>
       </form>
     </Form>
