@@ -9,7 +9,7 @@ export default function PrivacyPage() {
           <h1 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">Privacy Policy</h1>
           
           <section className="mb-8">
-            <p className="text-sm text-gray-500 mb-6">Last Updated: May 2, 2025</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Last Updated: May 2, 2025</p>
             
             <p className="mb-4">
               At Obviu.io, we take your privacy seriously. This Privacy Policy explains how we collect, 
