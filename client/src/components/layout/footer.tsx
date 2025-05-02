@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center mb-3 md:mb-0">
             <span className="text-xs text-gray-500">
-              &copy; {currentYear} OBview
+              &copy; {currentYear} Obviu.io
             </span>
           </div>
           
@@ -34,14 +34,14 @@ export default function Footer() {
               </span>
             </Link>
             <a 
-              href="mailto:contact@obview.io" 
+              href="mailto:contact@obviu.io" 
               className="text-xs text-gray-500 hover:text-primary-500 transition-colors flex items-center"
             >
               <Mail className="h-3 w-3 mr-1" />
               Contact
             </a>
             <a 
-              href="https://github.com/obview/obview" 
+              href="https://github.com/obviu/obviu" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-xs text-gray-500 hover:text-primary-500 transition-colors flex items-center"

@@ -20,7 +20,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md' }) => {
       <div className={`flex items-center cursor-pointer ${className}`}>
         <img 
           src={logoImage} 
-          alt="OBview.io" 
+          alt="Obviu.io" 
           className={`${sizeClasses[size]} object-contain drop-shadow-[0_0_10px_rgba(20,184,166,0.6)]`} 
         />
       </div>
