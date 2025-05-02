@@ -93,7 +93,7 @@ nano .env
 Make sure to update:
 - `POSTGRES_PASSWORD`: Use a strong, random password
 - `SESSION_SECRET`: Generate a secure random string
-- `SENDGRID_API_KEY`: Your SendGrid API key for email functionality
+- `SENDGRID_API_KEY`: Your SendGrid API key for email functionality (required for password reset and project invitations)
 - `ADMIN_USERNAME`, `ADMIN_PASSWORD`, etc.: Credentials for the initial admin user
 
 ### 4. Build and Start the Application
@@ -490,6 +490,46 @@ docker-compose exec app netstat -tuln | grep 5000
 # Verify port mapping is correct
 docker-compose port app 5000
 ```
+
+### Email Functionality and Deliverability
+
+The application uses SendGrid for sending emails, which is essential for:
+1. Password reset functionality
+2. User invitations to projects and the system
+
+When deploying to production, ensure:
+
+1. **SendGrid Configuration**:
+   - Verify your SendGrid API key is correctly set in the environment variables
+   - Use a verified sender identity in your SendGrid account for the `EMAIL_FROM` variable
+   - Create or modify email templates in `server/utils/sendgrid.ts`
+
+2. **Email Template Guidelines for Deliverability**:
+   - Keep subject lines simple (e.g., "Reset your Obviu.io password" instead of "Password Reset Request - Obviu.io")
+   - Avoid excessive exclamation marks or spam-trigger words in subjects
+   - Use consistent color schemes across templates (blue #0ea5e9 for password resets, purple #6366f1 for invitations)
+   - Include plain text alternatives along with HTML content
+   - Ensure email templates have proper spacing and aren't too content-dense
+   - Use proper HTML structure with inline CSS
+
+3. **Database Requirements**:
+   - Password reset functionality requires the `password_resets` table in the database
+   - This table is automatically created during initialization (in `init-scripts/01-init-schema.sql`)
+   - If password reset emails aren't being delivered, check the SendGrid logs for delivery issues
+
+4. **Email Delivery Troubleshooting**:
+   ```bash
+   # Check application logs for email sending attempts
+   docker-compose logs app | grep -i "email"
+   
+   # Check for specific SendGrid errors
+   docker-compose logs app | grep -i "sendgrid"
+   
+   # Test sending a password reset email manually via the API
+   curl -X POST http://localhost:3000/api/reset-password-request \
+     -H "Content-Type: application/json" \
+     -d '{"email":"user@example.com"}'
+   ```
 
 ### Database Connectivity Issues
 
