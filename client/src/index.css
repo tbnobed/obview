@@ -27,20 +27,20 @@
 }
 
 .dark {
-  /* Dark mode colors - significantly darker */
-  --background: 220 40% 3%; /* Much darker background */
+  /* Dark mode colors - extremely dark for better contrast */
+  --background: 220 40% 2%; /* Extremely dark background */
   --foreground: 220 10% 98%;
-  --muted: 220 20% 8%; /* Darker muted background */
-  --muted-foreground: 220 10% 70%;
-  --popover: 220 40% 3%;
+  --muted: 220 20% 5%; /* Very dark muted background */
+  --muted-foreground: 220 10% 75%;
+  --popover: 220 40% 2%;
   --popover-foreground: 220 10% 98%;
-  --card: 220 30% 5%; /* Slightly lighter than background for cards */
+  --card: 220 30% 4%; /* Slightly lighter than background for cards */
   --card-foreground: 220 10% 98%;
-  --border: 220 20% 12%; /* Visible but subtle borders */
-  --input: 220 20% 10%;
+  --border: 220 20% 10%; /* Visible but subtle borders */
+  --input: 220 20% 8%;
   --primary: 175 70% 41%; /* Kept primary color consistent */
   --primary-foreground: 175 100% 99%;
-  --secondary: 220 20% 10%;
+  --secondary: 220 20% 8%;
   --secondary-foreground: 220 10% 98%;
   --accent: 175 70% 41%;
   --accent-foreground: 175 100% 99%;
@@ -62,9 +62,9 @@
   }
 
   .dark body {
-    /* Subtle gradient for dark mode - barely noticeable but adds depth */
-    background-image: radial-gradient(circle at 25% 25%, rgba(20, 184, 166, 0.02) 0%, transparent 50%),
-                      radial-gradient(circle at 75% 75%, rgba(20, 184, 166, 0.02) 0%, transparent 50%);
+    /* Extremely subtle gradient for dark mode - almost imperceptible but adds minimal depth */
+    background-image: radial-gradient(circle at 25% 25%, rgba(20, 184, 166, 0.01) 0%, transparent 50%),
+                      radial-gradient(circle at 75% 75%, rgba(20, 184, 166, 0.01) 0%, transparent 50%);
   }
 }
 
