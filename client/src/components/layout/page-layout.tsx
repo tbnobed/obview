@@ -4,6 +4,7 @@ import Footer from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Home, LogIn } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -14,9 +15,9 @@ export default function PageLayout({ children }: PageLayoutProps) {
   const { user } = useAuth();
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-foreground">
       {/* Simple Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white dark:bg-gray-900 shadow dark:shadow-gray-800">
         <div className="container mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <Link href="/">
@@ -27,7 +28,9 @@ export default function PageLayout({ children }: PageLayoutProps) {
               </div>
             </Link>
             
-            <div className="flex space-x-2">
+            <div className="flex items-center space-x-3">
+              <ThemeToggle />
+              
               {user ? (
                 <Button variant="outline" asChild>
                   <Link href="/">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from "@/components/layout/sidebar";
 import Logo from "@/components/ui/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,16 +56,17 @@ export default function Header() {
   return (
     <>
       {/* Mobile header - hidden on desktop */}
-      <div className="bg-white border-b border-neutral-200 flex items-center justify-between px-4 py-2 sm:px-6 md:hidden">
+      <div className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 flex items-center justify-between px-4 py-2 sm:px-6 md:hidden">
         <Logo size="sm" />
         
         <div className="flex items-center space-x-3">
+          <ThemeToggle />
           {user && <UserProfileDropdown />}
           
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6 text-neutral-500" />
+                <Menu className="h-6 w-6 text-neutral-500 dark:text-neutral-400" />
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
@@ -76,7 +78,8 @@ export default function Header() {
       </div>
       
       {/* Desktop header - visible only on desktop */}
-      <div className="hidden md:flex bg-white border-b border-neutral-200 items-center justify-end px-4 py-2 h-16">
+      <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 items-center justify-end px-4 py-2 h-16 space-x-3">
+        <ThemeToggle />
         {user && <UserProfileDropdown />}
       </div>
     </>
