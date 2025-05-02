@@ -949,7 +949,12 @@ export class DatabaseStorage implements IStorage {
     const [passwordReset] = await db
       .select()
       .from(passwordResets)
-      .where(eq(passwordResets.token, token));
+      .where(
+        and(
+          eq(passwordResets.token, token),
+          eq(passwordResets.isUsed, false)
+        )
+      );
     return passwordReset;
   }
 
