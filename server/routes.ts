@@ -60,6 +60,11 @@ const upload = multer({
   storage: storage_config,
   limits: {
     fileSize: 5 * 1024 * 1024 * 1024, // 5GB limit
+  },
+  // Handle multer errors
+  onError: function (err, next) {
+    console.error('Multer error:', err);
+    next(err);
   }
 });
 

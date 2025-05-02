@@ -4,8 +4,14 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 // Configure Express to handle large files (5GB limit)
-app.use(express.json({ limit: '5gb' }));
-app.use(express.urlencoded({ extended: false, limit: '5gb' }));
+app.use(express.json({ limit: '5120mb' }));
+app.use(express.urlencoded({ extended: false, limit: '5120mb' }));
+
+// Increase the HTTP request timeout for large file uploads
+app.use((req, res, next) => {
+  res.setTimeout(3600000); // 1 hour timeout
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
