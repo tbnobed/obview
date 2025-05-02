@@ -1069,9 +1069,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if the file physically exists before sending
-      try {
-        await fs.access(file.filePath);
-      } catch (err) {
+      const fileExists = await fileSystem.fileExists(file.filePath);
+      if (!fileExists) {
         console.error(`File ${fileId} (${file.filename}) physical file not found at ${file.filePath}`);
         
         // If file doesn't physically exist but is not marked as unavailable, mark it now
@@ -1123,9 +1122,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if the file physically exists before sending
-      try {
-        await fs.access(file.filePath);
-      } catch (err) {
+      const fileExists = await fileSystem.fileExists(file.filePath);
+      if (!fileExists) {
         console.error(`File ${fileId} (${file.filename}) physical file not found at ${file.filePath}`);
         
         // If file doesn't physically exist but is not marked as unavailable, mark it now
