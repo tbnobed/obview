@@ -329,15 +329,15 @@ export default function ProjectPage() {
   return (
     <AppLayout>
       {/* Project Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white shadow-sm dark:bg-[#0f1218] dark:border-b dark:border-gray-800">
         <div className="px-4 sm:px-6 lg:px-8 py-4 md:flex md:items-center md:justify-between">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold text-neutral-900">{project.name}</h1>
+            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">{project.name}</h1>
             <div className="flex items-center mt-1">
-              <span className="text-sm text-neutral-500">
+              <span className="text-sm text-neutral-500 dark:text-gray-400">
                 Updated {formatTimeAgo(new Date(project.updatedAt))}
               </span>
-              <span className="mx-2 text-neutral-300">•</span>
+              <span className="mx-2 text-neutral-300 dark:text-gray-700">•</span>
               {getStatusBadge(project.status)}
             </div>
           </div>
@@ -502,14 +502,14 @@ export default function ProjectPage() {
         
         {/* Tabs */}
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="border-b border-neutral-200">
+          <div className="border-b border-neutral-200 dark:border-gray-800">
             <nav className="-mb-px flex space-x-8">
               <a 
                 href="#" 
                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "media" 
                     ? "border-primary-400 text-primary-500" 
-                    : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"
+                    : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
                 }`}
                 onClick={(e) => { e.preventDefault(); setActiveTab("media"); }}
               >
@@ -520,7 +520,7 @@ export default function ProjectPage() {
                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "comments" 
                     ? "border-primary-400 text-primary-500" 
-                    : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"
+                    : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
                 }`}
                 onClick={(e) => { e.preventDefault(); setActiveTab("comments"); }}
               >
@@ -531,7 +531,7 @@ export default function ProjectPage() {
                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "activity" 
                     ? "border-primary-400 text-primary-500" 
-                    : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"
+                    : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
                 }`}
                 onClick={(e) => { e.preventDefault(); setActiveTab("activity"); }}
               >
@@ -542,7 +542,7 @@ export default function ProjectPage() {
                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "settings" 
                     ? "border-primary-400 text-primary-500" 
-                    : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"
+                    : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
                 }`}
                 onClick={(e) => { e.preventDefault(); setActiveTab("settings"); }}
               >
@@ -554,9 +554,9 @@ export default function ProjectPage() {
       </header>
       
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-neutral-100 p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 overflow-y-auto bg-neutral-100 dark:bg-[#080b12] p-4 sm:p-6 lg:p-8">
         {activeTab === "media" && (
-          <div className="bg-white rounded-lg shadow">
+          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900">
             {filesLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -571,11 +571,11 @@ export default function ProjectPage() {
               />
             ) : (
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="h-16 w-16 rounded-full bg-primary-50 flex items-center justify-center mb-4">
+                <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
                   <FileVideo className="h-8 w-8 text-primary-400" />
                 </div>
-                <h3 className="text-lg font-medium text-neutral-900 mb-2">No media files yet</h3>
-                <p className="text-neutral-500 text-center mb-6 max-w-md">
+                <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">No media files yet</h3>
+                <p className="text-neutral-500 dark:text-gray-400 text-center mb-6 max-w-md">
                   Upload your first media file to start the review process
                 </p>
                 {isEditor && (
@@ -589,8 +589,8 @@ export default function ProjectPage() {
         )}
 
         {activeTab === "comments" && (
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 className="text-lg font-medium mb-4 flex items-center">
+          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-4 sm:p-6">
+            <h2 className="text-lg font-medium mb-4 flex items-center dark:text-white">
               <MessageSquare className="h-5 w-5 mr-2 text-primary" />
               All Comments
             </h2>
@@ -600,8 +600,8 @@ export default function ProjectPage() {
         )}
 
         {activeTab === "activity" && (
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 className="text-lg font-medium mb-4 flex items-center">
+          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-4 sm:p-6">
+            <h2 className="text-lg font-medium mb-4 flex items-center dark:text-white">
               <Clock className="h-5 w-5 mr-2 text-primary" />
               Activity Log
             </h2>
@@ -611,11 +611,11 @@ export default function ProjectPage() {
         )}
 
         {activeTab === "settings" && (
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 className="text-lg font-medium mb-4">Project Settings</h2>
+          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-4 sm:p-6">
+            <h2 className="text-lg font-medium mb-4 dark:text-white">Project Settings</h2>
             <div className="space-y-6">
               <div>
-                <h3 className="text-base font-medium mb-2">Project Details</h3>
+                <h3 className="text-base font-medium mb-2 dark:text-gray-200">Project Details</h3>
                 <ProjectForm 
                   projectId={projectId} 
                   className="max-w-lg"
@@ -623,9 +623,9 @@ export default function ProjectPage() {
               </div>
               
               <div>
-                <h3 className="text-base font-medium mb-2">Team Members</h3>
+                <h3 className="text-base font-medium mb-2 dark:text-gray-200">Team Members</h3>
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-neutral-500">
+                  <p className="text-neutral-500 dark:text-gray-400">
                     Manage who has access to this project
                   </p>
                 </div>
