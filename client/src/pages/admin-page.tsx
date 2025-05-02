@@ -60,8 +60,8 @@ export default function AdminPage() {
       <div className="p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Admin Dashboard</h1>
-            <p className="text-neutral-500">Manage users, projects, and system settings</p>
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600 bg-clip-text text-transparent">Admin Dashboard</h1>
+            <p className="text-neutral-500 dark:text-gray-300">Manage users, projects, and system settings</p>
           </div>
           
           <div className="flex gap-3">
@@ -164,9 +164,9 @@ export default function AdminPage() {
           
           <TabsContent value="users">
             <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>
+              <CardHeader className="border-b dark:border-gray-800">
+                <CardTitle className="text-primary-600 dark:text-primary-400">User Management</CardTitle>
+                <CardDescription className="dark:text-gray-400">
                   View and manage user accounts
                 </CardDescription>
               </CardHeader>
@@ -178,9 +178,9 @@ export default function AdminPage() {
           
           <TabsContent value="projects">
             <Card>
-              <CardHeader>
-                <CardTitle>Project Management</CardTitle>
-                <CardDescription>
+              <CardHeader className="border-b dark:border-gray-800">
+                <CardTitle className="text-primary-600 dark:text-primary-400">Project Management</CardTitle>
+                <CardDescription className="dark:text-gray-400">
                   View and manage all projects across the system
                 </CardDescription>
               </CardHeader>
@@ -243,9 +243,9 @@ export default function AdminPage() {
           
           <TabsContent value="activity">
             <Card>
-              <CardHeader>
-                <CardTitle>System Activity</CardTitle>
-                <CardDescription>
+              <CardHeader className="border-b dark:border-gray-800">
+                <CardTitle className="text-primary-600 dark:text-primary-400">System Activity</CardTitle>
+                <CardDescription className="dark:text-gray-400">
                   View system-wide activity and logs
                 </CardDescription>
               </CardHeader>
@@ -265,9 +265,9 @@ export default function AdminPage() {
           
           <TabsContent value="settings">
             <Card>
-              <CardHeader>
-                <CardTitle>System Settings</CardTitle>
-                <CardDescription>
+              <CardHeader className="border-b dark:border-gray-800">
+                <CardTitle className="text-primary-600 dark:text-primary-400">System Settings</CardTitle>
+                <CardDescription className="dark:text-gray-400">
                   Configure system-wide settings
                 </CardDescription>
               </CardHeader>

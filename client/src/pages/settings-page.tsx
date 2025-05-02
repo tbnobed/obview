@@ -139,8 +139,8 @@ export default function SettingsPage() {
     <AppLayout>
       <div className="container py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600 bg-clip-text text-transparent">Settings</h1>
+          <p className="text-muted-foreground dark:text-gray-300">Manage your account settings and preferences</p>
         </div>
 
         <Tabs defaultValue="account" value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -151,9 +151,9 @@ export default function SettingsPage() {
           
           <TabsContent value="account">
             <Card>
-              <CardHeader>
-                <CardTitle>Account Information</CardTitle>
-                <CardDescription>Update your account information and email address</CardDescription>
+              <CardHeader className="border-b dark:border-gray-800">
+                <CardTitle className="text-primary-600 dark:text-primary-400">Account Information</CardTitle>
+                <CardDescription className="dark:text-gray-400">Update your account information and email address</CardDescription>
               </CardHeader>
               <CardContent>
                 <Form {...form}>
@@ -208,9 +208,9 @@ export default function SettingsPage() {
           
           <TabsContent value="password">
             <Card>
-              <CardHeader>
-                <CardTitle>Change Password</CardTitle>
-                <CardDescription>Update your password for better security</CardDescription>
+              <CardHeader className="border-b dark:border-gray-800">
+                <CardTitle className="text-primary-600 dark:text-primary-400">Change Password</CardTitle>
+                <CardDescription className="dark:text-gray-400">Update your password for better security</CardDescription>
               </CardHeader>
               <CardContent>
                 <Form {...form}>
