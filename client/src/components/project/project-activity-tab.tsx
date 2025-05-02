@@ -9,7 +9,7 @@ export function ProjectActivityTab({ projectId }: { projectId: number }) {
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-[#026d55]" />
       </div>
     );
   }

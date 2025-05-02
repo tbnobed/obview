@@ -606,7 +606,7 @@ export default function ProjectPage() {
         {activeTab === "comments" && (
           <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-4 sm:p-6">
             <h2 className="text-lg font-medium mb-4 flex items-center dark:text-white">
-              <MessageSquare className="h-5 w-5 mr-2 text-primary" />
+              <MessageSquare className="h-5 w-5 mr-2 text-primary dark:text-[#026d55]" />
               All Comments
             </h2>
             
@@ -617,7 +617,7 @@ export default function ProjectPage() {
         {activeTab === "activity" && (
           <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-4 sm:p-6">
             <h2 className="text-lg font-medium mb-4 flex items-center dark:text-white">
-              <Clock className="h-5 w-5 mr-2 text-primary" />
+              <Clock className="h-5 w-5 mr-2 text-primary dark:text-[#026d55]" />
               Activity Log
             </h2>
             
@@ -655,7 +655,7 @@ export default function ProjectPage() {
                 {pendingInvitations && pendingInvitations.length > 0 && (
                   <div className="mt-6">
                     <h4 className="text-sm font-medium mb-3 flex items-center">
-                      <Mail className="h-4 w-4 mr-1.5 text-gray-500" />
+                      <Mail className="h-4 w-4 mr-1.5 text-gray-500 dark:text-[#026d55]" />
                       Pending Invitations
                     </h4>
                     <ProjectInvitations projectId={projectId} />

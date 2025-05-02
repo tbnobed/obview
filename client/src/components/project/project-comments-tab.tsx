@@ -24,7 +24,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-[#026d55]" />
       </div>
     );
   }
@@ -211,7 +211,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    className="h-6 px-2 py-0 text-xs bg-primary-100 text-primary hover:text-primary-600 hover:bg-primary-200 border-primary-200"
+                    className="h-6 px-2 py-0 text-xs bg-primary-100 text-primary hover:text-primary-600 hover:bg-primary-200 border-primary-200 dark:bg-[#026d55]/20 dark:text-[#026d55] dark:hover:bg-[#025943]/30 dark:hover:text-[#03ffc8] dark:border-[#025943]"
                     onClick={(e) => {
                       e.stopPropagation();  // Prevent parent div click
                       navigateToComment(comment);
