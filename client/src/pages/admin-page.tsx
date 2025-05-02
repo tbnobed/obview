@@ -6,13 +6,14 @@ import UserList from "@/components/admin/user-list";
 import AdminInviteForm from "@/components/admin/admin-invite-form";
 import ActivityLogList from "@/components/admin/activity-log-list";
 import SystemSettings from "@/components/admin/system-settings";
+import FileManager from "@/components/admin/file-manager";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import UserForm from "@/components/admin/user-form";
-import { Plus, Users, FileText, Activity, Settings, ShieldAlert, Loader2 } from "lucide-react";
+import { Plus, Users, FileText, Activity, Settings, ShieldAlert, Loader2, HardDrive, FolderOpen } from "lucide-react";
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -158,6 +159,7 @@ export default function AdminPage() {
           <TabsList className="mb-6">
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>
             <TabsTrigger value="settings">System Settings</TabsTrigger>
           </TabsList>
@@ -172,6 +174,20 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <UserList />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="files">
+            <Card>
+              <CardHeader className="border-b dark:border-gray-800">
+                <CardTitle className="text-primary-600 dark:text-primary-400">File Management</CardTitle>
+                <CardDescription className="dark:text-gray-400">
+                  View and manage uploaded files in the system
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FileManager />
               </CardContent>
             </Card>
           </TabsContent>

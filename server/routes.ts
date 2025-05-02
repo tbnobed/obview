@@ -1637,6 +1637,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get all uploaded files (admin only)
+  app.get("/api/system/uploads", isAdmin, async (req, res, next) => {
+    try {
+      const uploadDir = process.env.UPLOAD_DIR || './uploads';
+      const fs = require('fs');
+      const path = require('path');
+      const { promisify } = require('util');
+      
+      // Promisify fs functions
+      const readdir = promisify(fs.readdir);
+      const stat = promisify(fs.stat);
+      
+      // Read directory contents
+      const files = await readdir(uploadDir);
+      
+      // Get details for each file
+      const fileDetails = await Promise.all(
+        files.map(async (filename) => {
+          const filePath = path.join(uploadDir, filename);
+          const stats = await stat(filePath);
+          
+          // Try to get file metadata from database if available
+          let fileMetadata = null;
+          try {
+            // Find files from database that match this filename or path
+            const allFiles = await storage.getAllFiles();
+            fileMetadata = allFiles.find(file => 
+              file.filePath.includes(filename) || 
+              file.filename === filename
+            );
+          } catch (err) {
+            console.error("Error getting file metadata:", err);
+          }
+          
+          return {
+            filename,
+            path: filePath,
+            size: stats.size,
+            createdAt: stats.birthtime || stats.ctime,
+            modifiedAt: stats.mtime,
+            isDirectory: stats.isDirectory(),
+            metadata: fileMetadata ? {
+              id: fileMetadata.id,
+              projectId: fileMetadata.projectId,
+              projectName: fileMetadata.projectName,
+              uploadedById: fileMetadata.uploadedById,
+              uploadedByName: fileMetadata.uploadedByName
+            } : null
+          };
+        })
+      );
+      
+      // Sort files by modified date (newest first)
+      fileDetails.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
+      
+      res.json(fileDetails);
+    } catch (error) {
+      console.error("Error retrieving uploads:", error);
+      next(error);
+    }
+  });
+  
+  // Delete an uploaded file (admin only)
+  app.delete("/api/system/uploads/:filename", isAdmin, async (req, res, next) => {
+    try {
+      const { filename } = req.params;
+      const uploadDir = process.env.UPLOAD_DIR || './uploads';
+      const fs = require('fs');
+      const path = require('path');
+      const { promisify } = require('util');
+      
+      // Prevent path traversal attacks
+      const sanitizedFilename = path.basename(filename);
+      const filePath = path.join(uploadDir, sanitizedFilename);
+      
+      // Check if file exists
+      const access = promisify(fs.access);
+      const unlink = promisify(fs.unlink);
+      
+      try {
+        await access(filePath, fs.constants.F_OK);
+      } catch (error) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Delete the file
+      await unlink(filePath);
+      
+      // Log activity
+      await storage.logActivity({
+        action: "delete",
+        entityType: "file",
+        entityId: 0, // We don't have a specific ID since this is a physical file
+        userId: req.user.id,
+        metadata: { filename: sanitizedFilename }
+      });
+      
+      res.json({ message: "File deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      next(error);
+    }
+  });
+  
   // ===== ACTIVITY LOG ROUTES =====
   // Get all activity logs (admin only)
   app.get("/api/activities", isAdmin, async (req, res, next) => {
