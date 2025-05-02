@@ -143,7 +143,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
       {sortedComments.map((comment: Comment & { user?: any, file?: any }) => (
         <div 
           key={comment.id} 
-          className={`border rounded-lg p-4 ${comment.file?.id ? 'cursor-pointer hover:bg-neutral-50 hover:border-primary-400 hover:shadow-sm transition-all' : ''}`}
+          className={`border rounded-lg p-4 ${comment.file?.id ? 'cursor-pointer hover:bg-neutral-50 dark:hover:bg-[#0f1218] hover:border-primary-400 dark:hover:border-[#026d55] hover:shadow-sm transition-all' : ''}`}
           onClick={() => navigateToComment(comment)}
           title={comment.file?.id ? `Click to view ${comment.timestamp !== null ? `at ${formatTime(comment.timestamp)}` : ''} in ${comment.file.filename}` : ''}
         >

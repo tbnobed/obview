@@ -94,7 +94,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
     <div className="space-y-4">
       <div className="border rounded-md divide-y">
         {teamMembers.map((member: any) => (
-          <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50">
+          <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-[#0f1218]">
             <div className="flex items-center gap-3">
               <Avatar>
                 <AvatarImage src={`https://avatar.vercel.sh/${member.user?.name || member.user?.email}?size=64`} />
@@ -103,7 +103,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">
+                <p className="font-medium dark:text-white">
                   {member.user?.name || member.user?.email || 'Unknown User'}
                   {isCurrentUser(member.userId) && (
                     <Badge variant="outline" className="ml-2 text-xs">You</Badge>
@@ -112,7 +112,7 @@ export function ProjectTeamMembers({ projectId, onInviteClick }: ProjectTeamMemb
                     <Badge className="ml-2 text-xs">Owner</Badge>
                   )}
                 </p>
-                <p className="text-sm text-gray-500">{member.user?.email}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{member.user?.email}</p>
               </div>
             </div>
             

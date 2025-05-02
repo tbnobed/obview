@@ -76,7 +76,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
         {invitations.map((invitation: any) => (
           <div 
             key={invitation.id} 
-            className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm"
+            className="flex items-center justify-between p-3 border rounded-lg bg-white dark:bg-[#0f1218] dark:border-gray-800 shadow-sm"
           >
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
@@ -86,8 +86,8 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
               </Avatar>
               
               <div className="flex flex-col">
-                <div className="font-medium">{invitation.email}</div>
-                <div className="flex items-center text-sm text-muted-foreground">
+                <div className="font-medium dark:text-white">{invitation.email}</div>
+                <div className="flex items-center text-sm text-muted-foreground dark:text-gray-400">
                   <Badge variant="outline" className="mr-2 px-1.5">
                     {invitation.role || "Viewer"}
                   </Badge>
@@ -123,7 +123,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
             </div>
             
             <div className="flex items-center">
-              <div className="text-sm text-muted-foreground mr-4 hidden md:block">
+              <div className="text-sm text-muted-foreground dark:text-gray-400 mr-4 hidden md:block">
                 <span>Invited by {invitation.creator?.name || "Unknown"}</span>
               </div>
               
@@ -135,7 +135,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleResendInvitation(invitation.id)}
-                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 mr-1"
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-[#026d55] dark:hover:text-[#03ffc8] dark:hover:bg-[#025943]/30 mr-1"
                       disabled={resendInvitationMutation.isPending}
                     >
                       {resendInvitationMutation.isPending && resendInvitationMutation.variables === invitation.id ? (

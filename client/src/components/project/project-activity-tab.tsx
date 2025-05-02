@@ -57,11 +57,11 @@ export function ProjectActivityTab({ projectId }: { projectId: number }) {
   };
   
   return (
-    <div className="border rounded-lg bg-white">
-      <div className="p-4 border-b">
-        <h3 className="font-medium">Recent Activity</h3>
+    <div className="border rounded-lg bg-white dark:bg-[#0f1218] dark:border-gray-800">
+      <div className="p-4 border-b dark:border-gray-800">
+        <h3 className="font-medium dark:text-white">Recent Activity</h3>
       </div>
-      <div className="divide-y">
+      <div className="divide-y dark:divide-gray-800">
         {activities.map(activity => (
           <div key={activity.id} className="p-4 flex items-start gap-4">
             <Avatar className="mt-0.5">
@@ -72,10 +72,10 @@ export function ProjectActivityTab({ projectId }: { projectId: number }) {
             </Avatar>
             
             <div className="flex-1">
-              <p className="text-sm text-neutral-700">
+              <p className="text-sm text-neutral-700 dark:text-gray-200">
                 {getActivityText(activity)}
               </p>
-              <p className="text-xs text-neutral-500 mt-1">
+              <p className="text-xs text-neutral-500 dark:text-gray-400 mt-1">
                 {formatTimeAgo(new Date(activity.createdAt))}
               </p>
             </div>
