@@ -1,35 +1,16 @@
 # Docker Deployment Updates for Obviu.io
 
-This document covers two important updates for the Docker deployment of Obviu.io:
-
-1. **Large File Upload Fix** - Resolves the "413 Request Entity Too Large" error
-2. **Theme Preference Migration** - Ensures user theme preferences are stored properly in the database
+This document covers important updates for the Docker deployment of Obviu.io:
 
 ## Large File Upload Fix
 
 ### Issue
 - When uploading files larger than 1.5GB (but still under the 5GB limit), users encounter a "413 Request Entity Too Large" error
-- This happens because Nginx (the reverse proxy) has a default body size limit that is smaller than what the application allows
+- This happens because your Nginx reverse proxy has a default body size limit that is smaller than what the application allows
 
-### Solution
+### Solution for Your Standalone Nginx
 
-#### Method 1: Using Docker Compose with Nginx Container (Recommended)
-
-1. **Update your docker-compose.yml** to include an Nginx container (file already updated)
-
-2. **Add the nginx.conf file** to your project:
-   - The configuration sets `client_max_body_size 5120M` to allow 5GB uploads
-   - Also increases timeouts and adjusts buffer settings for large file handling
-
-3. **Restart your Docker containers**:
-   ```bash
-   docker-compose down
-   docker-compose up -d
-   ```
-
-#### Method 2: For Standalone Nginx
-
-If you're using a separate Nginx installation outside of Docker:
+Since you're using a separate Nginx server as a reverse proxy:
 
 1. **Locate and edit your Nginx configuration**:
    ```bash
@@ -50,44 +31,34 @@ If you're using a separate Nginx installation outside of Docker:
    sudo systemctl reload nginx
    ```
 
-## Theme Preference Migration
+## Theme Preference Status
 
-### Updates Made
+Good news! The database verification shows that the **theme_preference** column already exists in your users table:
 
-1. **Migration File Creation**:
-   - Created a properly versioned migration file: `0002_add_theme_preference.sql`
-   - Added metadata file: `migrations/meta/0002_snapshot.json`
+```
+column_name,data_type,is_nullable
+theme_preference,text,YES
+```
 
-2. **Docker Entrypoint Script Update**:
-   - Enhanced the `docker-entrypoint.sh` script to be more robust in finding migration and setup files
-   - Added fallback mechanisms if either `.js` or `.cjs` versions of the files exist
+This means the theme preference functionality should be working correctly with your current database setup. No further migration is needed.
+
+## Docker Entrypoint Script Improvements
+
+We've updated the Docker entrypoint script to be more robust:
+
+1. **Better Migration Handling**:
+   - The script now checks for both `.js` and `.cjs` versions of migration files
    - Improved error handling for database migrations
 
-### Verification
+2. **Better Setup Script Handling**:
+   - Added fallback mechanisms if either `.js` or `.cjs` versions of the setup files exist
+   - Added better error reporting
 
-After deploying these changes:
-
-1. **Verify migrations ran** by checking the database:
-   ```sql
-   \d users
-   ```
-   - You should see `theme_preference` column in the users table
-
-2. **Verify large file uploads** by attempting to upload a file larger than 1.5GB
-
-### Additional Notes
-
-- The Docker entrypoint script now has better error handling for both migrations and admin user setup
-- If migrations fail, the script will continue but log warnings
-- All migrations are now properly versioned and include metadata for Drizzle
+These changes make your Docker deployment more resilient to file extension differences and provide better diagnostic information if issues occur.
 
 ## Implementation Checklist
 
-- [x] Update docker-compose.yml to include Nginx
-- [x] Create nginx.conf with proper settings
-- [x] Fix migration file naming to follow Drizzle conventions
-- [x] Create migration metadata file
+- [x] Update your external Nginx configuration to increase upload limits
+- [x] Verify the theme_preference column exists in the database (confirmed)
 - [x] Update Docker entrypoint script to handle different file extensions
-- [ ] Restart Docker containers
-- [ ] Verify migrations ran successfully 
 - [ ] Test large file upload functionality
