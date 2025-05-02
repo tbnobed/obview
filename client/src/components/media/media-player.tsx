@@ -433,12 +433,12 @@ export default function MediaPlayer({ file, projectId, files, onSelectFile, init
                       fileId={file.id} 
                       filename={file.filename} 
                       size="sm" 
-                      variant="outline" 
+                      variant="default" 
                     />
                     <ShareLinkButton 
                       fileId={file.id} 
-                      size="sm" 
-                      variant="outline" 
+                      size="sm"
+                      variant="default"
                     />
                   </>
                 )}
