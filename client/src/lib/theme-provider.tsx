@@ -129,13 +129,27 @@ export function ThemeProvider({
   
   // Use user preference when available - separate effect to handle login/logout
   useEffect(() => {
-    if (user?.themePreference) {
+    if (user) {
+      // Set a default theme if the user doesn't have a theme preference
+      const userTheme = user.themePreference || 'system';
+      
       // If user has a preference in their profile, use that (overrides localStorage)
-      setThemeState(user.themePreference as Theme);
-      // Also update localStorage to keep them in sync
-      localStorage.setItem(storageKey, user.themePreference as Theme);
+      if (['light', 'dark', 'system'].includes(userTheme)) {
+        setThemeState(userTheme as Theme);
+        // Also update localStorage to keep them in sync
+        localStorage.setItem(storageKey, userTheme);
+      } else {
+        // If the user has an invalid theme preference, use the default
+        setThemeState(defaultTheme);
+        // Update localStorage
+        localStorage.setItem(storageKey, defaultTheme);
+        // Attempt to fix the user's preference
+        if (user) {
+          updateThemeMutation.mutate(defaultTheme);
+        }
+      }
     }
-  }, [user, storageKey]);
+  }, [user, storageKey, defaultTheme]);
 
   return (
     <ThemeContext.Provider value={{ 
