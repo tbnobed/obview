@@ -16,8 +16,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { isLoading } = useAuth();
   const { isCollapsed, toggleSidebar, expandSidebar } = useSidebar();
   const [isHovering, setIsHovering] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(!isCollapsed);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(!isCollapsed);
   const hoverTimerRef = useRef<number | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -49,21 +47,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
       setIsHovering(false);
     }, 200);
   }, []);
-
-  // Handle the collapsible state changes with proper transitions
-  useEffect(() => {
-    if (isCollapsed) {
-      // When sidebar is collapsed, start the transition to hide it
-      const timer = setTimeout(() => {
-        setIsSidebarVisible(false);
-      }, 500); // Match the transition duration
-      return () => clearTimeout(timer);
-    } else {
-      // When sidebar is expanded, immediately make it visible for the transition
-      setIsSidebarVisible(true);
-      setShowSidebar(true);
-    }
-  }, [isCollapsed]);
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -106,27 +89,19 @@ export default function AppLayout({ children }: AppLayoutProps) {
         />
       )}
       
-      {/* Permanent Sidebar with animation - properly animates when being hidden */}
+      {/* Desktop Sidebar - collapsible */}
       <div 
         ref={sidebarRef}
         className={cn(
-          "hidden md:flex md:flex-shrink-0 transition-all duration-500 ease-in-out transform-gpu will-change-transform overflow-hidden",
+          "hidden md:flex md:flex-shrink-0 transition-all duration-300 ease-in-out",
           isCollapsed && !isHovering 
-            ? "md:w-0 opacity-0 translate-x-[-20px] animate-sidebarSlideOut" 
-            : "md:w-auto opacity-100 translate-x-0"
+            ? "md:w-0 overflow-hidden opacity-0" 
+            : "md:w-auto opacity-100"
         )}
         onMouseLeave={handleMouseLeave}
-        style={{ 
-          maxWidth: isCollapsed && !isHovering ? '0' : '18rem',
-          transitionProperty: 'transform, opacity, max-width, width'
-        }}
+        style={{ maxWidth: isCollapsed && !isHovering ? '0' : '18rem' }}
       >
-        <div className={cn(
-          "transition-opacity duration-500 ease-in-out",
-          isCollapsed && !isHovering ? "opacity-0" : "opacity-100"
-        )}>
-          <Sidebar />
-        </div>
+        <Sidebar />
       </div>
       
       {/* Hover sidebar - shown when hover is active */}
