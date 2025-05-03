@@ -82,55 +82,78 @@ export default function FileManager() {
       // Add to optimistic deletions immediately
       setOptimisticFiles(prev => [...prev, filename]);
       
-      const response = await apiRequest("DELETE", `/api/system/uploads/${encodeURIComponent(filename)}`);
-      
-      // Handle response properly based on status code
-      if (response.status >= 200 && response.status < 300) {
-        try {
-          // Only try to parse JSON if content exists
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            return await response.json();
-          }
-          // If no JSON or empty response, just return success
-          return { success: true };
-        } catch (jsonError) {
-          console.log('Response was not JSON, but operation succeeded:', response.status);
-          return { success: true };
-        }
-      }
-      
-      // Special case: 404 Not Found - handle gracefully
-      if (response.status === 404) {
-        console.log('File not found on server, but will update UI to remove it');
-        // Return a special object to indicate file wasn't found but UI should update
-        return { 
-          success: true, 
-          notFound: true,
-          message: "File not found on server, but removed from the list" 
-        };
-      }
-      
-      // Handle other error responses
-      let errorMessage = `Server error: ${response.status}`;
       try {
-        const errorData = await response.text();
-        if (errorData) {
+        const response = await apiRequest("DELETE", `/api/system/uploads/${encodeURIComponent(filename)}`);
+        
+        // Handle response properly based on status code
+        if (response.status >= 200 && response.status < 300) {
           try {
-            // Try to parse as JSON
-            const jsonError = JSON.parse(errorData);
-            errorMessage = jsonError.message || jsonError.error || errorMessage;
-          } catch (e) {
-            // If not JSON, use as plain text
-            errorMessage = errorData;
+            // Only try to parse JSON if content exists
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              return await response.json();
+            }
+            // If no JSON or empty response, just return success
+            return { success: true };
+          } catch (jsonError) {
+            console.log('Response was not JSON, but operation succeeded:', response.status);
+            return { success: true };
           }
         }
-      } catch (e) {
-        // If we can't read the error, just use status
-        console.error('Could not read error response:', e);
+        
+        // Special case: 404 Not Found - handle gracefully
+        if (response.status === 404) {
+          console.log('File not found on server, but will update UI to remove it');
+          // Return a special object to indicate file wasn't found but UI should update
+          return { 
+            success: true, 
+            notFound: true,
+            message: "File not found on server, but removed from the list" 
+          };
+        }
+        
+        // Handle other error responses
+        let errorMessage = `Server error: ${response.status}`;
+        try {
+          const errorData = await response.text();
+          if (errorData) {
+            try {
+              // Try to parse as JSON
+              const jsonError = JSON.parse(errorData);
+              errorMessage = jsonError.message || jsonError.error || errorMessage;
+            } catch (e) {
+              // If not JSON, use as plain text
+              errorMessage = errorData;
+            }
+          }
+        } catch (e) {
+          // If we can't read the error, just use status
+          console.error('Could not read error response:', e);
+        }
+        
+        throw new Error(errorMessage);
+      } catch (error) {
+        // Direct catch of the fetch error or other network errors
+        console.log('Error during file deletion:', error);
+        
+        // Check if error message contains "not found" or similar phrases
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (
+          errorMessage.toLowerCase().includes('not found') || 
+          errorMessage.toLowerCase().includes('no such file') ||
+          errorMessage.toLowerCase().includes('enoent')
+        ) {
+          console.log('Error contains file not found indicators, handling gracefully');
+          return { 
+            success: true, 
+            notFound: true,
+            message: "File not found on server, but removed from the list" 
+          };
+        }
+        
+        // If it's not a "not found" error, rethrow
+        throw error;
       }
-      
-      throw new Error(errorMessage);
     },
     onSuccess: (result: any, filename) => {
       // Update the cache instead of invalidating for a smoother experience
