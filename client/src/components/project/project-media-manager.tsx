@@ -1,21 +1,18 @@
-import React, { useState } from "react";
-import { useMediaFiles } from "@/hooks/use-media";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+import { Button } from "@/components/ui/button";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
-import {
+import { Badge } from "@/components/ui/badge";
+import { 
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -24,66 +21,57 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Eye,
-  FileVideo,
-  Image as ImageIcon,
-  FileText,
-  File,
-  Trash2,
-  MoreVertical,
-  Download,
-  Pencil,
-  Info,
-  CheckCircle,
-  AlertCircle,
-  ExternalLink,
+import { 
+  Download, 
+  Eye, 
+  FileCheck, 
+  FileX, 
+  Search, 
+  Trash2, 
+  ScanSearch 
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 
-interface ProjectMediaManagerProps {
-  projectId: number;
+interface ProjectFile {
+  id: number;
+  filename: string;
+  fileType: string;
+  fileSize: number;
+  isAvailable: boolean;
+  createdAt: string;
+  uploadedById: number;
+  version: number;
 }
 
-export function ProjectMediaManager({ projectId }: ProjectMediaManagerProps) {
+export function ProjectMediaManager({ projectId }: { projectId: number }) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [searchText, setSearchText] = useState("");
-  const [fileToDelete, setFileToDelete] = useState<number | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  
   // Fetch all files for this project
-  const {
-    data: files,
+  const { 
+    data: files, 
     isLoading,
-    error,
-  } = useMediaFiles(projectId);
-
+    refetch
+  } = useQuery<ProjectFile[]>({
+    queryKey: ["/api/projects", projectId, "files"],
+    enabled: !!projectId,
+  });
+  
   // Delete file mutation
-  const deleteMutation = useMutation({
+  const deleteFileMutation = useMutation({
     mutationFn: async (fileId: number) => {
       await apiRequest("DELETE", `/api/files/${fileId}`);
     },
     onSuccess: () => {
-      // Invalidate and refetch
-      queryClient.invalidateQueries({
-        queryKey: [`/api/projects/${projectId}/files`],
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "files"] });
       toast({
         title: "File deleted",
-        description: "The file has been removed from this project",
+        description: "The file has been successfully deleted from the project",
       });
-      setShowDeleteDialog(false);
     },
     onError: (error: Error) => {
       toast({
@@ -91,224 +79,205 @@ export function ProjectMediaManager({ projectId }: ProjectMediaManagerProps) {
         description: error.message,
         variant: "destructive",
       });
-    },
+    }
   });
-
+  
+  // Scan filesystem mutation
+  const scanFilesMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/system/scan-files");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "files"] });
+      setIsScanning(false);
+      toast({
+        title: "Scan complete",
+        description: "File system scan has completed successfully",
+      });
+    },
+    onError: (error: Error) => {
+      setIsScanning(false);
+      toast({
+        title: "Error during scan",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Handle file deletion
   const handleDeleteFile = (fileId: number) => {
-    setFileToDelete(fileId);
-    setShowDeleteDialog(true);
+    deleteFileMutation.mutate(fileId);
   };
-
-  // Confirm deletion
-  const confirmDelete = () => {
-    if (fileToDelete !== null) {
-      deleteMutation.mutate(fileToDelete);
-    }
-  };
-
-  // Format file size for display
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(2))} ${sizes[i]}`;
-  };
-
-  // Determine file icon based on file type
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith("video/") || fileType.includes("video")) {
-      return <FileVideo className="h-5 w-5 text-blue-500" />;
-    } else if (fileType.startsWith("image/") || fileType.includes("image")) {
-      return <ImageIcon className="h-5 w-5 text-green-500" />;
-    } else if (
-      fileType.includes("pdf") ||
-      fileType.includes("doc") ||
-      fileType.includes("text")
-    ) {
-      return <FileText className="h-5 w-5 text-orange-500" />;
-    } else {
-      return <File className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  // Filter files based on search text
-  const filteredFiles = files?.filter(
-    (file) =>
-      !searchText ||
-      file.filename.toLowerCase().includes(searchText.toLowerCase())
-  );
-
-  // View file in a new tab
+  
+  // Handle file download
   const handleViewFile = (fileId: number) => {
-    window.open(`/api/files/${fileId}/content`, "_blank");
+    window.open(`/projects/${projectId}?media=${fileId}`, '_blank');
   };
-
-  // Download file
-  const handleDownloadFile = (fileId: number, filename: string) => {
-    const link = document.createElement("a");
-    link.href = `/api/files/${fileId}/download`;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  
+  // Handle file download
+  const handleDownloadFile = (fileId: number) => {
+    window.open(`/api/files/${fileId}/download`, '_blank');
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center p-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-        <CardContent className="p-4">
-          <p className="text-red-600 dark:text-red-400">
-            Error loading files: {(error as Error).message}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  
+  // Handle file system scan
+  const handleScanFiles = () => {
+    setIsScanning(true);
+    scanFilesMutation.mutate();
+  };
+  
+  // Filter files based on search term
+  const filteredFiles = files?.filter(file => 
+    file.filename.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-base font-medium mb-2 dark:text-gray-200">
-          Project Media
-        </h3>
-        <Input
-          className="max-w-xs"
-          placeholder="Search files..."
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
+    <div>
+      <h3 className="text-base font-medium mb-2 dark:text-gray-200">Media Files</h3>
+      <p className="text-neutral-500 dark:text-gray-400 mb-4">
+        Manage all media files assigned to this project
+      </p>
+      
+      <div className="flex items-center justify-between mb-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search files..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleScanFiles}
+          disabled={isScanning}
+          className="ml-2 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+        >
+          {isScanning ? (
+            <>
+              <ScanSearch className="mr-1.5 h-4 w-4 animate-pulse" />
+              Scanning...
+            </>
+          ) : (
+            <>
+              <ScanSearch className="mr-1.5 h-4 w-4" />
+              Scan Files
+            </>
+          )}
+        </Button>
       </div>
-
-      {filteredFiles && filteredFiles.length > 0 ? (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>File</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead>Uploaded</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredFiles.map((file) => (
-              <TableRow key={file.id}>
-                <TableCell className="font-medium flex items-center gap-2">
-                  {getFileIcon(file.fileType)}
-                  <span className="truncate max-w-[250px]" title={file.filename}>
-                    {file.filename}
-                  </span>
-                </TableCell>
-                <TableCell>{formatFileSize(file.fileSize)}</TableCell>
-                <TableCell>
-                  {formatDistanceToNow(new Date(file.createdAt), {
-                    addSuffix: true,
-                  })}
-                </TableCell>
-                <TableCell>
-                  {file.isAvailable ? (
-                    <Badge variant="outline" className="bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800">
-                      <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                      Available
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400 border-amber-200 dark:border-amber-800">
-                      <AlertCircle className="h-3.5 w-3.5 mr-1" />
-                      Unavailable
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      
-                      <DropdownMenuItem 
-                        onClick={() => handleViewFile(file.id)}
-                        disabled={!file.isAvailable}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem 
-                        onClick={() => handleDownloadFile(file.id, file.filename)}
-                        disabled={!file.isAvailable}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem onClick={() => window.open(`/project/${projectId}`, "_blank")}>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Open in Project
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuSeparator />
-                      
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteFile(file.id)}
-                        className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+      
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+        </div>
+      ) : filteredFiles && filteredFiles.length > 0 ? (
+        <div className="border border-gray-200 dark:border-gray-800 rounded-md overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50 dark:bg-[#0a0d14]">
+                <TableHead className="w-[300px]">File Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Size</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Uploaded</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredFiles.map((file) => (
+                <TableRow key={file.id}>
+                  <TableCell className="font-medium">{file.filename}</TableCell>
+                  <TableCell>{file.fileType}</TableCell>
+                  <TableCell>{formatFileSize(file.fileSize)}</TableCell>
+                  <TableCell>
+                    {file.isAvailable ? (
+                      <Badge className="bg-green-600 flex items-center w-fit">
+                        <FileCheck className="h-3 w-3 mr-1" />
+                        Available
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-red-600 flex items-center w-fit">
+                        <FileX className="h-3 w-3 mr-1" />
+                        Unavailable
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>{formatTimeAgo(new Date(file.createdAt))}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleViewFile(file.id)}
+                        className="h-8 w-8"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownloadFile(file.id)}
+                        className="h-8 w-8"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete File</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{file.filename}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteFile(file.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
-        <Card className="bg-slate-50 dark:bg-slate-900/50 border">
-          <CardContent className="p-6 text-center">
-            <FileVideo className="h-10 w-10 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-600 dark:text-slate-400">
-              {searchText
-                ? "No files match your search"
-                : "No media files uploaded to this project yet"}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Deletion confirmation dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this file from the project. This action
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+        <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed rounded-md border-gray-200 dark:border-gray-800">
+          <div className="text-muted-foreground mb-2">
+            {searchTerm ? "No files match your search" : "No files available for this project"}
+          </div>
+          {searchTerm && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setSearchTerm("")}
+              className="mt-2"
             >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              Clear Search
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

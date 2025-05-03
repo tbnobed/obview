@@ -2195,10 +2195,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             // Find files from database that match this filename or path
             const allFiles = await storage.getAllFiles();
-            fileMetadata = allFiles.find(file => 
+            const matchedFile = allFiles.find(file => 
               file.filePath.includes(filename) || 
               file.filename === filename
             );
+            
+            if (matchedFile) {
+              // Get additional information about project and uploader
+              const project = matchedFile.projectId ? await storage.getProject(matchedFile.projectId) : null;
+              const uploader = matchedFile.uploadedById ? await storage.getUser(matchedFile.uploadedById) : null;
+              
+              fileMetadata = {
+                id: matchedFile.id,
+                projectId: matchedFile.projectId,
+                projectName: project ? project.name : null,
+                uploadedById: matchedFile.uploadedById,
+                uploadedByName: uploader ? uploader.name : null
+              };
+            }
           } catch (err) {
             console.error("Error getting file metadata:", err);
           }
@@ -2210,13 +2224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdAt: stats.birthtime || stats.ctime,
             modifiedAt: stats.mtime,
             isDirectory: stats.isDirectory(),
-            metadata: fileMetadata ? {
-              id: fileMetadata.id,
-              projectId: fileMetadata.projectId,
-              projectName: fileMetadata.projectName,
-              uploadedById: fileMetadata.uploadedById,
-              uploadedByName: fileMetadata.uploadedByName
-            } : null
+            metadata: fileMetadata
           };
         })
       );
