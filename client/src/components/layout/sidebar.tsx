@@ -19,8 +19,8 @@ export default function Sidebar() {
   const [location] = useLocation();
   const { data: projects, isLoading: projectsLoading } = useProjects();
   
-  // Get all projects, already sorted by last edited from the useProjects hook
-  const recentProjects = projects || [];
+  // Get top 10 most recent projects, already sorted by last edited from the useProjects hook
+  const recentProjects = projects ? projects.slice(0, 10) : [];
 
   return (
     <div className="flex flex-col w-72 border-r border-neutral-200 dark:border-gray-900 bg-white dark:bg-[#0a0d14] shadow-sm">
@@ -113,7 +113,9 @@ export default function Sidebar() {
                       ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400" 
                       : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-gray-900/70"
                   )}>
-                    <span className="truncate">{project.name}</span>
+                    <span className="truncate" title={project.name}>
+                      {project.name.length > 20 ? `${project.name.substring(0, 20)}...` : project.name}
+                    </span>
                   </div>
                 </Link>
               ))}
