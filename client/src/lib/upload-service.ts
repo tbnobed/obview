@@ -40,6 +40,13 @@ class UploadService {
     return Array.from(this.uploads.values());
   }
 
+  // Check if there are any active uploads (in progress)
+  hasActiveUploads(): boolean {
+    return this.getAllUploads().some(upload => 
+      upload.status === 'uploading' || upload.status === 'pending'
+    );
+  }
+
   // Get a specific upload by ID
   getUpload(id: string): UploadProgress | undefined {
     return this.uploads.get(id);

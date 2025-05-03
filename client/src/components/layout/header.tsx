@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, ChevronRight } from "lucide-react";
+import { Menu, X, LogOut, ChevronRight, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,35 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { uploadService } from "@/lib/upload-service";
 
 export default function Header() {
   const { user, logoutMutation } = useAuth();
   const { isCollapsed, toggleSidebar } = useSidebar();
   const [_, navigate] = useLocation();
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   
+  // This function checks for active uploads and shows warning if needed
+  const handleLogoutClick = () => {
+    if (uploadService.hasActiveUploads()) {
+      setShowLogoutAlert(true);
+    } else {
+      // No active uploads, proceed with logout
+      logoutMutation.mutate();
+    }
+  };
+  
+  // Actually perform the logout
   const handleLogout = () => {
     logoutMutation.mutate();
   };
@@ -48,7 +71,7 @@ export default function Header() {
         <DropdownMenuItem onClick={() => navigate("/settings")}>
           Settings
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400">
+        <DropdownMenuItem onClick={handleLogoutClick} className="text-red-600 dark:text-red-400">
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
