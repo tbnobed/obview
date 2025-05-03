@@ -128,7 +128,7 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
   
   // Filter files based on search term
   const filteredFiles = files?.filter(file => 
-    file.filename.toLowerCase().includes(searchTerm.toLowerCase())
+    file.filename && file.filename.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   return (
@@ -191,9 +191,9 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
             <TableBody>
               {filteredFiles.map((file) => (
                 <TableRow key={file.id}>
-                  <TableCell className="font-medium">{file.filename}</TableCell>
-                  <TableCell>{file.fileType}</TableCell>
-                  <TableCell>{formatFileSize(file.fileSize)}</TableCell>
+                  <TableCell className="font-medium">{file.filename || "Unnamed file"}</TableCell>
+                  <TableCell>{file.fileType || "Unknown"}</TableCell>
+                  <TableCell>{file.fileSize ? formatFileSize(file.fileSize) : "Unknown"}</TableCell>
                   <TableCell>
                     {file.isAvailable ? (
                       <Badge className="bg-green-600 flex items-center w-fit">
@@ -207,7 +207,7 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell>{formatTimeAgo(new Date(file.createdAt))}</TableCell>
+                  <TableCell>{file.createdAt ? formatTimeAgo(new Date(file.createdAt)) : "Unknown"}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button
@@ -240,7 +240,7 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete File</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{file.filename}"? This action cannot be undone.
+                              Are you sure you want to delete "{file.filename || 'this file'}"? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
