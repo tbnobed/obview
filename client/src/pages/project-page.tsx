@@ -628,8 +628,8 @@ export default function ProjectPage() {
 
         {activeTab === "settings" && (
           <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-4 sm:p-6">
-            <h2 className="text-lg font-medium mb-4 dark:text-white">Project Settings</h2>
-            <div className="space-y-6">
+            <h2 className="text-lg font-medium mb-4 text-teal-700 dark:text-teal-300">Project Settings</h2>
+            <div className="space-y-8">
               <div>
                 <h3 className="text-base font-medium mb-2 dark:text-gray-200">Project Details</h3>
                 <ProjectForm 
@@ -638,7 +638,14 @@ export default function ProjectPage() {
                 />
               </div>
               
-              <div>
+              {/* Project Media Manager - Only visible for admins */}
+              {user?.role === "admin" && (
+                <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
+                  <ProjectMediaManager projectId={projectId} />
+                </div>
+              )}
+              
+              <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
                 <h3 className="text-base font-medium mb-2 dark:text-gray-200">Team Members</h3>
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-neutral-500 dark:text-gray-400">
