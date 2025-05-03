@@ -77,6 +77,35 @@ export const useUpdateProject = (projectId: number) => {
   });
 };
 
+export const useUpdateProjectStatus = (projectId: number) => {
+  const { toast } = useToast();
+  
+  return useMutation({
+    mutationFn: async (status: string) => {
+      const res = await apiRequest("PATCH", `/api/projects/${projectId}`, { status });
+      return await res.json();
+    },
+    onSuccess: (data, status) => {
+      const statusLabel = status === 'in_review' ? 'In Review' : 
+                         status === 'approved' ? 'Approved' : 'In Progress';
+      
+      toast({
+        title: `Project marked as "${statusLabel}"`,
+        description: "Project status has been updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update project status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useDeleteProject = () => {
   const { toast } = useToast();
   

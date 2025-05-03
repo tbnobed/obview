@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
-import { useProject } from "@/hooks/use-projects";
+import { useProject, useUpdateProjectStatus } from "@/hooks/use-projects";
 import { useMediaFiles } from "@/hooks/use-media";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -11,7 +11,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail } from "lucide-react";
+import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ClipboardCheck } from "lucide-react";
 import MediaPlayer from "@/components/media/media-player";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Badge } from "@/components/ui/badge";
@@ -326,6 +326,13 @@ export default function ProjectPage() {
   }
 
   const isEditor = user?.role === "admin" || user?.role === "editor";
+  
+  // Function to update project status to "In Review"
+  const updateProjectStatusMutation = useUpdateProjectStatus(projectId);
+  
+  const handleMarkAsInReview = () => {
+    updateProjectStatusMutation.mutate('in_review');
+  };
 
   return (
     <AppLayout>
@@ -511,6 +518,23 @@ export default function ProjectPage() {
                   <Plus className="h-4 w-4 mr-1.5" />
                   Upload Media
                 </Button>
+                
+                {/* Mark as In Review Button (only show if not already in review or approved) */}
+                {project.status !== 'in_review' && project.status !== 'approved' && (
+                  <Button 
+                    variant="outline"
+                    className="flex items-center dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
+                    onClick={handleMarkAsInReview}
+                    disabled={updateProjectStatusMutation.isPending}
+                  >
+                    {updateProjectStatusMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                    )}
+                    Mark as In Review
+                  </Button>
+                )}
               </>
             )}
           </div>
