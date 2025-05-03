@@ -148,94 +148,67 @@ export default function FileManager() {
   // File system scan mutation to check file availability
   const scanMutation = useMutation({
     mutationFn: async () => {
-      let response: Response;
       try {
-        response = await apiRequest("POST", "/api/admin/scan-files");
-      } catch (error) {
-        console.error("Failed to make API request:", error);
-        throw new Error("Network error when contacting server");
-      }
-
-      // For debugging
-      console.log("Response status:", response?.status || "No status");
-      
-      // Safely access headers if they exist
-      try {
-        if (response?.headers && typeof response.headers.entries === 'function') {
-          console.log("Response headers:", Object.fromEntries(response.headers.entries()));
-        } else {
-          console.log("No headers available or entries method not found");
-        }
-      } catch (err) {
-        console.error("Error accessing response headers:", err);
-      }
-      
-      // Avoid trying to read response.json() if it's null or undefined
-      if (!response) {
-        console.error("Response object is null or undefined");
-        return {
-          message: "File system scan complete with errors",
-          stats: {
-            totalDatabaseFiles: 0,
-            totalFileSystemFiles: 0,
-            missingFilesUpdated: 0,
-            existingFilesUpdated: 0,
-            errors: ["Invalid response received from server"]
-          }
-        };
-      }
-      
-      // Get the response as text first, then parse it manually
-      try {
-        // Get the raw text first
-        const responseText = await response.text();
-        console.log("Raw response text:", responseText);
+        // Using fetch directly to avoid issues with apiRequest and response handling
+        const response = await fetch("/api/admin/scan-files", {
+          method: "POST",
+          credentials: "include"
+        });
         
-        // If we have text, try to parse it as JSON
-        if (responseText && responseText.trim()) {
+        console.log("Direct fetch response status:", response.status);
+        
+        // If we got an OK response, try to parse the JSON safely
+        if (response.ok) {
           try {
-            const data = JSON.parse(responseText);
-            console.log("Successfully parsed response:", data);
-            return data;
+            // First clone the response before trying to read it
+            const clone = response.clone();
+            
+            // Try to get the result as JSON directly
+            const jsonResult = await response.json();
+            console.log("Successfully parsed response JSON:", jsonResult);
+            return jsonResult;
           } catch (jsonError) {
-            console.error("JSON parse error:", jsonError);
-            // Return a fallback with the raw text for debugging
+            console.error("JSON parsing failed:", jsonError);
+            
+            // Fallback - we already consumed the response body in the failed json() call
+            // so we can't read it again. Return a predefined fallback response.
             return {
-              message: "File system scan complete with parsing errors",
+              message: "File system scan completed with parsing error",
               stats: {
                 totalDatabaseFiles: 0,
                 totalFileSystemFiles: 0,
                 missingFilesUpdated: 0,
                 existingFilesUpdated: 0,
-                errors: [`Failed to parse JSON: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`]
+                errors: ["Failed to parse server response as JSON"]
               }
             };
           }
         } else {
-          // Empty response
+          // Non-OK response
+          console.error(`Server returned error status: ${response.status}`);
           return {
-            message: "File system scan complete",
+            message: `File system scan failed with status ${response.status}`,
             stats: {
               totalDatabaseFiles: 0,
               totalFileSystemFiles: 0,
               missingFilesUpdated: 0,
               existingFilesUpdated: 0,
-              errors: ["Empty response received from server"]
+              errors: [`Server returned status code ${response.status}`]
             }
           };
         }
       } catch (error) {
-        console.error("Failed to read response text:", error);
+        // Network or other error
+        console.error("Network or other error during scan:", error);
         
-        // Provide a fallback result with error information
         return {
-          message: "File system scan failed",
+          message: "File system scan failed due to network error",
           stats: {
             totalDatabaseFiles: 0,
             totalFileSystemFiles: 0,
             missingFilesUpdated: 0,
             existingFilesUpdated: 0,
-            errors: [`Error accessing response: ${error instanceof Error ? error.message : String(error)}`]
+            errors: [`Network error: ${error instanceof Error ? error.message : String(error)}`]
           }
         };
       }
