@@ -175,7 +175,51 @@ export default function MediaPlayer({
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
-
+  
+  // Handle global mouse events for scrubbing outside the progress bar
+  useEffect(() => {
+    let isDragging = false;
+    
+    const handleMouseUp = () => {
+      isDragging = false;
+    };
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging && progressRef.current) {
+        const rect = progressRef.current.getBoundingClientRect();
+        // Get x position relative to progress bar (clamped between 0 and 1)
+        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const newTime = duration * pos;
+        
+        setCurrentTime(newTime);
+        
+        if (videoRef.current) {
+          videoRef.current.currentTime = newTime;
+        } else if (audioRef.current) {
+          audioRef.current.currentTime = newTime;
+        }
+      }
+    };
+    
+    const handleMouseDown = (e: MouseEvent) => {
+      // Check if the click was on the progress bar
+      if (progressRef.current && progressRef.current.contains(e.target as Node)) {
+        isDragging = true;
+      }
+    };
+    
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mousedown', handleMouseDown);
+    
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mousedown', handleMouseDown);
+    };
+  }, [duration]);
+  
+  // Define togglePlay before it's used in useEffect hooks
   const togglePlay = () => {
     // Handle both video and audio playback
     const mediaElement = videoRef.current || audioRef.current;
@@ -212,6 +256,31 @@ export default function MediaPlayer({
       }
     }
   };
+  
+  // Add keyboard controls (spacebar for play/pause)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Check if the active element is not an input field or textarea
+      const activeElement = document.activeElement;
+      const isInput = activeElement instanceof HTMLInputElement || 
+                      activeElement instanceof HTMLTextAreaElement || 
+                      activeElement instanceof HTMLSelectElement;
+      
+      if (isInput) return;
+      
+      // Spacebar for play/pause
+      if (e.code === 'Space' && !mediaError && file) {
+        e.preventDefault(); // Prevent scrolling the page
+        togglePlay();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyPress);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [isPlaying, mediaError, file, togglePlay]);
 
   const handleVolumeChange = (value: string) => {
     const newVolume = parseFloat(value);
@@ -228,7 +297,8 @@ export default function MediaPlayer({
     if (!progressRef.current) return;
     
     const rect = progressRef.current.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
+    // Constrain position between 0 and 1 for safety (in case cursor is outside element)
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const newTime = duration * pos;
     
     setCurrentTime(newTime);
@@ -266,11 +336,11 @@ export default function MediaPlayer({
     setIsPlaying(false);
   };
 
-  const handleMediaError = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement | HTMLImageElement>) => {
+  const handleMediaError = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement | HTMLImageElement | HTMLIFrameElement>) => {
     console.error('[DEBUG] Media error event:', e);
     // Try to get more detailed error info from video/audio elements
     const mediaElement = e.target as HTMLVideoElement | HTMLAudioElement;
-    if (mediaElement && mediaElement.error) {
+    if (mediaElement && 'error' in mediaElement && mediaElement.error) {
       console.error('[DEBUG] Media element error details:', {
         code: mediaElement.error.code,
         message: mediaElement.error.message
