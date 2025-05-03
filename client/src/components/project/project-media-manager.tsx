@@ -57,7 +57,7 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
     isLoading,
     refetch
   } = useQuery<ProjectFile[]>({
-    queryKey: ["/api/projects", projectId, "files"],
+    queryKey: [`/api/projects/${projectId}/files`],
     enabled: !!projectId,
   });
   
@@ -67,7 +67,7 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
       await apiRequest("DELETE", `/api/files/${fileId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "files"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
       toast({
         title: "File deleted",
         description: "The file has been successfully deleted from the project",
@@ -88,7 +88,7 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
       return await apiRequest("POST", "/api/admin/scan-files");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "files"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
       setIsScanning(false);
       toast({
         title: "Scan complete",
