@@ -19,9 +19,11 @@ interface ProjectFormProps {
   className?: string;
 }
 
-// Define a simple schema for project creation
+// Define a schema for project creation with validation
 const createProjectSchema = z.object({
-  name: z.string().min(1, "Project name is required"),
+  name: z.string()
+    .min(1, "Project name is required")
+    .max(20, "Project name must be 20 characters or less"),
   description: z.string().nullable().optional(),
   status: z.string().default("in_progress")
 });
@@ -135,8 +137,18 @@ export default function ProjectForm({
             <FormItem>
               <FormLabel>Project Name</FormLabel>
               <FormControl>
-                <Input placeholder="Enter project name" {...field} />
+                <Input
+                  placeholder="Enter project name (max 20 characters)"
+                  {...field}
+                  onChange={(e) => {
+                    field.onChange(e);
+                    form.trigger("name");
+                  }}
+                />
               </FormControl>
+              <FormDescription className="flex justify-end">
+                {field.value ? field.value.length : 0}/20 characters
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

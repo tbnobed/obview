@@ -29,7 +29,10 @@ export const projects = pgTable("projects", {
 });
 
 export const insertProjectSchema = createInsertSchema(projects)
-  .omit({ id: true, createdAt: true, updatedAt: true });
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    name: z.string().min(1).max(20, "Project name must be 20 characters or less")
+  });
 
 // FILE SCHEMA
 export const files = pgTable("files", {
