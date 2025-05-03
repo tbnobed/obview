@@ -57,12 +57,42 @@ export default function MediaPlayer({
   // Approval mutation
   const approveMutation = useMutation({
     mutationFn: async ({ fileId, status }: { fileId: number, status: string }) => {
-      const res = await apiRequest('POST', `/api/files/${fileId}/approve`, { status });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || 'Failed to update approval status');
+      // Use direct fetch here instead of apiRequest to have full control over the response handling
+      const response = await fetch(`/api/files/${fileId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        let errorMessage = 'Failed to update approval status';
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorMessage = errorJson.message || errorMessage;
+            } catch (e) {
+              errorMessage = errorText;
+            }
+          }
+        } catch (e) {
+          console.error('Error reading error response:', e);
+        }
+        throw new Error(errorMessage);
       }
-      return await res.json().catch(() => ({}));
+      
+      // Safely parse JSON response or return empty object if parsing fails
+      try {
+        const text = await response.text();
+        return text ? JSON.parse(text) : {};
+      } catch (e) {
+        console.error('Error parsing response:', e);
+        return {};
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/files', file?.id, 'approvals'] });
