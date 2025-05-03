@@ -67,7 +67,7 @@ export default function ProjectPage() {
   const [showUsersDropdown, setShowUsersDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
   
   const { 
     data: project, 
@@ -329,44 +329,7 @@ export default function ProjectPage() {
 
   const isEditor = user?.role === "admin" || user?.role === "editor";
   
-  // Function to update project status to "In Review"
-  const handleMarkAsInReview = () => {
-    if (project.status !== 'in_review' && project.status !== 'approved' && !isUpdatingStatus) {
-      setIsUpdatingStatus(true);
-      
-      // Direct API call instead of using hook
-      fetch(`/api/projects/${projectId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'in_review' }),
-        credentials: 'include',
-      })
-        .then(response => {
-          if (!response.ok) throw new Error("Failed to update project status");
-          return response.json();
-        })
-        .then(data => {
-          toast({
-            title: "Project marked as In Review",
-            description: "Project status has been updated successfully",
-          });
-          // Refresh project data
-          window.location.reload();
-        })
-        .catch(error => {
-          toast({
-            title: "Failed to update project status",
-            description: error.message,
-            variant: "destructive",
-          });
-        })
-        .finally(() => {
-          setIsUpdatingStatus(false);
-        });
-    }
-  };
+  // Status update is now handled in the MediaPlayer component
 
   return (
     <AppLayout>

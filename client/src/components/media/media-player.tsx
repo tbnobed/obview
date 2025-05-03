@@ -139,43 +139,61 @@ export default function MediaPlayer({
     approveMutation.mutate({ fileId: file.id, status: 'changes_requested' });
   };
   
+  // Project status update mutation
+  const updateProjectStatusMutation = useMutation({
+    mutationFn: async ({ projectId, status }: { projectId: number, status: string }) => {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        let errorMessage = 'Failed to update project status';
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (e) {
+          // If we can't parse the JSON, just use the default error message
+        }
+        throw new Error(errorMessage);
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Project marked as In Review",
+        description: "Project status has been updated successfully",
+      });
+      
+      // Invalidate queries to update the UI without a full page refresh
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update project status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsUpdatingStatus(false);
+    },
+  });
+  
   // Function to update project status to "In Review"
   const handleMarkAsInReview = () => {
-    if (!project || !projectId || project.status === 'in_review' || project.status === 'approved' || isUpdatingStatus) return;
+    if (!project || !projectId || project.status === 'in_review' || project.status === 'approved') return;
     
     setIsUpdatingStatus(true);
-    
-    // Direct API call to update project status
-    fetch(`/api/projects/${projectId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ status: 'in_review' }),
-      credentials: 'include',
-    })
-      .then(response => {
-        if (!response.ok) throw new Error("Failed to update project status");
-        return response.json();
-      })
-      .then(data => {
-        toast({
-          title: "Project marked as In Review",
-          description: "Project status has been updated successfully",
-        });
-        // Refresh project data
-        window.location.reload();
-      })
-      .catch(error => {
-        toast({
-          title: "Failed to update project status",
-          description: error.message,
-          variant: "destructive",
-        });
-      })
-      .finally(() => {
-        setIsUpdatingStatus(false);
-      });
+    updateProjectStatusMutation.mutate({ projectId, status: 'in_review' });
   };
 
   useEffect(() => {
