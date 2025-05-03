@@ -104,7 +104,7 @@ export default function Sidebar() {
               <Loader2 className="h-4 w-4 animate-spin text-neutral-400 dark:text-neutral-500" />
             </div>
           ) : recentProjects.length > 0 ? (
-            <div className="mt-3 space-y-2 max-h-60 overflow-y-auto pr-1">
+            <div className="mt-3 space-y-2 overflow-y-auto pr-1">
               {recentProjects.map(project => (
                 <Link key={project.id} href={`/project/${project.id}`}>
                   <div className={cn(
