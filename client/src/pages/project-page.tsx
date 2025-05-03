@@ -625,6 +625,7 @@ export default function ProjectPage() {
                 onSelectFile={setSelectedFileId}
                 files={files}
                 initialTime={initialTime}
+                project={project}
               />
             ) : (
               <div className="flex flex-col items-center justify-center py-20">

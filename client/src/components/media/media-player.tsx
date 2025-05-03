@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, ClipboardCheck, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,17 +11,26 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import TimelineComments from "@/components/media/timeline-comments";
 import { DownloadButton } from "@/components/download-button";
 import { ShareLinkButton } from "@/components/share-link-button";
-import { Comment, File as StorageFile } from "@shared/schema";
+import { Comment, File as StorageFile, Project } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function MediaPlayer({
   file,
   files,
   onSelectFile,
+  projectId,
+  initialTime,
+  project,
 }: {
   file: StorageFile | null;
   files: StorageFile[];
   onSelectFile: (fileId: number) => void;
+  projectId: number;
+  initialTime?: number | null;
+  project?: Project;
 }) {
+  const { user } = useAuth();
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -128,6 +137,45 @@ export default function MediaPlayer({
   const handleRequestChanges = () => {
     if (!file) return;
     approveMutation.mutate({ fileId: file.id, status: 'changes_requested' });
+  };
+  
+  // Function to update project status to "In Review"
+  const handleMarkAsInReview = () => {
+    if (!project || !projectId || project.status === 'in_review' || project.status === 'approved' || isUpdatingStatus) return;
+    
+    setIsUpdatingStatus(true);
+    
+    // Direct API call to update project status
+    fetch(`/api/projects/${projectId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status: 'in_review' }),
+      credentials: 'include',
+    })
+      .then(response => {
+        if (!response.ok) throw new Error("Failed to update project status");
+        return response.json();
+      })
+      .then(data => {
+        toast({
+          title: "Project marked as In Review",
+          description: "Project status has been updated successfully",
+        });
+        // Refresh project data
+        window.location.reload();
+      })
+      .catch(error => {
+        toast({
+          title: "Failed to update project status",
+          description: error.message,
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        setIsUpdatingStatus(false);
+      });
   };
 
   useEffect(() => {
@@ -751,6 +799,23 @@ export default function MediaPlayer({
                     <Check className="h-4 w-4 mr-1.5" />
                     Approve
                   </Button>
+                  {(user?.role === 'admin' || user?.role === 'editor') && project && (
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
+                      onClick={handleMarkAsInReview}
+                      disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
+                      title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
+                    >
+                      {isUpdatingStatus ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                      )}
+                      Mark as In Review
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
