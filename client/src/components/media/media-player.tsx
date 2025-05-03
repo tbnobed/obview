@@ -58,7 +58,11 @@ export default function MediaPlayer({
   const approveMutation = useMutation({
     mutationFn: async ({ fileId, status }: { fileId: number, status: string }) => {
       const res = await apiRequest('POST', `/api/files/${fileId}/approve`, { status });
-      return res.json();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || 'Failed to update approval status');
+      }
+      return await res.json().catch(() => ({}));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/files', file?.id, 'approvals'] });
