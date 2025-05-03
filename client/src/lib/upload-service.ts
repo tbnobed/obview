@@ -101,6 +101,26 @@ class UploadService {
     return false;
   }
   
+  // Cancel all active uploads (used when logging out)
+  cancelAllUploads(): number {
+    let cancelCount = 0;
+    
+    // Get all upload IDs
+    const uploadIds = Array.from(this.uploads.keys());
+    
+    // Cancel each active upload
+    uploadIds.forEach(id => {
+      const upload = this.uploads.get(id);
+      if (upload && (upload.status === 'uploading' || upload.status === 'pending')) {
+        if (this.cancelUpload(id)) {
+          cancelCount++;
+        }
+      }
+    });
+    
+    return cancelCount;
+  }
+  
   // Remove an upload from the tracking (for completed or failed uploads)
   removeUpload(id: string): void {
     this.cancelUpload(id);

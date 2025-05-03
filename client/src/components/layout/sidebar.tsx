@@ -48,6 +48,17 @@ export default function Sidebar() {
   
   // Actually perform the logout
   const handleLogout = () => {
+    // Cancel all uploads before logging out
+    const canceledCount = uploadService.cancelAllUploads();
+    if (canceledCount > 0) {
+      toast({
+        title: "Uploads canceled",
+        description: `${canceledCount} active ${canceledCount === 1 ? 'upload was' : 'uploads were'} canceled due to logout.`,
+        variant: "destructive"
+      });
+    }
+    
+    // Proceed with logout
     logoutMutation.mutate();
   };
 
