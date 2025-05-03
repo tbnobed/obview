@@ -81,6 +81,33 @@ export default function Header() {
 
   return (
     <>
+      {/* Active Upload Warning Dialog */}
+      <AlertDialog open={showLogoutAlert} onOpenChange={setShowLogoutAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center text-amber-600 dark:text-amber-500">
+              <AlertTriangle className="mr-2 h-5 w-5" />
+              Active Uploads in Progress
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have uploads in progress. Logging out now will cancel all uploads and your files will not be saved.
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 rounded-md text-amber-800 dark:text-amber-300">
+                <strong>Recommendation:</strong> Please wait for all uploads to complete before logging out.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay Logged In</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-800"
+            >
+              Log Out Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Mobile header - hidden on desktop */}
       <div className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 flex items-center justify-between px-4 py-2 sm:px-6 md:hidden">
         <Logo size="sm" />

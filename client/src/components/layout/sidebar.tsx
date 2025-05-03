@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -10,20 +11,76 @@ import {
   FolderKanban, 
   Users, 
   Settings,
-  LogOut 
+  LogOut,
+  AlertTriangle
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Logo from "@/components/ui/logo";
+import { uploadService } from "@/lib/upload-service";
 
 export default function Sidebar() {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
   const { data: projects, isLoading: projectsLoading } = useProjects();
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   
   // Get top 10 most recent projects, already sorted by last edited from the useProjects hook
   const recentProjects = projects ? projects.slice(0, 10) : [];
+  
+  // This function checks for active uploads and shows warning if needed
+  const handleLogoutCheck = () => {
+    if (uploadService.hasActiveUploads()) {
+      setShowLogoutAlert(true);
+    } else {
+      // No active uploads, proceed with logout
+      logoutMutation.mutate();
+    }
+  };
+  
+  // Actually perform the logout
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   return (
-    <div className="flex flex-col w-64 h-full border-r border-neutral-200 dark:border-gray-900 bg-white dark:bg-[#0a0d14] shadow-sm">
+    <>
+      {/* Active Upload Warning Dialog */}
+      <AlertDialog open={showLogoutAlert} onOpenChange={setShowLogoutAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center text-amber-600 dark:text-amber-500">
+              <AlertTriangle className="mr-2 h-5 w-5" />
+              Active Uploads in Progress
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have uploads in progress. Logging out now will cancel all uploads and your files will not be saved.
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 rounded-md text-amber-800 dark:text-amber-300">
+                <strong>Recommendation:</strong> Please wait for all uploads to complete before logging out.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay Logged In</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-800"
+            >
+              Log Out Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    
+      <div className="flex flex-col w-64 h-full border-r border-neutral-200 dark:border-gray-900 bg-white dark:bg-[#0a0d14] shadow-sm">
       <div className="flex items-center justify-center h-60 pt-10 flex-shrink-0 bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-900 dark:to-primary-700">
         <Logo size="lg" className="text-white scale-[3]" />
       </div>
@@ -156,14 +213,18 @@ export default function Sidebar() {
                 <Settings className="h-4 w-4 mr-1.5" />
                 Account
               </Link>
-              <Link href="/logout" className="flex items-center text-sm text-neutral-600 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+              <button 
+                onClick={handleLogoutCheck}
+                className="flex items-center text-sm text-neutral-600 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 transition-colors bg-transparent border-none cursor-pointer p-0"
+              >
                 <LogOut className="h-4 w-4 mr-1.5" />
                 Sign out
-              </Link>
+              </button>
             </div>
           </div>
         </div>
       )}
     </div>
+    </>
   );
 }
