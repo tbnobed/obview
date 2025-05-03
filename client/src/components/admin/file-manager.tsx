@@ -149,10 +149,41 @@ export default function FileManager() {
   const scanMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/admin/scan-files");
+      
+      // First check if response is OK
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Server error: ${response.status}`);
+      }
+      
+      // Handle empty responses
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        return { 
+          message: "File system scan complete",
+          stats: { 
+            totalDatabaseFiles: 0, 
+            totalFileSystemFiles: 0, 
+            missingFilesUpdated: 0, 
+            existingFilesUpdated: 0, 
+            errors: ["No JSON response received from server"] 
+          }
+        };
+      }
+      
+      // Get response text first to debug any issues
+      const responseText = await response.text();
+      
       try {
-        return await response.json();
+        // Try to parse the response text as JSON
+        if (!responseText || responseText.trim() === '') {
+          throw new Error("Empty response received");
+        }
+        
+        return JSON.parse(responseText);
       } catch (error) {
         console.error('Failed to parse scan response as JSON:', error);
+        console.log('Raw response text:', responseText);
         throw new Error('Failed to parse scan results');
       }
     },
