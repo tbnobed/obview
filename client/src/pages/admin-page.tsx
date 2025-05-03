@@ -55,11 +55,6 @@ export default function AdminPage() {
   const { data: projects, isLoading: projectsLoading } = useQuery<any[]>({
     queryKey: ["/api/projects"],
   });
-  
-  // Get approvals with requested changes
-  const { data: approvals, isLoading: approvalsLoading } = useQuery<any[]>({
-    queryKey: ["/api/approvals/requested-changes"],
-  });
 
   return (
     <AppLayout>
