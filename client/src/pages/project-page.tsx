@@ -552,22 +552,6 @@ export default function ProjectPage() {
                   <Plus className="h-4 w-4 mr-1.5" />
                   Upload Media
                 </Button>
-                
-                {/* Mark as In Review Button */}
-                <Button 
-                  variant="outline"
-                  className="flex items-center dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
-                  onClick={handleMarkAsInReview}
-                  disabled={isUpdatingStatus || project.status === 'in_review' || project.status === 'approved'}
-                  title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
-                >
-                  {isUpdatingStatus ? (
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                  ) : (
-                    <ClipboardCheck className="h-4 w-4 mr-1.5" />
-                  )}
-                  Mark as In Review
-                </Button>
               </>
             )}
           </div>
