@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -14,22 +14,6 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const { isLoading } = useAuth();
   const { isCollapsed } = useSidebar();
-  // Added state for animation
-  const [isSidebarVisible, setIsSidebarVisible] = useState(!isCollapsed);
-
-  // Handle sidebar visibility with animation timing
-  useEffect(() => {
-    if (isCollapsed) {
-      // When collapsing, delay hiding to allow animation to complete
-      const timer = setTimeout(() => {
-        setIsSidebarVisible(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    } else {
-      // When expanding, show immediately
-      setIsSidebarVisible(true);
-    }
-  }, [isCollapsed]);
 
   if (isLoading) {
     return (
@@ -44,15 +28,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Desktop Sidebar */}
       <div 
         className={cn(
-          "hidden md:block h-full",
-          isCollapsed 
-            ? "w-0" 
-            : "w-64",
-          isSidebarVisible ? "opacity-100 transition-opacity duration-300" : "opacity-0"
+          "hidden md:block transition-all duration-500 ease-in-out",
+          isCollapsed ? "w-0 opacity-0" : "w-64 opacity-100"
         )}
         style={{ 
-          overflow: 'hidden',
-          visibility: isSidebarVisible ? 'visible' : 'hidden'
+          overflow: isCollapsed ? 'hidden' : 'visible' 
         }}
       >
         <Sidebar />
