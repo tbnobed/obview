@@ -95,7 +95,17 @@ export default function MediaPlayer({
       }
     },
     onSuccess: () => {
+      // Invalidate approvals query to update the file approval status
       queryClient.invalidateQueries({ queryKey: ['/api/files', file?.id, 'approvals'] });
+      
+      // Also invalidate project query to update project badge status
+      if (file?.projectId) {
+        // Invalidate specific project
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}`] });
+        // Also invalidate the projects list
+        queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      }
+      
       toast({
         title: "File approval updated",
         description: "Your approval status has been saved.",
