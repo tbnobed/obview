@@ -222,12 +222,12 @@ export default function InvitePage() {
           </CardHeader>
           <CardContent>
             <div className="mb-6">
-              <Alert className="bg-blue-50 border-blue-200">
-                <Mail className="h-4 w-4 text-blue-500" />
-                <AlertTitle>Invitation Details</AlertTitle>
-                <AlertDescription>
-                  <p className="mb-2">You've been invited by <strong>{inviterName}</strong> to join the project <strong>{projectName}</strong>.</p>
-                  <p>This invitation was sent to <strong>{invitationEmail}</strong>. You need to sign in with this email address to accept the invitation.</p>
+              <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                <Mail className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                <AlertTitle className="text-blue-700 dark:text-blue-300 font-medium">Invitation Details</AlertTitle>
+                <AlertDescription className="text-blue-800 dark:text-blue-200">
+                  <p className="mb-2">You've been invited by <strong className="text-blue-900 dark:text-blue-100">{inviterName}</strong> to join the project <strong className="text-blue-900 dark:text-blue-100">{projectName}</strong>.</p>
+                  <p>This invitation was sent to <strong className="text-blue-900 dark:text-blue-100">{invitationEmail}</strong>. You need to sign in with this email address to accept the invitation.</p>
                 </AlertDescription>
               </Alert>
             </div>
@@ -254,11 +254,11 @@ export default function InvitePage() {
           <CardDescription>You've successfully joined the project</CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert className="bg-primary/10 border-primary">
-            <CheckCircle className="h-4 w-4 text-primary" />
-            <AlertTitle>Success!</AlertTitle>
-            <AlertDescription>
-              You have successfully joined <strong>{projectName}</strong> invited by {inviterName}.
+          <Alert className="bg-primary/10 dark:bg-primary-950/50 border-primary dark:border-primary-800">
+            <CheckCircle className="h-4 w-4 text-primary dark:text-primary-400" />
+            <AlertTitle className="text-primary-700 dark:text-primary-300 font-medium">Success!</AlertTitle>
+            <AlertDescription className="text-primary-800 dark:text-primary-200">
+              You have successfully joined <strong className="text-primary-900 dark:text-primary-100">{projectName}</strong> invited by <strong className="text-primary-900 dark:text-primary-100">{inviterName}</strong>.
             </AlertDescription>
           </Alert>
         </CardContent>

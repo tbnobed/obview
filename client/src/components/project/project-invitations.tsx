@@ -94,7 +94,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                   
                   {/* Email delivery status with debug info */}
                   {invitation.emailSent ? (
-                    <Badge variant="outline" className="px-1.5 mr-2 bg-green-50 text-green-700 border-green-200">
+                    <Badge variant="outline" className="px-1.5 mr-2 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
                       <Mail className="h-3 w-3 mr-1" />
                       Email sent
                     </Badge>
@@ -102,7 +102,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Badge variant="outline" className="px-1.5 mr-2 bg-amber-50 text-amber-700 border-amber-200 cursor-help">
+                          <Badge variant="outline" className="px-1.5 mr-2 bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 cursor-help">
                             <Mail className="h-3 w-3 mr-1" />
                             Email status unknown
                           </Badge>
