@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
-import { useProject, useUpdateProjectStatus } from "@/hooks/use-projects";
+import { useProject } from "@/hooks/use-projects";
 import { useMediaFiles } from "@/hooks/use-media";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -66,6 +66,8 @@ export default function ProjectPage() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [showUsersDropdown, setShowUsersDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
   const { 
     data: project, 
@@ -328,11 +330,41 @@ export default function ProjectPage() {
   const isEditor = user?.role === "admin" || user?.role === "editor";
   
   // Function to update project status to "In Review"
-  const updateProjectStatusMutation = useUpdateProjectStatus(projectId);
-  
   const handleMarkAsInReview = () => {
-    if (project.status !== 'in_review' && project.status !== 'approved') {
-      updateProjectStatusMutation.mutate('in_review');
+    if (project.status !== 'in_review' && project.status !== 'approved' && !isUpdatingStatus) {
+      setIsUpdatingStatus(true);
+      
+      // Direct API call instead of using hook
+      fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'in_review' }),
+        credentials: 'include',
+      })
+        .then(response => {
+          if (!response.ok) throw new Error("Failed to update project status");
+          return response.json();
+        })
+        .then(data => {
+          toast({
+            title: "Project marked as In Review",
+            description: "Project status has been updated successfully",
+          });
+          // Refresh project data
+          window.location.reload();
+        })
+        .catch(error => {
+          toast({
+            title: "Failed to update project status",
+            description: error.message,
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setIsUpdatingStatus(false);
+        });
     }
   };
 
@@ -526,10 +558,10 @@ export default function ProjectPage() {
                   variant="outline"
                   className="flex items-center dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
                   onClick={handleMarkAsInReview}
-                  disabled={updateProjectStatusMutation.isPending || project.status === 'in_review' || project.status === 'approved'}
+                  disabled={isUpdatingStatus || project.status === 'in_review' || project.status === 'approved'}
                   title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
                 >
-                  {updateProjectStatusMutation.isPending ? (
+                  {isUpdatingStatus ? (
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                   ) : (
                     <ClipboardCheck className="h-4 w-4 mr-1.5" />
