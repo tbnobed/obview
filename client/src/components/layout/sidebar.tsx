@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useProjects } from "@/hooks/use-projects";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, 
   Home, 
@@ -32,6 +33,7 @@ export default function Sidebar() {
   const [location] = useLocation();
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const { toast } = useToast();
   
   // Get top 10 most recent projects, already sorted by last edited from the useProjects hook
   const recentProjects = projects ? projects.slice(0, 10) : [];

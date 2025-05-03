@@ -9,6 +9,7 @@ import Sidebar from "@/components/layout/sidebar";
 import Logo from "@/components/ui/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,7 @@ export default function Header() {
   const { isCollapsed, toggleSidebar } = useSidebar();
   const [_, navigate] = useLocation();
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const { toast } = useToast();
   
   // This function checks for active uploads and shows warning if needed
   const handleLogoutClick = () => {
