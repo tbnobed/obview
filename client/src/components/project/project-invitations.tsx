@@ -54,7 +54,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-500">
+      <div className="text-center py-8 text-red-500 dark:text-red-400">
         Error loading invitations
       </div>
     );
@@ -62,7 +62,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
 
   if (invitations.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-8 text-muted-foreground dark:text-gray-400">
         No pending invitations
       </div>
     );
@@ -70,7 +70,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium mb-4">Pending Invitations</h3>
+      <h3 className="text-lg font-medium mb-4 text-primary-600 dark:text-primary-400">Pending Invitations</h3>
       
       <div className="space-y-3">
         {invitations.map((invitation: any) => (
@@ -88,7 +88,7 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
               <div className="flex flex-col">
                 <div className="font-medium dark:text-white">{invitation.email}</div>
                 <div className="flex items-center text-sm text-muted-foreground dark:text-gray-400">
-                  <Badge variant="outline" className="mr-2 px-1.5">
+                  <Badge variant="outline" className="mr-2 px-1.5 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700">
                     {invitation.role || "Viewer"}
                   </Badge>
                   
@@ -114,8 +114,8 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                     </TooltipProvider>
                   )}
                   
-                  <div className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
+                  <div className="flex items-center text-gray-600 dark:text-gray-400">
+                    <Clock className="h-3 w-3 mr-1 text-gray-500 dark:text-gray-500" />
                     <span>Expires {invitation.expiresAt ? formatTimeAgo(new Date(invitation.expiresAt)) : "soon"}</span>
                   </div>
                 </div>
@@ -176,9 +176,9 @@ export function ProjectInvitations({ projectId }: ProjectInvitationsProps) {
                 
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete invitation?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete the invitation sent to <span className="font-semibold">{invitation.email || "this user"}</span>. 
+                    <AlertDialogTitle className="dark:text-white">Delete invitation?</AlertDialogTitle>
+                    <AlertDialogDescription className="dark:text-gray-300">
+                      This will permanently delete the invitation sent to <span className="font-semibold dark:text-white">{invitation.email || "this user"}</span>. 
                       This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
