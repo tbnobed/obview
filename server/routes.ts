@@ -924,10 +924,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/projects/:projectId/files", hasProjectAccess, async (req, res, next) => {
     try {
       const projectId = parseInt(req.params.projectId);
+      console.log(`[DEBUG] Getting files for project ID: ${projectId}`);
       const files = await storage.getFilesByProject(projectId);
+      console.log(`[DEBUG] Found ${files.length} files for project ID ${projectId}`);
       
       res.json(files);
     } catch (error) {
+      console.error(`[ERROR] Failed to get files for project ${projectId}:`, error);
       next(error);
     }
   });

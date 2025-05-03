@@ -85,7 +85,7 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
   // Scan filesystem mutation
   const scanFilesMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/system/scan-files");
+      return await apiRequest("POST", "/api/admin/scan-files");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "files"] });
@@ -276,6 +276,9 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
               Clear Search
             </Button>
           )}
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            Try clicking the "Scan Files" button to refresh the file list. Debug: Project ID {projectId}, Files count: {files?.length || 0}
+          </div>
         </div>
       )}
     </div>
