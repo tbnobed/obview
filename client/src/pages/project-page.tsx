@@ -26,6 +26,7 @@ import { ProjectActivityTab } from "@/components/project/project-activity-tab";
 import InviteForm from "@/components/project/invite-form";
 import { ProjectInvitations } from "@/components/project/project-invitations";
 import { ProjectTeamMembers } from "@/components/project/project-team-members";
+import { ProjectMediaManager } from "@/components/project/project-media-manager";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
