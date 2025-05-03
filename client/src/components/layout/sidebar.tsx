@@ -23,7 +23,7 @@ export default function Sidebar() {
   const recentProjects = projects ? projects.slice(0, 10) : [];
 
   return (
-    <div className="flex flex-col w-72 border-r border-neutral-200 dark:border-gray-900 bg-white dark:bg-[#0a0d14] shadow-sm">
+    <div className="flex flex-col w-64 h-full border-r border-neutral-200 dark:border-gray-900 bg-white dark:bg-[#0a0d14] shadow-sm">
       <div className="flex items-center justify-center h-60 pt-10 flex-shrink-0 bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-900 dark:to-primary-700">
         <Logo size="lg" className="text-white scale-[3]" />
       </div>

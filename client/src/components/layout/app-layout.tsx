@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -14,6 +14,22 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const { isLoading } = useAuth();
   const { isCollapsed } = useSidebar();
+  // Added state for animation
+  const [isSidebarVisible, setIsSidebarVisible] = useState(!isCollapsed);
+
+  // Handle sidebar visibility with animation timing
+  useEffect(() => {
+    if (isCollapsed) {
+      // When collapsing, delay hiding to allow animation to complete
+      const timer = setTimeout(() => {
+        setIsSidebarVisible(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      // When expanding, show immediately
+      setIsSidebarVisible(true);
+    }
+  }, [isCollapsed]);
 
   if (isLoading) {
     return (
@@ -25,25 +41,25 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white dark:bg-[#0a0d14]">
-      {/* Desktop Sidebar with animated transition */}
+      {/* Desktop Sidebar */}
       <div 
         className={cn(
-          "hidden fixed md:flex flex-col transition-[width,transform,opacity] duration-500 ease-in-out h-full z-10",
+          "hidden md:block h-full",
           isCollapsed 
-            ? "w-0 opacity-0 -translate-x-5 animate-sidebarSlideOut" 
-            : "w-64 opacity-100 translate-x-0"
+            ? "w-0" 
+            : "w-64",
+          isSidebarVisible ? "opacity-100 transition-opacity duration-300" : "opacity-0"
         )}
+        style={{ 
+          overflow: 'hidden',
+          visibility: isSidebarVisible ? 'visible' : 'hidden'
+        }}
       >
-        <div className="min-w-64 overflow-hidden">
-          <Sidebar />
-        </div>
+        <Sidebar />
       </div>
       
       {/* Main Content */}
-      <div className={cn(
-        "flex flex-col flex-1 overflow-hidden transition-[margin] duration-500 ease-in-out",
-        isCollapsed ? "ml-0" : "md:ml-64"
-      )}>
+      <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header with mobile menu and desktop controls */}
         <Header />
         
