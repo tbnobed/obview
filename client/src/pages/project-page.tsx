@@ -215,7 +215,7 @@ export default function ProjectPage() {
     }
   }, [location, files]);
 
-  const selectedFile = files?.find(file => file.id === selectedFileId);
+  const selectedFile = files?.find(file => file.id === selectedFileId) || null;
   
   // Share project handler
   const handleShareProject = () => {
