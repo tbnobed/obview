@@ -331,7 +331,9 @@ export default function ProjectPage() {
   const updateProjectStatusMutation = useUpdateProjectStatus(projectId);
   
   const handleMarkAsInReview = () => {
-    updateProjectStatusMutation.mutate('in_review');
+    if (project.status !== 'in_review' && project.status !== 'approved') {
+      updateProjectStatusMutation.mutate('in_review');
+    }
   };
 
   return (
@@ -519,22 +521,21 @@ export default function ProjectPage() {
                   Upload Media
                 </Button>
                 
-                {/* Mark as In Review Button (only show if not already in review or approved) */}
-                {project.status !== 'in_review' && project.status !== 'approved' && (
-                  <Button 
-                    variant="outline"
-                    className="flex items-center dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
-                    onClick={handleMarkAsInReview}
-                    disabled={updateProjectStatusMutation.isPending}
-                  >
-                    {updateProjectStatusMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                    ) : (
-                      <ClipboardCheck className="h-4 w-4 mr-1.5" />
-                    )}
-                    Mark as In Review
-                  </Button>
-                )}
+                {/* Mark as In Review Button */}
+                <Button 
+                  variant="outline"
+                  className="flex items-center dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
+                  onClick={handleMarkAsInReview}
+                  disabled={updateProjectStatusMutation.isPending || project.status === 'in_review' || project.status === 'approved'}
+                  title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
+                >
+                  {updateProjectStatusMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                  )}
+                  Mark as In Review
+                </Button>
               </>
             )}
           </div>
