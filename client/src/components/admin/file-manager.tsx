@@ -157,26 +157,85 @@ export default function FileManager() {
       }
 
       // For debugging
-      console.log("Response status:", response.status);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      console.log("Response status:", response?.status || "No status");
       
+      // Safely access headers if they exist
       try {
-        // This approach gets the JSON directly without trying to use text()
-        const data = await response.json();
-        console.log("Successfully parsed response:", data);
-        return data;
+        if (response?.headers && typeof response.headers.entries === 'function') {
+          console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+        } else {
+          console.log("No headers available or entries method not found");
+        }
+      } catch (err) {
+        console.error("Error accessing response headers:", err);
+      }
+      
+      // Avoid trying to read response.json() if it's null or undefined
+      if (!response) {
+        console.error("Response object is null or undefined");
+        return {
+          message: "File system scan complete with errors",
+          stats: {
+            totalDatabaseFiles: 0,
+            totalFileSystemFiles: 0,
+            missingFilesUpdated: 0,
+            existingFilesUpdated: 0,
+            errors: ["Invalid response received from server"]
+          }
+        };
+      }
+      
+      // Get the response as text first, then parse it manually
+      try {
+        // Get the raw text first
+        const responseText = await response.text();
+        console.log("Raw response text:", responseText);
+        
+        // If we have text, try to parse it as JSON
+        if (responseText && responseText.trim()) {
+          try {
+            const data = JSON.parse(responseText);
+            console.log("Successfully parsed response:", data);
+            return data;
+          } catch (jsonError) {
+            console.error("JSON parse error:", jsonError);
+            // Return a fallback with the raw text for debugging
+            return {
+              message: "File system scan complete with parsing errors",
+              stats: {
+                totalDatabaseFiles: 0,
+                totalFileSystemFiles: 0,
+                missingFilesUpdated: 0,
+                existingFilesUpdated: 0,
+                errors: [`Failed to parse JSON: ${responseText.substring(0, 100)}${responseText.length > 100 ? '...' : ''}`]
+              }
+            };
+          }
+        } else {
+          // Empty response
+          return {
+            message: "File system scan complete",
+            stats: {
+              totalDatabaseFiles: 0,
+              totalFileSystemFiles: 0,
+              missingFilesUpdated: 0,
+              existingFilesUpdated: 0,
+              errors: ["Empty response received from server"]
+            }
+          };
+        }
       } catch (error) {
-        console.error("Failed to parse response as JSON:", error);
+        console.error("Failed to read response text:", error);
         
         // Provide a fallback result with error information
-        return { 
-          message: "File system scan complete with parsing errors",
-          stats: { 
-            totalDatabaseFiles: 0, 
-            totalFileSystemFiles: 0, 
-            missingFilesUpdated: 0, 
-            existingFilesUpdated: 0, 
-            errors: [`JSON parse error: ${error instanceof Error ? error.message : String(error)}`] 
+        return {
+          message: "File system scan failed",
+          stats: {
+            totalDatabaseFiles: 0,
+            totalFileSystemFiles: 0,
+            missingFilesUpdated: 0,
+            existingFilesUpdated: 0,
+            errors: [`Error accessing response: ${error instanceof Error ? error.message : String(error)}`]
           }
         };
       }
