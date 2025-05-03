@@ -6,6 +6,15 @@ import { useToast } from "@/hooks/use-toast";
 export const useProjects = () => {
   return useQuery<Project[]>({
     queryKey: ["/api/projects"],
+    select: (data) => {
+      // Sort projects by updatedAt date (most recent first)
+      return [...data].sort((a, b) => {
+        // Convert dates to timestamps for comparison
+        const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+        return dateB - dateA; // Sort descending (newest first)
+      });
+    }
   });
 };
 

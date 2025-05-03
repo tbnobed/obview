@@ -19,8 +19,8 @@ export default function Sidebar() {
   const [location] = useLocation();
   const { data: projects, isLoading: projectsLoading } = useProjects();
   
-  // Filter to show maximum 5 projects in sidebar
-  const recentProjects = projects?.slice(0, 5) || [];
+  // Get all projects, already sorted by last edited from the useProjects hook
+  const recentProjects = projects || [];
 
   return (
     <div className="flex flex-col w-72 border-r border-neutral-200 dark:border-gray-900 bg-white dark:bg-[#0a0d14] shadow-sm">
@@ -104,7 +104,7 @@ export default function Sidebar() {
               <Loader2 className="h-4 w-4 animate-spin text-neutral-400 dark:text-neutral-500" />
             </div>
           ) : recentProjects.length > 0 ? (
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-2 max-h-60 overflow-y-auto pr-1">
               {recentProjects.map(project => (
                 <Link key={project.id} href={`/project/${project.id}`}>
                   <div className={cn(
