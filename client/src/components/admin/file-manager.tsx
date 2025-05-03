@@ -100,7 +100,18 @@ export default function FileManager() {
         }
       }
       
-      // Handle error responses
+      // Special case: 404 Not Found - handle gracefully
+      if (response.status === 404) {
+        console.log('File not found on server, but will update UI to remove it');
+        // Return a special object to indicate file wasn't found but UI should update
+        return { 
+          success: true, 
+          notFound: true,
+          message: "File not found on server, but removed from the list" 
+        };
+      }
+      
+      // Handle other error responses
       let errorMessage = `Server error: ${response.status}`;
       try {
         const errorData = await response.text();
@@ -121,17 +132,25 @@ export default function FileManager() {
       
       throw new Error(errorMessage);
     },
-    onSuccess: (_, filename) => {
+    onSuccess: (result: any, filename) => {
       // Update the cache instead of invalidating for a smoother experience
       queryClient.setQueryData<FileDetails[]>(["/api/system/uploads"], (oldData) => {
         if (!oldData) return [];
         return oldData.filter(file => file.filename !== filename);
       });
       
-      toast({
-        title: "File Deleted",
-        description: "The file was successfully deleted.",
-      });
+      // Show appropriate toast based on result
+      if (result.notFound) {
+        toast({
+          title: "File Removed",
+          description: "The file was not found on the server but has been removed from the list.",
+        });
+      } else {
+        toast({
+          title: "File Deleted",
+          description: "The file was successfully deleted.",
+        });
+      }
     },
     onError: (error: Error, filename) => {
       // Remove from optimistic deletions if there was an error
