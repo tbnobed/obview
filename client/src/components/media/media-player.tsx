@@ -517,6 +517,65 @@ export default function MediaPlayer({
           ref={mediaContainerRef}
           className="relative h-full flex items-center justify-center bg-black"
         >
+          {/* Fullscreen controls overlay - only visible in fullscreen mode */}
+          {isFullscreen && (
+            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 p-4 z-10 flex items-center space-x-2">
+              <Button
+                onClick={togglePlay}
+                variant="ghost"
+                size="icon"
+                className="text-white hover:text-[#026d55]"
+              >
+                {isPlaying ? (
+                  <Pause className="h-6 w-6" />
+                ) : (
+                  <Play className="h-6 w-6" />
+                )}
+              </Button>
+              
+              <span className="font-mono text-sm text-white">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+              
+              <div
+                className="video-progress flex-grow mx-4 relative h-2 bg-gray-700 hover:bg-gray-600 cursor-pointer rounded-full group"
+                onClick={handleProgressClick}
+              >
+                <div
+                  className="video-progress-fill absolute top-0 left-0 h-full bg-[#026d55] rounded-full"
+                  style={{ width: `${(currentTime / duration) * 100}%` }}
+                ></div>
+                <div
+                  className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ left: `${(currentTime / duration) * 100}%` }}
+                ></div>
+              </div>
+              
+              <div className="flex items-center">
+                <Volume2 className="h-5 w-5 text-white mr-2" />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={volume}
+                  onChange={(e) => handleVolumeChange(e.target.value)}
+                  className="w-20"
+                />
+              </div>
+              
+              <Button
+                onClick={toggleFullscreen}
+                variant="ghost"
+                size="icon"
+                className="text-white hover:text-[#026d55]"
+                title="Exit fullscreen"
+              >
+                <Maximize className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
+          
           <video
             ref={videoRef}
             className="max-h-full max-w-full"
@@ -557,6 +616,65 @@ export default function MediaPlayer({
           ref={mediaContainerRef}
           className="flex flex-col items-center justify-center h-full bg-neutral-900 text-white"
         >
+          {/* Fullscreen controls overlay - only visible in fullscreen mode */}
+          {isFullscreen && (
+            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 p-4 z-10 flex items-center space-x-2">
+              <Button
+                onClick={togglePlay}
+                variant="ghost"
+                size="icon"
+                className="text-white hover:text-[#026d55]"
+              >
+                {isPlaying ? (
+                  <Pause className="h-6 w-6" />
+                ) : (
+                  <Play className="h-6 w-6" />
+                )}
+              </Button>
+              
+              <span className="font-mono text-sm text-white">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+              
+              <div
+                className="video-progress flex-grow mx-4 relative h-2 bg-gray-700 hover:bg-gray-600 cursor-pointer rounded-full group"
+                onClick={handleProgressClick}
+              >
+                <div
+                  className="video-progress-fill absolute top-0 left-0 h-full bg-[#026d55] rounded-full"
+                  style={{ width: `${(currentTime / duration) * 100}%` }}
+                ></div>
+                <div
+                  className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ left: `${(currentTime / duration) * 100}%` }}
+                ></div>
+              </div>
+              
+              <div className="flex items-center">
+                <Volume2 className="h-5 w-5 text-white mr-2" />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={volume}
+                  onChange={(e) => handleVolumeChange(e.target.value)}
+                  className="w-20"
+                />
+              </div>
+              
+              <Button
+                onClick={toggleFullscreen}
+                variant="ghost"
+                size="icon"
+                className="text-white hover:text-[#026d55]"
+                title="Exit fullscreen"
+              >
+                <Maximize className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
+          
           <div className="p-8 text-center">
             <div className="bg-neutral-800 p-10 rounded-lg mb-8">
               <File className="h-24 w-24 mx-auto text-primary dark:text-[#026d55]" />
