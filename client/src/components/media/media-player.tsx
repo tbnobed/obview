@@ -39,7 +39,7 @@ export default function MediaPlayer({
   const [errorMessage, setErrorMessage] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommentsTab, setShowCommentsTab] = useState(true);
-  const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
+  const [activeCommentId, setActiveCommentId] = useState<number | undefined>(undefined);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -207,7 +207,7 @@ export default function MediaPlayer({
     setDuration(0);
     
     // Reset active comment 
-    setActiveCommentId(null);
+    setActiveCommentId(undefined);
 
     // If there's a video/audio element, load the content manually
     if (file && file.isAvailable !== false) {
