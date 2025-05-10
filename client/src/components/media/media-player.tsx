@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, ClipboardCheck, Loader2 } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, ClipboardCheck, Loader2, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +13,8 @@ import { DownloadButton } from "@/components/download-button";
 import { ShareLinkButton } from "@/components/share-link-button";
 import { Comment, File as StorageFile, Project } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { uploadService } from "@/lib/upload-service";
 
 export default function MediaPlayer({
   file,
@@ -40,11 +42,14 @@ export default function MediaPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommentsTab, setShowCommentsTab] = useState(true);
   const [activeCommentId, setActiveCommentId] = useState<number | undefined>(undefined);
+  const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
+  const [selectedVersionFile, setSelectedVersionFile] = useState<File | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const mediaContainerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch comments for the current file
   const { data: comments = [] } = useQuery({
@@ -258,6 +263,36 @@ export default function MediaPlayer({
     }
   }, [file?.id]);
 
+  // Handle file selection for version upload
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedVersionFile(e.target.files[0]);
+    }
+  };
+  
+  // Handle version upload
+  const handleVersionUpload = () => {
+    if (!selectedVersionFile || !file || !projectId) return;
+    
+    // Use the original filename to ensure it's treated as a version
+    uploadService.uploadFile(selectedVersionFile, projectId, file.filename);
+    
+    // Close dialog and reset state
+    setIsVersionDialogOpen(false);
+    setSelectedVersionFile(null);
+    
+    // Show toast
+    toast({
+      title: "Upload started",
+      description: "Your new version is being uploaded. You can track progress in the uploads panel.",
+    });
+  };
+  
+  // Open file browser dialog
+  const openFileBrowser = () => {
+    fileInputRef.current?.click();
+  };
+  
   // Handle fullscreen
   const toggleFullscreen = () => {
     if (!mediaContainerRef.current) return;
