@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, ClipboardCheck, Loader2, Upload, X } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1026,7 +1026,11 @@ export default function MediaPlayer({
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium dark:text-white">File Versions</h3>
-                  <Button className="flex items-center dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" size="sm">
+                  <Button 
+                    className="flex items-center dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" 
+                    size="sm"
+                    onClick={() => setIsVersionDialogOpen(true)}
+                  >
                     <Layers className="h-4 w-4 mr-1.5" />
                     Upload New Version
                   </Button>
@@ -1067,6 +1071,94 @@ export default function MediaPlayer({
           </Tabs>
         </div>
       )}
+      
+      {/* File upload dialog */}
+      <Dialog open={isVersionDialogOpen} onOpenChange={setIsVersionDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload New Version</DialogTitle>
+            <DialogDescription>
+              Upload a new version of <span className="font-medium">{file?.filename}</span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div 
+              className={cn(
+                "border-2 border-dashed rounded-lg h-44 flex flex-col items-center justify-center text-center p-4 transition-colors",
+                selectedVersionFile 
+                  ? "border-primary bg-primary/5" 
+                  : "border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
+              )}
+              onClick={openFileBrowser}
+            >
+              {selectedVersionFile ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 text-primary mx-auto">
+                    {selectedVersionFile.type.startsWith('video/') ? (
+                      <FileVideo className="h-5 w-5" />
+                    ) : selectedVersionFile.type.startsWith('image/') ? (
+                      <ImageIcon className="h-5 w-5" />
+                    ) : (
+                      <File className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium">File Selected</p>
+                    <p className="text-sm text-gray-500 truncate max-w-[260px]">
+                      {selectedVersionFile.name}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {(selectedVersionFile.size / (1024 * 1024)).toFixed(2)} MB
+                    </p>
+                    <p className="text-xs text-primary mt-2">Click to change file</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-800 mb-3">
+                    <Upload className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <p className="text-sm font-medium">
+                    Click to select a file
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    or drag and drop
+                  </p>
+                </>
+              )}
+            </div>
+            
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept="video/*,image/*,audio/*,application/pdf"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsVersionDialogOpen(false);
+                setSelectedVersionFile(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleVersionUpload}
+              disabled={!selectedVersionFile}
+              className="dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Version
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
