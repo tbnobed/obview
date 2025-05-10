@@ -1044,24 +1044,46 @@ export default function MediaPlayer({
                       <div 
                         key={version.id} 
                         className={cn(
-                          "flex items-center justify-between p-3 rounded-md border",
+                          "flex items-center justify-between p-3 rounded-md border cursor-pointer transition-all relative",
                           version.id === file.id 
-                            ? "bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-900"
+                            ? "bg-primary-50 dark:bg-[#026d55]/20 border-primary-300 dark:border-[#026d55] ring-1 ring-primary-200 dark:ring-[#026d55]/40 shadow-sm"
                             : "bg-white dark:bg-gray-900 border-neutral-200 dark:border-gray-800 hover:bg-neutral-50 dark:hover:bg-gray-800"
                         )}
                         onClick={() => onSelectFile(version.id)}
                       >
+                        {version.id === file.id && (
+                          <div className="absolute left-0 top-0 h-full w-1 bg-primary-500 dark:bg-[#026d55] rounded-l-md"></div>
+                        )}
                         <div className="flex items-center">
-                          <Layers className="h-5 w-5 mr-3 text-neutral-500 dark:text-gray-400" />
+                          <div className={cn(
+                            "rounded-full flex items-center justify-center", 
+                            version.id === file.id && "bg-primary-100 dark:bg-[#026d55]/30 p-1.5"
+                          )}>
+                            <Layers className={cn(
+                              "h-5 w-5 mr-3",
+                              version.id === file.id 
+                                ? "text-primary-700 dark:text-[#026d55]" 
+                                : "text-neutral-500 dark:text-gray-400"
+                            )} />
+                          </div>
                           <div>
-                            <div className="font-medium dark:text-white">Version {version.version}</div>
+                            <div className={cn(
+                              "font-medium dark:text-white",
+                              version.id === file.id && "text-primary-700 dark:text-[#026d55]"
+                            )}>
+                              Version {version.version}
+                            </div>
                             <div className="text-xs text-neutral-500 dark:text-gray-400">
                               {new Date(version.createdAt).toLocaleDateString()}
                             </div>
                           </div>
                         </div>
                         {version.isLatestVersion && (
-                          <Badge>Latest</Badge>
+                          <Badge className={cn(
+                            version.id === file.id 
+                              ? "bg-primary-500 hover:bg-primary-600 dark:bg-[#026d55] dark:hover:bg-[#025943]" 
+                              : ""
+                          )}>Latest</Badge>
                         )}
                       </div>
                     ))}
