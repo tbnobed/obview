@@ -35,6 +35,7 @@ interface FileRequest extends Request {
 import { 
   insertProjectSchema,
   insertCommentSchema,
+  insertPublicCommentSchema,
   insertFileSchema,
   insertProjectUserSchema,
   insertApprovalSchema
@@ -1312,6 +1313,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching shared file metadata:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Simple in-memory rate limiting for public comments
+  const publicCommentRateLimit = new Map<string, { count: number; resetTime: number }>();
+  
+  const checkRateLimit = (ip: string): boolean => {
+    const now = Date.now();
+    const limit = publicCommentRateLimit.get(ip);
+    
+    if (!limit || now > limit.resetTime) {
+      // Reset or create new limit
+      publicCommentRateLimit.set(ip, { count: 1, resetTime: now + 60000 }); // 1 minute window
+      return true;
+    }
+    
+    if (limit.count >= 10) { // 10 comments per minute
+      return false;
+    }
+    
+    limit.count++;
+    return true;
+  };
+
+  // Get unified comments for shared file (no authentication required)
+  app.get("/api/share/:token/comments", async (req, res, next) => {
+    try {
+      const token = req.params.token;
+      const file = await storage.getFileByShareToken(token);
+      
+      if (!file) {
+        return res.status(404).json({ message: "Shared file not found" });
+      }
+      
+      // Check if file is marked as unavailable
+      if (file.isAvailable === false) {
+        return res.status(404).json({ 
+          message: "Shared file not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
+      // Get unified comments (both regular and public comments)
+      const comments = await storage.getUnifiedCommentsByFile(file.id);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching shared file comments:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Create public comment for shared file (no authentication required)
+  app.post("/api/share/:token/comments", async (req, res, next) => {
+    try {
+      const token = req.params.token;
+      const clientIp = req.ip || req.connection.remoteAddress || "unknown";
+      
+      // Check rate limit
+      if (!checkRateLimit(clientIp)) {
+        return res.status(429).json({ 
+          message: "Too many comments. Please wait before commenting again." 
+        });
+      }
+      
+      const file = await storage.getFileByShareToken(token);
+      
+      if (!file) {
+        return res.status(404).json({ message: "Shared file not found" });
+      }
+      
+      // Check if file is marked as unavailable
+      if (file.isAvailable === false) {
+        return res.status(404).json({ 
+          message: "Shared file not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
+      // Validate public comment data
+      const validationResult = insertPublicCommentSchema.safeParse({
+        ...req.body,
+        fileId: file.id,
+      });
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid comment data", 
+          errors: validationResult.error.errors 
+        });
+      }
+      
+      // Create the public comment
+      const comment = await storage.createPublicComment(validationResult.data);
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating public comment:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
