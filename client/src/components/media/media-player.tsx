@@ -44,12 +44,18 @@ export default function MediaPlayer({
   const [activeCommentId, setActiveCommentId] = useState<number | undefined>(undefined);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
   const [selectedVersionFile, setSelectedVersionFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [previewTime, setPreviewTime] = useState(0);
+  const [seekingToTime, setSeekingToTime] = useState<number | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const mediaContainerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastSeekTimeRef = useRef<number>(0);
+  const seekThrottleRef = useRef<NodeJS.Timeout | null>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   // Fetch comments for the current file
   const { data: comments = [] } = useQuery({
@@ -321,35 +327,85 @@ export default function MediaPlayer({
     };
   }, []);
   
-  // Handle global mouse events for scrubbing outside the progress bar
-  useEffect(() => {
-    let isDragging = false;
+  // Optimized throttled seeking function
+  const performSeek = (time: number) => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (!mediaElement) return;
     
+    // Clear any pending seek operation
+    if (seekThrottleRef.current) {
+      clearTimeout(seekThrottleRef.current);
+    }
+    
+    // Throttle seeking to avoid excessive operations
+    const now = Date.now();
+    const timeSinceLastSeek = now - lastSeekTimeRef.current;
+    const SEEK_THROTTLE_MS = 100; // Limit to 10 seeks per second
+    
+    if (timeSinceLastSeek >= SEEK_THROTTLE_MS) {
+      // Perform immediate seek
+      mediaElement.currentTime = time;
+      lastSeekTimeRef.current = now;
+      setSeekingToTime(null);
+    } else {
+      // Schedule delayed seek
+      setSeekingToTime(time);
+      seekThrottleRef.current = setTimeout(() => {
+        mediaElement.currentTime = time;
+        lastSeekTimeRef.current = Date.now();
+        setSeekingToTime(null);
+      }, SEEK_THROTTLE_MS - timeSinceLastSeek);
+    }
+  };
+  
+  // Handle global mouse events for optimized scrubbing
+  useEffect(() => {
     const handleMouseUp = () => {
-      isDragging = false;
+      if (isDragging) {
+        setIsDragging(false);
+        // Perform final seek on mouse up
+        performSeek(previewTime);
+        setCurrentTime(previewTime);
+      }
     };
     
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging && progressRef.current) {
-        const rect = progressRef.current.getBoundingClientRect();
-        // Get x position relative to progress bar (clamped between 0 and 1)
-        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        const newTime = duration * pos;
-        
-        setCurrentTime(newTime);
-        
-        if (videoRef.current) {
-          videoRef.current.currentTime = newTime;
-        } else if (audioRef.current) {
-          audioRef.current.currentTime = newTime;
+        // Use RAF for smooth visual updates
+        if (rafIdRef.current) {
+          cancelAnimationFrame(rafIdRef.current);
         }
+        
+        rafIdRef.current = requestAnimationFrame(() => {
+          if (!progressRef.current) return;
+          
+          const rect = progressRef.current.getBoundingClientRect();
+          // Get x position relative to progress bar (clamped between 0 and 1)
+          const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          const newTime = duration * pos;
+          
+          // Update preview time immediately for visual feedback
+          setPreviewTime(newTime);
+          
+          // Only seek occasionally during drag for performance
+          const now = Date.now();
+          if (now - lastSeekTimeRef.current > 200) { // Seek every 200ms during drag
+            performSeek(newTime);
+            setCurrentTime(newTime);
+          }
+        });
       }
     };
     
     const handleMouseDown = (e: MouseEvent) => {
       // Check if the click was on the progress bar
       if (progressRef.current && progressRef.current.contains(e.target as Node)) {
-        isDragging = true;
+        setIsDragging(true);
+        // Set initial preview time
+        const rect = progressRef.current.getBoundingClientRect();
+        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const newTime = duration * pos;
+        setPreviewTime(newTime);
       }
     };
     
@@ -361,8 +417,16 @@ export default function MediaPlayer({
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mousedown', handleMouseDown);
+      
+      // Cleanup RAF and timeouts
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      if (seekThrottleRef.current) {
+        clearTimeout(seekThrottleRef.current);
+      }
     };
-  }, [duration]);
+  }, [duration, isDragging, previewTime]);
   
   // Define togglePlay before it's used in useEffect hooks
   const togglePlay = () => {
@@ -402,7 +466,7 @@ export default function MediaPlayer({
     }
   };
   
-  // Add keyboard controls (spacebar for play/pause)
+  // Enhanced keyboard controls for play/pause and precise scrubbing
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       // Check if the active element is not an input field or textarea
@@ -413,10 +477,74 @@ export default function MediaPlayer({
       
       if (isInput) return;
       
-      // Spacebar for play/pause
-      if (e.code === 'Space' && !mediaError && file) {
-        e.preventDefault(); // Prevent scrolling the page
-        togglePlay();
+      const mediaElement = videoRef.current || audioRef.current;
+      if (!mediaElement || mediaError || !file) return;
+      
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault(); // Prevent scrolling the page
+          togglePlay();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          // Skip back 5 seconds (or 1 second with Shift)
+          const backwardSkip = e.shiftKey ? 1 : 5;
+          const newBackTime = Math.max(0, currentTime - backwardSkip);
+          performSeek(newBackTime);
+          setCurrentTime(newBackTime);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          // Skip forward 5 seconds (or 1 second with Shift)
+          const forwardSkip = e.shiftKey ? 1 : 5;
+          const newForwardTime = Math.min(duration, currentTime + forwardSkip);
+          performSeek(newForwardTime);
+          setCurrentTime(newForwardTime);
+          break;
+        case 'Home':
+          e.preventDefault();
+          // Jump to beginning
+          performSeek(0);
+          setCurrentTime(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          // Jump to end
+          performSeek(duration);
+          setCurrentTime(duration);
+          break;
+        case 'Comma':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            // Frame-by-frame backward (estimate 1/30 second)
+            const frameBackTime = Math.max(0, currentTime - (1/30));
+            performSeek(frameBackTime);
+            setCurrentTime(frameBackTime);
+          }
+          break;
+        case 'Period':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            // Frame-by-frame forward (estimate 1/30 second)
+            const frameForwardTime = Math.min(duration, currentTime + (1/30));
+            performSeek(frameForwardTime);
+            setCurrentTime(frameForwardTime);
+          }
+          break;
+        case 'KeyJ':
+          e.preventDefault();
+          // Quick rewind (10 seconds)
+          const rewindTime = Math.max(0, currentTime - 10);
+          performSeek(rewindTime);
+          setCurrentTime(rewindTime);
+          break;
+        case 'KeyL':
+          e.preventDefault();
+          // Quick forward (10 seconds)
+          const fastForwardTime = Math.min(duration, currentTime + 10);
+          performSeek(fastForwardTime);
+          setCurrentTime(fastForwardTime);
+          break;
       }
     };
     
@@ -425,7 +553,7 @@ export default function MediaPlayer({
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
     };
-  }, [isPlaying, mediaError, file, togglePlay]);
+  }, [isPlaying, mediaError, file, togglePlay, currentTime, duration, performSeek]);
 
   const handleVolumeChange = (value: string) => {
     const newVolume = parseFloat(value);
