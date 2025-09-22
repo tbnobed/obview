@@ -68,6 +68,24 @@ export const comments = pgTable("comments", {
 export const insertCommentSchema = createInsertSchema(comments)
   .omit({ id: true, createdAt: true });
 
+// PUBLIC COMMENT SCHEMA (for anonymous comments on shared files)
+export const publicComments = pgTable("public_comments", {
+  id: serial("id").primaryKey(),
+  content: text("content").notNull(),
+  fileId: integer("file_id").notNull(),
+  displayName: text("display_name").notNull(),
+  timestamp: integer("timestamp"), // For timestamped video comments (seconds)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPublicCommentSchema = createInsertSchema(publicComments)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    displayName: z.string().min(2, "Name must be at least 2 characters").max(40, "Name must be 40 characters or less"),
+    content: z.string().min(1, "Comment cannot be empty").max(1000, "Comment must be 1000 characters or less"),
+    timestamp: z.number().min(0).optional()
+  });
+
 // PROJECT USER SCHEMA (for permissions)
 export const projectUsers = pgTable("project_users", {
   id: serial("id").primaryKey(),
@@ -152,6 +170,27 @@ export type InsertFile = z.infer<typeof insertFileSchema>;
 
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
+
+export type PublicComment = typeof publicComments.$inferSelect;
+export type InsertPublicComment = z.infer<typeof insertPublicCommentSchema>;
+
+// Unified comment type for merging authenticated and public comments
+export type UnifiedComment = {
+  id: number;
+  content: string;
+  fileId: number;
+  timestamp: number | null;
+  isResolved?: boolean;
+  createdAt: Date;
+  isPublic: boolean;
+  authorName: string;
+  user?: {
+    id: number;
+    name: string;
+    username: string;
+  };
+  parentId?: number | null;
+};
 
 export type ProjectUser = typeof projectUsers.$inferSelect;
 export type InsertProjectUser = z.infer<typeof insertProjectUserSchema>;
