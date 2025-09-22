@@ -1286,16 +1286,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/share/:token/metadata", async (req, res, next) => {
     try {
       const token = req.params.token;
-      // Find file by share token
-      const files = await storage.getAllFiles();
-      const file = files.find((f: StorageFile) => f.shareToken === token);
+      // Find file by share token with project information
+      const fileWithProject = await storage.getFileWithProjectByShareToken(token);
       
-      if (!file) {
+      if (!fileWithProject) {
         return res.status(404).json({ message: "Shared file not found" });
       }
       
       // Check if file is marked as unavailable
-      if (file.isAvailable === false) {
+      if (fileWithProject.isAvailable === false) {
         return res.status(404).json({ 
           message: "Shared file not available", 
           code: "FILE_UNAVAILABLE",
@@ -1303,13 +1302,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Return file metadata (excluding sensitive fields)
+      // Return file metadata with project name (excluding sensitive fields)
       return res.json({
-        id: file.id,
-        filename: file.filename,
-        fileType: file.fileType,
-        fileSize: file.fileSize,
-        createdAt: file.createdAt
+        id: fileWithProject.id,
+        filename: fileWithProject.filename,
+        fileType: fileWithProject.fileType,
+        fileSize: fileWithProject.fileSize,
+        projectName: fileWithProject.projectName,
+        createdAt: fileWithProject.createdAt
       });
     } catch (error) {
       console.error("Error fetching shared file metadata:", error);

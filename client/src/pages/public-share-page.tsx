@@ -23,6 +23,7 @@ interface SharedFile {
   filename: string;
   fileType: string;
   fileSize: number;
+  projectName: string;
   createdAt: string;
 }
 
@@ -336,15 +337,18 @@ export default function PublicSharePage() {
         <div className="text-center mb-6">
           <Logo className="mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Shared Media
+            {file.projectName}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             {file.filename}
           </p>
         </div>
 
-        {/* Large responsive player layout */}
-        <Card className="max-w-7xl mx-auto">
+        {/* Side-by-side layout: Media Player on left, Comments on right */}
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Media Player - Takes 2/3 of space on large screens */}
+          <div className="lg:col-span-2">
+            <Card>
           <CardContent className="p-2 md:p-4">
             {/* 16:9 responsive video container */}
             <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-hidden aspect-video w-full">
@@ -500,25 +504,29 @@ export default function PublicSharePage() {
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Comments Section */}
-        <Card className="max-w-7xl mx-auto mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Comments
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Comment Form */}
-            <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
-            
-            {/* Comments List */}
-            <CommentsList token={token!} />
-          </CardContent>
-        </Card>
+          {/* Comments Section - Takes 1/3 of space on large screens */}
+          <div className="lg:col-span-1">
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Comments
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Comment Form */}
+                <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
+                
+                {/* Comments List */}
+                <CommentsList token={token!} />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

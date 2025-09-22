@@ -79,6 +79,7 @@ export interface IStorage {
   createPublicComment(publicComment: InsertPublicComment): Promise<PublicComment>;
   getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]>;
   getFileByShareToken(token: string): Promise<File | undefined>;
+  getFileWithProjectByShareToken(token: string): Promise<(File & { projectName: string }) | undefined>;
 
   // Project user management
   getProjectUser(projectId: number, userId: number): Promise<ProjectUser | undefined>;
@@ -423,6 +424,29 @@ export class MemStorage implements IStorage {
     return Array.from(this.files.values()).find(
       (file) => file.shareToken === token
     );
+  }
+
+  async getFileWithProjectByShareToken(token: string): Promise<(File & { projectName: string }) | undefined> {
+    const file = Array.from(this.files.values()).find(
+      (file) => file.shareToken === token
+    );
+    
+    if (!file) {
+      return undefined;
+    }
+    
+    const project = Array.from(this.projects.values()).find(
+      (project) => project.id === file.projectId
+    );
+    
+    if (!project) {
+      return undefined;
+    }
+    
+    return {
+      ...file,
+      projectName: project.name
+    };
   }
 
   // Project User methods
@@ -1065,6 +1089,100 @@ export class DatabaseStorage implements IStorage {
       .where(eq(passwordResets.id, id))
       .returning();
     return updatedPasswordReset;
+  }
+
+  // Public Comment methods
+  async getPublicCommentsByFile(fileId: number): Promise<PublicComment[]> {
+    return await db
+      .select()
+      .from(publicComments)
+      .where(eq(publicComments.fileId, fileId))
+      .orderBy(desc(publicComments.createdAt));
+  }
+
+  async createPublicComment(insertPublicComment: InsertPublicComment): Promise<PublicComment> {
+    const [publicComment] = await db
+      .insert(publicComments)
+      .values(insertPublicComment)
+      .returning();
+    return publicComment;
+  }
+
+  async getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]> {
+    const regularComments = await this.getCommentsByFile(fileId);
+    const publicCommentsList = await this.getPublicCommentsByFile(fileId);
+    
+    // Convert regular comments to unified format
+    const unifiedRegularComments: UnifiedComment[] = await Promise.all(
+      regularComments.map(async (comment) => {
+        const user = await this.getUser(comment.userId);
+        return {
+          id: comment.id,
+          content: comment.content,
+          fileId: comment.fileId,
+          timestamp: comment.timestamp,
+          isResolved: comment.isResolved,
+          createdAt: comment.createdAt,
+          isPublic: false,
+          authorName: user?.name || 'Unknown User',
+          user: user ? {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          } : undefined
+        };
+      })
+    );
+
+    // Convert public comments to unified format
+    const unifiedPublicComments: UnifiedComment[] = publicCommentsList.map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      fileId: comment.fileId,
+      timestamp: comment.timestamp,
+      isResolved: false,
+      createdAt: comment.createdAt,
+      isPublic: true,
+      authorName: comment.displayName,
+      user: undefined
+    }));
+
+    // Combine and sort by creation date
+    const allComments = [...unifiedRegularComments, ...unifiedPublicComments];
+    return allComments.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  async getFileByShareToken(token: string): Promise<File | undefined> {
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(eq(files.shareToken, token));
+    return file;
+  }
+
+  async getFileWithProjectByShareToken(token: string): Promise<(File & { projectName: string }) | undefined> {
+    const result = await db
+      .select({
+        id: files.id,
+        filename: files.filename,
+        fileType: files.fileType,
+        fileSize: files.fileSize,
+        filePath: files.filePath,
+        projectId: files.projectId,
+        uploadedById: files.uploadedById,
+        version: files.version,
+        isLatestVersion: files.isLatestVersion,
+        isAvailable: files.isAvailable,
+        shareToken: files.shareToken,
+        createdAt: files.createdAt,
+        projectName: projects.name
+      })
+      .from(files)
+      .innerJoin(projects, eq(files.projectId, projects.id))
+      .where(eq(files.shareToken, token));
+    
+    return result[0];
   }
 }
 
