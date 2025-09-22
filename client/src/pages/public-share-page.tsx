@@ -332,26 +332,34 @@ export default function PublicSharePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto py-4 px-2 sm:px-4">
-        <div className="text-center mb-4">
-          <Logo className="mx-auto mb-2" />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
-            {file.projectName}
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {file.filename}
-          </p>
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* Compact Header */}
+      <div className="flex-shrink-0 py-2 px-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Logo className="h-6 w-6" />
+            <div>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+                {file.projectName}
+              </h1>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {file.filename}
+              </p>
+            </div>
+          </div>
         </div>
+      </div>
 
+      {/* Main content area - fills remaining height */}
+      <div className="flex-1 p-2 sm:p-4">
         {/* Side-by-side layout: Media Player on left, Comments on right */}
-        <div className="w-full max-w-none mx-auto grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 px-2 sm:px-4">
+        <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4">
           {/* Media Player - Takes 3/4 of space on large screens */}
-          <div className="lg:col-span-3">
-            <Card>
-          <CardContent className="p-2 md:p-4">
-            {/* 16:9 responsive video container */}
-            <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-hidden aspect-video w-full">
+          <div className="lg:col-span-3 h-full">
+            <Card className="h-full flex flex-col">
+              <CardContent className="p-2 md:p-4 flex-1 flex flex-col">
+                {/* Video container - fills available space */}
+                <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-hidden flex-1 w-full">
               {!mediaError ? (
                 <>
                   {file.fileType === 'video' && (
@@ -384,8 +392,8 @@ export default function PublicSharePage() {
                         data-testid="shared-audio-player"
                       />
                       <div className="text-white text-center">
-                        <div className="text-6xl md:text-8xl mb-4">🎵</div>
-                        <div className="text-xl md:text-2xl px-4">{file.filename}</div>
+                        <div className="text-4xl md:text-6xl mb-2">🎵</div>
+                        <div className="text-lg md:text-xl px-4">{file.filename}</div>
                       </div>
                     </div>
                   )}
@@ -509,15 +517,15 @@ export default function PublicSharePage() {
           </div>
 
           {/* Comments Section - Takes 1/4 of space on large screens */}
-          <div className="lg:col-span-1">
-            <Card className="h-fit">
+          <div className="lg:col-span-1 h-full">
+            <Card className="h-full flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageCircle className="h-5 w-5" />
                   Comments
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 flex-1 overflow-auto">
                 {/* Comment Form */}
                 <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
                 
