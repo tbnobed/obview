@@ -12,7 +12,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertPublicCommentSchema, type UnifiedComment } from "@shared/schema";
@@ -550,6 +549,7 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
       displayName: "",
       content: "",
       fileId: fileId,
+      timestamp: Math.floor(currentTime), // Always include current time
     },
   });
 
@@ -575,10 +575,13 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
   });
 
   const onSubmit = (data: z.infer<typeof insertPublicCommentSchema>) => {
-    createCommentMutation.mutate(data);
+    // Always attach current time
+    const dataWithTime = {
+      ...data,
+      timestamp: Math.floor(currentTime)
+    };
+    createCommentMutation.mutate(dataWithTime);
   };
-
-  const attachCurrentTime = form.watch("timestamp") !== undefined;
 
   return (
     <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
@@ -622,23 +625,9 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
             )}
           />
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="attach-time"
-              checked={attachCurrentTime}
-              onCheckedChange={(checked) => {
-                if (checked) {
-                  form.setValue("timestamp", Math.floor(currentTime));
-                } else {
-                  form.setValue("timestamp", undefined);
-                }
-              }}
-              data-testid="checkbox-attach-time"
-            />
-            <label htmlFor="attach-time" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              Attach current time ({formatTime(currentTime)})
-            </label>
+          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+            <Clock className="h-4 w-4" />
+            <span>Comment will be posted at {formatTime(currentTime)}</span>
           </div>
 
           <Button 
