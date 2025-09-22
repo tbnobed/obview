@@ -25,6 +25,7 @@ import AboutPage from "@/pages/about-page";
 import PrivacyPage from "@/pages/privacy-page";
 import TermsPage from "@/pages/terms-page";
 import ContactPage from "@/pages/contact-page";
+import PublicSharePage from "@/pages/public-share-page";
 
 function Router() {
   return (
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/invite/:token" component={InvitePage} />
       <Route path="/reset-password/:token/:userId" component={ResetPasswordPage} />
+      <Route path="/share/:token" component={PublicSharePage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />

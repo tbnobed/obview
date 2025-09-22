@@ -1,0 +1,483 @@
+import { useState, useRef, useEffect } from "react";
+import { useParams } from "wouter";
+import { AlertCircle, Maximize, Pause, Play, Volume2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import Logo from "@/components/ui/logo";
+import { useQuery } from "@tanstack/react-query";
+
+interface SharedFile {
+  id: number;
+  filename: string;
+  fileType: string;
+  fileSize: number;
+  createdAt: string;
+}
+
+export default function PublicSharePage() {
+  const { token } = useParams<{ token: string }>();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [mediaError, setMediaError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [previewTime, setPreviewTime] = useState(0);
+  const [showScrubPreview, setShowScrubPreview] = useState(false);
+  const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
+  const [scrubPreviewPosition, setScrubPreviewPosition] = useState(0);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const mediaContainerRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const scrubPreviewRef = useRef<HTMLDivElement>(null);
+  const lastSeekTimeRef = useRef<number>(0);
+  const seekThrottleRef = useRef<NodeJS.Timeout | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+
+  // Fetch shared file metadata
+  const { data: file, isLoading, error } = useQuery<SharedFile>({
+    queryKey: ['/api/share', token, 'metadata'],
+    queryFn: async () => {
+      const response = await fetch(`/api/share/${token}/metadata`);
+      if (!response.ok) {
+        throw new Error('File not found or expired');
+      }
+      return response.json();
+    },
+    enabled: !!token,
+    retry: false
+  });
+
+  // Handle play/pause
+  const togglePlay = () => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (!mediaElement) return;
+
+    if (isPlaying) {
+      mediaElement.pause();
+    } else {
+      mediaElement.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  // Handle volume change
+  const handleVolumeChange = (value: string) => {
+    const newVolume = parseFloat(value);
+    setVolume(newVolume);
+    
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+    } else if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+  };
+
+  // Handle progress click
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressRef.current) return;
+    
+    const rect = progressRef.current.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const newTime = duration * pos;
+    
+    setCurrentTime(newTime);
+    
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    } else if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
+  };
+
+  // Handle fullscreen
+  const toggleFullscreen = () => {
+    if (!mediaContainerRef.current) return;
+    
+    if (!document.fullscreenElement) {
+      mediaContainerRef.current.requestFullscreen().catch(err => {
+        console.error('Fullscreen error:', err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+  
+  // Optimized throttled seeking function
+  const performSeek = (time: number) => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (!mediaElement) return;
+    
+    // Clear any pending seek operation
+    if (seekThrottleRef.current) {
+      clearTimeout(seekThrottleRef.current);
+    }
+    
+    // Throttle seeking to avoid excessive operations
+    const now = Date.now();
+    const timeSinceLastSeek = now - lastSeekTimeRef.current;
+    const SEEK_THROTTLE_MS = 100; // Limit to 10 seeks per second
+    
+    if (timeSinceLastSeek >= SEEK_THROTTLE_MS) {
+      // Can seek immediately
+      mediaElement.currentTime = time;
+      lastSeekTimeRef.current = now;
+    } else {
+      // Schedule delayed seek
+      seekThrottleRef.current = setTimeout(() => {
+        mediaElement.currentTime = time;
+        lastSeekTimeRef.current = Date.now();
+      }, SEEK_THROTTLE_MS - timeSinceLastSeek);
+    }
+  };
+  
+  // Handle global mouse events for optimized scrubbing
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        // Perform final seek on mouse up
+        performSeek(previewTime);
+        setCurrentTime(previewTime);
+      }
+    };
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging && progressRef.current) {
+        // Use RAF for smooth visual updates
+        if (rafIdRef.current) {
+          cancelAnimationFrame(rafIdRef.current);
+        }
+        
+        rafIdRef.current = requestAnimationFrame(() => {
+          if (!progressRef.current) return;
+          
+          const rect = progressRef.current.getBoundingClientRect();
+          // Get x position relative to progress bar (clamped between 0 and 1)
+          const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          const newTime = duration * pos;
+          
+          // Update preview time immediately for visual feedback
+          setPreviewTime(newTime);
+          
+          // Only seek occasionally during drag for performance
+          const now = Date.now();
+          if (now - lastSeekTimeRef.current > 200) { // Seek every 200ms during drag
+            performSeek(newTime);
+            setCurrentTime(newTime);
+          }
+        });
+      }
+    };
+    
+    const handleMouseDown = (e: MouseEvent) => {
+      // Check if the click was on the progress bar
+      if (progressRef.current && progressRef.current.contains(e.target as Node)) {
+        setIsDragging(true);
+        // Set initial preview time
+        const rect = progressRef.current.getBoundingClientRect();
+        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const newTime = duration * pos;
+        setPreviewTime(newTime);
+      }
+    };
+    
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mousedown', handleMouseDown);
+    
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mousedown', handleMouseDown);
+      
+      // Cleanup RAF and timeouts
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      if (seekThrottleRef.current) {
+        clearTimeout(seekThrottleRef.current);
+      }
+    };
+  }, [duration, isDragging, previewTime]);
+  
+  // Handle progress bar hover for scrub preview
+  const handleProgressHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressRef.current || isDragging) return;
+    
+    const rect = progressRef.current.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const hoverTime = duration * pos;
+    
+    setScrubPreviewTime(hoverTime);
+    setScrubPreviewPosition(pos * 100); // Convert to percentage
+    setShowScrubPreview(true);
+    
+    // Update preview video time
+    if (previewVideoRef.current && duration > 0) {
+      previewVideoRef.current.currentTime = hoverTime;
+    }
+  };
+  
+  const handleProgressLeave = () => {
+    setShowScrubPreview(false);
+  };
+
+  // Format time (HH:MM:SS)
+  const formatTime = (time: number) => {
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
+    const seconds = Math.floor(time % 60);
+    
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+  };
+
+  // Handle media events
+  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
+    setCurrentTime(e.currentTarget.currentTime);
+  };
+
+  const handleDurationChange = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
+    setDuration(e.currentTarget.duration);
+  };
+
+  const handlePlay = () => setIsPlaying(true);
+  const handlePause = () => setIsPlaying(false);
+
+  const handleMediaError = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
+    console.error('Media error:', e);
+    setMediaError(true);
+    setErrorMessage("Unable to load media file");
+  };
+
+  // Handle preview video load
+  const handlePreviewVideoLoad = () => {
+    if (previewVideoRef.current && videoRef.current) {
+      // Sync preview video with main video when loaded
+      previewVideoRef.current.currentTime = videoRef.current.currentTime;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Logo className="mx-auto mb-4" />
+          <div className="text-gray-600 dark:text-gray-400">Loading shared file...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !file) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <Logo className="mx-auto mb-6" />
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              This shared file is no longer available or the link has expired.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto py-8 px-4">
+        <div className="text-center mb-6">
+          <Logo className="mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Shared Media
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            {file.filename}
+          </p>
+        </div>
+
+        <Card className="max-w-4xl mx-auto">
+          <CardContent className="p-6">
+            <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-hidden">
+              {!mediaError ? (
+                <>
+                  {file.fileType === 'video' && (
+                    <video
+                      ref={videoRef}
+                      className="w-full h-auto max-h-[70vh] object-contain"
+                      src={`/public/share/${token}`}
+                      onTimeUpdate={handleTimeUpdate}
+                      onDurationChange={handleDurationChange}
+                      onPlay={handlePlay}
+                      onPause={handlePause}
+                      onError={handleMediaError}
+                      preload="metadata"
+                      data-testid="shared-video-player"
+                    />
+                  )}
+                  
+                  {file.fileType === 'audio' && (
+                    <div className="flex items-center justify-center h-64 bg-gray-800">
+                      <audio
+                        ref={audioRef}
+                        src={`/public/share/${token}`}
+                        onTimeUpdate={handleTimeUpdate}
+                        onDurationChange={handleDurationChange}
+                        onPlay={handlePlay}
+                        onPause={handlePause}
+                        onError={handleMediaError}
+                        preload="metadata"
+                        className="hidden"
+                        data-testid="shared-audio-player"
+                      />
+                      <div className="text-white text-center">
+                        <div className="text-6xl mb-4">🎵</div>
+                        <div className="text-xl">{file.filename}</div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-64 bg-gray-800">
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{errorMessage}</AlertDescription>
+                  </Alert>
+                </div>
+              )}
+            </div>
+
+            {/* Media Controls */}
+            {(file.fileType === 'video' || file.fileType === 'audio') && !mediaError && (
+              <div className="flex items-center space-x-4 mt-4 p-4 bg-neutral-50 dark:bg-gray-800 rounded-lg">
+                <Button
+                  onClick={togglePlay}
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
+                  data-testid="play-pause-button"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6" />
+                  )}
+                </Button>
+                
+                <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+                
+                <div
+                  ref={progressRef}
+                  className="video-progress flex-grow mx-4 relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
+                  onClick={handleProgressClick}
+                  onMouseMove={(e) => {
+                    if (e.buttons === 1 && progressRef.current) {
+                      // Handle dragging (mouse down + move)
+                      handleProgressClick(e);
+                    } else {
+                      // Handle hover for scrub preview
+                      handleProgressHover(e);
+                    }
+                  }}
+                  onMouseLeave={handleProgressLeave}
+                  data-testid="progress-bar"
+                >
+                  <div
+                    className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
+                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                  ></div>
+                  <div
+                    className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ left: `${(currentTime / duration) * 100}%` }}
+                  ></div>
+                  
+                  {/* Scrub Preview Window */}
+                  {showScrubPreview && duration > 0 && file.fileType === 'video' && (
+                    <div
+                      ref={scrubPreviewRef}
+                      className="absolute bottom-6 transform -translate-x-1/2 pointer-events-none z-50"
+                      style={{
+                        left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
+                      }}
+                    >
+                      <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
+                        <div className="relative">
+                          <video
+                            ref={previewVideoRef}
+                            className="w-32 h-20 rounded object-cover bg-gray-800"
+                            src={`/public/share/${token}`}
+                            onLoadedData={handlePreviewVideoLoad}
+                            muted
+                            preload="metadata"
+                            data-testid="scrub-preview-video"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
+                        </div>
+                        <div className="text-white text-xs text-center mt-1 font-mono">
+                          {formatTime(scrubPreviewTime)}
+                        </div>
+                        {/* Arrow pointing down */}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center">
+                  <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={volume}
+                    onChange={(e) => handleVolumeChange(e.target.value)}
+                    className="w-20"
+                  />
+                </div>
+                
+                {file.fileType === 'video' && (
+                  <Button
+                    onClick={toggleFullscreen}
+                    variant="ghost"
+                    size="icon"
+                    className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
+                    title="Toggle fullscreen"
+                  >
+                    <Maximize className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

@@ -1281,6 +1281,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Public share metadata - get file metadata for shared files without authentication
+  app.get("/api/share/:token/metadata", async (req, res, next) => {
+    try {
+      const token = req.params.token;
+      // Find file by share token
+      const files = await storage.getAllFiles();
+      const file = files.find((f: StorageFile) => f.shareToken === token);
+      
+      if (!file) {
+        return res.status(404).json({ message: "Shared file not found" });
+      }
+      
+      // Check if file is marked as unavailable
+      if (file.isAvailable === false) {
+        return res.status(404).json({ 
+          message: "Shared file not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
+      // Return file metadata (excluding sensitive fields)
+      return res.json({
+        id: file.id,
+        filename: file.filename,
+        fileType: file.fileType,
+        fileSize: file.fileSize,
+        createdAt: file.createdAt
+      });
+    } catch (error) {
+      console.error("Error fetching shared file metadata:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Public share link - only serves the video content without authentication
   app.get("/public/share/:token", async (req, res, next) => {
     try {
@@ -1428,7 +1463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Return share URL
-      const shareUrl = `${req.protocol}://${req.get('host')}/public/share/${file.shareToken}`;
+      const shareUrl = `${req.protocol}://${req.get('host')}/share/${file.shareToken}`;
       res.json({ shareUrl });
     } catch (error) {
       next(error);
