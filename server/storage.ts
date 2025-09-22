@@ -3,6 +3,7 @@ import {
   projects,
   files,
   comments,
+  publicComments,
   projectUsers,
   activityLogs,
   invitations,
@@ -16,6 +17,9 @@ import {
   type InsertFile,
   type Comment,
   type InsertComment,
+  type PublicComment,
+  type InsertPublicComment,
+  type UnifiedComment,
   type ProjectUser,
   type InsertProjectUser,
   type ActivityLog,
@@ -70,6 +74,12 @@ export interface IStorage {
   updateComment(id: number, data: Partial<InsertComment>): Promise<Comment | undefined>;
   deleteComment(id: number): Promise<boolean>;
 
+  // Public comment management
+  getPublicCommentsByFile(fileId: number): Promise<PublicComment[]>;
+  createPublicComment(publicComment: InsertPublicComment): Promise<PublicComment>;
+  getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]>;
+  getFileByShareToken(token: string): Promise<File | undefined>;
+
   // Project user management
   getProjectUser(projectId: number, userId: number): Promise<ProjectUser | undefined>;
   getProjectUsers(projectId: number): Promise<ProjectUser[]>;
@@ -113,6 +123,7 @@ export class MemStorage implements IStorage {
   private projects: Map<number, Project>;
   private files: Map<number, File>;
   private comments: Map<number, Comment>;
+  private publicComments: Map<number, PublicComment>;
   private projectUsers: Map<number, ProjectUser>;
   private activityLogs: Map<number, ActivityLog>;
   private invitations: Map<number, Invitation>;
@@ -124,6 +135,7 @@ export class MemStorage implements IStorage {
   currentProjectId: number;
   currentFileId: number;
   currentCommentId: number;
+  currentPublicCommentId: number;
   currentProjectUserId: number;
   currentActivityLogId: number;
   currentInvitationId: number;
@@ -135,6 +147,7 @@ export class MemStorage implements IStorage {
     this.projects = new Map();
     this.files = new Map();
     this.comments = new Map();
+    this.publicComments = new Map();
     this.projectUsers = new Map();
     this.activityLogs = new Map();
     this.invitations = new Map();
@@ -145,6 +158,7 @@ export class MemStorage implements IStorage {
     this.currentProjectId = 1;
     this.currentFileId = 1;
     this.currentCommentId = 1;
+    this.currentPublicCommentId = 1;
     this.currentProjectUserId = 1;
     this.currentActivityLogId = 1;
     this.currentInvitationId = 1;
@@ -331,6 +345,84 @@ export class MemStorage implements IStorage {
 
   async deleteComment(id: number): Promise<boolean> {
     return this.comments.delete(id);
+  }
+
+  // Public Comment methods
+  async getPublicCommentsByFile(fileId: number): Promise<PublicComment[]> {
+    return Array.from(this.publicComments.values()).filter(
+      (comment) => comment.fileId === fileId
+    );
+  }
+
+  async createPublicComment(insertPublicComment: InsertPublicComment): Promise<PublicComment> {
+    const id = this.currentPublicCommentId++;
+    const now = new Date();
+    const publicComment: PublicComment = {
+      ...insertPublicComment,
+      id,
+      createdAt: now
+    };
+    this.publicComments.set(id, publicComment);
+    return publicComment;
+  }
+
+  async getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]> {
+    const regularComments = await this.getCommentsByFile(fileId);
+    const publicComments = await this.getPublicCommentsByFile(fileId);
+    
+    // Convert regular comments to unified format
+    const unifiedRegularComments: UnifiedComment[] = await Promise.all(
+      regularComments.map(async (comment) => {
+        const user = await this.getUser(comment.userId);
+        return {
+          id: comment.id,
+          content: comment.content,
+          fileId: comment.fileId,
+          timestamp: comment.timestamp,
+          isResolved: comment.isResolved,
+          createdAt: comment.createdAt,
+          isPublic: false,
+          authorName: user?.name || 'Unknown User',
+          user: user ? {
+            id: user.id,
+            name: user.name,
+            username: user.username
+          } : undefined,
+          parentId: comment.parentId
+        };
+      })
+    );
+    
+    // Convert public comments to unified format
+    const unifiedPublicComments: UnifiedComment[] = publicComments.map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      fileId: comment.fileId,
+      timestamp: comment.timestamp,
+      createdAt: comment.createdAt,
+      isPublic: true,
+      authorName: comment.displayName
+    }));
+    
+    // Merge and sort by creation date and timestamp
+    const allComments = [...unifiedRegularComments, ...unifiedPublicComments];
+    return allComments.sort((a, b) => {
+      // First sort by creation date
+      const dateComparison = a.createdAt.getTime() - b.createdAt.getTime();
+      if (dateComparison !== 0) return dateComparison;
+      
+      // Then by timestamp if available
+      if (a.timestamp && b.timestamp) {
+        return a.timestamp - b.timestamp;
+      }
+      return 0;
+    });
+  }
+
+  async getFileByShareToken(token: string): Promise<File | undefined> {
+    return Array.from(this.files.values()).find(
+      (file) => file.shareToken === token
+    );
   }
 
   // Project User methods
