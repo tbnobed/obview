@@ -1045,7 +1045,7 @@ export default function MediaPlayer({
                   })}
                   
                   {/* Scrub Preview Window */}
-                  {showScrubPreview && duration > 0 && file?.type?.startsWith('video/') && (
+                  {showScrubPreview && duration > 0 && file?.fileType === 'video' && (
                     <div
                       ref={scrubPreviewRef}
                       className="absolute bottom-6 transform -translate-x-1/2 pointer-events-none z-50"
@@ -1053,11 +1053,11 @@ export default function MediaPlayer({
                         left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
                       }}
                     >
-                      <div className="bg-black rounded-lg p-2 shadow-lg border border-gray-600">
+                      <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
                         <div className="relative">
                           <video
                             ref={previewVideoRef}
-                            className="w-32 h-18 rounded object-cover"
+                            className="w-32 h-20 rounded object-cover bg-gray-800"
                             src={`/api/files/${file.id}/content`}
                             onLoadedData={handlePreviewVideoLoad}
                             muted
