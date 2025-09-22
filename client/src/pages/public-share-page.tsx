@@ -333,21 +333,21 @@ export default function PublicSharePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto py-8 px-4">
-        <div className="text-center mb-6">
-          <Logo className="mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+      <div className="container mx-auto py-4 px-2 sm:px-4">
+        <div className="text-center mb-4">
+          <Logo className="mx-auto mb-2" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
             {file.projectName}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {file.filename}
           </p>
         </div>
 
         {/* Side-by-side layout: Media Player on left, Comments on right */}
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Media Player - Takes 2/3 of space on large screens */}
-          <div className="lg:col-span-2">
+        <div className="w-full max-w-none mx-auto grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 px-2 sm:px-4">
+          {/* Media Player - Takes 3/4 of space on large screens */}
+          <div className="lg:col-span-3">
             <Card>
           <CardContent className="p-2 md:p-4">
             {/* 16:9 responsive video container */}
@@ -508,7 +508,7 @@ export default function PublicSharePage() {
             </Card>
           </div>
 
-          {/* Comments Section - Takes 1/3 of space on large screens */}
+          {/* Comments Section - Takes 1/4 of space on large screens */}
           <div className="lg:col-span-1">
             <Card className="h-fit">
               <CardHeader>
