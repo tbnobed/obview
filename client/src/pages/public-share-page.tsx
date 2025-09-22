@@ -1,12 +1,22 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams } from "wouter";
-import { AlertCircle, Maximize, Pause, Play, Volume2 } from "lucide-react";
+import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Logo from "@/components/ui/logo";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { insertPublicCommentSchema, type UnifiedComment } from "@shared/schema";
+import { z } from "zod";
 
 interface SharedFile {
   id: number;
@@ -15,6 +25,19 @@ interface SharedFile {
   fileSize: number;
   createdAt: string;
 }
+
+// Format time (HH:MM:SS)
+const formatTime = (time: number) => {
+  const hours = Math.floor(time / 3600);
+  const minutes = Math.floor((time % 3600) / 60);
+  const seconds = Math.floor(time % 60);
+  
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  } else {
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+};
 
 export default function PublicSharePage() {
   const { token } = useParams<{ token: string }>();
@@ -479,7 +502,206 @@ export default function PublicSharePage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Comments Section */}
+        <Card className="max-w-7xl mx-auto mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Comments
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Comment Form */}
+            <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
+            
+            {/* Comments List */}
+            <CommentsList token={token!} />
+          </CardContent>
+        </Card>
       </div>
+    </div>
+  );
+}
+
+// Public Comment Form Component
+function PublicCommentForm({ token, fileId, currentTime }: { token: string; fileId: number; currentTime: number }) {
+  const { toast } = useToast();
+  
+  const form = useForm<z.infer<typeof insertPublicCommentSchema>>({
+    resolver: zodResolver(insertPublicCommentSchema),
+    defaultValues: {
+      displayName: "",
+      content: "",
+      fileId: fileId,
+    },
+  });
+
+  const createCommentMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof insertPublicCommentSchema>) => {
+      return await apiRequest("POST", `/api/share/${token}/comments`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/share', token, 'comments'] });
+      form.reset();
+      toast({
+        title: "Comment posted!",
+        description: "Your comment has been added to the discussion.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error posting comment",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: z.infer<typeof insertPublicCommentSchema>) => {
+    createCommentMutation.mutate(data);
+  };
+
+  const attachCurrentTime = form.watch("timestamp") !== undefined;
+
+  return (
+    <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+      <h3 className="font-semibold mb-4">Leave a comment</h3>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="displayName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Your Name</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Enter your name" 
+                    {...field} 
+                    data-testid="input-name"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="content"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Comment</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Share your thoughts..." 
+                    className="min-h-[100px]" 
+                    {...field}
+                    data-testid="textarea-comment"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="attach-time"
+              checked={attachCurrentTime}
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  form.setValue("timestamp", Math.floor(currentTime));
+                } else {
+                  form.setValue("timestamp", undefined);
+                }
+              }}
+              data-testid="checkbox-attach-time"
+            />
+            <label htmlFor="attach-time" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-1">
+              <Clock className="h-4 w-4" />
+              Attach current time ({formatTime(currentTime)})
+            </label>
+          </div>
+
+          <Button 
+            type="submit" 
+            disabled={createCommentMutation.isPending}
+            data-testid="button-submit-comment"
+          >
+            {createCommentMutation.isPending ? "Posting..." : "Post Comment"}
+          </Button>
+        </form>
+      </Form>
+    </div>
+  );
+}
+
+// Comments List Component
+function CommentsList({ token }: { token: string }) {
+  const { data: comments, isLoading, error } = useQuery<UnifiedComment[]>({
+    queryKey: ['/api/share', token, 'comments'],
+    queryFn: async () => {
+      const response = await fetch(`/api/share/${token}/comments`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch comments');
+      }
+      return response.json();
+    },
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-4">Loading comments...</div>;
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>Failed to load comments</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!comments || comments.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        No comments yet. Be the first to comment!
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4" data-testid="comments-list">
+      {comments.map((comment) => (
+        <div key={comment.id} className="border rounded-lg p-4 bg-white dark:bg-gray-900">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {comment.authorName}
+              </span>
+              {comment.isPublic && (
+                <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
+                  Public
+                </span>
+              )}
+              {comment.timestamp !== null && (
+                <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                  <Clock className="h-3 w-3" />
+                  {formatTime(comment.timestamp)}
+                </div>
+              )}
+            </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {new Date(comment.createdAt).toLocaleDateString()}
+            </span>
+          </div>
+          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+            {comment.content}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
