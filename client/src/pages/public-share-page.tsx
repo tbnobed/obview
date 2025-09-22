@@ -320,15 +320,17 @@ export default function PublicSharePage() {
           </p>
         </div>
 
-        <Card className="max-w-4xl mx-auto">
-          <CardContent className="p-6">
-            <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-hidden">
+        {/* Large responsive player layout */}
+        <Card className="max-w-7xl mx-auto">
+          <CardContent className="p-2 md:p-4">
+            {/* 16:9 responsive video container */}
+            <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-hidden aspect-video w-full">
               {!mediaError ? (
                 <>
                   {file.fileType === 'video' && (
                     <video
                       ref={videoRef}
-                      className="w-full h-auto max-h-[70vh] object-contain"
+                      className="w-full h-full object-contain"
                       src={`/public/share/${token}`}
                       onTimeUpdate={handleTimeUpdate}
                       onDurationChange={handleDurationChange}
@@ -341,7 +343,7 @@ export default function PublicSharePage() {
                   )}
                   
                   {file.fileType === 'audio' && (
-                    <div className="flex items-center justify-center h-64 bg-gray-800">
+                    <div className="flex items-center justify-center w-full h-full bg-gray-800">
                       <audio
                         ref={audioRef}
                         src={`/public/share/${token}`}
@@ -355,14 +357,14 @@ export default function PublicSharePage() {
                         data-testid="shared-audio-player"
                       />
                       <div className="text-white text-center">
-                        <div className="text-6xl mb-4">🎵</div>
-                        <div className="text-xl">{file.filename}</div>
+                        <div className="text-6xl md:text-8xl mb-4">🎵</div>
+                        <div className="text-xl md:text-2xl px-4">{file.filename}</div>
                       </div>
                     </div>
                   )}
                 </>
               ) : (
-                <div className="flex items-center justify-center h-64 bg-gray-800">
+                <div className="flex items-center justify-center w-full h-full bg-gray-800">
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{errorMessage}</AlertDescription>
