@@ -99,8 +99,9 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
   );
 
   // Get user initial for avatar
-  const userInitial = comment.user?.name 
-    ? comment.user.name.charAt(0).toUpperCase() 
+  const authorName = (comment as any).authorName || comment.user?.name;
+  const userInitial = authorName 
+    ? authorName.charAt(0).toUpperCase() 
     : 'U';
 
   // Effect to scroll to this comment when it's active
@@ -144,7 +145,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
         <div className="flex-1">
           <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1">
             <h4 className="text-xs font-medium text-neutral-900 dark:text-white">
-              {comment.user?.name || "Unknown User"}
+              {authorName || "Unknown User"}
             </h4>
             <div className="flex flex-wrap items-center gap-1.5">
               {comment.timestamp !== null && (
