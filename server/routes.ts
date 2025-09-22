@@ -1639,26 +1639,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const comments = await storage.getCommentsByFile(fileId);
+      // Get unified comments (includes both regular and public comments)
+      const comments = await storage.getUnifiedCommentsByFile(fileId);
       
-      // Get user details for each comment
-      const commentsWithUsers = await Promise.all(
-        comments.map(async (comment) => {
-          const user = await storage.getUser(comment.userId);
-          
-          if (!user) return comment;
-          
-          // Remove password from user object
-          const { password, ...userWithoutPassword } = user;
-          
-          return {
-            ...comment,
-            user: userWithoutPassword,
-          };
-        })
-      );
-      
-      res.json(commentsWithUsers);
+      res.json(comments);
     } catch (error) {
       next(error);
     }
