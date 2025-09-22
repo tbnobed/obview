@@ -611,6 +611,11 @@ export default function MediaPlayer({
 
   const handleMediaError = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement | HTMLImageElement | HTMLIFrameElement>) => {
     console.error('[DEBUG] Media error event:', e);
+    console.error('[DEBUG] Media error target src:', (e.target as any)?.src);
+    console.error('[DEBUG] Media error target currentSrc:', (e.target as any)?.currentSrc);
+    console.error('[DEBUG] Network state:', (e.target as any)?.networkState);
+    console.error('[DEBUG] Ready state:', (e.target as any)?.readyState);
+    
     // Try to get more detailed error info from video/audio elements
     const mediaElement = e.target as HTMLVideoElement | HTMLAudioElement;
     if (mediaElement && 'error' in mediaElement && mediaElement.error) {
@@ -618,10 +623,31 @@ export default function MediaPlayer({
         code: mediaElement.error.code,
         message: mediaElement.error.message
       });
+      
+      // Map error codes to user-friendly messages
+      let userMessage = "This file is no longer available. It may have been deleted from the server.";
+      switch (mediaElement.error.code) {
+        case MediaError.MEDIA_ERR_ABORTED:
+          userMessage = "Video playback was aborted. Please try again.";
+          break;
+        case MediaError.MEDIA_ERR_NETWORK:
+          userMessage = "Network error while loading the video. Please check your connection.";
+          break;
+        case MediaError.MEDIA_ERR_DECODE:
+          userMessage = "Video format is not supported or file is corrupted.";
+          break;
+        case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+          userMessage = "Video format is not supported by your browser.";
+          break;
+        default:
+          userMessage = `Media error (code: ${mediaElement.error.code}). Please try refreshing the page.`;
+      }
+      setErrorMessage(userMessage);
+    } else {
+      setErrorMessage("This file is no longer available. It may have been deleted from the server.");
     }
     
     setMediaError(true);
-    setErrorMessage("This file is no longer available. It may have been deleted from the server.");
     setIsPlaying(false);
   };
 
