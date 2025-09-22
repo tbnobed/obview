@@ -543,10 +543,13 @@ export default function PublicSharePage() {
 function PublicCommentForm({ token, fileId, currentTime }: { token: string; fileId: number; currentTime: number }) {
   const { toast } = useToast();
   
+  // Load saved name from localStorage
+  const savedName = typeof window !== 'undefined' ? localStorage.getItem('public-commenter-name') || '' : '';
+  
   const form = useForm<z.infer<typeof insertPublicCommentSchema>>({
     resolver: zodResolver(insertPublicCommentSchema),
     defaultValues: {
-      displayName: "",
+      displayName: savedName,
       content: "",
       fileId: fileId,
       timestamp: Math.floor(currentTime), // Always include current time
@@ -575,6 +578,11 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
   });
 
   const onSubmit = (data: z.infer<typeof insertPublicCommentSchema>) => {
+    // Save name to localStorage for future comments
+    if (typeof window !== 'undefined' && data.displayName) {
+      localStorage.setItem('public-commenter-name', data.displayName);
+    }
+    
     // Always attach current time
     const dataWithTime = {
       ...data,
