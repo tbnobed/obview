@@ -47,6 +47,9 @@ export default function MediaPlayer({
   const [isDragging, setIsDragging] = useState(false);
   const [previewTime, setPreviewTime] = useState(0);
   const [seekingToTime, setSeekingToTime] = useState<number | null>(null);
+  const [showScrubPreview, setShowScrubPreview] = useState(false);
+  const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
+  const [scrubPreviewPosition, setScrubPreviewPosition] = useState(0);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -56,6 +59,8 @@ export default function MediaPlayer({
   const lastSeekTimeRef = useRef<number>(0);
   const seekThrottleRef = useRef<NodeJS.Timeout | null>(null);
   const rafIdRef = useRef<number | null>(null);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const scrubPreviewRef = useRef<HTMLDivElement>(null);
 
   // Fetch comments for the current file
   const { data: comments = [] } = useQuery({
@@ -428,6 +433,28 @@ export default function MediaPlayer({
     };
   }, [duration, isDragging, previewTime]);
   
+  // Handle progress bar hover for scrub preview
+  const handleProgressHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressRef.current || isDragging) return;
+    
+    const rect = progressRef.current.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const hoverTime = duration * pos;
+    
+    setScrubPreviewTime(hoverTime);
+    setScrubPreviewPosition(pos * 100); // Convert to percentage
+    setShowScrubPreview(true);
+    
+    // Update preview video time
+    if (previewVideoRef.current && duration > 0) {
+      previewVideoRef.current.currentTime = hoverTime;
+    }
+  };
+  
+  const handleProgressLeave = () => {
+    setShowScrubPreview(false);
+  };
+  
   // Define togglePlay before it's used in useEffect hooks
   const togglePlay = () => {
     // Handle both video and audio playback
@@ -649,6 +676,14 @@ export default function MediaPlayer({
     
     setMediaError(true);
     setIsPlaying(false);
+  };
+  
+  // Handle preview video load
+  const handlePreviewVideoLoad = () => {
+    if (previewVideoRef.current && videoRef.current) {
+      // Sync preview video with main video when loaded
+      previewVideoRef.current.currentTime = videoRef.current.currentTime;
+    }
   };
 
   // Render appropriate media content based on file type
@@ -960,8 +995,13 @@ export default function MediaPlayer({
                     if (e.buttons === 1 && progressRef.current) {
                       // Handle dragging (mouse down + move)
                       handleProgressClick(e);
+                    } else {
+                      // Handle hover for scrub preview
+                      handleProgressHover(e);
                     }
                   }}
+                  onMouseLeave={handleProgressLeave}
+                  data-testid="progress-bar"
                 >
                   <div
                     className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
@@ -1003,6 +1043,37 @@ export default function MediaPlayer({
                       />
                     );
                   })}
+                  
+                  {/* Scrub Preview Window */}
+                  {showScrubPreview && duration > 0 && file?.type?.startsWith('video/') && (
+                    <div
+                      ref={scrubPreviewRef}
+                      className="absolute bottom-6 transform -translate-x-1/2 pointer-events-none z-50"
+                      style={{
+                        left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
+                      }}
+                    >
+                      <div className="bg-black rounded-lg p-2 shadow-lg border border-gray-600">
+                        <div className="relative">
+                          <video
+                            ref={previewVideoRef}
+                            className="w-32 h-18 rounded object-cover"
+                            src={`/api/files/${file.id}/content`}
+                            onLoadedData={handlePreviewVideoLoad}
+                            muted
+                            preload="metadata"
+                            data-testid="scrub-preview-video"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
+                        </div>
+                        <div className="text-white text-xs text-center mt-1 font-mono">
+                          {formatTime(scrubPreviewTime)}
+                        </div>
+                        {/* Arrow pointing down */}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600" />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center">
