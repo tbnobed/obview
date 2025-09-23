@@ -88,6 +88,15 @@ fi
 mkdir -p /app/dist/server
 mkdir -p /app/uploads
 
+# Ensure vite.config is available for tsx import
+if [ -f "/app/vite.config.ts" ] && [ ! -f "/app/vite.config.js" ]; then
+  echo "Building vite.config.ts for runtime import..."
+  npx tsc /app/vite.config.ts --outDir /app --target es2022 --module es2022 --moduleResolution node || {
+    echo "TypeScript compilation failed, creating symlink fallback..."
+    ln -sf /app/vite.config.ts /app/vite.config.js 2>/dev/null || true
+  }
+fi
+
 # Build the server files if they don't exist
 build_server_from_source() {
   echo "Attempting to build server from source..."
