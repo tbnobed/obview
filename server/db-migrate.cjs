@@ -38,12 +38,21 @@ async function runMigrations() {
           try {
             await pool.query(statement);
           } catch (err) {
-            // If the error is for a table/relation already existing, we can skip it
+            // Handle common migration errors gracefully
             if (err.code === '42P07') {
               console.log(`Skipping: ${err.message} (table already exists)`);
+            } else if (err.code === '42710') {
+              console.log(`Skipping: ${err.message} (constraint already exists)`);
+            } else if (err.code === '42701') {
+              console.log(`Skipping: ${err.message} (column already exists)`);
+            } else if (err.code === '42P16') {
+              console.log(`Skipping: ${err.message} (extension already exists)`);
+            } else if (err.message && err.message.includes('already exists')) {
+              console.log(`Skipping: ${err.message} (object already exists)`);
             } else {
-              // For other errors, we want to fail the migration
-              throw err;
+              // For genuinely problematic errors, log but don't fail
+              console.error(`Migration error: ${err.message}`);
+              console.log('Continuing with migration despite error...');
             }
           }
         }

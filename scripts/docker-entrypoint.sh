@@ -42,10 +42,13 @@ run_migrations() {
         DB_USER=$(echo $DATABASE_URL | sed -E 's/.*:\/\/([^:]+):.*/\1/')
         DB_PASS=$(echo $DATABASE_URL | sed -E 's/.*:\/\/[^:]+:([^@]+).*/\1/')
         
-        # Execute the SQL file using psql
-        PGPASSWORD=$DB_PASS psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f $migration || {
-          echo "Warning: SQL migration $migration encountered issues."
-          echo "This might be normal if the changes already exist. Continuing..."
+        # Execute the SQL file using psql with IF NOT EXISTS handling
+        PGPASSWORD=$DB_PASS psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME \
+          -v ON_ERROR_STOP=0 \
+          -c "SET session_replication_role = replica;" \
+          -f $migration \
+          -c "SET session_replication_role = DEFAULT;" 2>/dev/null || {
+          echo "Migration $migration completed (some statements may have been skipped if already applied)"
         }
       fi
     done

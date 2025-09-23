@@ -30,11 +30,11 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s # More time for application startup and database migration
+      retries: 5
+      start_period: 60s # More time for tsx compilation and database migration
     # Restart the container if it fails the health check
     deploy:
       restart_policy:

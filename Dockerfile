@@ -32,8 +32,9 @@ RUN mkdir -p dist/server && \
 # Production stage
 FROM node:20-alpine as production
 
-# Install PostgreSQL client for health checks and utilities
-RUN apk add --no-cache postgresql-client curl
+# Install PostgreSQL client, tsx, and build tools for health checks and utilities
+RUN apk add --no-cache postgresql-client curl python3 make g++ libc6-compat && \
+    npm install -g tsx esbuild typescript
 
 WORKDIR /app
 
@@ -73,5 +74,5 @@ VOLUME /app/uploads
 # Set entrypoint to our initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
-# Start the application with multiple fallback paths
-CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; elif [ -f \"dist/server/index.js\" ]; then node dist/server/index.js; elif [ -f \"dist/index.js\" ]; then node dist/index.js; else echo \"Error: Could not find server entry point. Fallback to source file.\" && npx tsx server/index.ts; fi"]
+# Start the application with tsx as primary runtime
+CMD ["tsx", "server/index.ts"]
