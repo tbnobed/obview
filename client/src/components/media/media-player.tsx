@@ -50,6 +50,8 @@ export default function MediaPlayer({
   const [showScrubPreview, setShowScrubPreview] = useState(false);
   const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
   const [scrubPreviewPosition, setScrubPreviewPosition] = useState(0);
+  const [hoveredComment, setHoveredComment] = useState<number | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -1030,7 +1032,17 @@ export default function MediaPlayer({
                         key={comment.id}
                         className={`absolute top-0 h-full w-2 ${activeCommentId === comment.id ? 'bg-blue-500' : 'bg-yellow-400'} z-20 cursor-pointer shadow-sm`}
                         style={{ left: `${position}%` }}
-                        title={`${comment.content}\n\nBy: ${comment.authorName || comment.user?.name || 'Anonymous'}\nTime: ${formatTime(comment.timestamp)}`}
+                        onMouseEnter={(e) => {
+                          setHoveredComment(comment.id);
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setTooltipPosition({
+                            x: rect.left + rect.width / 2,
+                            y: rect.top - 10
+                          });
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredComment(null);
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           // Set active comment and jump to timestamp
@@ -1045,6 +1057,48 @@ export default function MediaPlayer({
                       />
                     );
                   })}
+                  
+                  {/* Comment Marker Tooltip */}
+                  {hoveredComment && comments && (
+                    (() => {
+                      const comment = comments.find(c => c.id === hoveredComment);
+                      if (!comment) return null;
+                      
+                      return (
+                        <div
+                          className="fixed z-50 pointer-events-none"
+                          style={{
+                            left: tooltipPosition.x,
+                            top: tooltipPosition.y,
+                            transform: 'translate(-50%, -100%)'
+                          }}
+                        >
+                          <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium">
+                                {(comment as any).authorName?.charAt(0) || (comment as any).user?.name?.charAt(0) || 'A'}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-xs">
+                                  {(comment as any).authorName || (comment as any).user?.name || 'Anonymous'}
+                                </span>
+                                <span className="text-yellow-400 text-xs font-mono">
+                                  {formatTime(comment.timestamp)}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs leading-relaxed break-words">
+                              {comment.content}
+                            </p>
+                          </div>
+                          {/* Arrow pointing down */}
+                          <div className="absolute left-1/2 transform -translate-x-1/2 top-full">
+                            <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
                   
                   {/* Scrub Preview Window */}
                   {showScrubPreview && duration > 0 && file?.fileType === 'video' && (
