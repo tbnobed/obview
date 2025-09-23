@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useComments } from "@/hooks/use-comments";
 import CommentForm from "@/components/comments/comment-form";
 import CommentThread from "@/components/comments/comment-thread";
-import { Loader2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, MessageSquare, MoreHorizontal, Filter, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface TimelineCommentsProps {
   fileId: number;
@@ -33,11 +34,19 @@ export default function TimelineComments({
     error 
   } = useComments(fileId);
 
-  // Format time (seconds to MM:SS)
+  // Format time for Frame.io style (HH:MM:SS:FF - hours:minutes:seconds:frames)
   const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const frames = Math.floor((time % 1) * 24); // Assume 24fps for frame calculation
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
+  };
+
+  // Get user initials for avatar fallback
+  const getUserInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   // Calculate timeline markers positions
@@ -98,85 +107,159 @@ export default function TimelineComments({
   });
 
   return (
-    <div>
-      {/* Timeline markers visualization */}
-      <div className="mb-4 bg-neutral-100 dark:bg-gray-800 h-6 relative rounded-md" ref={timelineRef}>
-        {/* Current time indicator */}
-        <div 
-          className="absolute top-0 h-full w-px bg-primary-500 z-10"
-          style={{ left: `${(currentTime / duration) * 100}%` }}
-        ></div>
-        
-        {/* Comment markers */}
-        {markers.map((marker, index) => (
-          <div
-            key={index}
-            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-secondary-500 rounded-full cursor-pointer transform hover:scale-150 transition-transform"
-            style={{ left: marker.left }}
-            title={`Comment at ${formatTime(marker.time)}`}
-            onClick={() => onTimeClick(marker.time)}
-          ></div>
-        ))}
-        
-        {/* Time labels */}
-        <div className="absolute top-0 left-0 w-full h-full flex justify-between px-2 text-xs text-neutral-500 dark:text-gray-400">
-          <span className="self-center text-[10px]">0:00</span>
-          <span className="self-center text-[10px]">{formatTime(duration)}</span>
+    <div className="h-full flex flex-col bg-[#1e1e1e] text-white">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium">All comments</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+            <Search className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+            <Filter className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-3">
-        <h3 className="text-sm font-medium text-neutral-900 dark:text-white">
-          Comments ({comments?.length || 0})
-        </h3>
-        <div className="flex items-center">
-          <span className="text-xs text-neutral-500 dark:text-gray-400 mr-1.5">Filter:</span>
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-full max-w-[140px] h-7 text-xs py-0 dark:bg-gray-800 dark:border-gray-700">
-              <SelectValue placeholder="Filter comments" />
-            </SelectTrigger>
-            <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
-              <SelectItem value="all">All Comments</SelectItem>
-              <SelectItem value="unresolved">Unresolved</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Comments List */}
+      <div className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          </div>
+        ) : error ? (
+          <div className="p-4 bg-red-900/20 text-red-400 text-sm">
+            Error loading comments: {error.message}
+          </div>
+        ) : topLevelComments.length > 0 ? (
+          <div className="divide-y divide-gray-700">
+            {topLevelComments.map((comment: any, index: number) => (
+              <div 
+                key={comment.id} 
+                id={`comment-${comment.id}`}
+                className={`p-4 hover:bg-gray-800/50 transition-colors ${
+                  activeCommentId === comment.id ? 'bg-gray-800/80' : ''
+                }`}
+              >
+                <div className="flex gap-3">
+                  {/* Avatar */}
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage src={comment.user?.avatar} />
+                    <AvatarFallback className="bg-gray-600 text-white text-xs">
+                      {getUserInitials(comment.user?.name || comment.user?.username || 'U')}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  {/* Comment Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white">
+                          {comment.user?.name || comment.user?.username || 'Unknown User'}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          #{index + 1}
+                        </span>
+                        <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
+                        <span className="text-xs text-gray-400">
+                          {new Date(comment.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Timestamp */}
+                    {comment.timestamp !== null && (
+                      <button
+                        onClick={() => onTimeClick(comment.timestamp)}
+                        className="inline-block mb-2 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer font-mono text-sm"
+                        title="Jump to this time in the video"
+                      >
+                        {formatTime(comment.timestamp)}
+                      </button>
+                    )}
+
+                    {/* Comment Text */}
+                    <div className="text-sm text-gray-200 mb-3 whitespace-pre-wrap">
+                      {comment.content.length > 100 ? (
+                        <>
+                          {comment.content.substring(0, 100)}...
+                          <button className="text-blue-400 hover:text-blue-300 ml-1">
+                            Read more
+                          </button>
+                        </>
+                      ) : (
+                        comment.content
+                      )}
+                    </div>
+
+                    {/* Reply Button */}
+                    <button className="text-xs text-gray-400 hover:text-white transition-colors">
+                      Reply
+                    </button>
+
+                    {/* Replies */}
+                    {comments && comments.filter((c: any) => c.parentId === comment.id).length > 0 && (
+                      <div className="mt-3 space-y-3">
+                        {comments.filter((c: any) => c.parentId === comment.id).map((reply: any) => (
+                          <div key={reply.id} className="flex gap-3">
+                            <Avatar className="h-6 w-6 flex-shrink-0">
+                              <AvatarImage src={reply.user?.avatar} />
+                              <AvatarFallback className="bg-gray-600 text-white text-xs">
+                                {getUserInitials(reply.user?.name || reply.user?.username || 'U')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-medium text-white">
+                                  {reply.user?.name || reply.user?.username || 'Unknown User'}
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                  {new Date(reply.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-200">
+                                {reply.content}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <MessageSquare className="h-12 w-12 text-gray-600 mb-3" />
+            <p className="text-gray-400 text-sm">No comments yet</p>
+            <p className="text-gray-500 text-xs">Be the first to comment!</p>
+          </div>
+        )}
       </div>
-      
-      {/* Comment input */}
-      <CommentForm 
-        fileId={fileId} 
-        currentTime={currentTime} 
-        className="mb-4"
-      />
-      
-      {/* Comment list */}
-      {isLoading ? (
-        <div className="flex justify-center py-6">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+
+      {/* Comment Input at Bottom */}
+      <div className="border-t border-gray-700 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-amber-400 font-mono text-xs">
+            {formatTime(currentTime)}
+          </span>
+          <span className="text-gray-400 text-xs">Leave your comment...</span>
         </div>
-      ) : error ? (
-        <div className="p-3 bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 rounded-md text-xs">
-          Error loading comments: {error.message}
-        </div>
-      ) : topLevelComments.length > 0 ? (
-        <div className="space-y-0 divide-y divide-neutral-200 dark:divide-gray-800">
-          {topLevelComments.map((comment: any) => (
-            <CommentThread 
-              key={comment.id} 
-              comment={comment} 
-              comments={comments || []}
-              onTimeClick={onTimeClick}
-              isActive={activeCommentId === comment.id}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-6 text-neutral-500 dark:text-gray-400">
-          <p className="text-xs">No comments yet.<br />Add a comment to start the conversation.</p>
-        </div>
-      )}
+        <CommentForm 
+          fileId={fileId} 
+          currentTime={currentTime} 
+          className="bg-transparent border-0 p-0"
+        />
+      </div>
     </div>
   );
 }
