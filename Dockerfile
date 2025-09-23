@@ -13,6 +13,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Ensure attached_assets are available for vite build
+COPY attached_assets ./attached_assets
+
 # Verify the structure before building
 RUN ls -la && echo "Content of server directory:" && ls -la server/
 
