@@ -1185,7 +1185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve file content
-  app.get("/api/files/:fileId/content", isAuthenticated, async (req, res, next) => {
+  // Handle both HEAD and GET requests for file content
+  app.use("/api/files/:fileId/content", isAuthenticated, async (req, res, next) => {
     try {
       const fileId = parseInt(req.params.fileId);
       console.log(`[DEBUG] File content requested for fileId: ${fileId}`);
@@ -1296,7 +1297,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log that we're sending the file
       console.log(`Serving file ${fileId} (${file.filename}) - type: ${file.fileType}, path: ${file.filePath}`);
       
-      // Send the file
+      // Handle HEAD requests specifically (for video player precheck)
+      if (req.method === 'HEAD') {
+        try {
+          const fs = require('fs');
+          const stats = fs.statSync(file.filePath);
+          res.setHeader('Content-Length', stats.size);
+          res.status(200).end();
+          return;
+        } catch (err) {
+          console.error(`Error getting file stats for HEAD request: ${err.message}`);
+          return res.status(404).end();
+        }
+      }
+      
+      // Send the file for GET requests
       res.sendFile(file.filePath, { root: '/' });
     } catch (error) {
       next(error);
