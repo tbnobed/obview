@@ -243,8 +243,8 @@ export default function PublicSharePage() {
           
           // Position preview using viewport coordinates
           const progressRect = progressRef.current.getBoundingClientRect();
-          const previewWidth = 144;
-          const previewHeight = 100;
+          const previewWidth = 208;
+          const previewHeight = 150;
           const desiredLeft = e.clientX - previewWidth / 2;
           const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
           const top = progressRect.top - previewHeight - 12;
@@ -310,8 +310,8 @@ export default function PublicSharePage() {
     setScrubPreviewTime(hoverTime);
     
     // Position preview using viewport coordinates  
-    const previewWidth = 144;
-    const previewHeight = 100;
+    const previewWidth = 208;
+    const previewHeight = 150;
     const desiredLeft = e.clientX - previewWidth / 2;
     const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
     const top = rect.top - previewHeight - 12;
@@ -500,8 +500,8 @@ export default function PublicSharePage() {
                         const hoverTime = duration * pos;
                         
                         // Position preview using viewport coordinates
-                        const previewWidth = 144; // w-32 + padding = 128 + 16
-                        const previewHeight = 100; // Approximate height
+                        const previewWidth = 208; // w-48 + padding = 192 + 16
+                        const previewHeight = 150; // Approximate height
                         const desiredLeft = e.clientX - previewWidth / 2;
                         const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
                         const top = progressRect.top - previewHeight - 12;
@@ -721,11 +721,11 @@ export default function PublicSharePage() {
             top: `${scrubPreviewTop}px`
           }}
         >
-          <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600">
+          <div className="bg-black rounded-lg p-2 shadow-xl">
             <div className="relative">
               <video
                 ref={previewVideoRef}
-                className="w-32 h-20 rounded object-cover bg-gray-800"
+                className="w-48 h-30 rounded object-cover bg-gray-800"
                 src={`/public/share/${token}`}
                 onLoadedData={handlePreviewVideoLoad}
                 muted
