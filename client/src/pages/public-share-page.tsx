@@ -732,9 +732,8 @@ export default function PublicSharePage() {
                 preload="metadata"
                 data-testid="scrub-preview-video"
               />
-              <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
             </div>
-            <div className="text-white text-sm text-center mt-1 font-mono font-bold bg-black bg-opacity-75 rounded px-2 py-1">
+            <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
               {formatTime(scrubPreviewTime)}
             </div>
           </div>
