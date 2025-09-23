@@ -124,6 +124,16 @@ CREATE TABLE IF NOT EXISTS password_resets (
 -- Add foreign key constraints if they don't exist
 DO $$ 
 BEGIN
+    -- Clean up orphaned data that would violate foreign key constraints
+    DELETE FROM files WHERE project_id NOT IN (SELECT id FROM projects);
+    DELETE FROM comments WHERE file_id NOT IN (SELECT id FROM files);
+    DELETE FROM public_comments WHERE file_id NOT IN (SELECT id FROM files);
+    DELETE FROM approvals WHERE file_id NOT IN (SELECT id FROM files);
+    DELETE FROM activity_logs WHERE user_id NOT IN (SELECT id FROM users);
+    DELETE FROM project_users WHERE project_id NOT IN (SELECT id FROM projects) OR user_id NOT IN (SELECT id FROM users);
+    DELETE FROM invitations WHERE project_id IS NOT NULL AND project_id NOT IN (SELECT id FROM projects);
+    DELETE FROM invitations WHERE created_by_id NOT IN (SELECT id FROM users);
+    DELETE FROM password_resets WHERE user_id NOT IN (SELECT id FROM users);
     -- Projects foreign keys
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'projects_created_by_id_fkey') THEN
         ALTER TABLE projects ADD CONSTRAINT projects_created_by_id_fkey 

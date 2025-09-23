@@ -16,12 +16,12 @@ echo "Running database migrations..."
 run_migrations() {
   local success=0
   
-  if [ -f "/app/server/db-migrate.js" ]; then
-    echo "Found db-migrate.js, running migrations..."
-    node /app/server/db-migrate.js || success=1
-  elif [ -f "/app/server/db-migrate.cjs" ]; then
+  if [ -f "/app/server/db-migrate.cjs" ]; then
     echo "Found db-migrate.cjs, running migrations..."
     node /app/server/db-migrate.cjs || success=1
+  elif [ -f "/app/server/db-migrate.js" ]; then
+    echo "Found db-migrate.js, running migrations..."
+    node /app/server/db-migrate.js || success=1
   else
     echo "Migration file not found. Checking for alternate locations..."
     success=1
@@ -56,13 +56,13 @@ run_migrations
 
 # Create admin user with error handling
 echo "Setting up admin user if needed..."
-if [ -f "/app/scripts/setup.js" ]; then
-  node /app/scripts/setup.js || {
+if [ -f "/app/scripts/setup.cjs" ]; then
+  node /app/scripts/setup.cjs || {
     echo "Warning: Admin user setup encountered issues."
     echo "This might be normal if the user already exists. Continuing..."
   }
-elif [ -f "/app/scripts/setup.cjs" ]; then
-  node /app/scripts/setup.cjs || {
+elif [ -f "/app/scripts/setup.js" ]; then
+  node /app/scripts/setup.js || {
     echo "Warning: Admin user setup encountered issues."
     echo "This might be normal if the user already exists. Continuing..."
   }
@@ -91,7 +91,7 @@ find_server_entry() {
   else
     if [ -f "/app/server/index.ts" ]; then
       echo "Found TypeScript source: /app/server/index.ts"
-      export SERVER_ENTRY="tsx /app/server/index.ts"
+      export SERVER_ENTRY="npx tsx /app/server/index.ts"
       return 0
     fi
     return 1
