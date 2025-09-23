@@ -439,7 +439,7 @@ export default function PublicSharePage() {
             </div>
 
             {/* Media Controls */}
-            {(file.fileType === 'video' || file.fileType === 'audio') && !mediaError && (
+            {(file.fileType === 'video' || file.fileType === 'audio') && (
               <div className="flex items-center space-x-4 mt-4 p-4 bg-neutral-50 dark:bg-gray-800 rounded-lg">
                 <Button
                   onClick={togglePlay}
