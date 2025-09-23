@@ -990,7 +990,39 @@ export default function MediaPlayer({
                 </span>
                 
                 {/* Progress bar and markers container */}
-                <div className="flex-grow flex flex-col gap-1 mx-4">
+                <div className="flex-grow flex flex-col gap-1 mx-4 relative">
+                  {/* Scrub Preview Window - positioned relative to container, not progress bar */}
+                  {showScrubPreview && duration > 0 && file?.fileType === 'video' && (
+                    <div
+                      ref={scrubPreviewRef}
+                      className="absolute bottom-full mb-2 pointer-events-none z-40"
+                      style={{
+                        left: `${scrubPreviewPosition}%`,
+                        transform: `translateX(${scrubPreviewPosition < 20 ? '0%' : scrubPreviewPosition > 80 ? '-100%' : '-50%'})`
+                      }}
+                    >
+                      <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
+                        <div className="relative">
+                          <video
+                            ref={previewVideoRef}
+                            className="w-32 h-20 rounded object-cover bg-gray-800"
+                            src={`/api/files/${file.id}/content`}
+                            onLoadedData={handlePreviewVideoLoad}
+                            muted
+                            preload="metadata"
+                            data-testid="scrub-preview-video"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
+                        </div>
+                        <div className="text-white text-xs text-center mt-1 font-mono">
+                          {formatTime(scrubPreviewTime)}
+                        </div>
+                        {/* Arrow pointing down */}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600" />
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Progress bar */}
                   <div
                     ref={progressRef}
@@ -1016,38 +1048,6 @@ export default function MediaPlayer({
                       className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
                       style={{ left: `${(currentTime / duration) * 100}%` }}
                     ></div>
-                    
-                    {/* Scrub Preview Window */}
-                    {showScrubPreview && duration > 0 && file?.fileType === 'video' && (
-                      <div
-                        ref={scrubPreviewRef}
-                        className="absolute bottom-full mb-2 pointer-events-none z-40"
-                        style={{
-                          left: `${scrubPreviewPosition}%`,
-                          transform: `translateX(${scrubPreviewPosition < 20 ? '0%' : scrubPreviewPosition > 80 ? '-100%' : '-50%'})`
-                        }}
-                      >
-                        <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
-                          <div className="relative">
-                            <video
-                              ref={previewVideoRef}
-                              className="w-32 h-20 rounded object-cover bg-gray-800"
-                              src={`/api/files/${file.id}/content`}
-                              onLoadedData={handlePreviewVideoLoad}
-                              muted
-                              preload="metadata"
-                              data-testid="scrub-preview-video"
-                            />
-                            <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
-                          </div>
-                          <div className="text-white text-xs text-center mt-1 font-mono">
-                            {formatTime(scrubPreviewTime)}
-                          </div>
-                          {/* Arrow pointing down */}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600" />
-                        </div>
-                      </div>
-                    )}
                   </div>
                   
                   {/* Comment markers rail */}
