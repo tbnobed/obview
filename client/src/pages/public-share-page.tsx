@@ -714,30 +714,24 @@ export default function PublicSharePage() {
       {showScrubPreview && duration > 0 && file.fileType === 'video' && createPortal(
         <div
           ref={scrubPreviewRef}
-          className="pointer-events-none z-50"
+          className="fixed z-[9999] pointer-events-none p-0 m-0 bg-transparent border-0 shadow-none rounded-none overflow-hidden"
           style={{
-            position: 'fixed',
             left: `${scrubPreviewLeft}px`,
-            top: `${scrubPreviewTop}px`
+            top: `${scrubPreviewTop}px`,
+            width: '208px',
+            height: '150px'
           }}
         >
-          <div className="bg-black p-2">
-            <div className="relative">
-              <video
-                ref={previewVideoRef}
-                className="w-48 h-30 rounded object-cover bg-gray-800"
-                src={`/public/share/${token}`}
-                onLoadedData={handlePreviewVideoLoad}
-                muted
-                preload="metadata"
-                data-testid="scrub-preview-video"
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
-            </div>
-            <div className="text-white text-xs text-center mt-1 font-mono">
-              {formatTime(scrubPreviewTime)}
-            </div>
-          </div>
+          <video
+            ref={previewVideoRef}
+            className="block w-full h-full object-cover outline-none ring-0 bg-transparent"
+            style={{ border: 'none', boxShadow: 'none' }}
+            src={`/public/share/${token}`}
+            onLoadedData={handlePreviewVideoLoad}
+            muted
+            preload="metadata"
+            data-testid="scrub-preview-video"
+          />
         </div>,
         document.body
       )}
