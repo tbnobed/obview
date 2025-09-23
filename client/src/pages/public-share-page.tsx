@@ -233,6 +233,15 @@ export default function PublicSharePage() {
           
           // Update preview time immediately for visual feedback
           setPreviewTime(newTime);
+          // CRITICAL FIX: Update scrub preview position to follow mouse
+          setScrubPreviewTime(newTime);
+          setScrubPreviewPosition(pos * 100);
+          setShowScrubPreview(true);
+          
+          // Update preview video time if it exists
+          if (previewVideoRef.current && duration > 0) {
+            previewVideoRef.current.currentTime = newTime;
+          }
           
           // Only seek occasionally during drag for performance
           const now = Date.now();
@@ -495,11 +504,16 @@ export default function PublicSharePage() {
                         style={{ left: `${position}%` }}
                         onMouseEnter={(e) => {
                           setHoveredComment(comment.id);
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setTooltipPosition({
-                            x: rect.left + rect.width / 2,
-                            y: rect.top - 20  // More space above the marker
-                          });
+                          // Calculate position relative to progress bar for consistent positioning
+                          if (progressRef.current) {
+                            const progressRect = progressRef.current.getBoundingClientRect();
+                            const markerRect = e.currentTarget.getBoundingClientRect();
+                            const relativePos = (markerRect.left + markerRect.width / 2 - progressRect.left) / progressRect.width;
+                            setTooltipPosition({
+                              x: relativePos * 100, // Store as percentage
+                              y: markerRect.top - progressRect.top - 20
+                            });
+                          }
                         }}
                         onMouseLeave={() => {
                           setHoveredComment(null);
@@ -524,21 +538,27 @@ export default function PublicSharePage() {
                       const comment = comments.find(c => c.id === hoveredComment);
                       if (!comment) return null;
                       
-                      // Adjust positioning when scrub preview is also visible
+                      // Position tooltip relative to progress bar using percentage
                       const hasActivePreview = showScrubPreview && duration > 0 && file.fileType === 'video';
                       const positionStyle = hasActivePreview ? {
-                        left: tooltipPosition.x - 200, // Position to the left of preview with more space
-                        top: tooltipPosition.y - 100,  // Position above the progress bar
-                        transform: 'translate(0, -100%)'
+                        position: 'absolute' as const,
+                        left: `${Math.max(0, tooltipPosition.x - 25)}%`, // Position to the left of preview
+                        bottom: '100%',
+                        marginBottom: '8px',
+                        transform: 'translateX(0)',
+                        zIndex: 60
                       } : {
-                        left: tooltipPosition.x,
-                        top: tooltipPosition.y - 20,   // Position above the marker
-                        transform: 'translate(-50%, -100%)'
+                        position: 'absolute' as const,
+                        left: `${tooltipPosition.x}%`,
+                        bottom: '100%', 
+                        marginBottom: '8px',
+                        transform: 'translateX(-50%)',
+                        zIndex: 60
                       };
                       
                       return (
                         <div
-                          className="fixed z-50 pointer-events-none"
+                          className="pointer-events-none"
                           style={positionStyle}
                         >
                           <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
