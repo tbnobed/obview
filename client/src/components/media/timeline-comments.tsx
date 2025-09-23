@@ -143,9 +143,11 @@ export default function TimelineComments({
               <div 
                 key={comment.id} 
                 id={`comment-${comment.id}`}
+                onClick={comment.timestamp !== null ? () => onTimeClick(comment.timestamp) : undefined}
                 className={`p-4 hover:bg-gray-800/50 transition-colors ${
                   activeCommentId === comment.id ? 'bg-gray-800/80' : ''
-                }`}
+                } ${comment.timestamp !== null ? 'cursor-pointer' : ''}`}
+                title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : undefined}
               >
                 <div className="flex gap-3">
                   {/* Avatar */}
@@ -176,13 +178,9 @@ export default function TimelineComments({
 
                     {/* Timestamp */}
                     {comment.timestamp !== null && (
-                      <button
-                        onClick={() => onTimeClick(comment.timestamp)}
-                        className="inline-block mb-2 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer font-mono text-sm"
-                        title="Jump to this time in the video"
-                      >
+                      <span className="inline-block mb-2 text-amber-400 font-mono text-sm">
                         {formatTime(comment.timestamp)}
-                      </button>
+                      </span>
                     )}
 
                     {/* Comment Text */}
