@@ -24,7 +24,6 @@ import { z } from "zod";
 const requestChangesSchema = z.object({
   requesterName: z.string().min(1, "Name is required"),
   requesterEmail: z.string().email("Valid email is required"),
-  feedback: z.string().min(1, "Feedback is required"),
 });
 
 interface SharedFile {
@@ -121,7 +120,6 @@ export default function PublicSharePage() {
     defaultValues: {
       requesterName: "",
       requesterEmail: "",
-      feedback: "",
     },
   });
 
@@ -486,23 +484,6 @@ export default function PublicSharePage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={requestChangesForm.control}
-                      name="feedback"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Feedback</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Describe the changes you'd like to see..."
-                              className="min-h-[100px]"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                     <div className="flex justify-end space-x-2">
                       <Button
                         type="button"
@@ -612,10 +593,9 @@ export default function PublicSharePage() {
                   
                   {/* Progress bar and markers container */}
                   <div className="flex-grow flex flex-col gap-1 mx-4">
-                    {/* Progress bar */}
+                    {/* Extended hover area around progress bar */}
                     <div
-                      ref={progressRef}
-                      className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500"
+                      className="relative py-4 cursor-pointer"
                       onClick={handleProgressClick}
                       onMouseMove={(e) => {
                         if (!progressRef.current || isDragging) return;
@@ -642,16 +622,23 @@ export default function PublicSharePage() {
                         }
                       }}
                       onMouseLeave={handleProgressLeave}
-                      data-testid="progress-bar"
+                      data-testid="progress-bar-extended-area"
                     >
+                      {/* Progress bar */}
                       <div
-                        className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
-                        style={{ width: `${(currentTime / duration) * 100}%` }}
-                      ></div>
-                      <div
-                        className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ left: `${(currentTime / duration) * 100}%` }}
-                      ></div>
+                        ref={progressRef}
+                        className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500"
+                        data-testid="progress-bar"
+                      >
+                        <div
+                          className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
+                          style={{ width: `${(currentTime / duration) * 100}%` }}
+                        ></div>
+                        <div
+                          className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ left: `${(currentTime / duration) * 100}%` }}
+                        ></div>
+                      </div>
                     </div>
                   
                   {/* Comment markers rail */}

@@ -1445,11 +1445,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate request data
-      const { requesterName, requesterEmail, feedback } = req.body;
+      const { requesterName, requesterEmail } = req.body;
       
-      if (!requesterName || !requesterEmail || !feedback) {
+      if (!requesterName || !requesterEmail) {
         return res.status(400).json({ 
-          message: "Requester name, email, and feedback are required" 
+          message: "Requester name and email are required" 
         });
       }
       
@@ -1478,7 +1478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             project.name,
             file.filename,
             "changes_requested",
-            feedback,
+            null, // No feedback - just notification
             req.get('origin') || req.get('host'),
             project.id
           );

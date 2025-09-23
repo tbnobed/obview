@@ -209,50 +209,86 @@ export async function sendApprovalEmail(
     
     // Set subject and content based on approval status
     const isApproved = status === "approved";
+    const isPublicRequest = !feedback && !isApproved; // Public request has no feedback
+    
     const subject = isApproved 
       ? `${approverName} approved "${fileName}" in project "${projectName}"`
       : `${approverName} requested changes to "${fileName}" in project "${projectName}"`;
-    
-    const actionText = isApproved ? "approved" : "requested changes to";
-    const statusColor = isApproved ? "#10b981" : "#f59e0b";
-    const statusText = isApproved ? "APPROVED" : "CHANGES REQUESTED";
-    
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background-color: ${statusColor}; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px;">${statusText}</h1>
-        </div>
-        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
-          <p>Hello,</p>
-          <p><strong>${approverName}</strong> has ${actionText} <strong>${fileName}</strong> in project <strong>${projectName}</strong>.</p>
-          ${feedback ? `<p><strong>Feedback:</strong> ${feedback}</p>` : ''}
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${projectUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Project</a>
-          </div>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p style="color: #64748b; font-size: 12px;">This is an automated notification from the Obviu.io platform.</p>
-        </div>
-      </div>
-    `;
-    
-    const text = `
-      ${approverName} has ${actionText} ${fileName} in project ${projectName}.
-      ${feedback ? `\nFeedback: ${feedback}` : ''}
-      
-      To view the project, visit: ${projectUrl}
-    `;
     
     // Use the verified sender identity
     const sender = config.emailFrom;
     logToFile(`Using sender email: ${sender}`);
     
-    return await sendEmail({
-      to,
-      from: sender,
-      subject,
-      html,
-      text
-    });
+    // Simple email for public requests, detailed for internal requests
+    if (isPublicRequest) {
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="padding: 20px; border: 1px solid #e2e8f0;">
+            <p>Hello,</p>
+            <p><strong>${approverName}</strong> has requested changes to <strong>${fileName}</strong> in project <strong>${projectName}</strong>.</p>
+            <p>Please log in to review the requested changes.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${projectUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Log In & Review</a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p style="color: #64748b; font-size: 12px;">This is an automated notification from the Obviu.io platform.</p>
+          </div>
+        </div>
+      `;
+      
+      const text = `
+        ${approverName} has requested changes to ${fileName} in project ${projectName}.
+        Please log in to review the requested changes.
+        
+        To view the project, visit: ${projectUrl}
+      `;
+      
+      return await sendEmail({
+        to,
+        from: sender,
+        subject,
+        html,
+        text
+      });
+    } else {
+      // Detailed email for internal approvals/requests with feedback
+      const actionText = isApproved ? "approved" : "requested changes to";
+      const statusColor = isApproved ? "#10b981" : "#f59e0b";
+      const statusText = isApproved ? "APPROVED" : "CHANGES REQUESTED";
+      
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background-color: ${statusColor}; color: white; padding: 20px; text-align: center;">
+            <h1 style="margin: 0; font-size: 24px;">${statusText}</h1>
+          </div>
+          <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+            <p>Hello,</p>
+            <p><strong>${approverName}</strong> has ${actionText} <strong>${fileName}</strong> in project <strong>${projectName}</strong>.</p>
+            ${feedback ? `<p><strong>Feedback:</strong> ${feedback}</p>` : ''}
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${projectUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Project</a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p style="color: #64748b; font-size: 12px;">This is an automated notification from the Obviu.io platform.</p>
+          </div>
+        </div>
+      `;
+      
+      const text = `
+        ${approverName} has ${actionText} ${fileName} in project ${projectName}.
+        ${feedback ? `\nFeedback: ${feedback}` : ''}
+        
+        To view the project, visit: ${projectUrl}
+      `;
+      
+      return await sendEmail({
+        to,
+        from: sender,
+        subject,
+        html,
+        text
+      });
+    }
   } catch (error) {
     const errorMsg = `Error preparing approval email to ${to}: ${error instanceof Error ? error.message : String(error)}`;
     console.error(errorMsg);
