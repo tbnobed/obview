@@ -175,7 +175,15 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
               key={comment.id} 
               className={`p-4 hover:bg-gray-800/50 transition-colors ${comment.file?.id ? 'cursor-pointer' : ''}`}
               onClick={() => comment.file?.id && navigateToComment(comment)}
+              onKeyDown={comment.file?.id ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigateToComment(comment);
+                }
+              } : undefined}
               title={comment.file?.id ? `Click to view ${comment.timestamp !== null ? `at ${formatTime(comment.timestamp)}` : ''} in ${comment.file.filename}` : ''}
+              role={comment.file?.id ? 'button' : undefined}
+              tabIndex={comment.file?.id ? 0 : undefined}
             >
               <div className="flex gap-3">
                 {/* Avatar */}

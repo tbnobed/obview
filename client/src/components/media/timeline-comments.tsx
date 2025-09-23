@@ -144,17 +144,25 @@ export default function TimelineComments({
                 key={comment.id} 
                 id={`comment-${comment.id}`}
                 onClick={comment.timestamp !== null ? () => onTimeClick(comment.timestamp) : undefined}
+                onKeyDown={comment.timestamp !== null ? (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onTimeClick(comment.timestamp);
+                  }
+                } : undefined}
                 className={`p-4 hover:bg-gray-800/50 transition-colors ${
                   activeCommentId === comment.id ? 'bg-gray-800/80' : ''
                 } ${comment.timestamp !== null ? 'cursor-pointer' : ''}`}
                 title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : undefined}
+                role={comment.timestamp !== null ? 'button' : undefined}
+                tabIndex={comment.timestamp !== null ? 0 : undefined}
               >
                 <div className="flex gap-3">
                   {/* Avatar */}
                   <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarImage src={comment.user?.avatar} />
                     <AvatarFallback className="bg-gray-600 text-white text-xs">
-                      {getUserInitials(comment.user?.name || comment.user?.username || 'U')}
+                      {getUserInitials((comment as any).authorName || comment.user?.name || comment.user?.username || 'U')}
                     </AvatarFallback>
                   </Avatar>
 
@@ -164,7 +172,7 @@ export default function TimelineComments({
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-white">
-                          {comment.user?.name || comment.user?.username || 'Unknown User'}
+                          {(comment as any).authorName || comment.user?.name || comment.user?.username || 'Unknown User'}
                         </span>
                         <span className="text-xs text-gray-400">
                           #{index + 1}
@@ -201,7 +209,10 @@ export default function TimelineComments({
                     </div>
 
                     {/* Reply Button */}
-                    <button className="text-xs text-gray-400 hover:text-white transition-colors">
+                    <button 
+                      className="text-xs text-gray-400 hover:text-white transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       Reply
                     </button>
 
@@ -213,13 +224,13 @@ export default function TimelineComments({
                             <Avatar className="h-6 w-6 flex-shrink-0">
                               <AvatarImage src={reply.user?.avatar} />
                               <AvatarFallback className="bg-gray-600 text-white text-xs">
-                                {getUserInitials(reply.user?.name || reply.user?.username || 'U')}
+                                {getUserInitials((reply as any).authorName || reply.user?.name || reply.user?.username || 'U')}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-xs font-medium text-white">
-                                  {reply.user?.name || reply.user?.username || 'Unknown User'}
+                                  {(reply as any).authorName || reply.user?.name || reply.user?.username || 'Unknown User'}
                                 </span>
                                 <span className="text-xs text-gray-400">
                                   {new Date(reply.createdAt).toLocaleDateString()}

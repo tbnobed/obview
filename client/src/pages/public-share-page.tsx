@@ -543,7 +543,7 @@ export default function PublicSharePage() {
                                   {comment.authorName || 'Anonymous'}
                                 </span>
                                 <span className="text-yellow-400 text-xs font-mono">
-                                  {formatTime(comment.timestamp)}
+                                  {comment.timestamp !== null ? formatTime(comment.timestamp) : '00:00:00:00'}
                                 </span>
                               </div>
                             </div>
@@ -827,9 +827,17 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
       {comments.map((comment, index) => (
         <div 
           key={comment.id} 
-          onClick={comment.timestamp !== null ? () => onTimestampClick?.(comment.timestamp) : undefined}
+          onClick={comment.timestamp !== null ? () => onTimestampClick?.(comment.timestamp!) : undefined}
+          onKeyDown={comment.timestamp !== null ? (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onTimestampClick?.(comment.timestamp!);
+            }
+          } : undefined}
           className={`p-4 hover:bg-gray-800/50 transition-colors ${comment.timestamp !== null ? 'cursor-pointer' : ''}`}
-          title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : undefined}
+          title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp!)} in the video` : undefined}
+          role={comment.timestamp !== null ? 'button' : undefined}
+          tabIndex={comment.timestamp !== null ? 0 : undefined}
           data-testid={`comment-${comment.id}`}
         >
           <div className="flex gap-3">
@@ -874,7 +882,10 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                 {comment.content.length > 100 ? (
                   <>
                     {comment.content.substring(0, 100)}...
-                    <button className="text-blue-400 hover:text-blue-300 ml-1">
+                    <button 
+                      className="text-blue-400 hover:text-blue-300 ml-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       Read more
                     </button>
                   </>
@@ -884,7 +895,10 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
               </div>
 
               {/* Reply Button */}
-              <button className="text-xs text-gray-400 hover:text-white transition-colors">
+              <button 
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
                 Reply
               </button>
             </div>
