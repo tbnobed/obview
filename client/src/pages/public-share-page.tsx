@@ -32,9 +32,12 @@ const formatTime = (time: number) => {
   const hours = Math.floor(time / 3600);
   const minutes = Math.floor((time % 3600) / 60);
   const seconds = Math.floor(time % 60);
-  const frames = Math.floor((time % 1) * 24); // Assume 24fps for frame calculation
   
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  } else {
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
 };
 
 // Get user initials for avatar fallback
@@ -438,7 +441,7 @@ export default function PublicSharePage() {
               )}
             </div>
 
-            {/* Media Controls */}
+            {/* Media Controls - Always show for video/audio files */}
             {(file.fileType === 'video' || file.fileType === 'audio') && (
               <div className="flex items-center space-x-4 mt-4 p-4 bg-neutral-50 dark:bg-gray-800 rounded-lg">
                 <Button
@@ -464,7 +467,7 @@ export default function PublicSharePage() {
                   {/* Progress bar */}
                   <div
                     ref={progressRef}
-                    className="video-progress relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
+                    className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500"
                     onClick={handleProgressClick}
                     onMouseMove={(e) => {
                       if (e.buttons === 1 && progressRef.current) {
