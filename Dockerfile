@@ -93,4 +93,4 @@ VOLUME /app/uploads
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
 # Start the application with multiple fallback paths
-CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ] && [ \"$USE_TSX\" = \"true\" ] && [ \"$TSX_TSCONFIG_PATHS\" = \"true\" ]; then npx tsx --tsconfig-paths $SERVER_ENTRY; elif [ -n \"$SERVER_ENTRY\" ] && [ \"$USE_TSX\" = \"true\" ]; then npx tsx $SERVER_ENTRY; elif [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; else echo \"Error: No server entry point found\" && exit 1; fi"]
+CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ] && [ \"$USE_TSX\" = \"true\" ] && [ \"$TSX_TSCONFIG_PATHS\" = \"true\" ]; then node -r tsconfig-paths/register node_modules/tsx/dist/cli.mjs $SERVER_ENTRY; elif [ -n \"$SERVER_ENTRY\" ] && [ \"$USE_TSX\" = \"true\" ]; then npx tsx $SERVER_ENTRY; elif [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; else echo \"Error: No server entry point found\" && exit 1; fi"]
