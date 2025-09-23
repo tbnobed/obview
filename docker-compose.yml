@@ -1,23 +1,21 @@
-# Docker Compose configuration for Obviu.io
-# Enhanced configuration with better migration handling and monitoring
+# Docker Compose configuration for OBview.io
+# Note: version key is obsolete in Compose V2 and can be removed
 
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - NODE_ENV=production
     container_name: obview_app
-    restart: unless-stopped
+    restart: always
     ports:
-      - "5000:5000"
+      - "5000:5000"  # Map host port 5000 to container port 5000 (where the server is actually listening)
     depends_on:
       db:
         condition: service_healthy
     environment:
       - NODE_ENV=production
-      - PORT=5000
+      - PORT=5000  # Match the server's actual PORT
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/obview
       - SESSION_SECRET=${SESSION_SECRET}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
@@ -25,79 +23,50 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - ADMIN_NAME=${ADMIN_NAME:-Administrator}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      # Flag to signal a Docker environment to use proper database connection strategy
       - IS_DOCKER=true
-      - DATABASE_CONNECTION_TIMEOUT=30000
-      - DATABASE_MIGRATION_TIMEOUT=60000
-      - MAX_FILE_SIZE=5368709120
     volumes:
       - uploads:/app/uploads
-      - logs:/app/logs
-      - ./migrations:/app/migrations:ro
-      - ./init-scripts:/app/init-scripts:ro
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 3
+      start_period: 40s # More time for application startup and database migration
+    # Restart the container if it fails the health check
     deploy:
       restart_policy:
         condition: on-failure
-        delay: 10s
-        max_attempts: 5
-        window: 180s
-      resources:
-        limits:
-          memory: 2G
-        reservations:
-          memory: 512M
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   db:
     image: postgres:16-alpine
     container_name: obview_db
-    restart: unless-stopped
+    restart: always
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=obview
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
-      - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d:ro
-      - db_logs:/var/log/postgresql
+      - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d obviu"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
-    command: [
-      "postgres",
-      "-c", "log_statement=all",
-      "-c", "log_destination=stderr",
-      "-c", "logging_collector=on",
-      "-c", "max_connections=100",
-      "-c", "shared_buffers=256MB"
-    ]
+      retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:
-    driver: local
   uploads:
-    driver: local
-  logs:
-    driver: local
-  db_logs:
-    driver: local
 
 networks:
   app_network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
