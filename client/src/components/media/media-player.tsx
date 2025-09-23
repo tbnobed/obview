@@ -845,23 +845,31 @@ export default function MediaPlayer({
             controls={false}
             preload="metadata"
           >
-            {/* Primary source: always use original file first for reliability */}
-            {file.fileType.toLowerCase().startsWith('video/') ? (
-              <source src={`/api/files/${file.id}/content`} type={file.fileType} />
-            ) : (
-              <>
-                {/* Add explicit MP4 type for MP4 extension files */}
-                {file.filename.toLowerCase().endsWith('.mp4') && (
-                  <source src={`/api/files/${file.id}/content`} type="video/mp4" />
-                )}
-                {/* Add WebM for better browser support */}
-                {file.filename.toLowerCase().endsWith('.webm') && (
-                  <source src={`/api/files/${file.id}/content`} type="video/webm" />
-                )}
-                {/* Fallback */}
-                <source src={`/api/files/${file.id}/content`} />
-              </>
-            )}
+            {/* Use 720p proxy when available for better performance, fallback to original */}
+            {(() => {
+              // Check if 720p proxy is available and processing completed
+              const has720p = videoProcessing?.status === 'completed' && 
+                            videoProcessing.qualities?.some((q: any) => q.resolution === '720p');
+              
+              const mimeType = file.fileType.startsWith('video/') 
+                ? file.fileType 
+                : file.filename.toLowerCase().endsWith('.mp4') 
+                  ? 'video/mp4' 
+                  : file.filename.toLowerCase().endsWith('.webm') 
+                    ? 'video/webm'
+                    : 'video/mp4';
+
+              return (
+                <>
+                  {/* Use 720p proxy if available */}
+                  {has720p && (
+                    <source src={`/api/files/${file.id}/qualities/720p`} type="video/mp4" />
+                  )}
+                  {/* Always include original as fallback */}
+                  <source src={`/api/files/${file.id}/content`} type={mimeType} />
+                </>
+              );
+            })()} 
             Your browser does not support the video tag.
           </video>
         </div>

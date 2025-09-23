@@ -550,25 +550,13 @@ export default function PublicSharePage() {
                       preload="metadata"
                       data-testid="shared-video-player"
                     >
-                      {/* Use proxy quality versions for shared files when available */}
-                      {videoProcessing?.status === 'completed' && videoProcessing.qualities?.length > 0 ? (
-                        <>
-                          {videoProcessing.qualities.find((q: any) => q.resolution === '1080p') && (
-                            <source src={`/api/share/${token}/qualities/1080p`} type="video/mp4" />
-                          )}
-                          {videoProcessing.qualities.find((q: any) => q.resolution === '720p') && (
-                            <source src={`/api/share/${token}/qualities/720p`} type="video/mp4" />
-                          )}
-                          {videoProcessing.qualities.find((q: any) => q.resolution === '360p') && (
-                            <source src={`/api/share/${token}/qualities/360p`} type="video/mp4" />
-                          )}
-                          {/* Fallback to original shared file */}
-                          <source src={`/public/share/${token}`} type="video/mp4" />
-                        </>
-                      ) : (
-                        /* Use original shared file while processing or unavailable */
-                        <source src={`/public/share/${token}`} type="video/mp4" />
+                      {/* Use 720p proxy for shared files when available */}
+                      {videoProcessing?.status === 'completed' && 
+                       videoProcessing.qualities?.some((q: any) => q.resolution === '720p') && (
+                        <source src={`/api/share/${token}/qualities/720p`} type="video/mp4" />
                       )}
+                      {/* Always include original shared file as fallback */}
+                      <source src={`/public/share/${token}`} type="video/mp4" />
                       Your browser does not support the video tag.
                     </video>
                   )}

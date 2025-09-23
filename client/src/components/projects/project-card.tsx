@@ -127,16 +127,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               {/* Use scrub-optimized I-frame version for best hover performance */}
               {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
                 <source src={`/api/files/${project.latestVideoFile.id}/scrub`} type="video/mp4" />
-              ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.length > 0 ? (
-                /* Use best available quality proxy */
-                <>
-                  {videoProcessing.qualities.find((q: any) => q.resolution === '720p') && (
-                    <source src={`/api/files/${project.latestVideoFile.id}/qualities/720p`} type="video/mp4" />
-                  )}
-                  {videoProcessing.qualities.find((q: any) => q.resolution === '360p') && (
-                    <source src={`/api/files/${project.latestVideoFile.id}/qualities/360p`} type="video/mp4" />
-                  )}
-                </>
+              ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p') ? (
+                /* Use 720p proxy for smooth scrubbing */
+                <source src={`/api/files/${project.latestVideoFile.id}/qualities/720p`} type="video/mp4" />
               ) : null}
               {/* Always include original as fallback */}
               <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" />
