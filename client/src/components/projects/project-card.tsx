@@ -113,35 +113,44 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             }}
             data-testid={`video-preview-container-${project.id}`}
           >
-            <video
-              className="w-full h-full object-cover"
-              preload="metadata"
-              muted
-              data-testid={`video-preview-${project.id}`}
-              onLoadedMetadata={(e) => {
-                // Set video to show frame at 1 second for preview
-                const video = e.target as HTMLVideoElement;
-                video.currentTime = Math.min(1, video.duration || 0);
-                console.log(`🎬 [PROJECT CARD] Video loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
-              }}
-              onError={(e) => {
-                console.error(`🎬 [PROJECT CARD] Video preview error for project ${project.id}:`, e);
-                console.error(`🎬 [PROJECT CARD] Error details:`, e.currentTarget.error);
-                console.error(`🎬 [PROJECT CARD] Current source:`, e.currentTarget.currentSrc);
-              }}
-              onStalled={() => console.log(`🎬 [PROJECT CARD] Video preview stalled for project ${project.id}`)}
-            >
-              {/* Use scrub-optimized I-frame version for best hover performance */}
-              {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
-                <source src={`/api/files/${project.latestVideoFile.id}/scrub`} type="video/mp4" />
-              ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p') ? (
-                /* Use 720p proxy for smooth scrubbing */
-                <source src={`/api/files/${project.latestVideoFile.id}/qualities/720p`} type="video/mp4" />
-              ) : null}
-              {/* Always include original as fallback */}
-              <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            {/* Use lightweight thumbnail sprite for project cards instead of heavy video */}
+            {videoProcessing?.status === 'completed' && videoProcessing.thumbnailSpritePath ? (
+              <img
+                className="w-full h-full object-cover"
+                src={`/api/files/${project.latestVideoFile.id}/sprite`}
+                alt={project.latestVideoFile.filename}
+                data-testid={`sprite-preview-${project.id}`}
+                onLoad={() => console.log(`🎬 [PROJECT CARD] Sprite loaded for project ${project.id}: ${project.latestVideoFile?.filename}`)}
+                onError={(e) => {
+                  console.error(`🎬 [PROJECT CARD] Sprite error for project ${project.id}:`, e);
+                  // Fallback to video if sprite fails
+                  const container = e.currentTarget.parentElement;
+                  if (container) {
+                    container.innerHTML = `
+                      <video className="w-full h-full object-cover" preload="metadata" muted>
+                        <source src="/api/files/${project.latestVideoFile.id}/content" type="video/mp4" />
+                      </video>
+                    `;
+                  }
+                }}
+              />
+            ) : (
+              <video
+                className="w-full h-full object-cover"
+                preload="metadata"
+                muted
+                data-testid={`video-preview-${project.id}`}
+                onLoadedMetadata={(e) => {
+                  // Set video to show frame at 1 second for preview
+                  const video = e.target as HTMLVideoElement;
+                  video.currentTime = Math.min(1, video.duration || 0);
+                  console.log(`🎬 [PROJECT CARD] Video fallback loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
+                }}
+              >
+                <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            )}
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
               <PlayCircle className="h-12 w-12 text-white" />
             </div>
