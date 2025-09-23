@@ -3397,34 +3397,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allComments = [];
       
       for (const file of files) {
-        const fileComments = await storage.getCommentsByFile(file.id);
+        // Get unified comments (includes both regular and public comments)
+        const fileComments = await storage.getUnifiedCommentsByFile(file.id);
         
         if (fileComments && fileComments.length > 0) {
-          // Enrich each comment with user and file info
-          const commentsWithUserAndFile = await Promise.all(
-            fileComments.map(async (comment) => {
-              const user = await storage.getUser(comment.userId);
-              
-              // Add file info and user info (without password)
-              let enrichedComment = {
-                ...comment,
-                file: {
-                  id: file.id,
-                  filename: file.filename,
-                  fileType: file.fileType
-                }
-              };
-              
-              if (user) {
-                const { password, ...userWithoutPassword } = user;
-                enrichedComment.user = userWithoutPassword;
-              }
-              
-              return enrichedComment;
-            })
-          );
+          // Add file info to each comment (unified comments already have author info)
+          const commentsWithFile = fileComments.map((comment) => ({
+            ...comment,
+            file: {
+              id: file.id,
+              filename: file.filename,
+              fileType: file.fileType
+            }
+          }));
           
-          allComments.push(...commentsWithUserAndFile);
+          allComments.push(...commentsWithFile);
         }
       }
       
