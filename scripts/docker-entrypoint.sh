@@ -42,13 +42,10 @@ run_migrations() {
         DB_USER=$(echo $DATABASE_URL | sed -E 's/.*:\/\/([^:]+):.*/\1/')
         DB_PASS=$(echo $DATABASE_URL | sed -E 's/.*:\/\/[^:]+:([^@]+).*/\1/')
         
-        # Execute the SQL file using psql with IF NOT EXISTS handling
-        PGPASSWORD=$DB_PASS psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME \
-          -v ON_ERROR_STOP=0 \
-          -c "SET session_replication_role = replica;" \
-          -f $migration \
-          -c "SET session_replication_role = DEFAULT;" 2>/dev/null || {
-          echo "Migration $migration completed (some statements may have been skipped if already applied)"
+        # Execute the SQL file using psql
+        PGPASSWORD=$DB_PASS psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f $migration || {
+          echo "Warning: SQL migration $migration encountered issues."
+          echo "This might be normal if the changes already exist. Continuing..."
         }
       fi
     done
@@ -87,39 +84,6 @@ fi
 # Create required directories
 mkdir -p /app/dist/server
 mkdir -p /app/uploads
-
-# Ensure vite.config is available for tsx import
-if [ -f "/app/vite.config.ts" ] && [ ! -f "/app/vite.config.js" ]; then
-  echo "Building vite.config.ts for runtime import..."
-  npx tsc /app/vite.config.ts --outDir /app --target es2022 --module es2022 --moduleResolution node || {
-    echo "TypeScript compilation failed, creating symlink fallback..."
-    ln -sf /app/vite.config.ts /app/vite.config.js 2>/dev/null || true
-  }
-fi
-
-# Build the client for production
-echo "Building client for production..."
-if [ ! -d "/app/dist/public" ] || [ -z "$(ls -A /app/dist/public 2>/dev/null)" ]; then
-  echo "Client build directory not found or empty, building now..."
-  cd /app
-  npm run build || {
-    echo "Client build failed, trying manual vite build..."
-    npx vite build --config vite.config.ts || {
-      echo "Vite build also failed"
-      exit 1
-    }
-  }
-  echo "Client build completed"
-else
-  echo "Client build directory exists and is not empty"
-fi
-
-# Create symlink from expected location to actual location for compatibility
-if [ -d "/app/dist/public" ] && [ ! -d "/app/server/public" ]; then
-  echo "Creating symlink from /app/server/public to /app/dist/public"
-  mkdir -p /app/server
-  ln -sf /app/dist/public /app/server/public
-fi
 
 # Build the server files if they don't exist
 build_server_from_source() {

@@ -32,9 +32,8 @@ RUN mkdir -p dist/server && \
 # Production stage
 FROM node:20-alpine as production
 
-# Install PostgreSQL client, tsx, and build tools for health checks and utilities
-RUN apk add --no-cache postgresql-client curl python3 make g++ libc6-compat && \
-    npm install -g tsx esbuild typescript
+# Install PostgreSQL client for health checks and utilities
+RUN apk add --no-cache postgresql-client curl
 
 WORKDIR /app
 
@@ -45,15 +44,12 @@ COPY --from=builder /app/server ./server
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/client ./client
 COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/attached_assets ./attached_assets
 
 # Copy dependencies and configuration files
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/uploads ./uploads
 COPY --from=builder /app/drizzle.config.ts ./
-COPY --from=builder /app/vite.config.ts ./
-COPY --from=builder /app/tsconfig.json ./
 
 # Add database migration files and scripts
 COPY --from=builder /app/migrations ./migrations
@@ -77,5 +73,5 @@ VOLUME /app/uploads
 # Set entrypoint to our initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
-# Start the application with tsx as primary runtime
-CMD ["tsx", "server/index.ts"]
+# Start the application with multiple fallback paths
+CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; elif [ -f \"dist/server/index.js\" ]; then node dist/server/index.js; elif [ -f \"dist/index.js\" ]; then node dist/index.js; else echo \"Error: Could not find server entry point. Fallback to source file.\" && npx tsx server/index.ts; fi"]
