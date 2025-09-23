@@ -524,14 +524,22 @@ export default function PublicSharePage() {
                       const comment = comments.find(c => c.id === hoveredComment);
                       if (!comment) return null;
                       
+                      // Adjust positioning when scrub preview is also visible
+                      const hasActivePreview = showScrubPreview && duration > 0 && file.fileType === 'video';
+                      const positionStyle = hasActivePreview ? {
+                        left: tooltipPosition.x - 180, // Position to the left of preview
+                        top: tooltipPosition.y - 80,   // Align with preview height
+                        transform: 'translate(0, -100%)'
+                      } : {
+                        left: tooltipPosition.x,
+                        top: tooltipPosition.y,
+                        transform: 'translate(-50%, -100%)'
+                      };
+                      
                       return (
                         <div
                           className="fixed z-50 pointer-events-none"
-                          style={{
-                            left: tooltipPosition.x,
-                            top: tooltipPosition.y,
-                            transform: 'translate(-50%, -100%)'
-                          }}
+                          style={positionStyle}
                         >
                           <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
                             <div className="flex items-center gap-2 mb-2">
@@ -564,10 +572,9 @@ export default function PublicSharePage() {
                   {showScrubPreview && duration > 0 && file.fileType === 'video' && (
                     <div
                       ref={scrubPreviewRef}
-                      className="fixed transform -translate-x-1/2 pointer-events-none z-40"
+                      className="absolute bottom-full mb-2 transform -translate-x-1/2 pointer-events-none z-40"
                       style={{
-                        left: `${scrubPreviewPosition}px`,
-                        bottom: '20px' // Fixed position from bottom of viewport
+                        left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
                       }}
                     >
                       <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
@@ -586,8 +593,8 @@ export default function PublicSharePage() {
                         <div className="text-white text-xs text-center mt-1 font-mono">
                           {formatTime(scrubPreviewTime)}
                         </div>
-                        {/* Arrow pointing down */}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600" />
+                        {/* Arrow pointing up */}
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-600" />
                       </div>
                     </div>
                   )}
