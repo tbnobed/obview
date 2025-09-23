@@ -1392,9 +1392,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid file ID" });
       }
 
+      console.log(`🎬 [PROCESSING STATUS] Request for file ID: ${fileId}`);
+
       const processing = await storage.getVideoProcessing(fileId);
+      
+      console.log(`🎬 [PROCESSING STATUS] Found processing data:`, processing ? {
+        status: processing.status,
+        hasQualities: !!processing.qualities,
+        hasScrubVersion: !!processing.scrubVersionPath,
+        qualitiesCount: processing.qualities?.length || 0,
+        scrubPath: processing.scrubVersionPath
+      } : 'No processing record found');
+      
       if (!processing) {
+        console.log(`🎬 [PROCESSING STATUS] No processing record found for file ${fileId}`);
         return res.status(404).json({ message: "Processing record not found" });
+      }
+
+      // Check if files actually exist on disk
+      if (processing.scrubVersionPath) {
+        const fs = require('fs');
+        const scrubExists = fs.existsSync(processing.scrubVersionPath);
+        console.log(`🎬 [PROCESSING STATUS] Scrub file exists: ${scrubExists} (${processing.scrubVersionPath})`);
+      }
+      
+      if (processing.qualities) {
+        const fs = require('fs');
+        processing.qualities.forEach(quality => {
+          const exists = fs.existsSync(quality.path);
+          console.log(`🎬 [PROCESSING STATUS] ${quality.resolution} quality exists: ${exists} (${quality.path})`);
+        });
       }
 
       res.json(processing);
