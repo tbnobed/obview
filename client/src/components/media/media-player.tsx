@@ -52,7 +52,6 @@ export default function MediaPlayer({
   const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
   const [scrubPreviewLeft, setScrubPreviewLeft] = useState(0);
   const [scrubPreviewTop, setScrubPreviewTop] = useState(0);
-  const [previewDims, setPreviewDims] = useState({ width: 208, height: 150 });
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
@@ -449,9 +448,11 @@ export default function MediaPlayer({
     setScrubPreviewTime(hoverTime);
     
     // Position preview using viewport coordinates  
-    const desiredLeft = e.clientX - previewDims.width / 2;
-    const left = Math.max(8, Math.min(window.innerWidth - previewDims.width - 8, desiredLeft));
-    const top = rect.top - previewDims.height - 12;
+    const previewWidth = 208;
+    const previewHeight = 150;
+    const desiredLeft = e.clientX - previewWidth / 2;
+    const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
+    const top = rect.top - previewHeight - 12;
     
     setScrubPreviewLeft(left);
     setScrubPreviewTop(top);
@@ -695,25 +696,6 @@ export default function MediaPlayer({
     if (previewVideoRef.current && videoRef.current) {
       // Sync preview video with main video when loaded
       previewVideoRef.current.currentTime = videoRef.current.currentTime;
-    }
-  };
-  
-  const handlePreviewVideoMetadata = () => {
-    if (previewVideoRef.current) {
-      const video = previewVideoRef.current;
-      const maxW = 208, maxH = 150;
-      const ar = video.videoWidth / video.videoHeight;
-      
-      let width, height;
-      if (maxW / maxH < ar) {
-        width = maxW;
-        height = maxW / ar;
-      } else {
-        height = maxH;
-        width = maxH * ar;
-      }
-      
-      setPreviewDims({ width: Math.round(width), height: Math.round(height) });
     }
   };
 
@@ -1040,9 +1022,11 @@ export default function MediaPlayer({
                         const hoverTime = duration * pos;
                         
                         // Position preview using viewport coordinates
-                        const desiredLeft = e.clientX - previewDims.width / 2;
-                        const left = Math.max(8, Math.min(window.innerWidth - previewDims.width - 8, desiredLeft));
-                        const top = rect.top - previewDims.height - 12;
+                        const previewWidth = 208; // w-48 + padding = 192 + 16
+                        const previewHeight = 150; // Approximate height
+                        const desiredLeft = e.clientX - previewWidth / 2;
+                        const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
+                        const top = rect.top - previewHeight - 12;
                         
                         setScrubPreviewTime(hoverTime);
                         setScrubPreviewLeft(left);
@@ -1510,27 +1494,27 @@ export default function MediaPlayer({
       {showScrubPreview && duration > 0 && file?.fileType === 'video' && createPortal(
         <div
           ref={scrubPreviewRef}
-          className="fixed z-[9999] pointer-events-none p-0 m-0 bg-transparent border-0 shadow-none rounded-none overflow-hidden"
+          className="pointer-events-none z-50"
           style={{
+            position: 'fixed',
             left: `${scrubPreviewLeft}px`,
-            top: `${scrubPreviewTop}px`,
-            width: `${previewDims.width}px`,
-            height: `${previewDims.height}px`
+            top: `${scrubPreviewTop}px`
           }}
         >
-          <div className="relative w-full h-full">
-            <video
-              ref={previewVideoRef}
-              className="block w-full h-full object-contain outline-none ring-0 bg-transparent"
-              style={{ border: 'none', boxShadow: 'none' }}
-              src={`/api/files/${file.id}/content`}
-              onLoadedData={handlePreviewVideoLoad}
-              onLoadedMetadata={handlePreviewVideoMetadata}
-              muted
-              preload="metadata"
-              data-testid="scrub-preview-video"
-            />
-            <div className="absolute bottom-1 left-1 text-white text-[10px] font-mono drop-shadow pointer-events-none">
+          <div className="bg-black p-2">
+            <div className="relative">
+              <video
+                ref={previewVideoRef}
+                className="w-48 h-30 rounded object-cover bg-gray-800"
+                src={`/api/files/${file.id}/content`}
+                onLoadedData={handlePreviewVideoLoad}
+                muted
+                preload="metadata"
+                data-testid="scrub-preview-video"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
+            </div>
+            <div className="text-white text-xs text-center mt-1 font-mono">
               {formatTime(scrubPreviewTime)}
             </div>
           </div>
