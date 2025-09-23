@@ -30,7 +30,7 @@ import {
   type InsertApproval,
   type PasswordReset,
   type InsertPasswordReset
-} from "../shared/schema.ts";
+} from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
 import connectPg from "connect-pg-simple";

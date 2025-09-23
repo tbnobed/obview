@@ -6,7 +6,7 @@ import multer from "multer";
 import type { Multer } from "multer"; // Import multer types
 import path from "path";
 import { z } from "zod";
-import { File as StorageFile } from "../shared/schema.ts";
+import { File as StorageFile } from "@shared/schema";
 import * as fileSystem from "./utils/filesystem";
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
@@ -15,7 +15,7 @@ import * as fsPromises from 'fs/promises';
 // Using declaration merging with Express namespace
 declare namespace Express {
   export interface Request {
-    user?: import("../shared/schema.ts").User;
+    user?: import("@shared/schema").User;
   }
 }
 
@@ -39,7 +39,7 @@ import {
   insertFileSchema,
   insertProjectUserSchema,
   insertApprovalSchema
-} from "../shared/schema.ts";
+} from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 

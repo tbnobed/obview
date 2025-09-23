@@ -45,10 +45,15 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/client ./client
 COPY --from=builder /app/shared ./shared
 
-# Create the expected public directory structure and ensure basic files exist
+# Copy the actual built frontend files to where the server expects them
 RUN mkdir -p /app/server/public && \
-    echo '<!DOCTYPE html><html><head><title>Obviu.io</title></head><body><h1>Obviu.io Docker</h1><p>Application running in Docker mode</p></body></html>' > /app/server/public/index.html && \
-    echo "Frontend files configured for Docker deployment"
+    if [ -d "/app/dist/public" ]; then \
+      cp -r /app/dist/public/* /app/server/public/; \
+      echo "Real frontend application files copied successfully"; \
+    else \
+      echo "Warning: Frontend build files not found, creating fallback"; \
+      echo '<!DOCTYPE html><html><head><title>Obviu.io</title></head><body><h1>Build Error</h1><p>Frontend files missing</p></body></html>' > /app/server/public/index.html; \
+    fi
 
 # Copy dependencies and configuration files
 COPY --from=builder /app/node_modules ./node_modules
