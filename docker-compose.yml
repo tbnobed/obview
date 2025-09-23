@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
       args:
         - NODE_ENV=production
-    container_name: obviu_app
+    container_name: obview_app
     restart: unless-stopped
     ports:
       - "5000:5000"
@@ -18,7 +18,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/obviu
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/obview
       - SESSION_SECRET=${SESSION_SECRET}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
@@ -56,12 +56,12 @@ services:
 
   db:
     image: postgres:16-alpine
-    container_name: obviu_db
+    container_name: obview_db
     restart: unless-stopped
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=obviu
+      - POSTGRES_DB=obview
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
