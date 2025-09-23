@@ -16,13 +16,14 @@ COPY . .
 # Verify the structure before building
 RUN ls -la && echo "Content of server directory:" && ls -la server/
 
-# Build the application using the working npm script
+# Build the application and production server
 RUN echo "=== BUILDING APPLICATION ===" && \
     npm run build && \
     echo "=== BUILD VERIFICATION ===" && \
     ls -la dist/ && \
-    test -f dist/index.js && echo "✅ Server build SUCCESS: dist/index.js" || (echo "❌ Server build FAILED: dist/index.js missing" && exit 1) && \
-    test -d dist/public && echo "✅ Frontend build SUCCESS: dist/public/" || echo "⚠️ Frontend build different structure"
+    echo "Building production server..." && \
+    npx esbuild server/production.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/production.js && \
+    test -f dist/production.js && echo "✅ Production server built: dist/production.js" || (echo "❌ Production server build failed" && exit 1)
 
 # Production stage
 FROM node:20-alpine as production
@@ -51,11 +52,12 @@ COPY --from=builder /app/vite.config.ts ./
 # Fix the vite.config import issue - tsx needs the file to be resolvable without extension
 RUN cp vite.config.ts vite.config.js
 
-# Copy frontend build files to where the server expects them and verify server build
+# Copy frontend build files to where the production server expects them
 RUN mkdir -p /app/server/public && \
-    cp -r /app/dist/* /app/server/public/ && \
+    cp -r /app/dist/public/* /app/server/public/ && \
     echo "✅ Frontend files copied to /app/server/public/" && \
-    test -f dist/index.js && echo "✅ Server build verified: dist/index.js exists" || (echo "❌ Server build missing: dist/index.js" && exit 1)
+    ls -la /app/server/public/ && \
+    test -f dist/production.js && echo "✅ Production server ready" || (echo "❌ Production server missing" && exit 1)
 
 # Add database migration files and scripts
 COPY --from=builder /app/migrations ./migrations
@@ -79,5 +81,5 @@ VOLUME /app/uploads
 # Set entrypoint to our initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
-# Start the application with the compiled server
-CMD ["node", "dist/index.js"]
+# Start the application with the production server
+CMD ["node", "dist/production.js"]
