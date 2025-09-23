@@ -827,7 +827,9 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
       {comments.map((comment, index) => (
         <div 
           key={comment.id} 
-          className="p-4 hover:bg-gray-800/50 transition-colors"
+          onClick={comment.timestamp !== null ? () => onTimestampClick?.(comment.timestamp) : undefined}
+          className={`p-4 hover:bg-gray-800/50 transition-colors ${comment.timestamp !== null ? 'cursor-pointer' : ''}`}
+          title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : undefined}
           data-testid={`comment-${comment.id}`}
         >
           <div className="flex gap-3">
@@ -859,14 +861,12 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
 
               {/* Timestamp */}
               {comment.timestamp !== null && (
-                <button
-                  onClick={() => onTimestampClick?.(comment.timestamp)}
-                  className="inline-block mb-2 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer font-mono text-sm"
-                  title="Jump to this time in the video"
+                <span
+                  className="inline-block mb-2 text-amber-400 font-mono text-sm"
                   data-testid={`timestamp-${comment.id}`}
                 >
                   {formatTime(comment.timestamp)}
-                </button>
+                </span>
               )}
 
               {/* Comment Text */}
