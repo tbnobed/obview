@@ -1,12 +1,31 @@
 // Enhanced database migration script with Docker support
-const { drizzle } = require('drizzle-orm/neon-serverless');
-const { migrate } = require('drizzle-orm/neon-serverless/migrator');
-const { Pool, neonConfig } = require('@neondatabase/serverless');
-const ws = require('ws');
 const fs = require('fs');
 const path = require('path');
 
-neonConfig.webSocketConstructor = ws;
+// Use appropriate database driver based on environment
+let drizzle, migrate, Pool;
+
+if (process.env.IS_DOCKER === 'true') {
+  // Use PostgreSQL driver for Docker environment
+  const { drizzle: drizzlePg } = require('drizzle-orm/node-postgres');
+  const { migrate: migratePg } = require('drizzle-orm/node-postgres/migrator');
+  const { Pool: PgPool } = require('pg');
+  
+  drizzle = drizzlePg;
+  migrate = migratePg;
+  Pool = PgPool;
+} else {
+  // Use Neon serverless driver for cloud environment
+  const { drizzle: drizzleNeon } = require('drizzle-orm/neon-serverless');
+  const { migrate: migrateNeon } = require('drizzle-orm/neon-serverless/migrator');
+  const { Pool: NeonPool, neonConfig } = require('@neondatabase/serverless');
+  const ws = require('ws');
+  
+  neonConfig.webSocketConstructor = ws;
+  drizzle = drizzleNeon;
+  migrate = migrateNeon;
+  Pool = NeonPool;
+}
 
 // Configure connection timeout for Docker environment
 const CONNECTION_TIMEOUT = process.env.DATABASE_CONNECTION_TIMEOUT || 30000;

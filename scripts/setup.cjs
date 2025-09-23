@@ -1,8 +1,20 @@
 // Script to set up initial admin user
-const { Pool } = require('@neondatabase/serverless');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+
+// Use appropriate database driver based on environment
+let Pool;
+
+if (process.env.IS_DOCKER === 'true') {
+  // Use PostgreSQL driver for Docker environment
+  const { Pool: PgPool } = require('pg');
+  Pool = PgPool;
+} else {
+  // Use Neon serverless driver for cloud environment
+  const { Pool: NeonPool } = require('@neondatabase/serverless');
+  Pool = NeonPool;
+}
 
 // Environment variables
 const DATABASE_URL = process.env.DATABASE_URL;
