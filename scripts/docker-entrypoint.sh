@@ -74,27 +74,33 @@ fi
 mkdir -p /app/dist/server
 mkdir -p /app/uploads
 
-# Find a valid entry point for the server
+# Find a valid entry point for the server - prefer built JS over TypeScript source
 find_server_entry() {
-  if [ -f "/app/dist/server/index.js" ]; then
-    echo "Found primary entry point: /app/dist/server/index.js"
-    export SERVER_ENTRY="/app/dist/server/index.js"
-    return 0
-  elif [ -f "/app/dist/index.js" ]; then
-    echo "Found secondary entry point: /app/dist/index.js"
+  # First priority: built server file from npm run build
+  if [ -f "/app/dist/index.js" ]; then
+    echo "Found built server entry point: /app/dist/index.js"
     export SERVER_ENTRY="/app/dist/index.js"
+    export USE_TSX="false"
     return 0
+  elif [ -f "/app/dist/server/index.js" ]; then
+    echo "Found built server entry point: /app/dist/server/index.js"
+    export SERVER_ENTRY="/app/dist/server/index.js"
+    export USE_TSX="false"
+    return 0
+  # Second priority: JS source files
   elif [ -f "/app/server/index.js" ]; then
-    echo "Found server source entry point: /app/server/index.js"
+    echo "Found JavaScript source entry point: /app/server/index.js"
     export SERVER_ENTRY="/app/server/index.js"
+    export USE_TSX="false"
+    return 0
+  # Last resort: TypeScript source (development fallback)
+  elif [ -f "/app/server/index.ts" ]; then
+    echo "WARNING: Using TypeScript source as fallback: /app/server/index.ts"
+    echo "This should only happen in development mode."
+    export SERVER_ENTRY="/app/server/index.ts"
+    export USE_TSX="true"
     return 0
   else
-    if [ -f "/app/server/index.ts" ]; then
-      echo "Found TypeScript source: /app/server/index.ts"
-      export SERVER_ENTRY="/app/server/index.ts"
-      export USE_TSX="true"
-      return 0
-    fi
     return 1
   fi
 }
