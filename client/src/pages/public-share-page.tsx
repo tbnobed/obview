@@ -530,7 +530,7 @@ export default function PublicSharePage() {
                   
                   {/* Comment markers rail */}
                   <div className="relative h-5 overflow-visible pointer-events-none" aria-hidden="true">
-                    {duration > 0 && comments && comments.length > 0 && comments.map((comment: UnifiedComment) => {
+                    {!isViewOnly && duration > 0 && comments && comments.length > 0 && comments.map((comment: UnifiedComment) => {
                       // Only show markers for comments with timestamps (not replies)
                       if (comment.parentId !== null && comment.parentId !== undefined) return null;
                       if (comment.timestamp === null || comment.timestamp === undefined) return null;
