@@ -7,7 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, InsertUser } from "@shared/schema";
 import crypto from "crypto";
-import { pool } from "./db";
+import { pool, db } from "./db";
 import connectPg from "connect-pg-simple";
 
 declare global {
@@ -36,25 +36,21 @@ export function generateToken(length = 32): string {
 }
 
 export function setupAuth(app: Express) {
-  // Create session store - use memory store if pool isn't available yet
+  // Create session store - create dedicated pool for sessions
   let sessionStore;
   
-  if (pool) {
-    try {
-      const PgStore = connectPg(session);
-      sessionStore = new PgStore({
-        pool,
-        tableName: 'session',
-        createTableIfMissing: true
-      });
-      console.log('Using PostgreSQL session store');
-    } catch (error) {
-      console.error('Failed to create PostgreSQL session store:', error);
-      console.log('Falling back to memory session store');
-      sessionStore = undefined; // Use default memory store
-    }
-  } else {
-    console.log('Pool not available, using default memory session store');
+  try {
+    // Use the database connection for session storage
+    const PgStore = connectPg(session);
+    sessionStore = new PgStore({
+      conString: process.env.DATABASE_URL,
+      tableName: 'session',
+      createTableIfMissing: true
+    });
+    console.log('Using PostgreSQL session store with connection string');
+  } catch (error) {
+    console.error('Failed to create PostgreSQL session store:', error);
+    console.log('Falling back to memory session store');
     sessionStore = undefined; // Use default memory store
   }
 
