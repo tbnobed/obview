@@ -10,6 +10,7 @@ import { File as StorageFile } from "@shared/schema";
 import * as fileSystem from "./utils/filesystem";
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
+import { existsSync } from 'fs';
 
 // Extended Request type to handle file uploads
 // Using declaration merging with Express namespace
@@ -1404,7 +1405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve processed video quality versions
-  app.get("/api/files/:id/qualities/:quality", isAuthenticated, hasProjectAccess, async (req, res) => {
+  app.get("/api/files/:id/qualities/:quality", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
       const quality = req.params.quality;
@@ -1461,7 +1462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve scrub version for smooth scrubbing
-  app.get("/api/files/:id/scrub", isAuthenticated, hasProjectAccess, async (req, res) => {
+  app.get("/api/files/:id/scrub", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
       
