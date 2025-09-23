@@ -737,19 +737,8 @@ export class DatabaseStorage implements IStorage {
   sessionStore: any; // Using any here to avoid type issues
 
   constructor() {
-    // Use memory store initially, will switch to PostgresSessionStore when pool is ready
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // 24 hours
-    });
-    
-    // Configure session store once the pool is available
-    const initSessionStore = () => {
-      if (!pool) {
-        console.log('Database pool not yet available, will retry session store initialization in 1 second');
-        setTimeout(initSessionStore, 1000);
-        return;
-      }
-      
+    // Initialize with PostgreSQL session store directly if pool is available
+    if (pool) {
       try {
         console.log('Initializing PostgreSQL session store');
         this.sessionStore = new PostgresSessionStore({ 
@@ -761,12 +750,18 @@ export class DatabaseStorage implements IStorage {
         console.log('PostgreSQL session store initialized successfully');
       } catch (error) {
         console.error('Failed to initialize PostgreSQL session store:', error);
-        console.log('Continuing with memory session store as fallback');
+        console.log('Using memory session store as fallback');
+        this.sessionStore = new MemoryStore({
+          checkPeriod: 86400000 // 24 hours
+        });
       }
-    };
-    
-    // Start the session store initialization process
-    setTimeout(initSessionStore, 1000);
+    } else {
+      // Use memory store as fallback
+      console.log('Database pool not available, using memory session store');
+      this.sessionStore = new MemoryStore({
+        checkPeriod: 86400000 // 24 hours
+      });
+    }
   }
 
   // User methods
