@@ -70,11 +70,18 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             className="relative aspect-video bg-black rounded-t-none mx-4 mb-2 overflow-hidden"
             onMouseMove={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
-              if (!video || video.duration === 0) return;
+              if (!video || !isFinite(video.duration) || video.duration <= 0) return;
               
               const rect = e.currentTarget.getBoundingClientRect();
+              if (rect.width === 0) return;
+              
               const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-              video.currentTime = video.duration * pos;
+              const newTime = video.duration * pos;
+              
+              // Only set currentTime if the calculated value is valid
+              if (isFinite(newTime) && newTime >= 0 && newTime <= video.duration) {
+                video.currentTime = newTime;
+              }
             }}
             onMouseLeave={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
