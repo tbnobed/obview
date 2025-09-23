@@ -44,6 +44,7 @@ COPY --from=builder /app/server ./server
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/client ./client
 COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Copy dependencies and configuration files
 COPY --from=builder /app/node_modules ./node_modules
@@ -74,4 +75,4 @@ VOLUME /app/uploads
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
 # Start the application with multiple fallback paths
-CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; elif [ -f \"dist/server/index.js\" ]; then node dist/server/index.js; elif [ -f \"dist/index.js\" ]; then node dist/index.js; else echo \"Error: Could not find server entry point. Fallback to source file.\" && npx tsx server/index.ts; fi"]
+CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; elif [ -f \"dist/server/index.js\" ]; then node dist/server/index.js; elif [ -f \"dist/index.js\" ]; then node dist/index.js; else echo \"Error: Could not find server entry point. Fallback to source file.\" && NODE_OPTIONS=\"--loader tsx/esm\" node --enable-source-maps server/index.ts; fi"]
