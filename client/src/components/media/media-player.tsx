@@ -1549,6 +1549,13 @@ export default function MediaPlayer({
                 ref={previewVideoRef}
                 className="w-48 h-30 rounded object-cover bg-gray-800"
                 onLoadedData={handlePreviewVideoLoad}
+                onError={(e) => {
+                  console.error('🎬 [SCRUB PREVIEW] Video error:', e);
+                  console.error('🎬 [SCRUB PREVIEW] Error details:', e.currentTarget.error);
+                }}
+                onStalled={() => console.log('🎬 [SCRUB PREVIEW] Video stalled')}
+                onSuspend={() => console.log('🎬 [SCRUB PREVIEW] Video suspended')}
+                onAbort={() => console.log('🎬 [SCRUB PREVIEW] Video aborted')}
                 muted
                 preload="metadata"
                 data-testid="scrub-preview-video"
