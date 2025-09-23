@@ -13,8 +13,8 @@ RUN npm ci
 # Copy source code including assets
 COPY . .
 
-# Verify the structure before building
-RUN ls -la && echo "Content of server directory:" && ls -la server/ && echo "Checking attached_assets:" && ls -la attached_assets/ && echo "Looking for logo file:" && ls -la attached_assets/obtv_logo_1758612025082.png
+# Verify the structure before building  
+RUN ls -la && echo "Content of server directory:" && ls -la server/
 
 # Build the application and production server
 RUN echo "=== BUILDING APPLICATION ===" && \

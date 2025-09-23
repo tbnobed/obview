@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Mail, Github, Info, FileText, ExternalLink } from "lucide-react";
-import obtvLogo from "@assets/obtv_logo_1758612025082.png";
+import obtvLogo from "../../../assets/obtv_logo_1758612025082.png";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
