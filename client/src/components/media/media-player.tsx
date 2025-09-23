@@ -1061,7 +1061,7 @@ export default function MediaPlayer({
                   {/* Comment Marker Tooltip */}
                   {hoveredComment && comments && (
                     (() => {
-                      const comment = comments.find(c => c.id === hoveredComment);
+                      const comment = comments.find((c: Comment) => c.id === hoveredComment);
                       if (!comment) return null;
                       
                       // Adjust positioning when scrub preview is also visible
