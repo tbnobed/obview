@@ -122,7 +122,14 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 // Set video to show frame at 1 second for preview
                 const video = e.target as HTMLVideoElement;
                 video.currentTime = Math.min(1, video.duration || 0);
+                console.log(`🎬 [PROJECT CARD] Video loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
               }}
+              onError={(e) => {
+                console.error(`🎬 [PROJECT CARD] Video preview error for project ${project.id}:`, e);
+                console.error(`🎬 [PROJECT CARD] Error details:`, e.currentTarget.error);
+                console.error(`🎬 [PROJECT CARD] Current source:`, e.currentTarget.currentSrc);
+              }}
+              onStalled={() => console.log(`🎬 [PROJECT CARD] Video preview stalled for project ${project.id}`)}
             >
               {/* Use scrub-optimized I-frame version for best hover performance */}
               {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
