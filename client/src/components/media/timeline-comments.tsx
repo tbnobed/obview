@@ -188,7 +188,10 @@ export default function TimelineComments({
                       {comment.content.length > 100 ? (
                         <>
                           {comment.content.substring(0, 100)}...
-                          <button className="text-blue-400 hover:text-blue-300 ml-1">
+                          <button 
+                            className="text-blue-400 hover:text-blue-300 ml-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             Read more
                           </button>
                         </>

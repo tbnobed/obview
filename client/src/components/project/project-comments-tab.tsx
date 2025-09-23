@@ -214,16 +214,9 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
 
                   {/* Timestamp */}
                   {comment.timestamp !== null && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (comment.file?.id) navigateToComment(comment);
-                      }}
-                      className="inline-block mb-2 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer font-mono text-sm"
-                      title="Jump to this time in the video"
-                    >
+                    <span className="inline-block mb-2 text-amber-400 font-mono text-sm">
                       {formatTime(comment.timestamp)}
-                    </button>
+                    </span>
                   )}
 
                   {/* Comment Text */}
