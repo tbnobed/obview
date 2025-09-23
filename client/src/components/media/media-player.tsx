@@ -1501,7 +1501,7 @@ export default function MediaPlayer({
             top: `${scrubPreviewTop}px`
           }}
         >
-          <div className="bg-black p-2">
+          <div className="p-2">
             <div className="relative">
               <video
                 ref={previewVideoRef}
@@ -1514,7 +1514,7 @@ export default function MediaPlayer({
               />
               <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
             </div>
-            <div className="text-white text-xs text-center mt-1 font-mono">
+            <div className="text-white text-sm text-center mt-1 font-mono font-bold bg-black bg-opacity-75 rounded px-2 py-1">
               {formatTime(scrubPreviewTime)}
             </div>
           </div>
