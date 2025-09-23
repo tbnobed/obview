@@ -16,18 +16,17 @@ COPY . .
 # Verify the structure before building
 RUN ls -la && echo "Content of server directory:" && ls -la server/
 
-# Build the application - carefully tracking the build process
-RUN mkdir -p dist/server && \
-    echo "Running full build process..." && \
-    npm run build && \
-    echo "Verifying build output:" && \
+# Build the application - with detailed debugging
+RUN echo "=== STARTING BUILD PROCESS ===" && \
+    echo "Frontend build (vite):" && \
+    npx vite build && \
+    echo "Frontend build complete, checking output:" && \
     ls -la dist/ && \
-    echo "Checking for server file:" && \
-    ls -la dist/server/ || { \
-      echo "Server directory not found, checking root dist:"; \
-      ls -la dist/; \
-      echo "Build may have used different output directory structure"; \
-    }
+    echo "Server build (esbuild):" && \
+    npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && \
+    echo "Server build complete, final verification:" && \
+    ls -la dist/ && \
+    test -f dist/index.js && echo "✅ dist/index.js created successfully" || echo "❌ dist/index.js MISSING"
 
 # Production stage
 FROM node:20-alpine as production
