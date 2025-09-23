@@ -400,6 +400,17 @@ export default function PublicSharePage() {
               </p>
             </div>
           </div>
+          
+          {/* Request Changes Button - Only show when comments are allowed */}
+          {!isViewOnly && (
+            <Button 
+              variant="outline"
+              className="bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600"
+              data-testid="request-changes-button"
+            >
+              Request Changes
+            </Button>
+          )}
         </div>
       </div>
 
