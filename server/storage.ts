@@ -1207,6 +1207,22 @@ export class DatabaseStorage implements IStorage {
     return publicComment;
   }
 
+  async getPublicComment(id: number): Promise<PublicComment | undefined> {
+    const [publicComment] = await db
+      .select()
+      .from(publicComments)
+      .where(eq(publicComments.id, id));
+    return publicComment;
+  }
+
+  async deletePublicComment(id: number): Promise<boolean> {
+    const result = await db
+      .delete(publicComments)
+      .where(eq(publicComments.id, id))
+      .returning({ deletedId: publicComments.id });
+    return result.length > 0;
+  }
+
   async getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]> {
     const regularComments = await this.getCommentsByFile(fileId);
     const publicCommentsList = await this.getPublicCommentsByFile(fileId);
