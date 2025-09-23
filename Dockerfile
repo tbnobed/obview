@@ -18,16 +18,18 @@ RUN ls -la && echo "Content of server directory:" && ls -la server/
 
 # Build the application - carefully tracking the build process
 RUN mkdir -p dist/server && \
+    echo "=== PRE-BUILD STATE ===" && \
+    ls -la && \
     echo "Running full build process..." && \
     npm run build && \
-    echo "Verifying build output:" && \
+    echo "=== POST-BUILD VERIFICATION ===" && \
+    echo "Root dist directory contents:" && \
     ls -la dist/ && \
-    echo "Checking for server file:" && \
-    ls -la dist/server/ || { \
-      echo "Server directory not found, checking root dist:"; \
-      ls -la dist/; \
-      echo "Build may have used different output directory structure"; \
-    }
+    echo "Looking for server build outputs:" && \
+    find . -name "index.js" -type f | head -10 && \
+    echo "Checking key files exist:" && \
+    test -f "dist/index.js" && echo "✓ dist/index.js EXISTS" || echo "✗ dist/index.js MISSING" && \
+    test -f "dist/public/index.html" && echo "✓ dist/public/index.html EXISTS" || echo "✗ dist/public/index.html MISSING"
 
 # Production stage
 FROM node:20-alpine AS production
