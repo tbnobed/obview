@@ -1003,10 +1003,9 @@ export default function MediaPlayer({
                 {/* Progress bar and markers container */}
                 <div className="flex-grow flex flex-col gap-1 mx-4 relative">
                   
-                  {/* Progress bar */}
+                  {/* Extended hover area around progress bar */}
                   <div
-                    ref={progressRef}
-                    className="video-progress relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
+                    className="relative py-4 cursor-pointer"
                     onClick={handleProgressClick}
                     onMouseMove={(e) => {
                       if (e.buttons === 1 && progressRef.current) {
@@ -1039,16 +1038,23 @@ export default function MediaPlayer({
                       }
                     }}
                     onMouseLeave={handleProgressLeave}
-                    data-testid="progress-bar"
+                    data-testid="progress-bar-extended-area"
                   >
+                    {/* Progress bar */}
                     <div
-                      className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
-                      style={{ width: `${(currentTime / duration) * 100}%` }}
-                    ></div>
-                    <div
-                      className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ left: `${(currentTime / duration) * 100}%` }}
-                    ></div>
+                      ref={progressRef}
+                      className="video-progress relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
+                      data-testid="progress-bar"
+                    >
+                      <div
+                        className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
+                        style={{ width: `${(currentTime / duration) * 100}%` }}
+                      ></div>
+                      <div
+                        className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ left: `${(currentTime / duration) * 100}%` }}
+                      ></div>
+                    </div>
                   </div>
                   
                   {/* Comment markers rail */}
