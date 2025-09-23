@@ -440,17 +440,16 @@ export default function MediaPlayer({
     if (!progressRef.current || isDragging) return;
     
     const rect = progressRef.current.getBoundingClientRect();
-    // Remove constraints to allow preview to extend beyond progress bar boundaries
-    const pos = (e.clientX - rect.left) / rect.width;
-    const hoverTime = Math.max(0, Math.min(duration, duration * pos));
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const hoverTime = duration * pos;
     
     setScrubPreviewTime(hoverTime);
-    setScrubPreviewPosition(pos * 100); // Convert to percentage (can be negative or >100)
+    setScrubPreviewPosition(pos * 100); // Convert to percentage
     setShowScrubPreview(true);
     
-    // Update preview video time - constrain to valid video time
+    // Update preview video time
     if (previewVideoRef.current && duration > 0) {
-      previewVideoRef.current.currentTime = Math.max(0, Math.min(duration, hoverTime));
+      previewVideoRef.current.currentTime = hoverTime;
     }
   };
   
@@ -965,7 +964,7 @@ export default function MediaPlayer({
       {/* Media Viewer - Takes 2/3 of the space on large screens */}
       <div className="lg:col-span-2">
         <div className="relative">
-          <div className="h-[calc(100vh-300px)] min-h-[500px] bg-neutral-900 rounded-t-lg overflow-hidden">
+          <div className="h-[calc(100vh-300px)] min-h-[500px] bg-neutral-900 rounded-t-lg overflow-visible">
             {renderMediaContent()}
           </div>
           

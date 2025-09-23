@@ -292,18 +292,17 @@ export default function PublicSharePage() {
     if (!progressRef.current || isDragging) return;
     
     const rect = progressRef.current.getBoundingClientRect();
-    // Remove constraints to allow preview to extend beyond progress bar boundaries
-    const pos = (e.clientX - rect.left) / rect.width;
-    const hoverTime = Math.max(0, Math.min(duration, duration * pos));
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const hoverTime = duration * pos;
     
     setScrubPreviewTime(hoverTime);
-    // Store percentage position for consistent positioning (can be negative or >100)
+    // Store percentage position for consistent positioning
     setScrubPreviewPosition(pos * 100);
     setShowScrubPreview(true);
     
-    // Update preview video time - constrain to valid video time
+    // Update preview video time
     if (previewVideoRef.current && duration > 0) {
-      previewVideoRef.current.currentTime = Math.max(0, Math.min(duration, hoverTime));
+      previewVideoRef.current.currentTime = hoverTime;
     }
   };
   
@@ -393,7 +392,7 @@ export default function PublicSharePage() {
             <Card className="h-full flex flex-col">
               <CardContent className="p-2 md:p-4 flex-1 flex flex-col pb-16">
                 {/* Video container - fills available space */}
-                <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-hidden flex-1 w-full">
+                <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-visible flex-1 w-full">
               {!mediaError ? (
                 <>
                   {file.fileType === 'video' && (
