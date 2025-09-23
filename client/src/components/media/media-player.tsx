@@ -1038,8 +1038,8 @@ export default function MediaPlayer({
                         
                         const rect = progressRef.current.getBoundingClientRect();
                         const leftPx = e.clientX - rect.left;
-                        const pos = Math.max(0, Math.min(1, leftPx / rect.width));
-                        const hoverTime = duration * pos;
+                        const pos = leftPx / rect.width; // Don't clamp - allow beyond 0-1
+                        const hoverTime = Math.max(0, Math.min(duration, duration * pos)); // Only clamp time
                         
                         setScrubPreviewTime(hoverTime);
                         setScrubPreviewLeftPx(leftPx);
