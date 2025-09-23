@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine as builder
 
 # Install dependencies
 RUN apk add --no-cache python3 make g++ libc6-compat
@@ -18,21 +18,19 @@ RUN ls -la && echo "Content of server directory:" && ls -la server/
 
 # Build the application - carefully tracking the build process
 RUN mkdir -p dist/server && \
-    echo "=== PRE-BUILD STATE ===" && \
-    ls -la && \
     echo "Running full build process..." && \
     npm run build && \
-    echo "=== POST-BUILD VERIFICATION ===" && \
-    echo "Root dist directory contents:" && \
+    echo "Verifying build output:" && \
     ls -la dist/ && \
-    echo "Looking for server build outputs:" && \
-    find . -name "index.js" -type f | head -10 && \
-    echo "Checking key files exist:" && \
-    test -f "dist/index.js" && echo "✓ dist/index.js EXISTS" || echo "✗ dist/index.js MISSING" && \
-    test -f "dist/public/index.html" && echo "✓ dist/public/index.html EXISTS" || echo "✗ dist/public/index.html MISSING"
+    echo "Checking for server file:" && \
+    ls -la dist/server/ || { \
+      echo "Server directory not found, checking root dist:"; \
+      ls -la dist/; \
+      echo "Build may have used different output directory structure"; \
+    }
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:20-alpine as production
 
 # Install PostgreSQL client for health checks and utilities
 RUN apk add --no-cache postgresql-client curl
@@ -42,34 +40,16 @@ WORKDIR /app
 # Copy all server source files first (needed for proper operation)
 COPY --from=builder /app/server ./server
 
-# Copy built assets from builder - ensure server build is included
+# Copy built assets from builder - maintain the entire structure
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/client ./client
 COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-
-# Verify critical files exist in production stage
-RUN echo "=== PRODUCTION STAGE VERIFICATION ===" && \
-    ls -la /app/dist/ && \
-    test -f "/app/dist/index.js" && echo "✓ Server build FOUND: /app/dist/index.js" || echo "✗ Server build MISSING: /app/dist/index.js" && \
-    test -f "/app/dist/public/index.html" && echo "✓ Frontend build FOUND: /app/dist/public/index.html" || echo "✗ Frontend build MISSING: /app/dist/public/index.html"
-
-# Copy the actual built frontend files to where the server expects them
-RUN mkdir -p /app/server/public && \
-    if [ -d "/app/dist/public" ]; then \
-      cp -r /app/dist/public/* /app/server/public/; \
-      echo "Real frontend application files copied successfully"; \
-    else \
-      echo "Warning: Frontend build files not found, creating fallback"; \
-      echo '<!DOCTYPE html><html><head><title>Obviu.io</title></head><body><h1>Build Error</h1><p>Frontend files missing</p></body></html>' > /app/server/public/index.html; \
-    fi
 
 # Copy dependencies and configuration files
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/uploads ./uploads
 COPY --from=builder /app/drizzle.config.ts ./
-COPY --from=builder /app/vite.config.ts ./
 
 # Add database migration files and scripts
 COPY --from=builder /app/migrations ./migrations
@@ -94,4 +74,4 @@ VOLUME /app/uploads
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
 # Start the application with multiple fallback paths
-CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ] && [ \"$USE_TSX\" = \"true\" ] && [ \"$TSX_TSCONFIG_PATHS\" = \"true\" ]; then node -r tsconfig-paths/register -r tsx/esm $SERVER_ENTRY; elif [ -n \"$SERVER_ENTRY\" ] && [ \"$USE_TSX\" = \"true\" ]; then npx tsx $SERVER_ENTRY; elif [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; else echo \"Error: No server entry point found\" && exit 1; fi"]
+CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; elif [ -f \"dist/server/index.js\" ]; then node dist/server/index.js; elif [ -f \"dist/index.js\" ]; then node dist/index.js; else echo \"Error: Could not find server entry point. Fallback to source file.\" && npx tsx server/index.ts; fi"]
