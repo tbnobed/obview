@@ -1037,7 +1037,7 @@ export default function MediaPlayer({
                           const rect = e.currentTarget.getBoundingClientRect();
                           setTooltipPosition({
                             x: rect.left + rect.width / 2,
-                            y: rect.top - 10
+                            y: rect.top - 20  // More space above the marker
                           });
                         }}
                         onMouseLeave={() => {
@@ -1104,7 +1104,7 @@ export default function MediaPlayer({
                   {showScrubPreview && duration > 0 && file?.fileType === 'video' && (
                     <div
                       ref={scrubPreviewRef}
-                      className="absolute bottom-6 transform -translate-x-1/2 pointer-events-none z-50"
+                      className="absolute top-full mt-2 transform -translate-x-1/2 pointer-events-none z-40"
                       style={{
                         left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
                       }}
