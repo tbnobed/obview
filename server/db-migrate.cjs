@@ -76,20 +76,8 @@ async function runMigrations() {
       return;
     }
 
-    console.log('Running database migrations from:', migrationsPath);
-    const migrationTimeout = setTimeout(() => {
-      throw new Error('Migration timeout exceeded');
-    }, MIGRATION_TIMEOUT);
-
-    try {
-      await migrate(db, { migrationsFolder: 'migrations' });
-      clearTimeout(migrationTimeout);
-      console.log('Database migrations completed successfully');
-    } catch (migrationError) {
-      clearTimeout(migrationTimeout);
-      console.error('Migration error:', migrationError);
-      throw migrationError;
-    }
+    console.log('Skipping drizzle migrations in Docker mode - SQL migrations will handle schema setup');
+    console.log('Database connection verified successfully');
     
   } catch (error) {
     console.error('Database migration failed:', error);

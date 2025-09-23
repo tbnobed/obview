@@ -127,6 +127,7 @@ BEGIN
     -- Clean up orphaned data that would violate foreign key constraints
     DELETE FROM files WHERE project_id NOT IN (SELECT id FROM projects);
     DELETE FROM comments WHERE file_id NOT IN (SELECT id FROM files);
+    DELETE FROM comments WHERE parent_id IS NOT NULL AND parent_id NOT IN (SELECT id FROM comments);
     DELETE FROM public_comments WHERE file_id NOT IN (SELECT id FROM files);
     DELETE FROM approvals WHERE file_id NOT IN (SELECT id FROM files);
     DELETE FROM activity_logs WHERE user_id NOT IN (SELECT id FROM users);
