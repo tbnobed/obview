@@ -752,7 +752,7 @@ export default function MediaPlayer({
       return (
         <div
           ref={mediaContainerRef}
-          className="relative h-full flex items-center justify-center bg-black"
+          className="relative w-full h-full bg-black"
         >
           {/* Fullscreen controls overlay - only visible in fullscreen mode */}
           {isFullscreen && (
@@ -815,7 +815,7 @@ export default function MediaPlayer({
           
           <video
             ref={videoRef}
-            className="max-h-full max-w-full"
+            className="absolute inset-0 w-full h-full object-cover"
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onEnded={handleMediaEnded}
