@@ -57,6 +57,8 @@ export default function PublicSharePage() {
   const [showScrubPreview, setShowScrubPreview] = useState(false);
   const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
   const [scrubPreviewPosition, setScrubPreviewPosition] = useState(0);
+  const [hoveredComment, setHoveredComment] = useState<number | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -79,6 +81,20 @@ export default function PublicSharePage() {
       return response.json();
     },
     enabled: !!token,
+    retry: false
+  });
+
+  // Fetch comments for the markers
+  const { data: comments } = useQuery<UnifiedComment[]>({
+    queryKey: ['/api/share', token, 'comments'],
+    queryFn: async () => {
+      const response = await fetch(`/api/share/${token}/comments`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch comments');
+      }
+      return response.json();
+    },
+    enabled: !!token && !!file,
     retry: false
   });
 
@@ -457,11 +473,96 @@ export default function PublicSharePage() {
                     style={{ left: `${(currentTime / duration) * 100}%` }}
                   ></div>
                   
+                  {/* Timeline markers for comments */}
+                  {comments && comments.length > 0 && duration > 0 && comments.map((comment: UnifiedComment) => {
+                    // Only show markers for comments with timestamps (not replies)
+                    if (comment.parentId !== null && comment.parentId !== undefined) return null;
+                    if (comment.timestamp === null || comment.timestamp === undefined) return null;
+                    
+                    // Calculate percentage position - safely handle divide by zero
+                    const timestamp = comment.timestamp || 0;
+                    const position = duration > 0 ? (timestamp / duration) * 100 : 0;
+                    
+                    // Skip markers that would be off the timeline
+                    if (position < 0 || position > 100) return null;
+                    
+                    return (
+                      <div 
+                        key={comment.id}
+                        className={`absolute top-0 h-full w-2 bg-yellow-400 z-20 cursor-pointer shadow-sm`}
+                        style={{ left: `${position}%` }}
+                        onMouseEnter={(e) => {
+                          setHoveredComment(comment.id);
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setTooltipPosition({
+                            x: rect.left + rect.width / 2,
+                            y: rect.top - 20  // More space above the marker
+                          });
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredComment(null);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Jump to timestamp
+                          const mediaElement = videoRef.current || audioRef.current;
+                          if (mediaElement && comment.timestamp !== null) {
+                            mediaElement.currentTime = comment.timestamp;
+                            setCurrentTime(comment.timestamp);
+                          }
+                        }}
+                        data-testid={`comment-marker-${comment.id}`}
+                      />
+                    );
+                  })}
+
+                  {/* Comment Marker Tooltip */}
+                  {hoveredComment && comments && (
+                    (() => {
+                      const comment = comments.find(c => c.id === hoveredComment);
+                      if (!comment) return null;
+                      
+                      return (
+                        <div
+                          className="fixed z-50 pointer-events-none"
+                          style={{
+                            left: tooltipPosition.x,
+                            top: tooltipPosition.y,
+                            transform: 'translate(-50%, -100%)'
+                          }}
+                        >
+                          <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium">
+                                {comment.authorName?.charAt(0) || 'A'}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-xs">
+                                  {comment.authorName || 'Anonymous'}
+                                </span>
+                                <span className="text-yellow-400 text-xs font-mono">
+                                  {formatTime(comment.timestamp)}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs leading-relaxed break-words">
+                              {comment.content}
+                            </p>
+                          </div>
+                          {/* Arrow pointing down */}
+                          <div className="absolute left-1/2 transform -translate-x-1/2 top-full">
+                            <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
+                  
                   {/* Scrub Preview Window */}
                   {showScrubPreview && duration > 0 && file.fileType === 'video' && (
                     <div
                       ref={scrubPreviewRef}
-                      className="absolute bottom-6 transform -translate-x-1/2 pointer-events-none z-50"
+                      className="absolute top-full mt-2 transform -translate-x-1/2 pointer-events-none z-40"
                       style={{
                         left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
                       }}
