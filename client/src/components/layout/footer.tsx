@@ -6,9 +6,9 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
   
   return (
-    <footer className="w-full py-2 bg-gray-50 dark:bg-[#0a0d14] border-t border-gray-200 dark:border-gray-900">
-      <div className="container px-6 mx-auto">
-        <div className="flex flex-col items-center space-y-2">
+    <footer className="w-full bg-gray-50 dark:bg-[#0a0d14] border-t border-gray-200 dark:border-gray-900">
+      <div className="container px-6 mx-auto py-1">
+        <div className="flex flex-col items-center space-y-1">
           {/* Centered OBTV Logo */}
           <div className="flex items-center justify-center">
             <img 
@@ -21,7 +21,7 @@ export default function Footer() {
           
           {/* Copyright and Links Row */}
           <div className="flex flex-col md:flex-row justify-between items-center w-full">
-            <div className="flex items-center mb-3 md:mb-0">
+            <div className="flex items-center mb-1 md:mb-0">
               <span className="text-xs text-gray-500 dark:text-gray-300">
                 &copy; {currentYear} Obviu.io
               </span>
