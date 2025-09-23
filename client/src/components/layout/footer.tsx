@@ -7,22 +7,22 @@ export default function Footer() {
   
   return (
     <footer className="w-full bg-gray-50 dark:bg-[#0a0d14] border-t border-gray-200 dark:border-gray-900">
-      <div className="container px-6 mx-auto py-1">
-        <div className="flex flex-col items-center space-y-1">
+      <div className="container px-6 mx-auto py-0">
+        <div className="flex flex-col items-center space-y-0">
           {/* Centered OBTV Logo */}
           <div className="flex items-center justify-center">
             <img 
               src={obtvLogo} 
               alt="OBTV Logo" 
-              className="h-8 w-auto"
+              className="block h-8 w-auto"
               data-testid="footer-obtv-logo"
             />
           </div>
           
           {/* Copyright and Links Row */}
           <div className="flex flex-col md:flex-row justify-between items-center w-full">
-            <div className="flex items-center mb-1 md:mb-0">
-              <span className="text-xs text-gray-500 dark:text-gray-300">
+            <div className="flex items-center mb-0">
+              <span className="text-xs leading-none text-gray-500 dark:text-gray-300">
                 &copy; {currentYear} Obviu.io
               </span>
             </div>
