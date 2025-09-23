@@ -49,7 +49,7 @@ export default function MediaPlayer({
   const [seekingToTime, setSeekingToTime] = useState<number | null>(null);
   const [showScrubPreview, setShowScrubPreview] = useState(false);
   const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
-  const [scrubPreviewPosition, setScrubPreviewPosition] = useState(0);
+  const [scrubPreviewLeftPx, setScrubPreviewLeftPx] = useState(0);
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
@@ -444,7 +444,7 @@ export default function MediaPlayer({
     const hoverTime = duration * pos;
     
     setScrubPreviewTime(hoverTime);
-    setScrubPreviewPosition(pos * 100); // Convert to percentage
+    setScrubPreviewLeftPx(e.clientX - rect.left); // Store pixel position
     setShowScrubPreview(true);
     
     // Update preview video time
@@ -997,8 +997,8 @@ export default function MediaPlayer({
                       ref={scrubPreviewRef}
                       className="absolute bottom-full mb-2 pointer-events-none z-40"
                       style={{
-                        left: `${scrubPreviewPosition}%`,
-                        transform: `translateX(${scrubPreviewPosition < 20 ? '0%' : scrubPreviewPosition > 80 ? '-100%' : '-50%'})`
+                        left: `${scrubPreviewLeftPx}px`,
+                        transform: 'translateX(-50%)'
                       }}
                     >
                       <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">

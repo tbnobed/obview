@@ -62,7 +62,7 @@ export default function PublicSharePage() {
   const [previewTime, setPreviewTime] = useState(0);
   const [showScrubPreview, setShowScrubPreview] = useState(false);
   const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
-  const [scrubPreviewPosition, setScrubPreviewPosition] = useState(0);
+  const [scrubPreviewLeftPx, setScrubPreviewLeftPx] = useState(0);
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
@@ -238,7 +238,7 @@ export default function PublicSharePage() {
           setPreviewTime(newTime);
           // CRITICAL FIX: Update scrub preview position to follow mouse
           setScrubPreviewTime(newTime);
-          setScrubPreviewPosition(pos * 100);
+          setScrubPreviewLeftPx(e.clientX - progressRef.current.getBoundingClientRect().left);
           setShowScrubPreview(true);
           
           // Update preview video time if it exists
@@ -296,8 +296,8 @@ export default function PublicSharePage() {
     const hoverTime = duration * pos;
     
     setScrubPreviewTime(hoverTime);
-    // Store percentage position for consistent positioning
-    setScrubPreviewPosition(pos * 100);
+    // Store pixel position for consistent positioning
+    setScrubPreviewLeftPx(e.clientX - rect.left);
     setShowScrubPreview(true);
     
     // Update preview video time
@@ -470,8 +470,8 @@ export default function PublicSharePage() {
                       ref={scrubPreviewRef}
                       className="absolute bottom-full mb-2 pointer-events-none z-40"
                       style={{
-                        left: `${scrubPreviewPosition}%`,
-                        transform: `translateX(${scrubPreviewPosition < 20 ? '0%' : scrubPreviewPosition > 80 ? '-100%' : '-50%'})`
+                        left: `${scrubPreviewLeftPx}px`,
+                        transform: 'translateX(-50%)'
                       }}
                     >
                       <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
@@ -496,21 +496,33 @@ export default function PublicSharePage() {
                     </div>
                   )}
                   
-                  {/* Progress bar */}
+                  {/* Extended invisible hover area - wider than progress bar */}
                   <div
-                    ref={progressRef}
-                    className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500"
-                    onClick={handleProgressClick}
+                    className="absolute inset-0 -mx-16 cursor-pointer"
                     onMouseMove={(e) => {
-                      if (e.buttons === 1 && progressRef.current) {
-                        // Handle dragging (mouse down + move)
-                        handleProgressClick(e);
-                      } else {
-                        // Handle hover for scrub preview
-                        handleProgressHover(e);
+                      if (!progressRef.current || isDragging) return;
+                      
+                      const rect = progressRef.current.getBoundingClientRect();
+                      // Calculate position relative to progress bar, allowing negative and >100%
+                      const pos = (e.clientX - rect.left) / rect.width;
+                      const hoverTime = Math.max(0, Math.min(duration, duration * pos));
+                      
+                      setScrubPreviewTime(hoverTime);
+                      setScrubPreviewLeftPx(leftPx); // Store pixel position
+                      setShowScrubPreview(true);
+                      
+                      if (previewVideoRef.current && duration > 0) {
+                        previewVideoRef.current.currentTime = hoverTime;
                       }
                     }}
                     onMouseLeave={handleProgressLeave}
+                    onClick={handleProgressClick}
+                  />
+                  
+                  {/* Progress bar */}
+                  <div
+                    ref={progressRef}
+                    className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500 pointer-events-none"
                     data-testid="progress-bar"
                   >
                     <div
