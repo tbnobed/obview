@@ -292,17 +292,18 @@ export default function PublicSharePage() {
     if (!progressRef.current || isDragging) return;
     
     const rect = progressRef.current.getBoundingClientRect();
-    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const hoverTime = duration * pos;
+    // Remove constraints to allow preview to extend beyond progress bar boundaries
+    const pos = (e.clientX - rect.left) / rect.width;
+    const hoverTime = Math.max(0, Math.min(duration, duration * pos));
     
     setScrubPreviewTime(hoverTime);
-    // Store percentage position for consistent positioning
+    // Store percentage position for consistent positioning (can be negative or >100)
     setScrubPreviewPosition(pos * 100);
     setShowScrubPreview(true);
     
-    // Update preview video time
+    // Update preview video time - constrain to valid video time
     if (previewVideoRef.current && duration > 0) {
-      previewVideoRef.current.currentTime = hoverTime;
+      previewVideoRef.current.currentTime = Math.max(0, Math.min(duration, hoverTime));
     }
   };
   
