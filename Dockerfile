@@ -47,7 +47,7 @@ COPY --from=builder /app/shared ./shared
 
 # Create the expected public directory structure for the server
 RUN mkdir -p /app/server/public && \
-    if [ -d "/app/dist" ]; then cp -r /app/dist/* /app/server/public/ 2>/dev/null || true; fi && \
+    if [ -d "/app/dist/public" ]; then cp -r /app/dist/public/* /app/server/public/ 2>/dev/null || true; fi && \
     if [ -d "/app/client/dist" ]; then cp -r /app/client/dist/* /app/server/public/ 2>/dev/null || true; fi
 
 # Copy dependencies and configuration files
