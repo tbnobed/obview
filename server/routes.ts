@@ -219,6 +219,41 @@ async function hasProjectEditAccess(req: Request, res: Response, next: NextFunct
   }
 }
 
+// Middleware to check if user has access to a file (by checking the file's project access)
+async function hasFileAccess(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const fileId = parseInt(req.params.id);
+    if (isNaN(fileId)) {
+      return res.status(400).json({ message: "Invalid file ID" });
+    }
+
+    // Get the file to find its project ID
+    const file = await storage.getFile(fileId);
+    if (!file) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    // Admin has access to all files
+    if (req.user.role === "admin") {
+      return next();
+    }
+
+    // Check if user is a member of the file's project
+    const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
+    if (!projectUser) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint for Docker and monitoring
   app.get("/api/health", async (req, res) => {
@@ -1349,7 +1384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ VIDEO PROCESSING API ENDPOINTS ============
   
   // Get video processing status and metadata
-  app.get("/api/files/:id/processing", isAuthenticated, hasProjectAccess, async (req, res) => {
+  app.get("/api/files/:id/processing", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
       if (isNaN(fileId)) {
