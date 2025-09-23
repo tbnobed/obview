@@ -1,5 +1,5 @@
 import { useProjectComments } from "@/hooks/use-comments";
-import { Loader2, FileVideo, Clock, Play } from "lucide-react";
+import { Loader2, FileVideo, Clock, Play, MessageSquare, MoreHorizontal, Filter, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatTimeAgo } from "@/lib/utils/formatters";
@@ -9,12 +9,20 @@ import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-// Format time (seconds to MM:SS)
+// Format time for Frame.io style (HH:MM:SS:FF - hours:minutes:seconds:frames)
 const formatTime = (time: number | null) => {
   if (time === null) return null;
-  const minutes = Math.floor(time / 60);
+  const hours = Math.floor(time / 3600);
+  const minutes = Math.floor((time % 3600) / 60);
   const seconds = Math.floor(time % 60);
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const frames = Math.floor((time % 1) * 24); // Assume 24fps for frame calculation
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
+};
+
+// Get user initials for avatar fallback
+const getUserInitials = (name: string) => {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 };
 
 export function ProjectCommentsTab({ projectId }: { projectId: number }) {
@@ -139,93 +147,148 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
   };
   
   return (
-    <div className="space-y-4">
-      {sortedComments.map((comment: Comment & { user?: any, file?: any }) => (
-        <div 
-          key={comment.id} 
-          className={`border rounded-lg p-4 ${comment.file?.id ? 'cursor-pointer hover-smooth-light dark:hover-subtle-dark hover:border-primary-400 dark:hover:border-[#026d55] hover:shadow-sm transition-all duration-200' : ''}`}
-          onClick={() => navigateToComment(comment)}
-          title={comment.file?.id ? `Click to view ${comment.timestamp !== null ? `at ${formatTime(comment.timestamp)}` : ''} in ${comment.file.filename}` : ''}
-        >
-          <div className="flex items-start gap-4">
-            <Avatar>
-              <AvatarFallback>
-                {((comment as any).authorName || comment.user?.name) ? ((comment as any).authorName || comment.user?.name).substring(0, 2).toUpperCase() : 'U'}
-              </AvatarFallback>
-              {comment.user?.avatarUrl && <AvatarImage src={comment.user.avatarUrl} />}
-            </Avatar>
-            
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <div className="font-medium">{(comment as any).authorName || comment.user?.name || 'Unknown User'}</div>
-                <div className="text-sm text-neutral-500">{formatTimeAgo(new Date(comment.createdAt))}</div>
-              </div>
-              
-              <div className="text-neutral-700 comment-content">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    img: ({ node, ...props }) => (
-                      <img 
-                        {...props} 
-                        className="max-w-full h-auto rounded-md my-1 border border-gray-200"
-                        style={{ maxHeight: '200px' }}
-                        onClick={(e) => e.stopPropagation()} 
-                      />
-                    ),
-                    a: ({ node, ...props }) => (
-                      <a 
-                        {...props} 
-                        className="text-primary hover:underline"
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {props.children}
-                      </a>
-                    )
-                  }}
-                >
-                  {comment.content}
-                </ReactMarkdown>
-              </div>
-              
-              <div className="mt-2 flex items-center flex-wrap gap-2 text-sm">
-                <div className="bg-neutral-100 px-2 py-1 rounded text-neutral-600 flex items-center">
-                  <FileVideo className="h-3 w-3 mr-1" />
-                  {comment.file?.filename || 'Unknown file'}
-                </div>
-                
-                {comment.timestamp !== null && (
-                  <div className="bg-yellow-50 px-2 py-1 rounded text-yellow-700 flex items-center font-mono">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {formatTime(comment.timestamp)}
+    <div className="h-full flex flex-col bg-[#1e1e1e] text-white rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium">All comments</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+            <Search className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+            <Filter className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Comments List */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="divide-y divide-gray-700">
+          {sortedComments.map((comment: Comment & { user?: any, file?: any }, index: number) => (
+            <div 
+              key={comment.id} 
+              className={`p-4 hover:bg-gray-800/50 transition-colors ${comment.file?.id ? 'cursor-pointer' : ''}`}
+              onClick={() => comment.file?.id && navigateToComment(comment)}
+              title={comment.file?.id ? `Click to view ${comment.timestamp !== null ? `at ${formatTime(comment.timestamp)}` : ''} in ${comment.file.filename}` : ''}
+            >
+              <div className="flex gap-3">
+                {/* Avatar */}
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarImage src={comment.user?.avatarUrl} />
+                  <AvatarFallback className="bg-gray-600 text-white text-xs">
+                    {getUserInitials((comment as any).authorName || comment.user?.name || 'U')}
+                  </AvatarFallback>
+                </Avatar>
+
+                {/* Comment Content */}
+                <div className="flex-1 min-w-0">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">
+                        {(comment as any).authorName || comment.user?.name || 'Unknown User'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        #{index + 1}
+                      </span>
+                      <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
+                      <span className="text-xs text-gray-400">
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                )}
-                
-                {comment.isResolved && (
-                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Resolved</Badge>
-                )}
-                
-                {comment.file?.id && (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="h-6 px-2 py-0 text-xs bg-primary-100 text-primary hover:text-primary-600 hover:bg-primary-200 border-primary-200 dark:bg-[#026d55]/20 dark:text-[#026d55] dark:hover:bg-[#025943]/30 dark:hover:text-[#03ffc8] dark:border-[#025943] transition-all duration-200"
-                    onClick={(e) => {
-                      e.stopPropagation();  // Prevent parent div click
-                      navigateToComment(comment);
-                    }}
-                  >
-                    <Play className="h-3 w-3 mr-1" />
-                    {comment.timestamp !== null ? 'Jump to timestamp' : 'View media'}
-                  </Button>
-                )}
+
+                  {/* File Info */}
+                  {comment.file && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <FileVideo className="h-3 w-3 text-gray-400" />
+                      <span className="text-xs text-gray-300">{comment.file.filename}</span>
+                    </div>
+                  )}
+
+                  {/* Timestamp */}
+                  {comment.timestamp !== null && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (comment.file?.id) navigateToComment(comment);
+                      }}
+                      className="inline-block mb-2 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer font-mono text-sm"
+                      title="Jump to this time in the video"
+                    >
+                      {formatTime(comment.timestamp)}
+                    </button>
+                  )}
+
+                  {/* Comment Text */}
+                  <div className="text-sm text-gray-200 mb-3">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        img: ({ node, ...props }) => (
+                          <img 
+                            {...props} 
+                            className="max-w-full h-auto rounded-md my-1 border border-gray-600"
+                            style={{ maxHeight: '200px' }}
+                            onClick={(e) => e.stopPropagation()} 
+                          />
+                        ),
+                        a: ({ node, ...props }) => (
+                          <a 
+                            {...props} 
+                            className="text-blue-400 hover:text-blue-300 underline"
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {props.children}
+                          </a>
+                        )
+                      }}
+                    >
+                      {comment.content.length > 150 ? `${comment.content.substring(0, 150)}...` : comment.content}
+                    </ReactMarkdown>
+                  </div>
+
+                  {/* Status and Actions */}
+                  <div className="flex items-center gap-2">
+                    {comment.isResolved && (
+                      <span className="text-xs px-2 py-1 bg-green-900/30 text-green-400 rounded">
+                        Resolved
+                      </span>
+                    )}
+                    
+                    {comment.file?.id && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        className="h-6 px-2 py-0 text-xs text-gray-400 hover:text-white hover:bg-gray-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigateToComment(comment);
+                        }}
+                      >
+                        <Play className="h-3 w-3 mr-1" />
+                        {comment.timestamp !== null ? 'Jump to timestamp' : 'View media'}
+                      </Button>
+                    )}
+                    
+                    <button className="text-xs text-gray-400 hover:text-white transition-colors">
+                      Reply
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 }

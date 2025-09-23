@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams } from "wouter";
-import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock } from "lucide-react";
+import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Logo from "@/components/ui/logo";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -26,17 +27,19 @@ interface SharedFile {
   createdAt: string;
 }
 
-// Format time (HH:MM:SS)
+// Format time for Frame.io style (HH:MM:SS:FF - hours:minutes:seconds:frames)
 const formatTime = (time: number) => {
   const hours = Math.floor(time / 3600);
   const minutes = Math.floor((time % 3600) / 60);
   const seconds = Math.floor(time % 60);
+  const frames = Math.floor((time % 1) * 24); // Assume 24fps for frame calculation
   
-  if (hours > 0) {
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  } else {
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
+};
+
+// Get user initials for avatar fallback
+const getUserInitials = (name: string) => {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 };
 
 export default function PublicSharePage() {
@@ -295,18 +298,6 @@ export default function PublicSharePage() {
     setShowScrubPreview(false);
   };
 
-  // Format time (HH:MM:SS)
-  const formatTime = (time: number) => {
-    const hours = Math.floor(time / 3600);
-    const minutes = Math.floor((time % 3600) / 60);
-    const seconds = Math.floor(time % 60);
-    
-    if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    } else {
-      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-  };
 
   // Handle media events
   const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
@@ -635,21 +626,42 @@ export default function PublicSharePage() {
           {/* Comments Section - Takes 1/4 of space on large screens, hidden in view-only mode */}
           {!isViewOnly && (
             <div className="lg:col-span-1 h-full">
-              <Card className="h-full flex flex-col">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageCircle className="h-5 w-5" />
-                    Comments
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6 flex-1 overflow-auto">
-                  {/* Comment Form */}
-                  <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
-                  
-                  {/* Comments List */}
+              <div className="h-full flex flex-col bg-[#1e1e1e] rounded-lg overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm font-medium text-white">All comments</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+                      <Search className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Comments List */}
+                <div className="flex-1 overflow-y-auto">
                   <CommentsList token={token!} onTimestampClick={seekToTimestamp} />
-                </CardContent>
-              </Card>
+                </div>
+
+                {/* Comment Input at Bottom */}
+                <div className="border-t border-gray-700 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-amber-400 font-mono text-xs">
+                      {formatTime(currentTime)}
+                    </span>
+                    <span className="text-gray-400 text-xs">Leave your comment...</span>
+                  </div>
+                  <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -785,59 +797,98 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
   });
 
   if (isLoading) {
-    return <div className="text-center py-4">Loading comments...</div>;
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin h-6 w-6 border-2 border-gray-400 border-t-transparent rounded-full"></div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>Failed to load comments</AlertDescription>
-      </Alert>
+      <div className="p-4 bg-red-900/20 text-red-400 text-sm">
+        Error loading comments: {error.message}
+      </div>
     );
   }
 
   if (!comments || comments.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-        No comments yet. Be the first to comment!
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <MessageSquare className="h-12 w-12 text-gray-600 mb-3" />
+        <p className="text-gray-400 text-sm">No comments yet</p>
+        <p className="text-gray-500 text-xs">Be the first to comment!</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4" data-testid="comments-list">
-      {comments.map((comment) => (
-        <div key={comment.id} className="border rounded-lg p-4 bg-white dark:bg-gray-900">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="font-semibold text-gray-900 dark:text-white">
-                {comment.authorName}
-              </span>
-              {comment.isPublic && (
-                <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
-                  Public
-                </span>
-              )}
+    <div className="divide-y divide-gray-700" data-testid="comments-list">
+      {comments.map((comment, index) => (
+        <div 
+          key={comment.id} 
+          className="p-4 hover:bg-gray-800/50 transition-colors"
+          data-testid={`comment-${comment.id}`}
+        >
+          <div className="flex gap-3">
+            {/* Avatar */}
+            <Avatar className="h-8 w-8 flex-shrink-0">
+              <AvatarImage src={undefined} />
+              <AvatarFallback className="bg-gray-600 text-white text-xs">
+                {getUserInitials(comment.authorName || 'A')}
+              </AvatarFallback>
+            </Avatar>
+
+            {/* Comment Content */}
+            <div className="flex-1 min-w-0">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-white">
+                    {comment.authorName || 'Anonymous'}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    #{index + 1}
+                  </span>
+                  <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
+                  <span className="text-xs text-gray-400">
+                    {new Date(comment.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Timestamp */}
               {comment.timestamp !== null && (
                 <button
                   onClick={() => onTimestampClick?.(comment.timestamp)}
-                  className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer transition-colors"
+                  className="inline-block mb-2 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer font-mono text-sm"
                   title="Jump to this time in the video"
                   data-testid={`timestamp-${comment.id}`}
                 >
-                  <Clock className="h-3 w-3" />
                   {formatTime(comment.timestamp)}
                 </button>
               )}
+
+              {/* Comment Text */}
+              <div className="text-sm text-gray-200 mb-3 whitespace-pre-wrap">
+                {comment.content.length > 100 ? (
+                  <>
+                    {comment.content.substring(0, 100)}...
+                    <button className="text-blue-400 hover:text-blue-300 ml-1">
+                      Read more
+                    </button>
+                  </>
+                ) : (
+                  comment.content
+                )}
+              </div>
+
+              {/* Reply Button */}
+              <button className="text-xs text-gray-400 hover:text-white transition-colors">
+                Reply
+              </button>
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {new Date(comment.createdAt).toLocaleDateString()}
-            </span>
           </div>
-          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-            {comment.content}
-          </p>
         </div>
       ))}
     </div>
