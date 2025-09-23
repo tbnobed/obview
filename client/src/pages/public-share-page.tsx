@@ -41,6 +41,10 @@ const formatTime = (time: number) => {
 
 export default function PublicSharePage() {
   const { token } = useParams<{ token: string }>();
+  
+  // Check if this is a view-only link (hide comments)
+  const urlParams = new URLSearchParams(window.location.search);
+  const isViewOnly = urlParams.get('viewOnly') === 'true';
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -351,10 +355,10 @@ export default function PublicSharePage() {
 
       {/* Main content area - fills remaining height */}
       <div className="flex-1 p-2 sm:p-4">
-        {/* Side-by-side layout: Media Player on left, Comments on right */}
-        <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4">
-          {/* Media Player - Takes 3/4 of space on large screens */}
-          <div className="lg:col-span-3 h-full">
+        {/* Side-by-side layout: Media Player on left, Comments on right (unless view-only) */}
+        <div className={cn("h-full grid grid-cols-1 gap-2 sm:gap-4", !isViewOnly && "lg:grid-cols-4")}>
+          {/* Media Player - Takes 3/4 of space on large screens, full width in view-only mode */}
+          <div className={cn("h-full", !isViewOnly ? "lg:col-span-3" : "lg:col-span-4")}>
             <Card className="h-full flex flex-col">
               <CardContent className="p-2 md:p-4 flex-1 flex flex-col">
                 {/* Video container - fills available space */}
@@ -515,24 +519,26 @@ export default function PublicSharePage() {
             </Card>
           </div>
 
-          {/* Comments Section - Takes 1/4 of space on large screens */}
-          <div className="lg:col-span-1 h-full">
-            <Card className="h-full flex flex-col">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5" />
-                  Comments
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6 flex-1 overflow-auto">
-                {/* Comment Form */}
-                <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
-                
-                {/* Comments List */}
-                <CommentsList token={token!} />
-              </CardContent>
-            </Card>
-          </div>
+          {/* Comments Section - Takes 1/4 of space on large screens, hidden in view-only mode */}
+          {!isViewOnly && (
+            <div className="lg:col-span-1 h-full">
+              <Card className="h-full flex flex-col">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5" />
+                    Comments
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 flex-1 overflow-auto">
+                  {/* Comment Form */}
+                  <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
+                  
+                  {/* Comments List */}
+                  <CommentsList token={token!} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>

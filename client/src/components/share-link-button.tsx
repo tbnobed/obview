@@ -10,6 +10,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ShareIcon, CopyIcon, CheckIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,18 +24,42 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
   const [isOpen, setIsOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [viewOnly, setViewOnly] = useState(false);
   const { createShareLink } = useShareLink();
   const { toast } = useToast();
+
+  const generateShareUrl = async () => {
+    try {
+      const result = await createShareLink.mutateAsync(fileId);
+      let url = result.shareUrl;
+      if (viewOnly) {
+        url += "?viewOnly=true";
+      }
+      setShareUrl(url);
+    } catch (error) {
+      console.error("Error creating share link", error);
+    }
+  };
 
   const handleOpenDialog = async () => {
     setIsOpen(true);
     setCopied(false);
-    
+    await generateShareUrl();
+  };
+
+  const handleViewOnlyChange = async (checked: boolean) => {
+    setViewOnly(checked);
+    setCopied(false);
+    // Regenerate URL with new viewOnly setting
     try {
       const result = await createShareLink.mutateAsync(fileId);
-      setShareUrl(result.shareUrl);
+      let url = result.shareUrl;
+      if (checked) {
+        url += "?viewOnly=true";
+      }
+      setShareUrl(url);
     } catch (error) {
-      console.error("Error creating share link", error);
+      console.error("Error updating share link", error);
     }
   };
 
@@ -84,7 +109,22 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex items-center space-x-2 mt-4">
+          <div className="flex items-center space-x-2 mt-4 mb-3">
+            <Checkbox 
+              id="viewOnly" 
+              checked={viewOnly}
+              onCheckedChange={handleViewOnlyChange}
+              data-testid="checkbox-view-only"
+            />
+            <label 
+              htmlFor="viewOnly" 
+              className="text-sm font-medium text-gray-900 dark:text-gray-300 cursor-pointer"
+            >
+              View only (hide comments)
+            </label>
+          </div>
+          
+          <div className="flex items-center space-x-2">
             <div className="grid flex-1 gap-2">
               <Input
                 readOnly
