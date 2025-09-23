@@ -1033,8 +1033,21 @@ export default function MediaPlayer({
                         // Handle dragging (mouse down + move)
                         handleProgressClick(e);
                       } else {
-                        // Handle hover for scrub preview
-                        handleProgressHover(e);
+                        // Handle hover for scrub preview with pixel positioning
+                        if (!progressRef.current || isDragging) return;
+                        
+                        const rect = progressRef.current.getBoundingClientRect();
+                        const leftPx = e.clientX - rect.left;
+                        const pos = Math.max(0, Math.min(1, leftPx / rect.width));
+                        const hoverTime = duration * pos;
+                        
+                        setScrubPreviewTime(hoverTime);
+                        setScrubPreviewLeftPx(leftPx);
+                        setShowScrubPreview(true);
+                        
+                        if (previewVideoRef.current && duration > 0) {
+                          previewVideoRef.current.currentTime = hoverTime;
+                        }
                       }
                     }}
                     onMouseLeave={handleProgressLeave}

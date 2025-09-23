@@ -496,17 +496,19 @@ export default function PublicSharePage() {
                     </div>
                   )}
                   
-                  {/* Extended invisible hover area - wider than progress bar */}
+                  {/* Progress bar */}
                   <div
-                    className="absolute inset-0 -mx-16 cursor-pointer"
+                    ref={progressRef}
+                    className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500"
+                    onClick={handleProgressClick}
                     onMouseMove={(e) => {
                       if (!progressRef.current || isDragging) return;
                       
                       const rect = progressRef.current.getBoundingClientRect();
-                      // Use pixel-based positioning instead of percentage
+                      // Use pixel-based positioning for preview extension
                       const leftPx = e.clientX - rect.left;
-                      const pos = leftPx / rect.width;
-                      const hoverTime = Math.max(0, Math.min(duration, duration * pos));
+                      const pos = Math.max(0, Math.min(1, leftPx / rect.width));
+                      const hoverTime = duration * pos;
                       
                       setScrubPreviewTime(hoverTime);
                       setScrubPreviewLeftPx(leftPx); // Store pixel position
@@ -517,13 +519,6 @@ export default function PublicSharePage() {
                       }
                     }}
                     onMouseLeave={handleProgressLeave}
-                    onClick={handleProgressClick}
-                  />
-                  
-                  {/* Progress bar */}
-                  <div
-                    ref={progressRef}
-                    className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500 pointer-events-none"
                     data-testid="progress-bar"
                   >
                     <div
