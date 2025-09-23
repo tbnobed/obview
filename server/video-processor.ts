@@ -25,10 +25,9 @@ interface VideoQuality {
 }
 
 export class VideoProcessor {
+  // Single optimized quality for efficient processing and storage
   private static readonly QUALITIES = [
-    { name: '360p', width: 640, height: 360, bitrate: '800k' },
-    { name: '720p', width: 1280, height: 720, bitrate: '2500k' },
-    { name: '1080p', width: 1920, height: 1080, bitrate: '5000k' }
+    { name: '720p', width: 1280, height: 720, bitrate: '2500k' }
   ];
 
   /**
@@ -52,7 +51,7 @@ export class VideoProcessor {
     const metadata = await this.getVideoMetadata(inputPath);
     console.log(`[VideoProcessor] Video metadata:`, metadata);
     
-    // Process all quality levels in parallel for efficiency
+    // Process single 720p quality for optimal resource usage
     const qualityPromises = this.QUALITIES.map(quality => 
       this.generateQuality(inputPath, qualitiesDir, filename, quality, metadata)
     );
