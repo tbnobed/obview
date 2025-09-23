@@ -1554,6 +1554,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get video processing data for shared files (no authentication required)
+  app.get("/api/share/:token/processing", async (req, res, next) => {
+    try {
+      const token = req.params.token;
+      const file = await storage.getFileByShareToken(token);
+      
+      if (!file) {
+        return res.status(404).json({ message: "Shared file not found" });
+      }
+      
+      // Check if file is marked as unavailable
+      if (file.isAvailable === false) {
+        return res.status(404).json({ 
+          message: "Shared file not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
+      // Get video processing data if available
+      const processing = await storage.getVideoProcessing(file.id);
+      if (!processing) {
+        return res.status(404).json({ message: "Video processing data not available" });
+      }
+      
+      res.json(processing);
+    } catch (error) {
+      console.error("Error fetching shared file processing data:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Simple in-memory rate limiting for public comments
   const publicCommentRateLimit = new Map<string, { count: number; resetTime: number }>();
   
@@ -1649,6 +1681,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(comment);
     } catch (error) {
       console.error("Error creating public comment:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Get proxy quality versions for shared files  
+  app.get("/api/share/:token/qualities/:quality", async (req, res) => {
+    try {
+      const token = req.params.token;
+      const quality = req.params.quality;
+      
+      const file = await storage.getFileByShareToken(token);
+      if (!file) {
+        return res.status(404).json({ message: "Shared file not found" });
+      }
+      
+      if (file.isAvailable === false) {
+        return res.status(404).json({ 
+          message: "Shared file not available", 
+          code: "FILE_UNAVAILABLE"
+        });
+      }
+
+      const processing = await storage.getVideoProcessing(file.id);
+      if (!processing || !processing.qualities) {
+        return res.status(404).json({ message: "Processed qualities not available" });
+      }
+
+      const qualityVersion = processing.qualities.find(q => q.resolution === quality);
+      if (!qualityVersion || !existsSync(qualityVersion.path)) {
+        return res.status(404).json({ message: "Quality version not found" });
+      }
+
+      // Set appropriate headers for video streaming with range support
+      const stats = await fsPromises.stat(qualityVersion.path);
+      const range = req.headers.range;
+
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stats.size - 1;
+        const chunksize = (end - start) + 1;
+
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${stats.size}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': 'video/mp4',
+          'Cache-Control': 'public, max-age=3600',
+          'Cross-Origin-Resource-Policy': 'cross-origin'
+        });
+
+        const stream = require('fs').createReadStream(qualityVersion.path, { start, end });
+        stream.pipe(res);
+      } else {
+        res.writeHead(200, {
+          'Content-Length': stats.size,
+          'Content-Type': 'video/mp4',
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=3600',
+          'Cross-Origin-Resource-Policy': 'cross-origin'
+        });
+
+        const stream = require('fs').createReadStream(qualityVersion.path);
+        stream.pipe(res);
+      }
+    } catch (error) {
+      console.error("[Shared Video Processing] Error serving quality:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
