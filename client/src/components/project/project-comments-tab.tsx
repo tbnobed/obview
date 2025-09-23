@@ -150,14 +150,14 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
           <div className="flex items-start gap-4">
             <Avatar>
               <AvatarFallback>
-                {comment.user?.name ? comment.user.name.substring(0, 2).toUpperCase() : 'U'}
+                {((comment as any).authorName || comment.user?.name) ? ((comment as any).authorName || comment.user?.name).substring(0, 2).toUpperCase() : 'U'}
               </AvatarFallback>
               {comment.user?.avatarUrl && <AvatarImage src={comment.user.avatarUrl} />}
             </Avatar>
             
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <div className="font-medium">{comment.user?.name || 'Unknown User'}</div>
+                <div className="font-medium">{(comment as any).authorName || comment.user?.name || 'Unknown User'}</div>
                 <div className="text-sm text-neutral-500">{formatTimeAgo(new Date(comment.createdAt))}</div>
               </div>
               
