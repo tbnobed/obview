@@ -10,14 +10,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copy source code
+# Copy source code including assets
 COPY . .
 
-# Ensure attached_assets are available for vite build
-COPY attached_assets ./attached_assets
-
 # Verify the structure before building
-RUN ls -la && echo "Content of server directory:" && ls -la server/
+RUN ls -la && echo "Content of server directory:" && ls -la server/ && echo "Checking attached_assets:" && ls -la attached_assets/ && echo "Looking for logo file:" && ls -la attached_assets/obtv_logo_1758612025082.png
 
 # Build the application and production server
 RUN echo "=== BUILDING APPLICATION ===" && \
