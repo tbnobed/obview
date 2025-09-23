@@ -122,17 +122,37 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 // Set video to show frame at 1 second for preview
                 const video = e.target as HTMLVideoElement;
                 video.currentTime = Math.min(1, video.duration || 0);
+                console.log('[PROJECT CARD] Video loaded for project:', project.id, 'file:', project.latestVideoFile.id);
+                console.log('[PROJECT CARD] VideoProcessing data:', videoProcessing);
               }}
             >
               {/* Use scrub-optimized I-frame version for best hover performance */}
-              {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
-                <source src={`/api/files/${project.latestVideoFile.id}/scrub`} type="video/mp4" />
-              ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p') ? (
-                /* Use 720p proxy for smooth scrubbing */
-                <source src={`/api/files/${project.latestVideoFile.id}/qualities/720p`} type="video/mp4" />
-              ) : null}
+              {(() => {
+                const hasScrubVersion = videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath;
+                const has720p = videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p');
+                
+                console.log('[PROJECT CARD] Has scrub version:', hasScrubVersion, 'scrubVersionPath:', videoProcessing?.scrubVersionPath);
+                console.log('[PROJECT CARD] Has 720p:', has720p, 'qualities:', videoProcessing?.qualities);
+                
+                if (hasScrubVersion) {
+                  const scrubUrl = `/api/files/${project.latestVideoFile.id}/scrub`;
+                  console.log('[PROJECT CARD] Using scrub version:', scrubUrl);
+                  return <source src={scrubUrl} type="video/mp4" />;
+                } else if (has720p) {
+                  const proxyUrl = `/api/files/${project.latestVideoFile.id}/qualities/720p`;
+                  console.log('[PROJECT CARD] Using 720p proxy:', proxyUrl);
+                  return <source src={proxyUrl} type="video/mp4" />;
+                }
+                
+                console.log('[PROJECT CARD] No optimized versions available');
+                return null;
+              })()}
               {/* Always include original as fallback */}
-              <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" />
+              {(() => {
+                const originalUrl = `/api/files/${project.latestVideoFile.id}/content`;
+                console.log('[PROJECT CARD] Fallback to original:', originalUrl);
+                return <source src={originalUrl} type="video/mp4" />;
+              })()}
               Your browser does not support the video tag.
             </video>
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
