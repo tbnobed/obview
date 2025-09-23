@@ -1,4 +1,4 @@
-import * as schema from "@shared/schema";
+import * as schema from "../shared/schema.ts";
 
 // Check if we're running in Docker/production environment
 const isDocker = process.env.IS_DOCKER === 'true' || process.env.NODE_ENV === 'production';
