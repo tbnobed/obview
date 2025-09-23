@@ -65,6 +65,7 @@ export default function PublicSharePage() {
   const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
   const [scrubPreviewLeft, setScrubPreviewLeft] = useState(0);
   const [scrubPreviewTop, setScrubPreviewTop] = useState(0);
+  const [previewDims, setPreviewDims] = useState({ width: 208, height: 150 });
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
@@ -243,11 +244,9 @@ export default function PublicSharePage() {
           
           // Position preview using viewport coordinates
           const progressRect = progressRef.current.getBoundingClientRect();
-          const previewWidth = 208;
-          const previewHeight = 150;
-          const desiredLeft = e.clientX - previewWidth / 2;
-          const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-          const top = progressRect.top - previewHeight - 12;
+          const desiredLeft = e.clientX - previewDims.width / 2;
+          const left = Math.max(8, Math.min(window.innerWidth - previewDims.width - 8, desiredLeft));
+          const top = progressRect.top - previewDims.height - 12;
           
           setScrubPreviewLeft(left);
           setScrubPreviewTop(top);
@@ -310,11 +309,9 @@ export default function PublicSharePage() {
     setScrubPreviewTime(hoverTime);
     
     // Position preview using viewport coordinates  
-    const previewWidth = 208;
-    const previewHeight = 150;
-    const desiredLeft = e.clientX - previewWidth / 2;
-    const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-    const top = rect.top - previewHeight - 12;
+    const desiredLeft = e.clientX - previewDims.width / 2;
+    const left = Math.max(8, Math.min(window.innerWidth - previewDims.width - 8, desiredLeft));
+    const top = rect.top - previewDims.height - 12;
     
     setScrubPreviewLeft(left);
     setScrubPreviewTop(top);
@@ -354,6 +351,25 @@ export default function PublicSharePage() {
     if (previewVideoRef.current && videoRef.current) {
       // Sync preview video with main video when loaded
       previewVideoRef.current.currentTime = videoRef.current.currentTime;
+    }
+  };
+  
+  const handlePreviewVideoMetadata = () => {
+    if (previewVideoRef.current) {
+      const video = previewVideoRef.current;
+      const maxW = 208, maxH = 150;
+      const ar = video.videoWidth / video.videoHeight;
+      
+      let width, height;
+      if (maxW / maxH < ar) {
+        width = maxW;
+        height = maxW / ar;
+      } else {
+        height = maxH;
+        width = maxH * ar;
+      }
+      
+      setPreviewDims({ width: Math.round(width), height: Math.round(height) });
     }
   };
 
@@ -718,20 +734,26 @@ export default function PublicSharePage() {
           style={{
             left: `${scrubPreviewLeft}px`,
             top: `${scrubPreviewTop}px`,
-            width: '208px',
-            height: '150px'
+            width: `${previewDims.width}px`,
+            height: `${previewDims.height}px`
           }}
         >
-          <video
-            ref={previewVideoRef}
-            className="block w-full h-full object-cover outline-none ring-0 bg-transparent"
-            style={{ border: 'none', boxShadow: 'none' }}
-            src={`/public/share/${token}`}
-            onLoadedData={handlePreviewVideoLoad}
-            muted
-            preload="metadata"
-            data-testid="scrub-preview-video"
-          />
+          <div className="relative w-full h-full">
+            <video
+              ref={previewVideoRef}
+              className="block w-full h-full object-contain outline-none ring-0 bg-transparent"
+              style={{ border: 'none', boxShadow: 'none' }}
+              src={`/public/share/${token}`}
+              onLoadedData={handlePreviewVideoLoad}
+              onLoadedMetadata={handlePreviewVideoMetadata}
+              muted
+              preload="metadata"
+              data-testid="scrub-preview-video"
+            />
+            <div className="absolute bottom-1 left-1 text-white text-[10px] font-mono drop-shadow pointer-events-none">
+              {formatTime(scrubPreviewTime)}
+            </div>
+          </div>
         </div>,
         document.body
       )}
