@@ -93,12 +93,15 @@ find_server_entry() {
     export SERVER_ENTRY="/app/server/index.js"
     export USE_TSX="false"
     return 0
-  # Last resort: TypeScript source (development fallback)
+  # Last resort: TypeScript source (development fallback) with path resolution
   elif [ -f "/app/server/index.ts" ]; then
     echo "WARNING: Using TypeScript source as fallback: /app/server/index.ts"
     echo "This should only happen in development mode."
+    echo "Installing tsx path resolution support..."
+    npm install --no-save tsconfig-paths 2>/dev/null || echo "tsconfig-paths install failed, continuing anyway"
     export SERVER_ENTRY="/app/server/index.ts"
     export USE_TSX="true"
+    export TSX_TSCONFIG_PATHS="true"
     return 0
   else
     return 1
