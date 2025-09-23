@@ -73,12 +73,25 @@ export default function MediaPlayer({
     enabled: !!file,
   });
 
-  // Fetch video processing data for proxy versions
-  const { data: videoProcessing } = useQuery({
+  // Fetch video processing data for proxy versions (optional optimization)
+  const { data: videoProcessing, error: processingError } = useQuery({
     queryKey: ['/api/files', file?.id, 'processing'],
-    queryFn: () => file ? apiRequest('GET', `/api/files/${file.id}/processing`) : Promise.resolve(null),
+    queryFn: async () => {
+      if (!file) return null;
+      try {
+        const result = await apiRequest('GET', `/api/files/${file.id}/processing`);
+        return result;
+      } catch (error) {
+        // Processing not available yet or failed - that's OK, use original file
+        console.log(`[VideoProcessing] Processing data not available for file ${file.id}, using original file`);
+        return null;
+      }
+    },
     enabled: !!file && file.fileType === 'video',
-    retry: false
+    retry: false,
+    refetchOnWindowFocus: false,
+    // Don't show query errors, processing is optional
+    meta: { suppressErrorToast: true }
   });
 
   // Fetch approval status for the current file
@@ -832,25 +845,22 @@ export default function MediaPlayer({
             controls={false}
             preload="metadata"
           >
-            {/* Use proxy quality versions for better performance */}
-            {videoProcessing?.status === 'completed' && videoProcessing.qualities?.length > 0 ? (
-              <>
-                {/* Use best available quality (1080p -> 720p -> 360p) */}
-                {videoProcessing.qualities.find((q: any) => q.resolution === '1080p') && (
-                  <source src={`/api/files/${file.id}/qualities/1080p`} type="video/mp4" />
-                )}
-                {videoProcessing.qualities.find((q: any) => q.resolution === '720p') && (
-                  <source src={`/api/files/${file.id}/qualities/720p`} type="video/mp4" />
-                )}
-                {videoProcessing.qualities.find((q: any) => q.resolution === '360p') && (
-                  <source src={`/api/files/${file.id}/qualities/360p`} type="video/mp4" />
-                )}
-                {/* Fallback to original if proxies fail */}
-                <source src={`/api/files/${file.id}/content`} type={file.fileType} />
-              </>
-            ) : (
-              /* Use original file while processing or for non-video files */
+            {/* Primary source: always use original file first for reliability */}
+            {file.fileType.toLowerCase().startsWith('video/') ? (
               <source src={`/api/files/${file.id}/content`} type={file.fileType} />
+            ) : (
+              <>
+                {/* Add explicit MP4 type for MP4 extension files */}
+                {file.filename.toLowerCase().endsWith('.mp4') && (
+                  <source src={`/api/files/${file.id}/content`} type="video/mp4" />
+                )}
+                {/* Add WebM for better browser support */}
+                {file.filename.toLowerCase().endsWith('.webm') && (
+                  <source src={`/api/files/${file.id}/content`} type="video/webm" />
+                )}
+                {/* Fallback */}
+                <source src={`/api/files/${file.id}/content`} />
+              </>
             )}
             Your browser does not support the video tag.
           </video>
@@ -1523,7 +1533,7 @@ export default function MediaPlayer({
               <video
                 ref={previewVideoRef}
                 className="w-48 h-30 rounded object-cover bg-gray-800"
-                src={videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? `/api/files/${file.id}/scrub` : `/api/files/${file.id}/content`}
+                src={`/api/files/${file.id}/content`}
                 onLoadedData={handlePreviewVideoLoad}
                 muted
                 preload="metadata"
