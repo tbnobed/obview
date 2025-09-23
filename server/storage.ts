@@ -734,34 +734,10 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: any; // Using any here to avoid type issues
-
+  // Note: Session store is now handled in auth.ts with PostgreSQL backing
+  
   constructor() {
-    // Initialize with PostgreSQL session store directly if pool is available
-    if (pool) {
-      try {
-        console.log('Initializing PostgreSQL session store');
-        this.sessionStore = new PostgresSessionStore({ 
-          pool, 
-          createTableIfMissing: true,
-          tableName: 'pg_session',
-          pruneSessionInterval: 60
-        });
-        console.log('PostgreSQL session store initialized successfully');
-      } catch (error) {
-        console.error('Failed to initialize PostgreSQL session store:', error);
-        console.log('Using memory session store as fallback');
-        this.sessionStore = new MemoryStore({
-          checkPeriod: 86400000 // 24 hours
-        });
-      }
-    } else {
-      // Use memory store as fallback
-      console.log('Database pool not available, using memory session store');
-      this.sessionStore = new MemoryStore({
-        checkPeriod: 86400000 // 24 hours
-      });
-    }
+    // Session store initialization moved to auth.ts for proper persistence
   }
 
   // User methods

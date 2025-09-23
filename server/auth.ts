@@ -7,6 +7,8 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, InsertUser } from "@shared/schema";
 import crypto from "crypto";
+import { pool } from "./db";
+import connectPg from "connect-pg-simple";
 
 declare global {
   namespace Express {
@@ -34,11 +36,33 @@ export function generateToken(length = 32): string {
 }
 
 export function setupAuth(app: Express) {
+  // Create session store - use memory store if pool isn't available yet
+  let sessionStore;
+  
+  if (pool) {
+    try {
+      const PgStore = connectPg(session);
+      sessionStore = new PgStore({
+        pool,
+        tableName: 'session',
+        createTableIfMissing: true
+      });
+      console.log('Using PostgreSQL session store');
+    } catch (error) {
+      console.error('Failed to create PostgreSQL session store:', error);
+      console.log('Falling back to memory session store');
+      sessionStore = undefined; // Use default memory store
+    }
+  } else {
+    console.log('Pool not available, using default memory session store');
+    sessionStore = undefined; // Use default memory store
+  }
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'obviu-secret',
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
+    ...(sessionStore && { store: sessionStore }),
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -152,19 +176,29 @@ export function setupAuth(app: Express) {
         });
       }
       
-      req.login(user, (err) => {
+      // Regenerate session to prevent fixation attacks
+      req.session.regenerate((err) => {
         if (err) return next(err);
         
-        // Remove sensitive data before returning
-        const userResponse = { ...user };
-        delete userResponse.password;
-        
-        // Ensure themePreference field exists
-        if (userResponse.themePreference === undefined) {
-          userResponse.themePreference = "system";
-        }
-        
-        res.status(200).json(userResponse);
+        req.login(user, (err) => {
+          if (err) return next(err);
+          
+          // Explicitly save the session before responding
+          req.session.save((err) => {
+            if (err) return next(err);
+            
+            // Remove sensitive data before returning
+            const userResponse = { ...user };
+            delete userResponse.password;
+            
+            // Ensure themePreference field exists
+            if (userResponse.themePreference === undefined) {
+              userResponse.themePreference = "system";
+            }
+            
+            res.status(200).json(userResponse);
+          });
+        });
       });
     })(req, res, next);
   });
