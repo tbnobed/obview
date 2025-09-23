@@ -79,6 +79,7 @@ export interface IStorage {
   // Public comment management
   getPublicCommentsByFile(fileId: number): Promise<PublicComment[]>;
   createPublicComment(publicComment: InsertPublicComment): Promise<PublicComment>;
+  deletePublicComment(id: number): Promise<boolean>;
   getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]>;
   getFileByShareToken(token: string): Promise<File | undefined>;
   getFileWithProjectByShareToken(token: string): Promise<(File & { projectName: string }) | undefined>;
@@ -408,6 +409,10 @@ export class MemStorage implements IStorage {
     };
     this.publicComments.set(id, publicComment);
     return publicComment;
+  }
+
+  async deletePublicComment(id: number): Promise<boolean> {
+    return this.publicComments.delete(id);
   }
 
   async getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]> {
