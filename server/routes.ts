@@ -144,7 +144,7 @@ const handleMulterErrors = (err, req, res, next) => {
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   console.log("Auth check - isAuthenticated:", req.isAuthenticated());
   console.log("Auth check - session:", req.session);
-  console.log("Auth check - user:", req.user);
+  console.log("Auth check - user:", req.user ? { id: req.user.id, username: req.user.username, role: req.user.role } : 'undefined');
   
   if (req.isAuthenticated() && req.user) {
     console.log("User is authenticated, proceeding");

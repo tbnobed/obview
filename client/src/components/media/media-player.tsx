@@ -70,7 +70,7 @@ export default function MediaPlayer({
   const { data: comments = [] } = useQuery({
     queryKey: ['/api/files', file?.id, 'comments'],
     queryFn: () => file ? apiRequest('GET', `/api/files/${file.id}/comments`) : Promise.resolve([]),
-    enabled: !!file,
+    enabled: !!user && !!file,
   });
 
   // Fetch video processing data for proxy versions (optional optimization)
@@ -87,8 +87,15 @@ export default function MediaPlayer({
         return null;
       }
     },
-    enabled: !!file && file.fileType === 'video',
-    retry: false,
+    enabled: !!user && !!file && file.fileType === 'video',
+    retry: (failureCount, error: any) => {
+      // Retry up to 3 times for 401 errors (session race condition)
+      if (error?.message?.includes('Unauthorized') && failureCount < 3) {
+        return true;
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 30000),
     refetchOnWindowFocus: false,
     // Don't show query errors, processing is optional
     meta: { suppressErrorToast: true }
@@ -98,7 +105,7 @@ export default function MediaPlayer({
   const { data: approvals = [] } = useQuery({
     queryKey: ['/api/files', file?.id, 'approvals'],
     queryFn: () => file ? apiRequest('GET', `/api/files/${file.id}/approvals`) : Promise.resolve([]),
-    enabled: !!file,
+    enabled: !!user && !!file,
   });
   
   // Find user's approval (if any)
