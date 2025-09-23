@@ -1410,11 +1410,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileId = parseInt(req.params.id);
       const quality = req.params.quality;
       
+      console.log(`🎬 [QUALITY ENDPOINT] Request for file ID: ${fileId}, quality: ${quality}`);
+      
       if (isNaN(fileId)) {
         return res.status(400).json({ message: "Invalid file ID" });
       }
 
       const processing = await storage.getVideoProcessing(fileId);
+      
+      console.log(`🎬 [QUALITY ENDPOINT] Processing data:`, processing ? {
+        status: processing.status,
+        hasQualities: !!processing.qualities,
+        availableQualities: processing.qualities?.map(q => q.resolution) || []
+      } : 'No processing data found');
       if (!processing || !processing.qualities) {
         return res.status(404).json({ message: "Processed qualities not available" });
       }
@@ -1466,14 +1474,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const fileId = parseInt(req.params.id);
       
+      console.log(`🎬 [SCRUB ENDPOINT] Request for file ID: ${fileId}`);
+      
       if (isNaN(fileId)) {
         return res.status(400).json({ message: "Invalid file ID" });
       }
 
       const processing = await storage.getVideoProcessing(fileId);
-      if (!processing || !processing.scrubVersionPath || !existsSync(processing.scrubVersionPath)) {
+      
+      console.log(`🎬 [SCRUB ENDPOINT] Processing data:`, processing ? {
+        status: processing.status,
+        hasScrubVersion: !!processing.scrubVersionPath,
+        scrubPath: processing.scrubVersionPath
+      } : 'No processing data found');
+      if (!processing || !processing.scrubVersionPath) {
+        console.log(`🎬 [SCRUB ENDPOINT] No scrub version path for file ${fileId}`);
         return res.status(404).json({ message: "Scrub version not available" });
       }
+      
+      if (!existsSync(processing.scrubVersionPath)) {
+        console.log(`🎬 [SCRUB ENDPOINT] Scrub file does not exist at path: ${processing.scrubVersionPath}`);
+        return res.status(404).json({ message: "Scrub version not available" });
+      }
+      
+      // Log file size for debugging
+      console.log(`🎬 [SCRUB ENDPOINT] Serving scrub file: ${processing.scrubVersionPath}`);
 
       const stats = await fsPromises.stat(processing.scrubVersionPath);
       const range = req.headers.range;
