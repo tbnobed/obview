@@ -483,57 +483,6 @@ export default function PublicSharePage() {
                     className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
                     style={{ left: `${(currentTime / duration) * 100}%` }}
                   ></div>
-                  
-                  {/* Timeline markers for comments */}
-                  {comments && comments.length > 0 && duration > 0 && comments.map((comment: UnifiedComment) => {
-                    // Only show markers for comments with timestamps (not replies)
-                    if (comment.parentId !== null && comment.parentId !== undefined) return null;
-                    if (comment.timestamp === null || comment.timestamp === undefined) return null;
-                    
-                    // Calculate percentage position - safely handle divide by zero
-                    const timestamp = comment.timestamp || 0;
-                    const position = duration > 0 ? (timestamp / duration) * 100 : 0;
-                    
-                    // Skip markers that would be off the timeline
-                    if (position < 0 || position > 100) return null;
-                    
-                    return (
-                      <div 
-                        key={comment.id}
-                        className="absolute z-20 cursor-pointer"
-                        style={{ 
-                          left: `${position}%`, 
-                          bottom: '-8px',
-                          transform: 'translateX(-50%)'
-                        }}
-                        onMouseEnter={(e) => {
-                          setHoveredComment(comment.id);
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setTooltipPosition({
-                            x: rect.left + rect.width / 2,
-                            y: rect.top - 10
-                          });
-                        }}
-                        onMouseLeave={() => {
-                          setHoveredComment(null);
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Jump to timestamp
-                          const mediaElement = videoRef.current || audioRef.current;
-                          if (mediaElement && comment.timestamp !== null) {
-                            mediaElement.currentTime = comment.timestamp;
-                            setCurrentTime(comment.timestamp);
-                          }
-                        }}
-                        data-testid={`comment-marker-${comment.id}`}
-                      >
-                        <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold text-black shadow-lg border-2 border-white">
-                          {comment.authorName?.charAt(0)?.toUpperCase() || 'A'}
-                        </div>
-                      </div>
-                    );
-                  })}
 
                   {/* Comment Marker Tooltip */}
                   {hoveredComment && comments && (
@@ -620,6 +569,61 @@ export default function PublicSharePage() {
                     </div>
                   )}
                 </div>
+                
+                {/* Timeline markers for comments - positioned below progress bar */}
+                {comments && comments.length > 0 && duration > 0 && progressRef.current && (
+                  <div className="relative mx-4" style={{ height: '20px' }}>
+                    {comments.map((comment: UnifiedComment) => {
+                      // Only show markers for comments with timestamps (not replies)
+                      if (comment.parentId !== null && comment.parentId !== undefined) return null;
+                      if (comment.timestamp === null || comment.timestamp === undefined) return null;
+                      
+                      // Calculate percentage position - safely handle divide by zero
+                      const timestamp = comment.timestamp || 0;
+                      const position = duration > 0 ? (timestamp / duration) * 100 : 0;
+                      
+                      // Skip markers that would be off the timeline
+                      if (position < 0 || position > 100) return null;
+                      
+                      return (
+                        <div 
+                          key={comment.id}
+                          className="absolute z-20 cursor-pointer"
+                          style={{ 
+                            left: `${position}%`, 
+                            top: '2px',
+                            transform: 'translateX(-50%)'
+                          }}
+                          onMouseEnter={(e) => {
+                            setHoveredComment(comment.id);
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setTooltipPosition({
+                              x: rect.left + rect.width / 2,
+                              y: rect.top - 10
+                            });
+                          }}
+                          onMouseLeave={() => {
+                            setHoveredComment(null);
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Jump to timestamp
+                            const mediaElement = videoRef.current || audioRef.current;
+                            if (mediaElement && comment.timestamp !== null) {
+                              mediaElement.currentTime = comment.timestamp;
+                              setCurrentTime(comment.timestamp);
+                            }
+                          }}
+                          data-testid={`comment-marker-${comment.id}`}
+                        >
+                          <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold text-black shadow-lg border-2 border-white">
+                            {comment.authorName?.charAt(0)?.toUpperCase() || 'A'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 
                 <div className="flex items-center">
                   <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
