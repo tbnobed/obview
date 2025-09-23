@@ -8,6 +8,8 @@ import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Trash2, PlayCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 // Extended Project type with latest video file
 type ProjectWithVideo = Project & { latestVideoFile?: File };
@@ -20,6 +22,26 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   const [_, navigate] = useLocation();
   const { user } = useAuth();
   const deleteProjectMutation = useDeleteProject();
+  
+  // Fetch video processing data for optimal scrubbing (when video file exists)
+  const { data: videoProcessing } = useQuery({
+    queryKey: ['/api/files', project.latestVideoFile?.id, 'processing'],
+    queryFn: async () => {
+      if (!project.latestVideoFile) return null;
+      try {
+        const result = await apiRequest('GET', `/api/files/${project.latestVideoFile.id}/processing`);
+        return result;
+      } catch (error) {
+        // Processing not available yet - that's OK, use original file
+        return null;
+      }
+    },
+    enabled: !!project.latestVideoFile,
+    retry: false,
+    refetchOnWindowFocus: false,
+    // Don't show query errors, processing is optional
+    meta: { suppressErrorToast: true }
+  });
   
   // Check if user can delete this project (project creator or admin)
   const canDelete = user && (
@@ -93,7 +115,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           >
             <video
               className="w-full h-full object-cover"
-              src={`/api/files/${project.latestVideoFile.id}/content`}
               preload="metadata"
               muted
               data-testid={`video-preview-${project.id}`}
@@ -102,7 +123,25 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 const video = e.target as HTMLVideoElement;
                 video.currentTime = Math.min(1, video.duration || 0);
               }}
-            />
+            >
+              {/* Use scrub-optimized I-frame version for best hover performance */}
+              {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
+                <source src={`/api/files/${project.latestVideoFile.id}/scrub`} type="video/mp4" />
+              ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.length > 0 ? (
+                /* Use best available quality proxy */
+                <>
+                  {videoProcessing.qualities.find((q: any) => q.resolution === '720p') && (
+                    <source src={`/api/files/${project.latestVideoFile.id}/qualities/720p`} type="video/mp4" />
+                  )}
+                  {videoProcessing.qualities.find((q: any) => q.resolution === '360p') && (
+                    <source src={`/api/files/${project.latestVideoFile.id}/qualities/360p`} type="video/mp4" />
+                  )}
+                </>
+              ) : null}
+              {/* Always include original as fallback */}
+              <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
               <PlayCircle className="h-12 w-12 text-white" />
             </div>
