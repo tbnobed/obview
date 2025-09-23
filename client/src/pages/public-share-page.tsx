@@ -500,11 +500,14 @@ export default function PublicSharePage() {
                     return (
                       <div 
                         key={comment.id}
-                        className={`absolute top-0 h-full w-2 bg-yellow-400 z-20 cursor-pointer shadow-sm`}
-                        style={{ left: `${position}%` }}
+                        className="absolute z-20 cursor-pointer"
+                        style={{ 
+                          left: `${position}%`, 
+                          top: '-8px',
+                          transform: 'translateX(-50%)'
+                        }}
                         onMouseEnter={(e) => {
                           setHoveredComment(comment.id);
-                          // Calculate viewport position for tooltip
                           const rect = e.currentTarget.getBoundingClientRect();
                           setTooltipPosition({
                             x: rect.left + rect.width / 2,
@@ -524,7 +527,11 @@ export default function PublicSharePage() {
                           }
                         }}
                         data-testid={`comment-marker-${comment.id}`}
-                      />
+                      >
+                        <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold text-black shadow-lg border-2 border-white">
+                          {comment.authorName?.charAt(0)?.toUpperCase() || 'A'}
+                        </div>
+                      </div>
                     );
                   })}
 
