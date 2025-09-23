@@ -80,39 +80,28 @@ find_server_entry() {
   if [ -f "/app/dist/index.js" ]; then
     echo "Found built server entry point: /app/dist/index.js"
     export SERVER_ENTRY="/app/dist/index.js"
-    export USE_TSX="false"
     return 0
   elif [ -f "/app/dist/server/index.js" ]; then
     echo "Found built server entry point: /app/dist/server/index.js"
     export SERVER_ENTRY="/app/dist/server/index.js"
-    export USE_TSX="false"
     return 0
   # Second priority: JS source files
   elif [ -f "/app/server/index.js" ]; then
     echo "Found JavaScript source entry point: /app/server/index.js"
     export SERVER_ENTRY="/app/server/index.js"
-    export USE_TSX="false"
     return 0
-  # Last resort: TypeScript source (development fallback) with path resolution
+  # For TypeScript fallback, don't set SERVER_ENTRY - let CMD handle it
   elif [ -f "/app/server/index.ts" ]; then
-    echo "WARNING: Using TypeScript source as fallback: /app/server/index.ts"
-    echo "This should only happen in development mode."
-    echo "Installing tsx path resolution support..."
-    npm install --no-save tsconfig-paths 2>/dev/null || echo "tsconfig-paths install failed, continuing anyway"
-    export SERVER_ENTRY="/app/server/index.ts"
-    export USE_TSX="true"
-    export TSX_TSCONFIG_PATHS="true"
-    return 0
+    echo "TypeScript source found. Letting CMD handle the tsx fallback..."
+    unset SERVER_ENTRY
+    return 1
   else
     return 1
   fi
 }
 
 # Check for existing build files
-if ! find_server_entry; then
-  echo "WARNING: No server entry point found."
-  echo "Will try to run using fallback methods in the CMD..."
-fi
+find_server_entry || echo "No built JavaScript files found. CMD will use tsx fallback."
 
 # Start the application
 echo "Starting the application..."
