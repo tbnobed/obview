@@ -1833,6 +1833,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a public comment (no authentication required for anonymous users)
+  app.delete("/api/public-comments/:commentId", async (req, res, next) => {
+    try {
+      const commentId = parseInt(req.params.commentId);
+      
+      // Check if the public comment exists first
+      const publicComment = await storage.getPublicComment(commentId);
+      
+      if (!publicComment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      // Delete the public comment
+      const success = await storage.deletePublicComment(commentId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // ===== APPROVAL ROUTES =====
   // Get approvals for a file
   app.get("/api/files/:fileId/approvals", isAuthenticated, async (req, res, next) => {

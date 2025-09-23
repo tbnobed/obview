@@ -77,6 +77,7 @@ export interface IStorage {
   deleteComment(id: number): Promise<boolean>;
 
   // Public comment management
+  getPublicComment(id: number): Promise<PublicComment | undefined>;
   getPublicCommentsByFile(fileId: number): Promise<PublicComment[]>;
   createPublicComment(publicComment: InsertPublicComment): Promise<PublicComment>;
   deletePublicComment(id: number): Promise<boolean>;
@@ -393,6 +394,10 @@ export class MemStorage implements IStorage {
   }
 
   // Public Comment methods
+  async getPublicComment(id: number): Promise<PublicComment | undefined> {
+    return this.publicComments.get(id);
+  }
+
   async getPublicCommentsByFile(fileId: number): Promise<PublicComment[]> {
     return Array.from(this.publicComments.values()).filter(
       (comment) => comment.fileId === fileId
