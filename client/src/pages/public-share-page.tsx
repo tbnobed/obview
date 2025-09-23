@@ -271,7 +271,8 @@ export default function PublicSharePage() {
     const hoverTime = duration * pos;
     
     setScrubPreviewTime(hoverTime);
-    setScrubPreviewPosition(pos * 100); // Convert to percentage
+    // Store actual pixel position instead of percentage for fixed positioning
+    setScrubPreviewPosition(e.clientX);
     setShowScrubPreview(true);
     
     // Update preview video time
@@ -564,7 +565,7 @@ export default function PublicSharePage() {
                       ref={scrubPreviewRef}
                       className="fixed transform -translate-x-1/2 pointer-events-none z-40"
                       style={{
-                        left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%`,
+                        left: `${scrubPreviewPosition}px`,
                         bottom: '20px' // Fixed position from bottom of viewport
                       }}
                     >
