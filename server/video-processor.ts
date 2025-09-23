@@ -13,6 +13,7 @@ export interface ProcessedVideoResult {
   qualities: VideoQuality[];
   scrubVersion: string;
   thumbnailSprite: string;
+  spriteMetadata: any;
   duration: number;
   frameRate: number;
 }
@@ -74,7 +75,8 @@ export class VideoProcessor {
     return {
       qualities: qualities.filter(q => q !== null) as VideoQuality[],
       scrubVersion,
-      thumbnailSprite,
+      thumbnailSprite: thumbnailSprite.path,
+      spriteMetadata: thumbnailSprite.metadata,
       duration: metadata.duration,
       frameRate: metadata.frameRate
     };
@@ -297,7 +299,7 @@ export class VideoProcessor {
     outputDir: string,
     filename: string,
     metadata: any
-  ): Promise<string> {
+  ): Promise<{ path: string; metadata: any }> {
     try {
       const outputPath = path.join(outputDir, `${filename}_sprite.jpg`);
       const spriteJsonPath = path.join(outputDir, `${filename}_sprite.json`);
@@ -339,10 +341,10 @@ export class VideoProcessor {
       await fs.writeFile(spriteJsonPath, JSON.stringify(spriteInfo, null, 2));
       console.log(`[VideoProcessor] Sprite metadata saved to: ${spriteJsonPath}`);
       
-      // Store spriteInfo in the result for database persistence
-      (outputPath as any).spriteMetadata = spriteInfo;
-      
-      return outputPath;
+      return {
+        path: outputPath,
+        metadata: spriteInfo
+      };
     } catch (error) {
       console.error('[VideoProcessor] Error generating thumbnail sprite:', error);
       throw error;
