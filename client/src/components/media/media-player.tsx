@@ -1541,12 +1541,21 @@ export default function MediaPlayer({
               <video
                 ref={previewVideoRef}
                 className="w-48 h-30 rounded object-cover bg-gray-800"
-                src={`/api/files/${file.id}/content`}
                 onLoadedData={handlePreviewVideoLoad}
                 muted
                 preload="metadata"
                 data-testid="scrub-preview-video"
-              />
+              >
+                {/* Use I-frame optimized scrub version for instant seeking */}
+                {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
+                  <source src={`/api/files/${file.id}/scrub`} type="video/mp4" />
+                ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p') ? (
+                  /* Use 720p proxy for smooth scrubbing */
+                  <source src={`/api/files/${file.id}/qualities/720p`} type="video/mp4" />
+                ) : null}
+                {/* Fallback to original file */}
+                <source src={`/api/files/${file.id}/content`} type="video/mp4" />
+              </video>
             </div>
             <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
               {formatTime(scrubPreviewTime)}

@@ -55,6 +55,7 @@ const getUserInitials = (name: string) => {
 
 export default function PublicSharePage() {
   const { token } = useParams<{ token: string }>();
+  const { toast } = useToast();
   
   // Check if this is a view-only link (hide comments)
   const urlParams = new URLSearchParams(window.location.search);
