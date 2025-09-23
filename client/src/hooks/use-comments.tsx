@@ -74,13 +74,16 @@ export const useToggleCommentResolution = (fileId: number) => {
   });
 };
 
-// Hook to delete a comment
+// Hook to delete a comment (handles both regular and public comments)
 export const useDeleteComment = (fileId: number) => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: (commentId: number) => {
-      return apiRequest('DELETE', `/api/comments/${commentId}`);
+    mutationFn: ({ commentId, isPublic }: { commentId: number; isPublic?: boolean }) => {
+      const endpoint = isPublic 
+        ? `/api/public-comments/${commentId}`
+        : `/api/comments/${commentId}`;
+      return apiRequest('DELETE', endpoint);
     },
     onSuccess: () => {
       // Invalidate and refetch with the array format query key

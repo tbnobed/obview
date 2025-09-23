@@ -81,7 +81,10 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
   // Handle delete comment
   const handleDeleteComment = () => {
     if (window.confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
-      deleteCommentMutation.mutate(comment.id);
+      deleteCommentMutation.mutate({ 
+        commentId: comment.id, 
+        isPublic: (comment as any).isPublic 
+      });
     }
   };
 
@@ -92,10 +95,11 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
     user.role === "editor"
   );
   
-  // Check if user can delete this comment (comment author or admin)
+  // Check if user can delete this comment (comment author or admin, or admin can delete public comments)
   const canDelete = user && (
     user.id === comment.userId ||
-    user.role === "admin"
+    user.role === "admin" ||
+    ((comment as any).isPublic && user.role === "admin")
   );
 
   // Get user initial for avatar
@@ -284,7 +288,10 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                             className="text-[10px] p-0 h-auto text-destructive"
                             onClick={() => {
                               if (window.confirm("Are you sure you want to delete this reply?")) {
-                                deleteCommentMutation.mutate(reply.id);
+                                deleteCommentMutation.mutate({ 
+                                  commentId: reply.id, 
+                                  isPublic: (reply as any).isPublic 
+                                });
                               }
                             }}
                             disabled={deleteCommentMutation.isPending}
