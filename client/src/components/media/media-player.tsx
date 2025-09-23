@@ -1015,7 +1015,8 @@ export default function MediaPlayer({
                   {/* Timeline markers for comments */}
                   {comments && comments.length > 0 && duration > 0 && comments.map((comment: Comment) => {
                     // Only show markers for comments with timestamps (not replies)
-                    if (comment.timestamp === null || comment.parentId !== null) return null;
+                    if (comment.parentId !== null && comment.parentId !== undefined) return null;
+                    if (comment.timestamp === null || comment.timestamp === undefined) return null;
                     
                     // Calculate percentage position - safely handle divide by zero
                     const timestamp = comment.timestamp || 0;
@@ -1024,15 +1025,12 @@ export default function MediaPlayer({
                     // Skip markers that would be off the timeline
                     if (position < 0 || position > 100) return null;
                     
-                    // Debug log to see if markers are being created
-                    console.log(`Creating marker for comment ${comment.id} at ${timestamp}s (${position}% of ${duration}s)`);
-                    
                     return (
                       <div 
                         key={comment.id}
                         className={`absolute top-0 h-full w-2 ${activeCommentId === comment.id ? 'bg-blue-500' : 'bg-yellow-400'} z-20 cursor-pointer shadow-sm`}
                         style={{ left: `${position}%` }}
-                        title={`${comment.content} (${formatTime(comment.timestamp)})`}
+                        title={`${comment.content}\n\nBy: ${comment.authorName || comment.user?.name || 'Anonymous'}\nTime: ${formatTime(comment.timestamp)}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           // Set active comment and jump to timestamp
