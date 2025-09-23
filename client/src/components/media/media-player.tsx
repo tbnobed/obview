@@ -1541,42 +1541,20 @@ export default function MediaPlayer({
               <video
                 ref={previewVideoRef}
                 className="w-48 h-30 rounded object-cover bg-gray-800"
-                onLoadedData={() => {
-                  console.log('[SCRUB PREVIEW] Video loaded for file:', file.id);
-                  console.log('[SCRUB PREVIEW] VideoProcessing data:', videoProcessing);
-                  handlePreviewVideoLoad();
-                }}
+                onLoadedData={handlePreviewVideoLoad}
                 muted
                 preload="metadata"
                 data-testid="scrub-preview-video"
               >
                 {/* Use I-frame optimized scrub version for instant seeking */}
-                {(() => {
-                  const hasScrubVersion = videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath;
-                  const has720p = videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p');
-                  
-                  console.log('[SCRUB PREVIEW] Has scrub version:', hasScrubVersion, 'scrubVersionPath:', videoProcessing?.scrubVersionPath);
-                  console.log('[SCRUB PREVIEW] Has 720p:', has720p, 'qualities:', videoProcessing?.qualities);
-                  
-                  if (hasScrubVersion) {
-                    const scrubUrl = `/api/files/${file.id}/scrub`;
-                    console.log('[SCRUB PREVIEW] Using scrub version:', scrubUrl);
-                    return <source src={scrubUrl} type="video/mp4" />;
-                  } else if (has720p) {
-                    const proxyUrl = `/api/files/${file.id}/qualities/720p`;
-                    console.log('[SCRUB PREVIEW] Using 720p proxy:', proxyUrl);
-                    return <source src={proxyUrl} type="video/mp4" />;
-                  }
-                  
-                  console.log('[SCRUB PREVIEW] No optimized versions available');
-                  return null;
-                })()}
+                {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
+                  <source src={`/api/files/${file.id}/scrub`} type="video/mp4" />
+                ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p') ? (
+                  /* Use 720p proxy for smooth scrubbing */
+                  <source src={`/api/files/${file.id}/qualities/720p`} type="video/mp4" />
+                ) : null}
                 {/* Fallback to original file */}
-                {(() => {
-                  const originalUrl = `/api/files/${file.id}/content`;
-                  console.log('[SCRUB PREVIEW] Fallback to original:', originalUrl);
-                  return <source src={originalUrl} type="video/mp4" />;
-                })()}
+                <source src={`/api/files/${file.id}/content`} type="video/mp4" />
               </video>
             </div>
             <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
