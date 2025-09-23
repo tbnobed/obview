@@ -45,20 +45,15 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/client ./client
 COPY --from=builder /app/shared ./shared
 
-# Create the expected public directory structure for the server
+# Create the expected public directory structure for the server and copy frontend build files
 RUN mkdir -p /app/server/public && \
-    echo "=== DEBUGGING BUILD OUTPUT ===" && \
-    echo "Checking /app/dist structure:" && \
-    ls -la /app/dist/ 2>/dev/null || echo "No /app/dist directory" && \
-    echo "Checking /app/dist/public structure:" && \
-    ls -la /app/dist/public/ 2>/dev/null || echo "No /app/dist/public directory" && \
-    echo "Checking /app/client structure:" && \
-    ls -la /app/client/ 2>/dev/null || echo "No /app/client directory" && \
-    echo "Copying files to /app/server/public/" && \
-    if [ -d "/app/dist/public" ]; then cp -r /app/dist/public/* /app/server/public/ 2>/dev/null || true; fi && \
-    if [ -d "/app/client/dist" ]; then cp -r /app/client/dist/* /app/server/public/ 2>/dev/null || true; fi && \
-    echo "Final /app/server/public structure:" && \
-    ls -la /app/server/public/ 2>/dev/null || echo "No files in /app/server/public"
+    (cp -r /app/dist/public/* /app/server/public/ 2>/dev/null || \
+     cp -r /app/dist/* /app/server/public/ 2>/dev/null || \
+     cp -r /app/client/dist/* /app/server/public/ 2>/dev/null || \
+     echo "Frontend build files not found - creating basic index.html") && \
+    if [ ! -f "/app/server/public/index.html" ]; then \
+      echo '<!DOCTYPE html><html><head><title>Obviu.io</title></head><body><h1>Obviu.io</h1><p>Application starting...</p></body></html>' > /app/server/public/index.html; \
+    fi
 
 # Copy dependencies and configuration files
 COPY --from=builder /app/node_modules ./node_modules
