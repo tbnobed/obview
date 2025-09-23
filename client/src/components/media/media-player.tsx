@@ -1021,9 +1021,10 @@ export default function MediaPlayer({
                     {showScrubPreview && duration > 0 && file?.fileType === 'video' && (
                       <div
                         ref={scrubPreviewRef}
-                        className="absolute bottom-full mb-2 transform -translate-x-1/2 pointer-events-none z-40"
+                        className="absolute bottom-full mb-2 pointer-events-none z-40"
                         style={{
-                          left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
+                          left: `${scrubPreviewPosition}%`,
+                          transform: `translateX(${scrubPreviewPosition < 20 ? '0%' : scrubPreviewPosition > 80 ? '-100%' : '-50%'})`
                         }}
                       >
                         <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
