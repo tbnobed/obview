@@ -53,6 +53,9 @@ COPY --from=builder /app/uploads ./uploads
 COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/vite.config.ts ./
 
+# Fix the vite.config import issue - tsx needs the file to be resolvable without extension
+RUN cp vite.config.ts vite.config.js
+
 # Add database migration files and scripts
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/scripts ./scripts
