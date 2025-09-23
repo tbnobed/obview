@@ -637,7 +637,7 @@ export default function PublicSharePage() {
                   <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
                   
                   {/* Comments List */}
-                  <CommentsList token={token!} />
+                  <CommentsList token={token!} onTimestampClick={seekToTimestamp} />
                 </CardContent>
               </Card>
             </div>
@@ -760,8 +760,17 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
   );
 }
 
+// Function to seek video to specific timestamp
+const seekToTimestamp = (timestamp: number) => {
+  const mediaElement = videoRef.current || audioRef.current;
+  if (!mediaElement) return;
+  
+  setCurrentTime(timestamp);
+  mediaElement.currentTime = timestamp;
+};
+
 // Comments List Component
-function CommentsList({ token }: { token: string }) {
+function CommentsList({ token, onTimestampClick }: { token: string; onTimestampClick?: (timestamp: number) => void }) {
   const { data: comments, isLoading, error } = useQuery<UnifiedComment[]>({
     queryKey: ['/api/share', token, 'comments'],
     queryFn: async () => {
@@ -809,10 +818,15 @@ function CommentsList({ token }: { token: string }) {
                 </span>
               )}
               {comment.timestamp !== null && (
-                <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                <button
+                  onClick={() => onTimestampClick?.(comment.timestamp)}
+                  className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer transition-colors"
+                  title="Jump to this time in the video"
+                  data-testid={`timestamp-${comment.id}`}
+                >
                   <Clock className="h-3 w-3" />
                   {formatTime(comment.timestamp)}
-                </div>
+                </button>
               )}
             </div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
