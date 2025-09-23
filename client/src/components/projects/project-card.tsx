@@ -1,16 +1,19 @@
 import { Link, useLocation } from "wouter";
-import { Project } from "@shared/schema";
+import { Project, File } from "@shared/schema";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatTimeAgo } from "@/lib/utils/formatters";
-import { Trash2 } from "lucide-react";
+import { Trash2, PlayCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
 
+// Extended Project type with latest video file
+type ProjectWithVideo = Project & { latestVideoFile?: File };
+
 interface ProjectCardProps {
-  project: Project;
+  project: ProjectWithVideo;
 }
 
 export default function ProjectCard({ project }: ProjectCardProps) {
@@ -60,6 +63,38 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             {getStatusBadge(project.status)}
           </div>
         </CardHeader>
+        
+        {/* Video Preview Section */}
+        {project.latestVideoFile ? (
+          <div className="relative aspect-video bg-black rounded-t-none mx-4 mb-2 overflow-hidden">
+            <video
+              className="w-full h-full object-cover"
+              src={`/api/files/${project.latestVideoFile.id}/content`}
+              preload="metadata"
+              muted
+              data-testid={`video-preview-${project.id}`}
+              onLoadedMetadata={(e) => {
+                // Set video to show frame at 1 second for preview
+                const video = e.target as HTMLVideoElement;
+                video.currentTime = Math.min(1, video.duration || 0);
+              }}
+            />
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+              <PlayCircle className="h-12 w-12 text-white" />
+            </div>
+            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+              {project.latestVideoFile.filename}
+            </div>
+          </div>
+        ) : (
+          <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-t-none mx-4 mb-2 flex items-center justify-center">
+            <div className="text-center text-gray-400 dark:text-gray-500">
+              <PlayCircle className="h-12 w-12 mx-auto mb-2" />
+              <p className="text-sm">No video files</p>
+            </div>
+          </div>
+        )}
+        
         <CardContent>
           <p className={cn(
             "text-neutral-600 text-sm mb-4",
