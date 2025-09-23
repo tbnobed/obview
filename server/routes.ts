@@ -1514,9 +1514,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Scrub version not available" });
       }
       
-      if (!existsSync(processing.scrubVersionPath)) {
-        console.log(`🎬 [SCRUB ENDPOINT] Scrub file does not exist at path: ${processing.scrubVersionPath}`);
-        return res.status(404).json({ message: "Scrub version not available" });
+      try {
+        if (!existsSync(processing.scrubVersionPath)) {
+          console.log(`🎬 [SCRUB ENDPOINT] ❌ Scrub file does not exist at path: ${processing.scrubVersionPath}`);
+          return res.status(404).json({ message: "Scrub version not available" });
+        }
+        console.log(`🎬 [SCRUB ENDPOINT] ✅ File exists: ${processing.scrubVersionPath}`);
+      } catch (fsError) {
+        console.error(`🎬 [SCRUB ENDPOINT] ❌ File check error:`, fsError);
+        return res.status(500).json({ message: "File system error" });
       }
       
       // Log file size for debugging
@@ -1540,6 +1546,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         const stream = fs.createReadStream(processing.scrubVersionPath, { start, end });
+        stream.on('error', (streamError) => {
+          console.error(`🎬 [SCRUB ENDPOINT] ❌ Stream error (range):`, streamError);
+          if (!res.headersSent) {
+            res.status(500).json({ message: "Stream error" });
+          }
+        });
+        stream.on('open', () => {
+          console.log(`🎬 [SCRUB ENDPOINT] ✅ Range stream opened successfully`);
+        });
         stream.pipe(res);
       } else {
         res.writeHead(200, {
@@ -1550,6 +1565,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         const stream = fs.createReadStream(processing.scrubVersionPath);
+        stream.on('error', (streamError) => {
+          console.error(`🎬 [SCRUB ENDPOINT] ❌ Stream error (full):`, streamError);
+          if (!res.headersSent) {
+            res.status(500).json({ message: "Stream error" });
+          }
+        });
+        stream.on('open', () => {
+          console.log(`🎬 [SCRUB ENDPOINT] ✅ Full stream opened successfully`);
+        });
         stream.pipe(res);
       }
     } catch (error) {
