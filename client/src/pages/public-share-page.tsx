@@ -140,6 +140,15 @@ export default function PublicSharePage() {
     }
   };
 
+  // Function to seek video to specific timestamp (for comment clicks)
+  const seekToTimestamp = (timestamp: number) => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (!mediaElement) return;
+    
+    setCurrentTime(timestamp);
+    mediaElement.currentTime = timestamp;
+  };
+
   // Handle fullscreen
   const toggleFullscreen = () => {
     if (!mediaContainerRef.current) return;
@@ -191,6 +200,7 @@ export default function PublicSharePage() {
       }, SEEK_THROTTLE_MS - timeSinceLastSeek);
     }
   };
+  
   
   // Handle global mouse events for optimized scrubbing
   useEffect(() => {
@@ -760,14 +770,6 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
   );
 }
 
-// Function to seek video to specific timestamp
-const seekToTimestamp = (timestamp: number) => {
-  const mediaElement = videoRef.current || audioRef.current;
-  if (!mediaElement) return;
-  
-  setCurrentTime(timestamp);
-  mediaElement.currentTime = timestamp;
-};
 
 // Comments List Component
 function CommentsList({ token, onTimestampClick }: { token: string; onTimestampClick?: (timestamp: number) => void }) {
