@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,8 @@ export default function MediaPlayer({
   const [seekingToTime, setSeekingToTime] = useState<number | null>(null);
   const [showScrubPreview, setShowScrubPreview] = useState(false);
   const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
-  const [scrubPreviewLeftPx, setScrubPreviewLeftPx] = useState(0);
+  const [scrubPreviewLeft, setScrubPreviewLeft] = useState(0);
+  const [scrubPreviewTop, setScrubPreviewTop] = useState(0);
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
@@ -444,7 +446,16 @@ export default function MediaPlayer({
     const hoverTime = duration * pos;
     
     setScrubPreviewTime(hoverTime);
-    setScrubPreviewLeftPx(e.clientX - rect.left); // Store pixel position
+    
+    // Position preview using viewport coordinates  
+    const previewWidth = 144;
+    const previewHeight = 100;
+    const desiredLeft = e.clientX - previewWidth / 2;
+    const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
+    const top = rect.top - previewHeight - 12;
+    
+    setScrubPreviewLeft(left);
+    setScrubPreviewTop(top);
     setShowScrubPreview(true);
     
     // Update preview video time
@@ -991,37 +1002,6 @@ export default function MediaPlayer({
                 
                 {/* Progress bar and markers container */}
                 <div className="flex-grow flex flex-col gap-1 mx-4 relative">
-                  {/* Scrub Preview Window - positioned relative to container, not progress bar */}
-                  {showScrubPreview && duration > 0 && file?.fileType === 'video' && (
-                    <div
-                      ref={scrubPreviewRef}
-                      className="absolute bottom-full mb-2 pointer-events-none z-40"
-                      style={{
-                        left: `${scrubPreviewLeftPx}px`,
-                        transform: 'translateX(-50%)'
-                      }}
-                    >
-                      <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
-                        <div className="relative">
-                          <video
-                            ref={previewVideoRef}
-                            className="w-32 h-20 rounded object-cover bg-gray-800"
-                            src={`/api/files/${file.id}/content`}
-                            onLoadedData={handlePreviewVideoLoad}
-                            muted
-                            preload="metadata"
-                            data-testid="scrub-preview-video"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
-                        </div>
-                        <div className="text-white text-xs text-center mt-1 font-mono">
-                          {formatTime(scrubPreviewTime)}
-                        </div>
-                        {/* Arrow pointing down */}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600" />
-                      </div>
-                    </div>
-                  )}
                   
                   {/* Progress bar */}
                   <div
@@ -1037,12 +1017,20 @@ export default function MediaPlayer({
                         if (!progressRef.current || isDragging) return;
                         
                         const rect = progressRef.current.getBoundingClientRect();
-                        const leftPx = e.clientX - rect.left;
-                        const pos = leftPx / rect.width; // Don't clamp - allow beyond 0-1
-                        const hoverTime = Math.max(0, Math.min(duration, duration * pos)); // Only clamp time
+                        // Calculate viewport position for preview
+                        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                        const hoverTime = duration * pos;
+                        
+                        // Position preview using viewport coordinates
+                        const previewWidth = 144; // w-32 + padding = 128 + 16
+                        const previewHeight = 100; // Approximate height
+                        const desiredLeft = e.clientX - previewWidth / 2;
+                        const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
+                        const top = rect.top - previewHeight - 12;
                         
                         setScrubPreviewTime(hoverTime);
-                        setScrubPreviewLeftPx(leftPx);
+                        setScrubPreviewLeft(left);
+                        setScrubPreviewTop(top);
                         setShowScrubPreview(true);
                         
                         if (previewVideoRef.current && duration > 0) {
@@ -1501,6 +1489,40 @@ export default function MediaPlayer({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Portal-based scrub preview that can extend beyond progress bar */}
+      {showScrubPreview && duration > 0 && file?.fileType === 'video' && createPortal(
+        <div
+          ref={scrubPreviewRef}
+          className="pointer-events-none z-50"
+          style={{
+            position: 'fixed',
+            left: `${scrubPreviewLeft}px`,
+            top: `${scrubPreviewTop}px`
+          }}
+        >
+          <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600">
+            <div className="relative">
+              <video
+                ref={previewVideoRef}
+                className="w-32 h-20 rounded object-cover bg-gray-800"
+                src={`/api/files/${file.id}/content`}
+                onLoadedData={handlePreviewVideoLoad}
+                muted
+                preload="metadata"
+                data-testid="scrub-preview-video"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
+            </div>
+            <div className="text-white text-xs text-center mt-1 font-mono">
+              {formatTime(scrubPreviewTime)}
+            </div>
+            {/* Arrow pointing down */}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600" />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
