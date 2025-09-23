@@ -1442,7 +1442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Cache-Control': 'public, max-age=3600'
         });
 
-        const stream = require('fs').createReadStream(qualityVersion.path, { start, end });
+        const stream = fs.createReadStream(qualityVersion.path, { start, end });
         stream.pipe(res);
       } else {
         res.writeHead(200, {
@@ -1452,7 +1452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Cache-Control': 'public, max-age=3600'
         });
 
-        const stream = require('fs').createReadStream(qualityVersion.path);
+        const stream = fs.createReadStream(qualityVersion.path);
         stream.pipe(res);
       }
     } catch (error) {
@@ -1492,7 +1492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Cache-Control': 'public, max-age=3600'
         });
 
-        const stream = require('fs').createReadStream(processing.scrubVersionPath, { start, end });
+        const stream = fs.createReadStream(processing.scrubVersionPath, { start, end });
         stream.pipe(res);
       } else {
         res.writeHead(200, {
@@ -1502,7 +1502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Cache-Control': 'public, max-age=3600'
         });
 
-        const stream = require('fs').createReadStream(processing.scrubVersionPath);
+        const stream = fs.createReadStream(processing.scrubVersionPath);
         stream.pipe(res);
       }
     } catch (error) {
@@ -1768,7 +1768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Cross-Origin-Resource-Policy': 'cross-origin'
         });
 
-        const stream = require('fs').createReadStream(qualityVersion.path, { start, end });
+        const stream = fs.createReadStream(qualityVersion.path, { start, end });
         stream.pipe(res);
       } else {
         res.writeHead(200, {
@@ -1779,7 +1779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Cross-Origin-Resource-Policy': 'cross-origin'
         });
 
-        const stream = require('fs').createReadStream(qualityVersion.path);
+        const stream = fs.createReadStream(qualityVersion.path);
         stream.pipe(res);
       }
     } catch (error) {

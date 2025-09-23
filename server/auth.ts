@@ -75,7 +75,13 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      // Remove password from user object for security
+      if (user) {
+        const { password, ...userWithoutPassword } = user;
+        done(null, userWithoutPassword as any);
+      } else {
+        done(null, null);
+      }
     } catch (err) {
       done(err);
     }
