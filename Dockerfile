@@ -16,17 +16,13 @@ COPY . .
 # Verify the structure before building
 RUN ls -la && echo "Content of server directory:" && ls -la server/
 
-# Build the application - with detailed debugging
-RUN echo "=== STARTING BUILD PROCESS ===" && \
-    echo "Frontend build (vite):" && \
-    npx vite build && \
-    echo "Frontend build complete, checking output:" && \
+# Build the application using the working npm script
+RUN echo "=== BUILDING APPLICATION ===" && \
+    npm run build && \
+    echo "=== BUILD VERIFICATION ===" && \
     ls -la dist/ && \
-    echo "Server build (esbuild):" && \
-    npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && \
-    echo "Server build complete, final verification:" && \
-    ls -la dist/ && \
-    test -f dist/index.js && echo "✅ dist/index.js created successfully" || echo "❌ dist/index.js MISSING"
+    test -f dist/index.js && echo "✅ Server build SUCCESS: dist/index.js" || (echo "❌ Server build FAILED: dist/index.js missing" && exit 1) && \
+    test -d dist/public && echo "✅ Frontend build SUCCESS: dist/public/" || echo "⚠️ Frontend build different structure"
 
 # Production stage
 FROM node:20-alpine as production
