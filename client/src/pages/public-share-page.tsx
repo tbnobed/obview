@@ -503,8 +503,9 @@ export default function PublicSharePage() {
                       if (!progressRef.current || isDragging) return;
                       
                       const rect = progressRef.current.getBoundingClientRect();
-                      // Calculate position relative to progress bar, allowing negative and >100%
-                      const pos = (e.clientX - rect.left) / rect.width;
+                      // Use pixel-based positioning instead of percentage
+                      const leftPx = e.clientX - rect.left;
+                      const pos = leftPx / rect.width;
                       const hoverTime = Math.max(0, Math.min(duration, duration * pos));
                       
                       setScrubPreviewTime(hoverTime);
