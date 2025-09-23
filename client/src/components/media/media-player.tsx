@@ -989,121 +989,69 @@ export default function MediaPlayer({
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
                 
-                <div
-                  ref={progressRef}
-                  className="video-progress flex-grow mx-4 relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
-                  onClick={handleProgressClick}
-                  onMouseMove={(e) => {
-                    if (e.buttons === 1 && progressRef.current) {
-                      // Handle dragging (mouse down + move)
-                      handleProgressClick(e);
-                    } else {
-                      // Handle hover for scrub preview
-                      handleProgressHover(e);
-                    }
-                  }}
-                  onMouseLeave={handleProgressLeave}
-                  data-testid="progress-bar"
-                >
+                {/* Progress bar and markers container */}
+                <div className="flex-grow flex flex-col gap-1 mx-4">
+                  {/* Progress bar */}
                   <div
-                    className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
-                    style={{ width: `${(currentTime / duration) * 100}%` }}
-                  ></div>
-                  <div
-                    className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ left: `${(currentTime / duration) * 100}%` }}
-                  ></div>
-                  
-                  {/* Comment Marker Tooltip */}
-                  {hoveredComment && comments && (
-                    (() => {
-                      const comment = comments.find((c: Comment) => c.id === hoveredComment);
-                      if (!comment) return null;
-                      
-                      // Position tooltip using viewport coordinates
-                      const hasActivePreview = showScrubPreview && duration > 0 && file?.fileType === 'video';
-                      const positionStyle = hasActivePreview ? {
-                        position: 'fixed' as const,
-                        left: tooltipPosition.x - 180, // Position to the left of preview
-                        top: tooltipPosition.y - 80,
-                        transform: 'translateY(-100%)',
-                        zIndex: 60
-                      } : {
-                        position: 'fixed' as const,
-                        left: tooltipPosition.x,
-                        top: tooltipPosition.y,
-                        transform: 'translate(-50%, -100%)',
-                        zIndex: 60
-                      };
-                      
-                      return (
-                        <div
-                          className="pointer-events-none fixed z-50"
-                          style={positionStyle}
-                        >
-                          <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium">
-                                {(comment as any).authorName?.charAt(0) || (comment as any).user?.name?.charAt(0) || 'A'}
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="font-medium text-xs">
-                                  {(comment as any).authorName || (comment as any).user?.name || 'Anonymous'}
-                                </span>
-                                <span className="text-yellow-400 text-xs font-mono">
-                                  {formatTime(comment.timestamp)}
-                                </span>
-                              </div>
-                            </div>
-                            <p className="text-xs leading-relaxed break-words">
-                              {comment.content}
-                            </p>
-                          </div>
-                          {/* Arrow pointing down */}
-                          <div className="absolute left-1/2 transform -translate-x-1/2 top-full">
-                            <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
-                          </div>
-                        </div>
-                      );
-                    })()
-                  )}
-                  
-                  {/* Scrub Preview Window */}
-                  {showScrubPreview && duration > 0 && file?.fileType === 'video' && (
+                    ref={progressRef}
+                    className="video-progress relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
+                    onClick={handleProgressClick}
+                    onMouseMove={(e) => {
+                      if (e.buttons === 1 && progressRef.current) {
+                        // Handle dragging (mouse down + move)
+                        handleProgressClick(e);
+                      } else {
+                        // Handle hover for scrub preview
+                        handleProgressHover(e);
+                      }
+                    }}
+                    onMouseLeave={handleProgressLeave}
+                    data-testid="progress-bar"
+                  >
                     <div
-                      ref={scrubPreviewRef}
-                      className="absolute bottom-full mb-2 transform -translate-x-1/2 pointer-events-none z-40"
-                      style={{
-                        left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
-                      }}
-                    >
-                      <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
-                        <div className="relative">
-                          <video
-                            ref={previewVideoRef}
-                            className="w-32 h-20 rounded object-cover bg-gray-800"
-                            src={`/api/files/${file.id}/content`}
-                            onLoadedData={handlePreviewVideoLoad}
-                            muted
-                            preload="metadata"
-                            data-testid="scrub-preview-video"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
+                      className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
+                      style={{ width: `${(currentTime / duration) * 100}%` }}
+                    ></div>
+                    <div
+                      className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ left: `${(currentTime / duration) * 100}%` }}
+                    ></div>
+                    
+                    {/* Scrub Preview Window */}
+                    {showScrubPreview && duration > 0 && file?.fileType === 'video' && (
+                      <div
+                        ref={scrubPreviewRef}
+                        className="absolute bottom-full mb-2 transform -translate-x-1/2 pointer-events-none z-40"
+                        style={{
+                          left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
+                        }}
+                      >
+                        <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
+                          <div className="relative">
+                            <video
+                              ref={previewVideoRef}
+                              className="w-32 h-20 rounded object-cover bg-gray-800"
+                              src={`/api/files/${file.id}/content`}
+                              onLoadedData={handlePreviewVideoLoad}
+                              muted
+                              preload="metadata"
+                              data-testid="scrub-preview-video"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
+                          </div>
+                          <div className="text-white text-xs text-center mt-1 font-mono">
+                            {formatTime(scrubPreviewTime)}
+                          </div>
+                          {/* Arrow pointing up */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-600" />
                         </div>
-                        <div className="text-white text-xs text-center mt-1 font-mono">
-                          {formatTime(scrubPreviewTime)}
-                        </div>
-                        {/* Arrow pointing up */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-600" />
                       </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Timeline markers for comments - positioned below progress bar */}
-                {comments && comments.length > 0 && duration > 0 && progressRef.current && (
-                  <div className="relative mx-4" style={{ height: '20px' }}>
-                    {comments.map((comment: Comment) => {
+                    )}
+                  </div>
+                  
+                  {/* Comment markers rail */}
+                  <div className="relative h-5 overflow-visible pointer-events-none" aria-hidden="true">
+                    {duration > 0 && comments && comments.length > 0 && comments.map((comment: Comment) => {
                       // Only show markers for comments with timestamps (not replies)
                       if (comment.parentId !== null && comment.parentId !== undefined) return null;
                       if (comment.timestamp === null || comment.timestamp === undefined) return null;
@@ -1118,10 +1066,9 @@ export default function MediaPlayer({
                       return (
                         <div 
                           key={comment.id}
-                          className="absolute z-20 cursor-pointer"
+                          className="absolute -top-1 z-10 pointer-events-auto cursor-pointer"
                           style={{ 
                             left: `${position}%`, 
-                            top: '2px',
                             transform: 'translateX(-50%)'
                           }}
                           onMouseEnter={(e) => {
@@ -1154,6 +1101,60 @@ export default function MediaPlayer({
                       );
                     })}
                   </div>
+                </div>
+                
+                {/* Comment Marker Tooltip */}
+                {hoveredComment && comments && (
+                  (() => {
+                    const comment = comments.find((c: Comment) => c.id === hoveredComment);
+                    if (!comment) return null;
+                    
+                    // Position tooltip using viewport coordinates
+                    const hasActivePreview = showScrubPreview && duration > 0 && file?.fileType === 'video';
+                    const positionStyle = hasActivePreview ? {
+                      position: 'fixed' as const,
+                      left: tooltipPosition.x - 180, // Position to the left of preview
+                      top: tooltipPosition.y - 80,
+                      transform: 'translateY(-100%)',
+                      zIndex: 60
+                    } : {
+                      position: 'fixed' as const,
+                      left: tooltipPosition.x,
+                      top: tooltipPosition.y,
+                      transform: 'translate(-50%, -100%)',
+                      zIndex: 60
+                    };
+                    
+                    return (
+                      <div
+                        className="pointer-events-none fixed z-50"
+                        style={positionStyle}
+                      >
+                        <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium">
+                              {(comment as any).authorName?.charAt(0) || (comment as any).user?.name?.charAt(0) || 'A'}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-xs">
+                                {(comment as any).authorName || (comment as any).user?.name || 'Anonymous'}
+                              </span>
+                              <span className="text-yellow-400 text-xs font-mono">
+                                {formatTime(comment.timestamp)}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs leading-relaxed break-words">
+                            {comment.content}
+                          </p>
+                        </div>
+                        {/* Arrow pointing down */}
+                        <div className="absolute left-1/2 transform -translate-x-1/2 top-full">
+                          <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+                        </div>
+                      </div>
+                    );
+                  })()
                 )}
                 
                 <div className="flex items-center">
