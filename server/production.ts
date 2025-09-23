@@ -44,10 +44,13 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Register all routes (this will also start the server)
-registerRoutes(app).then(() => {
-  console.log(`🚀 Production server running on port ${config.port}`);
-  console.log(`📁 Static files served from: ${staticPath}`);
+// Register all routes and start the server
+registerRoutes(app).then(server => {
+  // Start listening on the configured port
+  server.listen(config.port, '0.0.0.0', () => {
+    console.log(`🚀 Production server running on port ${config.port}`);
+    console.log(`📁 Static files served from: ${staticPath}`);
+  });
 }).catch(error => {
   console.error("Failed to start server:", error);
   process.exit(1);
