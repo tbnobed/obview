@@ -1501,7 +1501,7 @@ export default function MediaPlayer({
             top: `${scrubPreviewTop}px`
           }}
         >
-          <div className="bg-black rounded-lg p-2 shadow-xl">
+          <div className="bg-black p-2">
             <div className="relative">
               <video
                 ref={previewVideoRef}
@@ -1517,8 +1517,6 @@ export default function MediaPlayer({
             <div className="text-white text-xs text-center mt-1 font-mono">
               {formatTime(scrubPreviewTime)}
             </div>
-            {/* Arrow pointing down */}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black" />
           </div>
         </div>,
         document.body
