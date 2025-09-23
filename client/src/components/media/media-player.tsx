@@ -1024,10 +1024,13 @@ export default function MediaPlayer({
                     // Skip markers that would be off the timeline
                     if (position < 0 || position > 100) return null;
                     
+                    // Debug log to see if markers are being created
+                    console.log(`Creating marker for comment ${comment.id} at ${timestamp}s (${position}% of ${duration}s)`);
+                    
                     return (
                       <div 
                         key={comment.id}
-                        className={`absolute top-0 h-full w-1.5 ${activeCommentId === comment.id ? 'bg-secondary' : 'bg-yellow-400'} z-10 cursor-pointer`}
+                        className={`absolute top-0 h-full w-2 ${activeCommentId === comment.id ? 'bg-blue-500' : 'bg-yellow-400'} z-20 cursor-pointer shadow-sm`}
                         style={{ left: `${position}%` }}
                         title={`${comment.content} (${formatTime(comment.timestamp)})`}
                         onClick={(e) => {
@@ -1040,6 +1043,7 @@ export default function MediaPlayer({
                             setCurrentTime(comment.timestamp);
                           }
                         }}
+                        data-testid={`comment-marker-${comment.id}`}
                       />
                     );
                   })}
