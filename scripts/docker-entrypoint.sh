@@ -74,9 +74,9 @@ fi
 mkdir -p /app/dist/server
 mkdir -p /app/uploads
 
-# Find a valid entry point for the server - prefer built JS over TypeScript source
+# Find a valid entry point for the server - prefer built JS over TypeScript source  
 find_server_entry() {
-  # First priority: built server file from npm run build
+  # First priority: built server file from npm run build (check the file the build actually creates)
   if [ -f "/app/dist/index.js" ]; then
     echo "Found built server entry point: /app/dist/index.js"
     export SERVER_ENTRY="/app/dist/index.js"
