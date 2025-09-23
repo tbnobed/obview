@@ -1416,6 +1416,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Request changes for shared file (no authentication required)
+  app.post("/api/share/:token/request-changes", async (req, res, next) => {
+    try {
+      const token = req.params.token;
+      const clientIp = req.ip || req.connection.remoteAddress || "unknown";
+      
+      // Check rate limit (reuse the same rate limiting logic)
+      if (!checkRateLimit(clientIp)) {
+        return res.status(429).json({ 
+          message: "Too many requests. Please wait before submitting again." 
+        });
+      }
+      
+      const file = await storage.getFileByShareToken(token);
+      
+      if (!file) {
+        return res.status(404).json({ message: "Shared file not found" });
+      }
+      
+      // Check if file is marked as unavailable
+      if (file.isAvailable === false) {
+        return res.status(404).json({ 
+          message: "Shared file not available", 
+          code: "FILE_UNAVAILABLE",
+          details: "This file has been deleted from the server."
+        });
+      }
+      
+      // Validate request data
+      const { requesterName, requesterEmail, feedback } = req.body;
+      
+      if (!requesterName || !requesterEmail || !feedback) {
+        return res.status(400).json({ 
+          message: "Requester name, email, and feedback are required" 
+        });
+      }
+      
+      // Get project information
+      const project = await storage.getProject(file.projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Get all project users (collaborators and owner)
+      const projectUsers = await storage.getProjectUsers(file.projectId);
+      const allUsers = await Promise.all(
+        projectUsers.map(pu => storage.getUser(pu.userId))
+      );
+      
+      // Filter out null users and get their emails
+      const validUsers = allUsers.filter(user => user !== undefined);
+      
+      // Send emails to all project members
+      const { sendApprovalEmail } = await import('./utils/sendgrid');
+      const emailPromises = validUsers.map(user => {
+        if (user) {
+          return sendApprovalEmail(
+            user.email,
+            requesterName,
+            project.name,
+            file.filename,
+            "changes_requested",
+            feedback,
+            req.get('origin') || req.get('host'),
+            project.id
+          );
+        }
+        return Promise.resolve(false);
+      });
+      
+      await Promise.all(emailPromises);
+      
+      console.log(`Public request for changes sent for file ${file.filename} by ${requesterName} (${requesterEmail})`);
+      console.log(`Emails sent to ${validUsers.length} project members`);
+      
+      res.status(200).json({ 
+        message: "Changes requested successfully. Project members have been notified via email.",
+        emailsSent: validUsers.length
+      });
+    } catch (error) {
+      console.error("Error requesting changes:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Public share link - only serves the video content without authentication
   app.get("/public/share/:token", async (req, res, next) => {
     try {

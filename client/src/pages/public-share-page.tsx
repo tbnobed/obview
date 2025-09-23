@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "wouter";
-import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send } from "lucide-react";
+import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Logo from "@/components/ui/logo";
@@ -18,6 +19,13 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertPublicCommentSchema, type UnifiedComment } from "@shared/schema";
 import { z } from "zod";
+
+// Schema for request changes form
+const requestChangesSchema = z.object({
+  requesterName: z.string().min(1, "Name is required"),
+  requesterEmail: z.string().email("Valid email is required"),
+  feedback: z.string().min(1, "Feedback is required"),
+});
 
 interface SharedFile {
   id: number;
@@ -67,6 +75,7 @@ export default function PublicSharePage() {
   const [scrubPreviewTop, setScrubPreviewTop] = useState(0);
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [isRequestChangesOpen, setIsRequestChangesOpen] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -104,6 +113,38 @@ export default function PublicSharePage() {
     },
     enabled: !!token && !!file,
     retry: false
+  });
+
+  // Request changes form
+  const requestChangesForm = useForm<z.infer<typeof requestChangesSchema>>({
+    resolver: zodResolver(requestChangesSchema),
+    defaultValues: {
+      requesterName: "",
+      requesterEmail: "",
+      feedback: "",
+    },
+  });
+
+  // Request changes mutation
+  const requestChangesMutation = useMutation({
+    mutationFn: (data: z.infer<typeof requestChangesSchema>) => {
+      return apiRequest('POST', `/api/share/${token}/request-changes`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Changes requested",
+        description: "Your request has been sent successfully. Project members will be notified via email."
+      });
+      setIsRequestChangesOpen(false);
+      requestChangesForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to request changes",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   });
 
   // Handle play/pause
@@ -403,13 +444,87 @@ export default function PublicSharePage() {
           
           {/* Request Changes Button - Only show when comments are allowed */}
           {!isViewOnly && (
-            <Button 
-              variant="outline"
-              className="bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600"
-              data-testid="request-changes-button"
-            >
-              Request Changes
-            </Button>
+            <Dialog open={isRequestChangesOpen} onOpenChange={setIsRequestChangesOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600"
+                  data-testid="request-changes-button"
+                >
+                  Request Changes
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Request Changes</DialogTitle>
+                </DialogHeader>
+                <Form {...requestChangesForm}>
+                  <form onSubmit={requestChangesForm.handleSubmit((data) => requestChangesMutation.mutate(data))} className="space-y-4">
+                    <FormField
+                      control={requestChangesForm.control}
+                      name="requesterName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter your full name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={requestChangesForm.control}
+                      name="requesterEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="Enter your email address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={requestChangesForm.control}
+                      name="feedback"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Feedback</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Describe the changes you'd like to see..."
+                              className="min-h-[100px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsRequestChangesOpen(false)}
+                        disabled={requestChangesMutation.isPending}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="bg-red-500 hover:bg-red-600"
+                        disabled={requestChangesMutation.isPending}
+                        data-testid="submit-request-changes"
+                      >
+                        {requestChangesMutation.isPending ? "Sending..." : "Send Request"}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           )}
         </div>
       </div>
