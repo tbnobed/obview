@@ -28,8 +28,8 @@ RUN echo "=== BUILDING APPLICATION ===" && \
 # Production stage
 FROM node:20-alpine as production
 
-# Install PostgreSQL client for health checks and utilities
-RUN apk add --no-cache postgresql-client curl
+# Install PostgreSQL client for health checks and utilities, plus FFmpeg for video processing
+RUN apk add --no-cache postgresql-client curl ffmpeg
 
 WORKDIR /app
 
