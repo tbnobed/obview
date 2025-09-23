@@ -1033,7 +1033,7 @@ export default function MediaPlayer({
                         className="absolute z-20 cursor-pointer"
                         style={{ 
                           left: `${position}%`, 
-                          top: '-8px',
+                          bottom: '-8px',
                           transform: 'translateX(-50%)'
                         }}
                         onMouseEnter={(e) => {
