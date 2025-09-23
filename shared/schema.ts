@@ -155,6 +155,25 @@ export const passwordResets = pgTable("password_resets", {
 export const insertPasswordResetSchema = createInsertSchema(passwordResets)
   .omit({ id: true, createdAt: true });
 
+// VIDEO PROCESSING SCHEMA
+export const videoProcessing = pgTable("video_processing", {
+  id: serial("id").primaryKey(),
+  fileId: integer("file_id").notNull(),
+  status: text("status").notNull().default("pending"), // "pending", "processing", "completed", "failed"
+  qualities: json("qualities").$type<Array<{resolution: string, path: string, size: number, bitrate: string}>>(),
+  scrubVersionPath: text("scrub_version_path"),
+  thumbnailSpritePath: text("thumbnail_sprite_path"),
+  spriteMetadata: json("sprite_metadata").$type<{cols: number, rows: number, thumbnailWidth: number, thumbnailHeight: number, interval: number, thumbnailCount: number, duration: number}>(),
+  duration: integer("duration"), // video duration in seconds
+  frameRate: integer("frame_rate"), // frames per second
+  errorMessage: text("error_message"),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertVideoProcessingSchema = createInsertSchema(videoProcessing)
+  .omit({ id: true, createdAt: true });
+
 // Type definitions
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -203,3 +222,6 @@ export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 
 export type Approval = typeof approvals.$inferSelect;
 export type InsertApproval = z.infer<typeof insertApprovalSchema>;
+
+export type VideoProcessing = typeof videoProcessing.$inferSelect;
+export type InsertVideoProcessing = z.infer<typeof insertVideoProcessingSchema>;

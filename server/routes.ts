@@ -42,6 +42,54 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { VideoProcessor } from "./video-processor";
+
+// Background video processing function
+async function processVideoInBackground(file: any, processingId: number) {
+  try {
+    console.log(`[Video Processing] Starting processing for file: ${file.filename}`);
+    
+    // Update status to processing
+    await storage.updateVideoProcessing(processingId, {
+      status: "processing"
+    });
+    
+    // Set up processing paths
+    const inputPath = file.filePath;
+    const outputDir = path.join(path.dirname(inputPath), 'processed', file.id.toString());
+    
+    // Process the video
+    const result = await VideoProcessor.processVideo({
+      inputPath,
+      outputDir,
+      filename: path.parse(file.filename).name
+    });
+    
+    // Update processing record with results (including spriteMetadata)
+    await storage.updateVideoProcessing(processingId, {
+      status: "completed",
+      qualities: result.qualities,
+      scrubVersionPath: result.scrubVersion,
+      thumbnailSpritePath: result.thumbnailSprite,
+      spriteMetadata: result.spriteMetadata, // Fix: Include sprite metadata
+      duration: Math.round(result.duration),
+      frameRate: Math.round(result.frameRate),
+      processedAt: new Date()
+    });
+    
+    console.log(`[Video Processing] Completed processing for file: ${file.filename}`);
+  } catch (error) {
+    console.error(`[Video Processing] Error processing file ${file.filename}:`, error);
+    
+    // Update processing record with error
+    await storage.updateVideoProcessing(processingId, {
+      status: "failed",
+      errorMessage: error.message || "Unknown processing error"
+    }).catch(updateError => {
+      console.error("[Video Processing] Failed to update error status:", updateError);
+    });
+  }
+}
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -1008,6 +1056,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
       
+      // Process video files automatically for better scrubbing performance
+      if (fileType === "video") {
+        // Create video processing record
+        const processing = await storage.createVideoProcessing({
+          fileId: file.id,
+          status: "pending"
+        });
+        
+        // Start processing in background (don't wait for completion)
+        processVideoInBackground(file, processing.id).catch(error => {
+          console.error(`[Video Processing] Failed for file ${file.id}:`, error);
+        });
+        
+        console.log(`[Video Processing] Started background processing for: ${file.filename}`);
+      }
+      
       res.status(201).json(file);
     } catch (error) {
       // Check specifically for integer overflow errors which might indicate file size issues
@@ -1279,6 +1343,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.sendFile(file.filePath, { root: '/' });
     } catch (error) {
       next(error);
+    }
+  });
+
+  // ============ VIDEO PROCESSING API ENDPOINTS ============
+  
+  // Get video processing status and metadata
+  app.get("/api/files/:id/processing", isAuthenticated, hasProjectAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+
+      const processing = await storage.getVideoProcessing(fileId);
+      if (!processing) {
+        return res.status(404).json({ message: "Processing record not found" });
+      }
+
+      res.json(processing);
+    } catch (error) {
+      console.error("[Video Processing API] Error fetching processing status:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Serve processed video quality versions
+  app.get("/api/files/:id/qualities/:quality", isAuthenticated, hasProjectAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      const quality = req.params.quality;
+      
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+
+      const processing = await storage.getVideoProcessing(fileId);
+      if (!processing || !processing.qualities) {
+        return res.status(404).json({ message: "Processed qualities not available" });
+      }
+
+      const qualityVersion = processing.qualities.find(q => q.resolution === quality);
+      if (!qualityVersion || !existsSync(qualityVersion.path)) {
+        return res.status(404).json({ message: "Quality version not found" });
+      }
+
+      // Set appropriate headers for video streaming with range support
+      const stats = await fsPromises.stat(qualityVersion.path);
+      const range = req.headers.range;
+
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stats.size - 1;
+        const chunksize = (end - start) + 1;
+
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${stats.size}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': 'video/mp4',
+          'Cache-Control': 'public, max-age=3600'
+        });
+
+        const stream = require('fs').createReadStream(qualityVersion.path, { start, end });
+        stream.pipe(res);
+      } else {
+        res.writeHead(200, {
+          'Content-Length': stats.size,
+          'Content-Type': 'video/mp4',
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=3600'
+        });
+
+        const stream = require('fs').createReadStream(qualityVersion.path);
+        stream.pipe(res);
+      }
+    } catch (error) {
+      console.error("[Video Processing API] Error serving quality:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Serve scrub version for smooth scrubbing
+  app.get("/api/files/:id/scrub", isAuthenticated, hasProjectAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+
+      const processing = await storage.getVideoProcessing(fileId);
+      if (!processing || !processing.scrubVersionPath || !existsSync(processing.scrubVersionPath)) {
+        return res.status(404).json({ message: "Scrub version not available" });
+      }
+
+      const stats = await fsPromises.stat(processing.scrubVersionPath);
+      const range = req.headers.range;
+
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stats.size - 1;
+        const chunksize = (end - start) + 1;
+
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${stats.size}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': 'video/mp4',
+          'Cache-Control': 'public, max-age=3600'
+        });
+
+        const stream = require('fs').createReadStream(processing.scrubVersionPath, { start, end });
+        stream.pipe(res);
+      } else {
+        res.writeHead(200, {
+          'Content-Length': stats.size,
+          'Content-Type': 'video/mp4',
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=3600'
+        });
+
+        const stream = require('fs').createReadStream(processing.scrubVersionPath);
+        stream.pipe(res);
+      }
+    } catch (error) {
+      console.error("[Video Processing API] Error serving scrub version:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Serve thumbnail sprite
+  app.get("/api/files/:id/sprite", isAuthenticated, hasProjectAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+
+      const processing = await storage.getVideoProcessing(fileId);
+      if (!processing || !processing.thumbnailSpritePath || !existsSync(processing.thumbnailSpritePath)) {
+        return res.status(404).json({ message: "Thumbnail sprite not available" });
+      }
+
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache for sprites
+      res.sendFile(path.resolve(processing.thumbnailSpritePath));
+    } catch (error) {
+      console.error("[Video Processing API] Error serving sprite:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Serve sprite metadata
+  app.get("/api/files/:id/sprite-metadata", isAuthenticated, hasProjectAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+
+      const processing = await storage.getVideoProcessing(fileId);
+      if (!processing || !processing.spriteMetadata) {
+        return res.status(404).json({ message: "Sprite metadata not available" });
+      }
+
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache
+      res.json(processing.spriteMetadata);
+    } catch (error) {
+      console.error("[Video Processing API] Error serving sprite metadata:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
   

@@ -9,6 +9,7 @@ import {
   invitations,
   approvals,
   passwordResets,
+  videoProcessing,
   type User,
   type InsertUser,
   type Project,
@@ -29,7 +30,9 @@ import {
   type Approval,
   type InsertApproval,
   type PasswordReset,
-  type InsertPasswordReset
+  type InsertPasswordReset,
+  type VideoProcessing,
+  type InsertVideoProcessing
 } from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
@@ -67,6 +70,11 @@ export interface IStorage {
   createFile(file: InsertFile): Promise<File>;
   updateFile(id: number, data: Partial<InsertFile>): Promise<File | undefined>;
   deleteFile(id: number): Promise<boolean>;
+  
+  // Video processing management
+  createVideoProcessing(processing: InsertVideoProcessing): Promise<VideoProcessing>;
+  getVideoProcessing(fileId: number): Promise<VideoProcessing | undefined>;
+  updateVideoProcessing(id: number, data: Partial<InsertVideoProcessing>): Promise<VideoProcessing | undefined>;
 
   // Comment management
   getComment(id: number): Promise<Comment | undefined>;
@@ -134,6 +142,7 @@ export class MemStorage implements IStorage {
   private invitations: Map<number, Invitation>;
   private approvals: Map<number, Approval>;
   private passwordResets: Map<number, PasswordReset>;
+  private videoProcessing: Map<number, VideoProcessing>;
   sessionStore: any; // Using any to avoid type issues
 
   currentUserId: number;
@@ -146,6 +155,7 @@ export class MemStorage implements IStorage {
   currentInvitationId: number;
   currentApprovalId: number;
   currentPasswordResetId: number;
+  currentVideoProcessingId: number;
 
   constructor() {
     this.users = new Map();
@@ -158,6 +168,7 @@ export class MemStorage implements IStorage {
     this.invitations = new Map();
     this.approvals = new Map();
     this.passwordResets = new Map();
+    this.videoProcessing = new Map();
     
     this.currentUserId = 1;
     this.currentProjectId = 1;
@@ -169,6 +180,7 @@ export class MemStorage implements IStorage {
     this.currentInvitationId = 1;
     this.currentApprovalId = 1;
     this.currentPasswordResetId = 1;
+    this.currentVideoProcessingId = 1;
 
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // prune expired entries every 24h
@@ -694,6 +706,31 @@ export class MemStorage implements IStorage {
     this.passwordResets.set(id, updatedReset);
     return updatedReset;
   }
+
+  // Video processing methods
+  async createVideoProcessing(processing: InsertVideoProcessing): Promise<VideoProcessing> {
+    const id = this.currentVideoProcessingId++;
+    const created: VideoProcessing = {
+      ...processing,
+      id,
+      createdAt: new Date(),
+    };
+    this.videoProcessing.set(id, created);
+    return created;
+  }
+
+  async getVideoProcessing(fileId: number): Promise<VideoProcessing | undefined> {
+    return Array.from(this.videoProcessing.values()).find(p => p.fileId === fileId);
+  }
+
+  async updateVideoProcessing(id: number, data: Partial<InsertVideoProcessing>): Promise<VideoProcessing | undefined> {
+    const existing = this.videoProcessing.get(id);
+    if (!existing) return undefined;
+    
+    const updated: VideoProcessing = { ...existing, ...data };
+    this.videoProcessing.set(id, updated);
+    return updated;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -901,6 +938,29 @@ export class DatabaseStorage implements IStorage {
       .where(eq(files.id, id))
       .returning({ deletedId: files.id });
     return result.length > 0;
+  }
+
+  // Video processing methods
+  async createVideoProcessing(processing: InsertVideoProcessing): Promise<VideoProcessing> {
+    const [created] = await db.insert(videoProcessing).values(processing).returning();
+    return created;
+  }
+
+  async getVideoProcessing(fileId: number): Promise<VideoProcessing | undefined> {
+    const [processing] = await db
+      .select()
+      .from(videoProcessing)
+      .where(eq(videoProcessing.fileId, fileId));
+    return processing;
+  }
+
+  async updateVideoProcessing(id: number, data: Partial<InsertVideoProcessing>): Promise<VideoProcessing | undefined> {
+    const [updated] = await db
+      .update(videoProcessing)
+      .set(data)
+      .where(eq(videoProcessing.id, id))
+      .returning();
+    return updated;
   }
 
   // Comment methods
