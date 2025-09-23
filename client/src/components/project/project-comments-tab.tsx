@@ -115,7 +115,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
           console.error("Failed to dispatch event:", e);
         }
         
-        // 5. Force direct DOM update as a last resort
+        // 5. Force direct DOM update as a last resort (without auto-play)
         try {
           // This is a direct DOM manipulation to set the video time
           // It will attempt to find the video element and set its time directly
@@ -123,7 +123,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
             const videoElement = document.querySelector('video');
             if (videoElement) {
               videoElement.currentTime = timestamp;
-              videoElement.play().catch(e => console.error("Failed to play video:", e));
+              // Removed auto-play - let user manually play if they want
             }
           }, 300);
         } catch (e) {
