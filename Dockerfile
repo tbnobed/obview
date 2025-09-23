@@ -56,6 +56,17 @@ COPY --from=builder /app/vite.config.ts ./
 # Fix the vite.config import issue - tsx needs the file to be resolvable without extension
 RUN cp vite.config.ts vite.config.js
 
+# Copy frontend build files to where the server expects them
+RUN mkdir -p /app/server/public && \
+    echo "Copying frontend files from /app/dist/public/ to /app/server/public/" && \
+    if [ -d "/app/dist/public" ]; then \
+      cp -r /app/dist/public/* /app/server/public/; \
+      echo "✅ Frontend files copied successfully"; \
+    else \
+      echo "⚠️  Frontend build files not found, creating fallback"; \
+      echo '<!DOCTYPE html><html><head><title>Obviu.io</title></head><body><h1>Loading...</h1></body></html>' > /app/server/public/index.html; \
+    fi
+
 # Add database migration files and scripts
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/scripts ./scripts
