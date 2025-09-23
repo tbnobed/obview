@@ -443,93 +443,94 @@ export default function PublicSharePage() {
 
             {/* Media Controls - Always show for video/audio files */}
             {(file.fileType === 'video' || file.fileType === 'audio') && (
-              <div className="flex items-center space-x-4 mt-4 p-4 bg-neutral-50 dark:bg-gray-800 rounded-lg">
-                <Button
-                  onClick={togglePlay}
-                  variant="ghost"
-                  size="icon"
-                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
-                  data-testid="play-pause-button"
-                >
-                  {isPlaying ? (
-                    <Pause className="h-6 w-6" />
-                  ) : (
-                    <Play className="h-6 w-6" />
-                  )}
-                </Button>
-                
-                <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
-                
-                {/* Progress bar and markers container */}
-                <div className="flex-grow flex flex-col gap-1 mx-4 relative">
-                  {/* Scrub Preview Window - positioned relative to container, not progress bar */}
-                  {showScrubPreview && duration > 0 && file.fileType === 'video' && (
-                    <div
-                      ref={scrubPreviewRef}
-                      className="absolute bottom-full mb-2 pointer-events-none z-40"
-                      style={{
-                        left: `${scrubPreviewLeftPx}px`,
-                        transform: 'translateX(-50%)'
-                      }}
-                    >
-                      <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
-                        <div className="relative">
-                          <video
-                            ref={previewVideoRef}
-                            className="w-32 h-20 rounded object-cover bg-gray-800"
-                            src={`/public/share/${token}`}
-                            onLoadedData={handlePreviewVideoLoad}
-                            muted
-                            preload="metadata"
-                            data-testid="scrub-preview-video"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
-                        </div>
-                        <div className="text-white text-xs text-center mt-1 font-mono">
-                          {formatTime(scrubPreviewTime)}
-                        </div>
-                        {/* Arrow pointing down */}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600" />
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Progress bar */}
+              <div className="relative mt-4 p-4 bg-neutral-50 dark:bg-gray-800 rounded-lg">
+                {/* Scrub Preview Window - positioned relative to full container */}
+                {showScrubPreview && duration > 0 && file.fileType === 'video' && (
                   <div
-                    ref={progressRef}
-                    className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500"
-                    onClick={handleProgressClick}
-                    onMouseMove={(e) => {
-                      if (!progressRef.current || isDragging) return;
-                      
-                      const rect = progressRef.current.getBoundingClientRect();
-                      // Use pixel-based positioning for preview extension
-                      const leftPx = e.clientX - rect.left;
-                      const pos = leftPx / rect.width; // Don't clamp - allow beyond 0-1
-                      const hoverTime = Math.max(0, Math.min(duration, duration * pos)); // Only clamp time
-                      
-                      setScrubPreviewTime(hoverTime);
-                      setScrubPreviewLeftPx(leftPx); // Store pixel position
-                      setShowScrubPreview(true);
-                      
-                      if (previewVideoRef.current && duration > 0) {
-                        previewVideoRef.current.currentTime = hoverTime;
-                      }
+                    ref={scrubPreviewRef}
+                    className="absolute bottom-full mb-2 pointer-events-none z-40"
+                    style={{
+                      left: `${scrubPreviewLeftPx + 16}px`, // Add offset for container padding
+                      transform: 'translateX(-50%)'
                     }}
-                    onMouseLeave={handleProgressLeave}
-                    data-testid="progress-bar"
                   >
-                    <div
-                      className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
-                      style={{ width: `${(currentTime / duration) * 100}%` }}
-                    ></div>
-                    <div
-                      className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ left: `${(currentTime / duration) * 100}%` }}
-                    ></div>
+                    <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
+                      <div className="relative">
+                        <video
+                          ref={previewVideoRef}
+                          className="w-32 h-20 rounded object-cover bg-gray-800"
+                          src={`/public/share/${token}`}
+                          onLoadedData={handlePreviewVideoLoad}
+                          muted
+                          preload="metadata"
+                          data-testid="scrub-preview-video"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-20 rounded" />
+                      </div>
+                      <div className="text-white text-xs text-center mt-1 font-mono">
+                        {formatTime(scrubPreviewTime)}
+                      </div>
+                      {/* Arrow pointing down */}
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-600" />
+                    </div>
                   </div>
+                )}
+                
+                <div className="flex items-center space-x-4">
+                  <Button
+                    onClick={togglePlay}
+                    variant="ghost"
+                    size="icon"
+                    className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
+                    data-testid="play-pause-button"
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-6 w-6" />
+                    ) : (
+                      <Play className="h-6 w-6" />
+                    )}
+                  </Button>
+                  
+                  <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                  
+                  {/* Progress bar and markers container */}
+                  <div className="flex-grow flex flex-col gap-1 mx-4">
+                    {/* Progress bar */}
+                    <div
+                      ref={progressRef}
+                      className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500"
+                      onClick={handleProgressClick}
+                      onMouseMove={(e) => {
+                        if (!progressRef.current || isDragging) return;
+                        
+                        const rect = progressRef.current.getBoundingClientRect();
+                        // Use pixel-based positioning for preview extension
+                        const leftPx = e.clientX - rect.left;
+                        const pos = leftPx / rect.width; // Don't clamp - allow beyond 0-1
+                        const hoverTime = Math.max(0, Math.min(duration, duration * pos)); // Only clamp time
+                        
+                        setScrubPreviewTime(hoverTime);
+                        setScrubPreviewLeftPx(leftPx); // Store pixel position
+                        setShowScrubPreview(true);
+                        
+                        if (previewVideoRef.current && duration > 0) {
+                          previewVideoRef.current.currentTime = hoverTime;
+                        }
+                      }}
+                      onMouseLeave={handleProgressLeave}
+                      data-testid="progress-bar"
+                    >
+                      <div
+                        className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
+                        style={{ width: `${(currentTime / duration) * 100}%` }}
+                      ></div>
+                      <div
+                        className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ left: `${(currentTime / duration) * 100}%` }}
+                      ></div>
+                    </div>
                   
                   {/* Comment markers rail */}
                   <div className="relative h-5 overflow-visible pointer-events-none" aria-hidden="true">
@@ -662,6 +663,7 @@ export default function PublicSharePage() {
                     <Maximize className="h-5 w-5" />
                   </Button>
                 )}
+                </div>
               </div>
             )}
               </CardContent>
