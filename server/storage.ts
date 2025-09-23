@@ -54,6 +54,8 @@ export interface IStorage {
   getProject(id: number): Promise<Project | undefined>;
   getAllProjects(): Promise<Project[]>;
   getProjectsByUser(userId: number): Promise<Project[]>;
+  getAllProjectsWithLatestVideo(): Promise<(Project & { latestVideoFile?: File })[]>;
+  getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File })[]>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, data: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: number): Promise<boolean>;
@@ -264,6 +266,47 @@ export class MemStorage implements IStorage {
 
   async deleteProject(id: number): Promise<boolean> {
     return this.projects.delete(id);
+  }
+
+  async getAllProjectsWithLatestVideo(): Promise<(Project & { latestVideoFile?: File })[]> {
+    const allProjects = Array.from(this.projects.values());
+    return allProjects.map(project => {
+      const projectFiles = Array.from(this.files.values()).filter(
+        file => file.projectId === project.id && file.fileType === 'video'
+      );
+      const latestVideoFile = projectFiles.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0];
+      
+      return {
+        ...project,
+        latestVideoFile
+      };
+    });
+  }
+
+  async getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File })[]> {
+    const userProjectRoles = Array.from(this.projectUsers.values()).filter(
+      (pu) => pu.userId === userId
+    );
+    
+    const userProjects = userProjectRoles.map(
+      (pu) => this.projects.get(pu.projectId)!
+    ).filter(Boolean);
+
+    return userProjects.map(project => {
+      const projectFiles = Array.from(this.files.values()).filter(
+        file => file.projectId === project.id && file.fileType === 'video'
+      );
+      const latestVideoFile = projectFiles.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0];
+      
+      return {
+        ...project,
+        latestVideoFile
+      };
+    });
   }
 
   // File methods
@@ -740,7 +783,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projectUsers.userId, userId))
       .innerJoin(projects, eq(projectUsers.projectId, projects.id));
 
-    return userProjects.map(up => up.project);
+    return userProjects.map((up: { project: Project }) => up.project);
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
@@ -766,6 +809,52 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projects.id, id))
       .returning({ deletedId: projects.id });
     return result.length > 0;
+  }
+
+  async getAllProjectsWithLatestVideo(): Promise<(Project & { latestVideoFile?: File })[]> {
+    const allProjects = await db.select().from(projects);
+    
+    const projectsWithVideo = await Promise.all(allProjects.map(async (project) => {
+      const latestVideoFiles = await db
+        .select()
+        .from(files)
+        .where(and(eq(files.projectId, project.id), eq(files.fileType, 'video')))
+        .orderBy(desc(files.createdAt))
+        .limit(1);
+      
+      return {
+        ...project,
+        latestVideoFile: latestVideoFiles[0] || undefined
+      };
+    }));
+    
+    return projectsWithVideo;
+  }
+
+  async getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File })[]> {
+    const userProjects = await db
+      .select({
+        project: projects
+      })
+      .from(projectUsers)
+      .where(eq(projectUsers.userId, userId))
+      .innerJoin(projects, eq(projectUsers.projectId, projects.id));
+
+    const projectsWithVideo = await Promise.all(userProjects.map(async (up) => {
+      const latestVideoFiles = await db
+        .select()
+        .from(files)
+        .where(and(eq(files.projectId, up.project.id), eq(files.fileType, 'video')))
+        .orderBy(desc(files.createdAt))
+        .limit(1);
+      
+      return {
+        ...up.project,
+        latestVideoFile: latestVideoFiles[0] || undefined
+      };
+    }));
+    
+    return projectsWithVideo;
   }
 
   // File methods

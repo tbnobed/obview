@@ -603,9 +603,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Admins can see all projects
       if (req.user.role === "admin") {
-        projects = await storage.getAllProjects();
+        projects = await storage.getAllProjectsWithLatestVideo();
       } else {
-        projects = await storage.getProjectsByUser(req.user.id);
+        projects = await storage.getProjectsByUserWithLatestVideo(req.user.id);
       }
       
       res.json(projects);
