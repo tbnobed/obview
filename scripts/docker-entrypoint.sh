@@ -91,7 +91,8 @@ find_server_entry() {
   else
     if [ -f "/app/server/index.ts" ]; then
       echo "Found TypeScript source: /app/server/index.ts"
-      export SERVER_ENTRY="npx tsx /app/server/index.ts"
+      export SERVER_ENTRY="/app/server/index.ts"
+      export USE_TSX="true"
       return 0
     fi
     return 1
