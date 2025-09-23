@@ -56,16 +56,11 @@ COPY --from=builder /app/vite.config.ts ./
 # Fix the vite.config import issue - tsx needs the file to be resolvable without extension
 RUN cp vite.config.ts vite.config.js
 
-# Copy frontend build files to where the server expects them
+# Copy frontend build files to where the server expects them and verify server build
 RUN mkdir -p /app/server/public && \
-    echo "Copying frontend files from /app/dist/public/ to /app/server/public/" && \
-    if [ -d "/app/dist/public" ]; then \
-      cp -r /app/dist/public/* /app/server/public/; \
-      echo "✅ Frontend files copied successfully"; \
-    else \
-      echo "⚠️  Frontend build files not found, creating fallback"; \
-      echo '<!DOCTYPE html><html><head><title>Obviu.io</title></head><body><h1>Loading...</h1></body></html>' > /app/server/public/index.html; \
-    fi
+    cp -r /app/dist/* /app/server/public/ && \
+    echo "✅ Frontend files copied to /app/server/public/" && \
+    test -f dist/index.js && echo "✅ Server build verified: dist/index.js exists" || (echo "❌ Server build missing: dist/index.js" && exit 1)
 
 # Add database migration files and scripts
 COPY --from=builder /app/migrations ./migrations
@@ -89,5 +84,5 @@ VOLUME /app/uploads
 # Set entrypoint to our initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
-# Start the application with multiple fallback paths
-CMD ["sh", "-c", "if [ -n \"$SERVER_ENTRY\" ]; then node $SERVER_ENTRY; elif [ -f \"dist/server/index.js\" ]; then node dist/server/index.js; elif [ -f \"dist/index.js\" ]; then node dist/index.js; else echo \"Error: Could not find server entry point. Fallback to source file.\" && node --import tsx/esm --enable-source-maps server/index.ts; fi"]
+# Start the application with the compiled server
+CMD ["node", "dist/index.js"]
