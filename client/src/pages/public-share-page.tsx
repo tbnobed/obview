@@ -284,8 +284,8 @@ export default function PublicSharePage() {
     const hoverTime = duration * pos;
     
     setScrubPreviewTime(hoverTime);
-    // Store actual pixel position instead of percentage for fixed positioning
-    setScrubPreviewPosition(e.clientX);
+    // Store percentage position for consistent positioning
+    setScrubPreviewPosition(pos * 100);
     setShowScrubPreview(true);
     
     // Update preview video time
@@ -527,12 +527,12 @@ export default function PublicSharePage() {
                       // Adjust positioning when scrub preview is also visible
                       const hasActivePreview = showScrubPreview && duration > 0 && file.fileType === 'video';
                       const positionStyle = hasActivePreview ? {
-                        left: tooltipPosition.x - 180, // Position to the left of preview
-                        top: tooltipPosition.y - 80,   // Align with preview height
+                        left: tooltipPosition.x - 200, // Position to the left of preview with more space
+                        top: tooltipPosition.y - 100,  // Position above the progress bar
                         transform: 'translate(0, -100%)'
                       } : {
                         left: tooltipPosition.x,
-                        top: tooltipPosition.y,
+                        top: tooltipPosition.y - 20,   // Position above the marker
                         transform: 'translate(-50%, -100%)'
                       };
                       
