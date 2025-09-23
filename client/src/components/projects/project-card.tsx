@@ -66,7 +66,24 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         
         {/* Video Preview Section */}
         {project.latestVideoFile ? (
-          <div className="relative aspect-video bg-black rounded-t-none mx-4 mb-2 overflow-hidden">
+          <div 
+            className="relative aspect-video bg-black rounded-t-none mx-4 mb-2 overflow-hidden"
+            onMouseMove={(e) => {
+              const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
+              if (!video || video.duration === 0) return;
+              
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+              video.currentTime = video.duration * pos;
+            }}
+            onMouseLeave={(e) => {
+              const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
+              if (!video) return;
+              // Reset to 1 second preview when not hovering
+              video.currentTime = Math.min(1, video.duration || 0);
+            }}
+            data-testid={`video-preview-container-${project.id}`}
+          >
             <video
               className="w-full h-full object-cover"
               src={`/api/files/${project.latestVideoFile.id}/content`}
