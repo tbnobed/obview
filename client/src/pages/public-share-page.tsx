@@ -351,7 +351,7 @@ export default function PublicSharePage() {
   }
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Compact Header */}
       <div className="flex-shrink-0 py-2 px-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
@@ -562,9 +562,10 @@ export default function PublicSharePage() {
                   {showScrubPreview && duration > 0 && file.fileType === 'video' && (
                     <div
                       ref={scrubPreviewRef}
-                      className="absolute top-full mt-2 transform -translate-x-1/2 pointer-events-none z-40"
+                      className="fixed transform -translate-x-1/2 pointer-events-none z-40"
                       style={{
-                        left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%` // Keep within bounds
+                        left: `${Math.max(10, Math.min(90, scrubPreviewPosition))}%`,
+                        bottom: '20px' // Fixed position from bottom of viewport
                       }}
                     >
                       <div className="bg-black rounded-lg p-2 shadow-xl border border-gray-600 z-50">
