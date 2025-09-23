@@ -75,6 +75,9 @@ ENV NODE_ENV=production
 ENV PORT=5000
 ENV IS_DOCKER=true
 
+# Create upload directories including processed video directories
+RUN mkdir -p /app/uploads/processed
+
 # Create a volume for uploads
 VOLUME /app/uploads
 

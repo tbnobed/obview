@@ -1299,16 +1299,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Handle HEAD requests specifically (for video player precheck)
       if (req.method === 'HEAD') {
-        try {
-          const fs = require('fs');
-          const stats = fs.statSync(file.filePath);
-          res.setHeader('Content-Length', stats.size);
-          res.status(200).end();
-          return;
-        } catch (err) {
-          console.error(`Error getting file stats for HEAD request: ${err.message}`);
-          return res.status(404).end();
-        }
+        // Just return basic headers for HEAD requests
+        res.status(200).end();
+        return;
       }
       
       // Send the file for GET requests
@@ -1424,20 +1417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Processing record not found" });
       }
 
-      // Check if files actually exist on disk
-      if (processing.scrubVersionPath) {
-        const fs = require('fs');
-        const scrubExists = fs.existsSync(processing.scrubVersionPath);
-        console.log(`🎬 [PROCESSING STATUS] Scrub file exists: ${scrubExists} (${processing.scrubVersionPath})`);
-      }
-      
-      if (processing.qualities) {
-        const fs = require('fs');
-        processing.qualities.forEach(quality => {
-          const exists = fs.existsSync(quality.path);
-          console.log(`🎬 [PROCESSING STATUS] ${quality.resolution} quality exists: ${exists} (${quality.path})`);
-        });
-      }
+      // Note: File existence checks removed to prevent import errors in production
 
       res.json(processing);
     } catch (error) {
