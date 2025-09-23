@@ -815,7 +815,7 @@ export default function MediaPlayer({
           
           <video
             ref={videoRef}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onEnded={handleMediaEnded}
