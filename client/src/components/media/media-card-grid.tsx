@@ -133,21 +133,55 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
     }
     
     if (processing) {
-      switch ((processing as any).status) {
-        case 'pending':
-          return { color: "bg-yellow-500", text: "Processing" };
-        case 'processing':
-          return { color: "bg-blue-500", text: "Processing" };
-        case 'completed':
-          return { color: "bg-green-500", text: "Ready" };
-        case 'failed':
-          return { color: "bg-red-500", text: "Failed" };
-        default:
-          return { color: "bg-gray-500", text: "Unknown" };
+      const status = (processing as any).status;
+      
+      // For video files, check if all processing components are truly ready
+      if (file.fileType === 'video') {
+        switch (status) {
+          case 'pending':
+            return { color: "bg-yellow-500", text: "Processing" };
+          case 'processing':
+            return { color: "bg-blue-500", text: "Processing" };
+          case 'completed':
+            // Only show "Ready" if we have qualities AND scrub version for videos
+            const hasQualities = (processing as any).qualities && (processing as any).qualities.length > 0;
+            const hasScrubVersion = (processing as any).scrubVersionPath || (processing as any).hasScrubVersion;
+            
+            if (hasQualities && hasScrubVersion) {
+              return { color: "bg-green-500", text: "Ready" };
+            } else {
+              // Still processing some components
+              return { color: "bg-blue-500", text: "Processing" };
+            }
+          case 'failed':
+            return { color: "bg-red-500", text: "Failed" };
+          default:
+            return { color: "bg-gray-500", text: "Unknown" };
+        }
+      } else {
+        // For non-video files, use simple status check
+        switch (status) {
+          case 'pending':
+            return { color: "bg-yellow-500", text: "Processing" };
+          case 'processing':
+            return { color: "bg-blue-500", text: "Processing" };
+          case 'completed':
+            return { color: "bg-green-500", text: "Ready" };
+          case 'failed':
+            return { color: "bg-red-500", text: "Failed" };
+          default:
+            return { color: "bg-gray-500", text: "Unknown" };
+        }
       }
     }
     
-    return { color: "bg-green-500", text: "Ready" };
+    // No processing data - for non-video files this means ready
+    if (file.fileType !== 'video') {
+      return { color: "bg-green-500", text: "Ready" };
+    }
+    
+    // Video files without processing data are still processing
+    return { color: "bg-blue-500", text: "Processing" };
   };
 
   const statusInfo = getStatusInfo();
