@@ -62,6 +62,8 @@ export default function FileManager() {
   const [optimisticFiles, setOptimisticFiles] = useState<string[]>([]);
   const [showScanResults, setShowScanResults] = useState(false);
   const [scanResults, setScanResults] = useState<FileScanResult | null>(null);
+  const [showCleanupResults, setShowCleanupResults] = useState(false);
+  const [cleanupResults, setCleanupResults] = useState<any>(null);
 
   // Fetch uploaded files
   const { data: files, isLoading, error } = useQuery<FileDetails[]>({
@@ -187,6 +189,34 @@ export default function FileManager() {
     },
   });
   
+  // Orphaned files cleanup mutation
+  const cleanupMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/admin/cleanup-orphaned-files");
+    },
+    onSuccess: (data) => {
+      console.log("Cleanup completed:", data);
+      setCleanupResults(data);
+      setShowCleanupResults(true);
+      
+      // Refresh the file list
+      queryClient.invalidateQueries({ queryKey: ["/api/system/uploads"] });
+      
+      toast({
+        title: "Cleanup Complete",
+        description: `Successfully removed ${data.results.totalFilesRemoved} orphaned files.`,
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Cleanup error:", error);
+      toast({
+        title: "Cleanup Failed",
+        description: `Failed to cleanup orphaned files: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+
   // File system scan mutation to check file availability
   const scanMutation = useMutation({
     mutationFn: async () => {
@@ -374,6 +404,20 @@ export default function FileManager() {
             )}
             {scanMutation.isPending ? 'Scanning...' : 'Scan File System'}
           </Button>
+          
+          <Button 
+            onClick={() => cleanupMutation.mutate()}
+            variant="outline"
+            className="flex items-center gap-2 text-orange-600 border-orange-300 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-600 dark:hover:bg-orange-900/20"
+            disabled={cleanupMutation.isPending}
+          >
+            {cleanupMutation.isPending ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            {cleanupMutation.isPending ? 'Cleaning...' : 'Clean Orphaned Files'}
+          </Button>
           <Input
             className="max-w-xs"
             placeholder="Search files..."
@@ -440,6 +484,61 @@ export default function FileManager() {
           
           <DialogFooter>
             <Button onClick={() => setShowScanResults(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cleanup Results Dialog */}
+      <Dialog open={showCleanupResults} onOpenChange={setShowCleanupResults}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Trash2 className="h-5 w-5 mr-2 text-orange-500" />
+              Orphaned Files Cleanup Results
+            </DialogTitle>
+            <DialogDescription>
+              Results of the orphaned files cleanup operation
+            </DialogDescription>
+          </DialogHeader>
+          
+          {cleanupResults && (
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900">
+                  <h3 className="text-sm font-medium mb-2 text-orange-700 dark:text-orange-400">Orphaned Original Files</h3>
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{cleanupResults.results.orphanedOriginals}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900">
+                  <h3 className="text-sm font-medium mb-2 text-blue-700 dark:text-blue-400">Orphaned Processed Dirs</h3>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{cleanupResults.results.orphanedProcessed}</p>
+                </div>
+              </div>
+              
+              <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900">
+                <h3 className="text-sm font-medium mb-2 text-green-700 dark:text-green-400">Total Files Removed</h3>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{cleanupResults.results.totalFilesRemoved}</p>
+              </div>
+              
+              {cleanupResults.results.errors.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2 flex items-center">
+                    <AlertTriangle className="h-4 w-4 text-red-500 mr-1" />
+                    Errors ({cleanupResults.results.errors.length})
+                  </h3>
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg p-3 max-h-32 overflow-y-auto">
+                    {cleanupResults.results.errors.map((error: string, index: number) => (
+                      <div key={index} className="text-sm text-red-700 dark:text-red-400 mb-1">
+                        {error}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setShowCleanupResults(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -3296,6 +3296,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Clean up orphaned files (admin only)
+  app.post("/api/admin/cleanup-orphaned-files", isAdmin, async (req, res, next) => {
+    try {
+      console.log("🧹 [ORPHAN CLEANUP] Starting orphaned file cleanup");
+      
+      const uploadDir = process.env.UPLOAD_DIR || './uploads';
+      const processedDir = fileSystem.joinPaths(uploadDir, 'processed');
+      
+      // Get all database files
+      const dbFiles = await storage.getAllFiles();
+      const dbFilePaths = new Set(dbFiles.map(f => f.filePath));
+      const dbFileIds = new Set(dbFiles.map(f => f.id.toString()));
+      
+      console.log(`🧹 [ORPHAN CLEANUP] Found ${dbFiles.length} files in database`);
+      console.log(`🧹 [ORPHAN CLEANUP] Database file paths:`, Array.from(dbFilePaths).slice(0, 5));
+      console.log(`🧹 [ORPHAN CLEANUP] Database file IDs:`, Array.from(dbFileIds).slice(0, 5));
+      
+      let cleanupResults = {
+        orphanedOriginals: 0,
+        orphanedProcessed: 0,
+        totalFilesRemoved: 0,
+        errors: [] as string[]
+      };
+      
+      // 1. Clean up orphaned original files in uploads directory
+      try {
+        console.log(`🧹 [ORPHAN CLEANUP] Scanning upload directory: ${uploadDir}`);
+        const allFiles = await fileSystem.listFiles(uploadDir);
+        console.log(`🧹 [ORPHAN CLEANUP] Found ${allFiles.length} items in upload directory:`, allFiles);
+        
+        for (const filename of allFiles) {
+          // Skip directories and system files
+          if (filename === 'processed' || filename.startsWith('.')) continue;
+          
+          const fullPath = fileSystem.joinPaths(uploadDir, filename);
+          const stats = await fileSystem.getFileStats(fullPath);
+          
+          if (!stats.isDirectory()) {
+            // Check if this file path is in database
+            const hasFullPath = dbFilePaths.has(fullPath);
+            const hasEndingMatch = Array.from(dbFilePaths).some(dbPath => dbPath.endsWith(filename));
+            const isOrphaned = !hasFullPath && !hasEndingMatch;
+            
+            console.log(`🧹 [ORPHAN CLEANUP] Checking file: ${filename}`);
+            console.log(`🧹 [ORPHAN CLEANUP] Full path: ${fullPath}`);
+            console.log(`🧹 [ORPHAN CLEANUP] Has full path: ${hasFullPath}`);
+            console.log(`🧹 [ORPHAN CLEANUP] Has ending match: ${hasEndingMatch}`);
+            console.log(`🧹 [ORPHAN CLEANUP] Is orphaned: ${isOrphaned}`);
+            
+            if (isOrphaned) {
+              console.log(`🧹 [ORPHAN CLEANUP] Removing orphaned original file: ${filename}`);
+              const removed = await fileSystem.removeOriginalFile(fullPath);
+              if (removed) {
+                cleanupResults.orphanedOriginals++;
+                cleanupResults.totalFilesRemoved++;
+              } else {
+                cleanupResults.errors.push(`Failed to remove orphaned file: ${filename}`);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error cleaning orphaned original files:", error);
+        cleanupResults.errors.push(`Error scanning original files: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      
+      // 2. Clean up orphaned processed directories
+      try {
+        if (await fileSystem.fileExists(processedDir)) {
+          const processedDirs = await fileSystem.listFiles(processedDir);
+          
+          for (const dirName of processedDirs) {
+            // Check if this file ID exists in database
+            if (!dbFileIds.has(dirName)) {
+              const processedDirPath = fileSystem.joinPaths(processedDir, dirName);
+              console.log(`🧹 [ORPHAN CLEANUP] Removing orphaned processed directory: ${dirName}`);
+              const removed = await fileSystem.removeProcessedDirectory(parseInt(dirName));
+              if (removed) {
+                cleanupResults.orphanedProcessed++;
+                cleanupResults.totalFilesRemoved++;
+              } else {
+                cleanupResults.errors.push(`Failed to remove orphaned processed directory: ${dirName}`);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error cleaning orphaned processed directories:", error);
+        cleanupResults.errors.push(`Error scanning processed directories: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      
+      console.log(`🧹 [ORPHAN CLEANUP] Completed: ${cleanupResults.totalFilesRemoved} files removed, ${cleanupResults.errors.length} errors`);
+      
+      res.json({
+        message: `Orphaned file cleanup completed. Removed ${cleanupResults.totalFilesRemoved} orphaned files.`,
+        results: cleanupResults
+      });
+      
+    } catch (error) {
+      console.error("Error during orphaned file cleanup:", error);
+      res.status(500).json({
+        error: 'Server error during orphaned file cleanup',
+        message: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
   // Get all uploaded files (admin only)
   app.get("/api/system/uploads", isAdmin, async (req, res, next) => {
     try {
