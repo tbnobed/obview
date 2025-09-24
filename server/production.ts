@@ -11,6 +11,8 @@ const app = express();
 app.use(express.json({ limit: '51200mb' }));
 app.use(express.urlencoded({ extended: true, limit: '51200mb' }));
 
+// Setup authentication
+setupAuth(app);
 
 // Serve static files from the built frontend
 const staticPath = path.resolve(import.meta.dirname, "public");
