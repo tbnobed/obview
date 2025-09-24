@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Trash2, PlayCircle } from "lucide-react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +23,8 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   const [_, navigate] = useLocation();
   const { user } = useAuth();
   const deleteProjectMutation = useDeleteProject();
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [scrubPosition, setScrubPosition] = useState(0);
   
   // Fetch video processing data for optimal scrubbing (when video file exists)
   const { data: videoProcessing } = useQuery({
@@ -89,13 +92,19 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         {/* Video Preview Section */}
         {project.latestVideoFile ? (
           <div 
-            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden cursor-none"
+            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden cursor-crosshair group"
             onMouseMove={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
-              if (!video) return;
+              if (!video) {
+                console.log('🎬 [SCRUB] No video element found');
+                return;
+              }
               
               // Wait for video to be properly loaded
-              if (video.readyState < 1 || !isFinite(video.duration) || video.duration <= 0) return;
+              if (video.readyState < 1 || !isFinite(video.duration) || video.duration <= 0) {
+                console.log('🎬 [SCRUB] Video not ready:', video.readyState, video.duration);
+                return;
+              }
               
               const rect = e.currentTarget.getBoundingClientRect();
               if (rect.width === 0) return;
@@ -103,31 +112,49 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
               const newTime = video.duration * pos;
               
+              // Update visual position immediately for responsiveness
+              setScrubPosition(pos);
+              
               // More robust validation and scrubbing
-              if (isFinite(newTime) && newTime >= 0 && newTime <= video.duration && Math.abs(video.currentTime - newTime) > 0.1) {
+              if (isFinite(newTime) && newTime >= 0 && newTime <= video.duration) {
                 try {
                   video.currentTime = newTime;
+                  console.log(`🎬 [SCRUB] Seeking to: ${newTime.toFixed(2)}s (${(pos * 100).toFixed(1)}%)`);
                 } catch (error) {
-                  // Ignore seeking errors - video might still be loading
+                  console.warn('🎬 [SCRUB] Seek error:', error);
                 }
               }
             }}
             onMouseEnter={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
               if (!video) return;
+              
+              console.log('🎬 [SCRUB] Mouse entered - activating scrub mode');
+              setIsScrubbing(true);
+              
               // Ensure video is ready for scrubbing
               if (video.readyState >= 1 && video.paused) {
                 video.load(); // Refresh if needed
+              }
+              
+              // Set initial position based on current time
+              if (video.duration > 0) {
+                setScrubPosition(video.currentTime / video.duration);
               }
             }}
             onMouseLeave={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
               if (!video || !isFinite(video.duration)) return;
+              
+              console.log('🎬 [SCRUB] Mouse left - deactivating scrub mode');
+              setIsScrubbing(false);
+              setScrubPosition(0);
+              
               // Reset to 1 second preview when not hovering
               try {
                 video.currentTime = Math.min(1, video.duration || 0);
               } catch (error) {
-                // Ignore reset errors
+                console.warn('🎬 [SCRUB] Reset error:', error);
               }
             }}
             data-testid={`video-preview-container-${project.id}`}
@@ -182,10 +209,37 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 Your browser does not support the video tag.
               </video>
             )}
-            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+            {/* Scrub Progress Bar */}
+            {isScrubbing && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-75"
+                  style={{ width: `${scrubPosition * 100}%` }}
+                />
+                {/* Position indicator */}
+                <div 
+                  className="absolute top-0 w-0.5 h-1 bg-white transform -translate-x-0.5"
+                  style={{ left: `${scrubPosition * 100}%` }}
+                />
+              </div>
+            )}
+            
+            {/* Play Icon Overlay */}
+            <div className={`absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity ${
+              isScrubbing ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+            }`}>
               <PlayCircle className="h-10 w-10 text-white" />
             </div>
-            <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+            
+            {/* Scrubbing Status Indicator */}
+            {isScrubbing && (
+              <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-md font-medium">
+                📹 Scrubbing
+              </div>
+            )}
+            <div className={`absolute bottom-1.5 right-1.5 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded transition-opacity ${
+              isScrubbing ? 'opacity-50' : 'opacity-100'
+            }`}>
               {project.latestVideoFile.filename}
             </div>
           </div>
