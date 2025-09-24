@@ -14,7 +14,7 @@ export const useMediaFiles = (projectId?: number) => {
 // Get a specific file by ID
 export const useMediaFile = (fileId?: number) => {
   return useQuery<File>({
-    queryKey: ['/api/files', fileId],
+    queryKey: fileId ? [`/api/files/${fileId}`] : ['file', 'disabled'],
     queryFn: ({ signal }) => apiRequest('GET', `/api/files/${fileId}`, undefined, { signal }),
     enabled: !!fileId,
   });
