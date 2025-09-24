@@ -92,7 +92,10 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         {/* Video Preview Section */}
         {project.latestVideoFile ? (
           <div 
-            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden cursor-grab hover:cursor-grabbing group"
+            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden group"
+            style={{
+              cursor: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M8 5v10l8-5-8-5z' fill='%23ffffff'/%3e%3c/svg%3e") 10 10, pointer`
+            }}
             onMouseMove={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
               if (!video) {
