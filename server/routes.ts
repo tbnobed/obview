@@ -1079,36 +1079,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isLatestVersion: true
       });
       
-      // Log activity
-      await storage.logActivity({
-        action: "upload",
-        entityType: "file",
-        entityId: file.id,
-        userId: req.user.id,
-        metadata: { 
-          projectId,
-          filename: file.filename,
-          version: file.version,
-        },
-      });
-      
-      // Process video files automatically for better scrubbing performance
-      if (fileType === "video") {
-        // Create video processing record
-        const processing = await storage.createVideoProcessing({
-          fileId: file.id,
-          status: "pending"
-        });
-        
-        // Start processing in background (don't wait for completion)
-        processVideoInBackground(file, processing.id).catch(error => {
-          console.error(`[Video Processing] Failed for file ${file.id}:`, error);
-        });
-        
-        console.log(`[Video Processing] Started background processing for: ${file.filename}`);
-      }
-      
+      // IMMEDIATELY respond to client to prevent timeout
       res.status(201).json(file);
+      
+      // Continue with background operations after response is sent
+      try {
+        // Log activity
+        await storage.logActivity({
+          action: "upload",
+          entityType: "file",
+          entityId: file.id,
+          userId: req.user.id,
+          metadata: { 
+            projectId,
+            filename: file.filename,
+            version: file.version,
+          },
+        });
+        
+        // Process video files automatically for better scrubbing performance
+        if (fileType === "video") {
+          // Create video processing record
+          const processing = await storage.createVideoProcessing({
+            fileId: file.id,
+            status: "pending"
+          });
+          
+          // Start processing in background (don't wait for completion)
+          processVideoInBackground(file, processing.id).catch(error => {
+            console.error(`[Video Processing] Failed for file ${file.id}:`, error);
+          });
+          
+          console.log(`[Video Processing] Started background processing for: ${file.filename}`);
+        }
+      } catch (error) {
+        console.error(`[Upload] Background operations failed for file ${file.id}:`, error);
+        // Don't re-throw since response already sent
+      }
     } catch (error) {
       // Check specifically for integer overflow errors which might indicate file size issues
       if (error.message && error.message.includes("out of range for type integer")) {
