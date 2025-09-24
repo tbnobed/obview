@@ -89,7 +89,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         {/* Video Preview Section */}
         {project.latestVideoFile ? (
           <div 
-            className="relative aspect-video bg-black rounded-t-none mx-4 mb-2 overflow-hidden"
+            className="relative aspect-video bg-gray-800 rounded-t-none mx-4 mb-2 overflow-hidden"
             onMouseMove={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
               if (!video || !isFinite(video.duration) || video.duration <= 0) return;
@@ -113,38 +113,38 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             }}
             data-testid={`video-preview-container-${project.id}`}
           >
-            {/* Use lightweight thumbnail sprite for project cards instead of heavy video */}
-            {videoProcessing?.status === 'completed' && videoProcessing.thumbnailSpritePath ? (
+            {/* Wait for processing data before showing media */}
+            {videoProcessing === undefined ? (
+              // Loading state - show placeholder while processing query loads
+              <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                <div className="text-center text-gray-400">
+                  <div className="w-8 h-8 border-2 border-gray-600 border-t-white rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-xs">Loading preview...</p>
+                </div>
+              </div>
+            ) : videoProcessing?.status === 'completed' && videoProcessing.thumbnailSpritePath ? (
+              // Use optimized sprite when available
               <img
                 className="w-full h-full object-cover"
                 src={`/api/files/${project.latestVideoFile.id}/sprite`}
                 alt={project.latestVideoFile.filename}
                 data-testid={`sprite-preview-${project.id}`}
-                onLoad={() => console.log(`🎬 [PROJECT CARD] Sprite loaded for project ${project.id}: ${project.latestVideoFile?.filename}`)}
+                onLoad={() => console.log(`🎬 [PROJECT CARD] ✅ Sprite loaded for project ${project.id}: ${project.latestVideoFile?.filename}`)}
                 onError={(e) => {
-                  console.error(`🎬 [PROJECT CARD] Sprite error for project ${project.id}:`, e);
-                  // Fallback to video if sprite fails
-                  const container = e.currentTarget.parentElement;
-                  if (container) {
-                    container.innerHTML = `
-                      <video className="w-full h-full object-cover" preload="metadata" muted>
-                        <source src="/api/files/${project.latestVideoFile.id}/content" type="video/mp4" />
-                      </video>
-                    `;
-                  }
+                  console.error(`🎬 [PROJECT CARD] ❌ Sprite failed for project ${project.id}:`, e);
                 }}
               />
             ) : (
+              // Fallback to video only after confirming no sprite available
               <video
                 className="w-full h-full object-cover"
                 preload="metadata"
                 muted
                 data-testid={`video-preview-${project.id}`}
                 onLoadedMetadata={(e) => {
-                  // Set video to show frame at 1 second for preview
                   const video = e.target as HTMLVideoElement;
                   video.currentTime = Math.min(1, video.duration || 0);
-                  console.log(`🎬 [PROJECT CARD] Video fallback loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
+                  console.log(`🎬 [PROJECT CARD] 📺 Video fallback for project ${project.id}: ${project.latestVideoFile?.filename}`);
                 }}
               >
                 <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" />
