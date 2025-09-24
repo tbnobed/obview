@@ -3334,8 +3334,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const stats = await fileSystem.getFileStats(fullPath);
           
           if (!stats.isDirectory()) {
-            // Check if this file path is in database
-            const hasFullPath = dbFilePaths.has(fullPath);
+            // Check if this file path is in database  
+            // Convert to absolute path for comparison
+            const absolutePath = path.resolve(process.cwd(), fullPath);
+            const hasFullPath = dbFilePaths.has(fullPath) || dbFilePaths.has(absolutePath);
             const hasEndingMatch = Array.from(dbFilePaths).some(dbPath => dbPath.endsWith(filename));
             const isOrphaned = !hasFullPath && !hasEndingMatch;
             
@@ -3387,11 +3389,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cleanupResults.errors.push(`Error scanning processed directories: ${error instanceof Error ? error.message : String(error)}`);
       }
       
+      // 3. Clean up stale database entries (files in DB but not on disk)
+      try {
+        console.log(`🧹 [ORPHAN CLEANUP] Checking for stale database entries...`);
+        let staleDbEntries = 0;
+        
+        for (const dbFile of dbFiles) {
+          const fileExistsOnDisk = await fileSystem.fileExists(dbFile.filePath);
+          
+          if (!fileExistsOnDisk) {
+            console.log(`🧹 [ORPHAN CLEANUP] Found stale DB entry for missing file: ${dbFile.filePath} (ID: ${dbFile.id})`);
+            // Mark the file as unavailable instead of deleting the database record
+            // This preserves project structure and metadata while marking file as missing
+            await storage.updateFile(dbFile.id, { isAvailable: false });
+            staleDbEntries++;
+            console.log(`🧹 [ORPHAN CLEANUP] Marked file ${dbFile.id} as unavailable in database`);
+          }
+        }
+        
+        cleanupResults.totalFilesRemoved += staleDbEntries;
+        console.log(`🧹 [ORPHAN CLEANUP] Marked ${staleDbEntries} stale database entries as unavailable`);
+        
+      } catch (error) {
+        console.error("Error cleaning stale database entries:", error);
+        cleanupResults.errors.push(`Error cleaning database entries: ${error instanceof Error ? error.message : String(error)}`);
+      }
+
       console.log(`🧹 [ORPHAN CLEANUP] Completed: ${cleanupResults.totalFilesRemoved} files removed, ${cleanupResults.errors.length} errors`);
       
       res.json({
         message: `Orphaned file cleanup completed. Removed ${cleanupResults.totalFilesRemoved} orphaned files.`,
-        results: cleanupResults
+        results: {
+          ...cleanupResults,
+          staleDbEntries: cleanupResults.totalFilesRemoved - cleanupResults.orphanedOriginals - cleanupResults.orphanedProcessed
+        }
       });
       
     } catch (error) {
