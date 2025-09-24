@@ -314,10 +314,11 @@ export class VideoProcessor {
         '-i', inputPath,
         '-vf', [
           `fps=1/${interval}`,
-          'scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:(ow-iw)/2:(oh-ih)/2',
+          'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
           `tile=${cols}x${rows}`
         ].join(','),
         '-frames:v', '1',
+        '-q:v', '1', // Highest quality (1-31, lower is better)
         '-f', 'image2',
         '-y',
         outputPath
@@ -330,8 +331,8 @@ export class VideoProcessor {
       const spriteInfo = {
         cols,
         rows,
-        thumbnailWidth: 320,
-        thumbnailHeight: 180,
+        thumbnailWidth: 800,
+        thumbnailHeight: 450,
         interval,
         thumbnailCount,
         duration: metadata.duration
