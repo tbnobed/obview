@@ -114,19 +114,16 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               cursor: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M8 5v10l8-5-8-5z' fill='%23ffffff'/%3e%3c/svg%3e") 10 10, pointer`
             }}
             onMouseMove={(e) => {
-              if (!spriteMetadata || !project.latestVideoFile) return;
-              
               const rect = e.currentTarget.getBoundingClientRect();
               if (rect.width === 0) return;
               
               const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
               setScrubPosition(pos);
               
+              if (!spriteMetadata || !project.latestVideoFile) return;
               console.log(`🎬 [PROJECT-SPRITE-SCRUB] Position: ${(pos * 100).toFixed(1)}%`);
             }}
             onMouseEnter={() => {
-              if (!spriteMetadata || !project.latestVideoFile) return;
-              
               console.log('🎬 [PROJECT-SPRITE-SCRUB] Mouse entered - activating sprite scrub mode');
               setIsScrubbing(true);
               setScrubPosition(0);
