@@ -67,7 +67,12 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
       await apiRequest("DELETE", `/api/files/${fileId}`);
     },
     onSuccess: () => {
+      // Comprehensive cache invalidation to ensure UI updates immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'files'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
+      
       toast({
         title: "File deleted",
         description: "The file has been successfully deleted from the project",

@@ -81,7 +81,11 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/projects', file.projectId, 'files'] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects', file.projectId] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/files', file.id] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}/files`] });
+      // Invalidate file-specific queries (comments, processing, etc.)
+      queryClient.invalidateQueries({ queryKey: ['/api/files', file.id, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/files', file.id, 'processing'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/files', file.id, 'approvals'] });
       
       toast({
         title: "File deleted",
@@ -108,7 +112,7 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
   
   // Load sprite metadata for video files
   useEffect(() => {
-    if (file.fileType === 'video' && processing?.status === 'completed') {
+    if (file.fileType === 'video' && (processing as any)?.status === 'completed') {
       fetch(`/api/files/${file.id}/sprite-metadata`)
         .then(res => res.ok ? res.json() : null)
         .then(metadata => {
@@ -119,7 +123,7 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
         })
         .catch(err => console.warn(`🎬 [SPRITE] Failed to load metadata for file ${file.id}:`, err));
     }
-  }, [file.id, file.fileType, processing?.status]);
+  }, [file.id, file.fileType, (processing as any)?.status]);
   
   // Load sprite for video files, fallback to regular thumbnail for others
   const thumbnailSrc = file.fileType === 'video' ? `/api/files/${file.id}/sprite` : null;

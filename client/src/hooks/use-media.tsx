@@ -14,7 +14,8 @@ export const useMediaFiles = (projectId?: number) => {
 // Get a specific file by ID
 export const useMediaFile = (fileId?: number) => {
   return useQuery<File>({
-    queryKey: [`/api/files/${fileId}`],
+    queryKey: ['/api/files', fileId],
+    queryFn: ({ signal }) => apiRequest('GET', `/api/files/${fileId}`, undefined, { signal }),
     enabled: !!fileId,
   });
 };
@@ -67,11 +68,16 @@ export const useDeleteFile = (projectId: number) => {
       await apiRequest("DELETE", `/api/files/${fileId}`);
     },
     onSuccess: () => {
+      // Comprehensive cache invalidation to ensure UI updates immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'files'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
+      
       toast({
         title: "File deleted",
         description: "The file has been deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
     },
     onError: (error: Error) => {
       toast({
