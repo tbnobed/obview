@@ -60,13 +60,14 @@ export class VideoProcessor {
     // Generate I-frame only version for smooth scrubbing
     const scrubPromise = this.generateScrubVersion(inputPath, scrubDir, filename);
     
-    // Skip sprite generation - not needed for scrubbing
-    // const spritePromise = this.generateThumbnailSprite(inputPath, thumbsDir, filename, metadata);
+    // Generate sprite for hover scrubbing
+    const spritePromise = this.generateThumbnailSprite(inputPath, thumbsDir, filename, metadata);
     
     // Execute all processing in parallel
-    const [qualities, scrubVersion] = await Promise.all([
+    const [qualities, scrubVersion, spriteResult] = await Promise.all([
       Promise.all(qualityPromises),
-      scrubPromise
+      scrubPromise,
+      spritePromise
     ]);
     
     console.log(`[VideoProcessor] Processing completed for: ${filename}`);
@@ -74,8 +75,8 @@ export class VideoProcessor {
     return {
       qualities: qualities.filter(q => q !== null) as VideoQuality[],
       scrubVersion,
-      thumbnailSprite: null, // No sprite generation
-      spriteMetadata: null,
+      thumbnailSprite: spriteResult.path,
+      spriteMetadata: spriteResult.metadata,
       duration: metadata.duration,
       frameRate: metadata.frameRate
     };
