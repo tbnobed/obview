@@ -55,6 +55,10 @@ export default function MediaPlayer({
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
+  // Sprite scrubbing state
+  const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
+  const [spriteLoaded, setSpriteLoaded] = useState(false);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const mediaContainerRef = useRef<HTMLDivElement>(null);
@@ -107,6 +111,24 @@ export default function MediaPlayer({
     queryFn: () => file ? apiRequest('GET', `/api/files/${file.id}/approvals`) : Promise.resolve([]),
     enabled: !!user && !!file,
   });
+  
+  // Load sprite metadata for video files
+  useEffect(() => {
+    if (file && file.fileType === 'video' && videoProcessing?.status === 'completed') {
+      fetch(`/api/files/${file.id}/sprite-metadata`)
+        .then(res => res.ok ? res.json() : null)
+        .then(metadata => {
+          if (metadata) {
+            setSpriteMetadata(metadata);
+            console.log(`🎬 [PLAYER-SPRITE] Loaded metadata for file ${file.id}:`, metadata);
+          }
+        })
+        .catch(err => console.warn(`🎬 [PLAYER-SPRITE] Failed to load metadata for file ${file.id}:`, err));
+    } else {
+      setSpriteMetadata(null);
+      setSpriteLoaded(false);
+    }
+  }, [file?.id, file?.fileType, videoProcessing?.status]);
   
   // Find user's approval (if any)
   const userApproval = approvals && approvals.length > 0 ? approvals[0] : null;
@@ -1532,8 +1554,8 @@ export default function MediaPlayer({
         </DialogContent>
       </Dialog>
 
-      {/* Portal-based scrub preview that can extend beyond progress bar */}
-      {showScrubPreview && duration > 0 && file?.fileType === 'video' && createPortal(
+      {/* Portal-based sprite scrub preview that can extend beyond progress bar */}
+      {showScrubPreview && duration > 0 && file?.fileType === 'video' && spriteMetadata && createPortal(
         <div
           ref={scrubPreviewRef}
           className="pointer-events-none z-50"
@@ -1545,31 +1567,49 @@ export default function MediaPlayer({
         >
           <div className="p-2">
             <div className="relative">
-              <video
-                ref={previewVideoRef}
-                className="w-48 h-30 rounded object-cover bg-gray-800"
-                onLoadedData={handlePreviewVideoLoad}
-                onError={(e) => {
-                  console.error('🎬 [SCRUB PREVIEW] Video error:', e);
-                  console.error('🎬 [SCRUB PREVIEW] Error details:', e.currentTarget.error);
+              {/* Hidden image to detect sprite loading */}
+              <img
+                src={`/api/files/${file.id}/sprite`}
+                className="hidden"
+                onLoad={() => {
+                  console.log(`🎬 [PLAYER-SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
+                  setSpriteLoaded(true);
                 }}
-                onStalled={() => console.log('🎬 [SCRUB PREVIEW] Video stalled')}
-                onSuspend={() => console.log('🎬 [SCRUB PREVIEW] Video suspended')}
-                onAbort={() => console.log('🎬 [SCRUB PREVIEW] Video aborted')}
-                muted
-                preload="metadata"
-                data-testid="scrub-preview-video"
-              >
-                {/* Use I-frame optimized scrub version for instant seeking */}
-                {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
-                  <source src={`/api/files/${file.id}/scrub`} type="video/mp4" />
-                ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p') ? (
-                  /* Use 720p proxy for smooth scrubbing */
-                  <source src={`/api/files/${file.id}/qualities/720p`} type="video/mp4" />
-                ) : null}
-                {/* Fallback to original file */}
-                <source src={`/api/files/${file.id}/content`} type="video/mp4" />
-              </video>
+                onError={() => {
+                  console.error(`🎬 [PLAYER-SPRITE] ❌ Sprite error for file ${file.id}`);
+                  setSpriteLoaded(false);
+                }}
+                alt=""
+              />
+              
+              {/* Sprite-based scrub preview */}
+              {spriteLoaded ? (
+                <div
+                  className="w-48 h-32 rounded object-cover bg-gray-800 pointer-events-none"
+                  data-testid="sprite-scrub-preview"
+                  style={{
+                    backgroundImage: `url(/api/files/${file.id}/sprite)`,
+                    backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
+                    backgroundPosition: (() => {
+                      // Calculate which thumbnail to show based on scrub time
+                      const progress = scrubPreviewTime / duration;
+                      const thumbnailIndex = Math.floor(progress * (spriteMetadata.thumbnailCount - 1));
+                      const col = thumbnailIndex % spriteMetadata.cols;
+                      const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
+                      
+                      // Calculate background position (negative values to shift the sprite)
+                      const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
+                      const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
+                      
+                      return `${xPercent}% ${yPercent}%`;
+                    })()
+                  }}
+                />
+              ) : (
+                <div className="w-48 h-32 rounded bg-gray-800 flex items-center justify-center">
+                  <FileVideo className="h-8 w-8 text-gray-500" />
+                </div>
+              )}
             </div>
             <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
               {formatTime(scrubPreviewTime)}
