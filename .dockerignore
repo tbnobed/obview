@@ -34,6 +34,10 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
+# Media files and uploads (exclude from build context)
+uploads
+attached_assets
+
 # Debug files
 npm-debug.log*
 yarn-debug.log*
