@@ -11,9 +11,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import { insertUserSchema } from "@shared/schema";
-import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import Logo from "@/components/ui/logo";
+import backgroundVideo from "@assets/media_tiles_1758739085369.mp4";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -49,7 +49,7 @@ export default function AuthPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const invitedEmail = searchParams.get("email") || "";
   const invitedName = searchParams.get("name") || "";
-  const invitedRole = searchParams.get("role") || "viewer"; // Default to viewer if no role provided
+  const invitedRole = searchParams.get("role") || "viewer";
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -65,9 +65,9 @@ export default function AuthPage() {
       username: "",
       password: "",
       confirmPassword: "",
-      email: invitedEmail, // Pre-fill with invited email if available
-      name: invitedName, // Pre-fill with invited name if available
-      role: invitedRole, // Use the role from the invitation
+      email: invitedEmail,
+      name: invitedName,
+      role: invitedRole,
     },
   });
 
@@ -92,7 +92,6 @@ export default function AuthPage() {
     console.log("Login form submitted with data:", data);
     
     try {
-      // Try direct fetch first for debugging
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -107,9 +106,7 @@ export default function AuthPage() {
       if (response.ok) {
         try {
           const userResponse = JSON.parse(responseText);
-          // Manual update of query cache
           queryClient.setQueryData(["/api/user"], userResponse);
-          // Navigate to home page
           setLocation(returnTo);
         } catch (parseError) {
           console.error("Error parsing login response:", parseError);
@@ -119,21 +116,17 @@ export default function AuthPage() {
       console.error("Login fetch error:", error);
     }
     
-    // Also use the mutation as a backup
     loginMutation.mutate(data, {
       onSuccess: () => {
-        // After login, navigate to the returnTo or home page
         setLocation(returnTo);
       }
     });
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
-    // Remove confirmPassword as it's not part of the API schema
     const { confirmPassword, ...registerData } = data;
     registerMutation.mutate(registerData, {
       onSuccess: () => {
-        // After registration, navigate to the returnTo or home page
         setLocation(returnTo);
       }
     });
@@ -154,91 +147,195 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-neutral-50 dark:bg-gray-900">
-      {/* Left Side - Forms */}
-      <div className="flex flex-col justify-center flex-1 px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
-        <div className="w-full max-w-sm mx-auto lg:w-96">
-          <div className="mb-24 flex justify-center h-40">
-            <div className="h-32 mb-6">
-              <Logo size="lg" withText={false} className="scale-[5]" />
-            </div>
-          </div>
+    <div className="relative min-h-screen flex items-center justify-center">
+      {/* Background Video */}
+      <video
+        className="absolute inset-0 w-full h-full object-cover"
+        autoPlay
+        loop
+        muted
+        playsInline
+      >
+        <source src={backgroundVideo} type="video/mp4" />
+      </video>
+      
+      {/* Dark overlay for better text readability */}
+      <div className="absolute inset-0 bg-black/50"></div>
+      
+      {/* Content Container */}
+      <div className="relative z-10 w-full max-w-md mx-auto px-6">
+        {/* Logo */}
+        <div className="flex justify-center mb-12">
+          <Logo size="lg" withText={false} className="text-white scale-[4]" />
+        </div>
 
-          {showResetForm ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Reset Password</CardTitle>
-                <CardDescription>
-                  Enter your email and we'll send you a link to reset your password.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...resetPasswordForm}>
-                  <form onSubmit={resetPasswordForm.handleSubmit(onResetPasswordSubmit)} className="space-y-4">
-                    <FormField
-                      control={resetPasswordForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="you@example.com" type="email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+        {/* Auth Forms */}
+        {showResetForm ? (
+          <Card className="backdrop-blur-sm bg-white/95 dark:bg-gray-900/95 border-white/20">
+            <CardHeader>
+              <CardTitle className="text-center">Reset Password</CardTitle>
+              <CardDescription className="text-center">
+                Enter your email and we'll send you a link to reset your password.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...resetPasswordForm}>
+                <form onSubmit={resetPasswordForm.handleSubmit(onResetPasswordSubmit)} className="space-y-4">
+                  <FormField
+                    control={resetPasswordForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="you@example.com" type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-between pt-2">
+                    <Button type="button" variant="ghost" onClick={() => setShowResetForm(false)}>
+                      Back to login
+                    </Button>
+                    <Button type="submit" disabled={resetPasswordRequestMutation.isPending}>
+                      {resetPasswordRequestMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
-                    />
-                    <div className="flex justify-between pt-2">
-                      <Button type="button" variant="ghost" onClick={() => setShowResetForm(false)}>
-                        Back to login
-                      </Button>
-                      <Button type="submit" disabled={resetPasswordRequestMutation.isPending}>
-                        {resetPasswordRequestMutation.isPending && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        Reset Password
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          ) : (
-            <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className={`grid w-full mb-6 bg-neutral-100 dark:bg-gray-800 ${isRegistrationDisabled ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                      Reset Password
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        ) : (
+          <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
+            {!isRegistrationDisabled && (
+              <TabsList className="grid w-full mb-6 bg-white/10 backdrop-blur-sm border-white/20">
                 <TabsTrigger 
                   value="login"
-                  className="data-[state=active]:bg-[#026d55] data-[state=active]:text-white hover:bg-[#025a4710] dark:data-[state=active]:bg-[#026d55] dark:data-[state=active]:text-white"
+                  className="data-[state=active]:bg-[#026d55] data-[state=active]:text-white text-white/80 hover:text-white"
                 >
                   Login
                 </TabsTrigger>
-                {!isRegistrationDisabled && (
-                  <TabsTrigger 
-                    value="register"
-                    className="data-[state=active]:bg-[#026d55] data-[state=active]:text-white hover:bg-[#025a4710] dark:data-[state=active]:bg-[#026d55] dark:data-[state=active]:text-white"
-                  >
-                    Register
-                  </TabsTrigger>
-                )}
+                <TabsTrigger 
+                  value="register"
+                  className="data-[state=active]:bg-[#026d55] data-[state=active]:text-white text-white/80 hover:text-white"
+                >
+                  Register
+                </TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="login">
-                <Card>
+            )}
+            
+            <TabsContent value="login">
+              <Card className="backdrop-blur-sm bg-white/95 dark:bg-gray-900/95 border-white/20">
+                <CardHeader>
+                  <CardTitle className="text-center">Welcome Back</CardTitle>
+                  <CardDescription className="text-center">
+                    Sign in to your account
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...loginForm}>
+                    <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                      <FormField
+                        control={loginForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username or Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter your username" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={loginForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Enter your password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-end pt-2">
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          className="px-0 text-sm"
+                          onClick={() => setShowResetForm(true)}
+                        >
+                          Forgot password?
+                        </Button>
+                      </div>
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-[#026d55] hover:bg-[#025a47] text-white"
+                        disabled={loginMutation.isPending}
+                      >
+                        {loginMutation.isPending && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Sign In
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+                {!isRegistrationDisabled && (
+                  <CardFooter className="flex justify-center">
+                    <div className="text-sm text-center text-neutral-600 dark:text-neutral-400">
+                      Don't have an account?{" "}
+                      <Button 
+                        variant="link" 
+                        className="p-0 text-[#026d55] hover:text-[#025a47]" 
+                        onClick={() => setActiveTab("register")}
+                      >
+                        Create one now
+                      </Button>
+                    </div>
+                  </CardFooter>
+                )}
+              </Card>
+            </TabsContent>
+            
+            {!isRegistrationDisabled && (
+              <TabsContent value="register">
+                <Card className="backdrop-blur-sm bg-white/95 dark:bg-gray-900/95 border-white/20">
                   <CardHeader>
-                    <CardTitle>Login to your account</CardTitle>
-                    <CardDescription>
-                      Enter your username and password to sign in
+                    <CardTitle className="text-center">Create Account</CardTitle>
+                    <CardDescription className="text-center">
+                      Join the platform
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Form {...loginForm}>
-                      <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                    <Form {...registerForm}>
+                      <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                         <FormField
-                          control={loginForm.control}
+                          control={registerForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Full Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="John Doe" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
                           name="username"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Username or Email</FormLabel>
+                              <FormLabel>Username</FormLabel>
                               <FormControl>
                                 <Input placeholder="johndoe" {...field} />
                               </FormControl>
@@ -247,7 +344,20 @@ export default function AuthPage() {
                           )}
                         />
                         <FormField
-                          control={loginForm.control}
+                          control={registerForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="john@example.com" type="email" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
                           name="password"
                           render={({ field }) => (
                             <FormItem>
@@ -259,193 +369,50 @@ export default function AuthPage() {
                             </FormItem>
                           )}
                         />
-                        <div className="flex justify-end pt-2">
-                          <Button 
-                            type="button" 
-                            variant="link" 
-                            className="px-0 text-sm"
-                            onClick={() => setShowResetForm(true)}
-                          >
-                            Forgot password?
-                          </Button>
-                        </div>
+                        <FormField
+                          control={registerForm.control}
+                          name="confirmPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Confirm Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <input type="hidden" {...registerForm.register("role")} value="viewer" />
                         <Button 
                           type="submit" 
-                          className="w-full bg-[#026d55] hover:bg-[#025a47] dark:bg-[#026d55] dark:hover:bg-[#025a47] dark:text-white text-white"
-                          disabled={loginMutation.isPending}
+                          className="w-full bg-[#026d55] hover:bg-[#025a47] text-white"
+                          disabled={registerMutation.isPending}
                         >
-                          {loginMutation.isPending && (
+                          {registerMutation.isPending && (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           )}
-                          Sign in
+                          Create Account
                         </Button>
                       </form>
                     </Form>
                   </CardContent>
-                  {!isRegistrationDisabled && (
-                    <CardFooter className="flex flex-col space-y-4">
-                      <div className="text-sm text-center text-neutral-500 dark:text-neutral-400">
-                        Don't have an account?{" "}
-                        <Button 
-                          variant="link" 
-                          className="p-0" 
-                          onClick={() => setActiveTab("register")}
-                        >
-                          Create one now
-                        </Button>
-                      </div>
-                    </CardFooter>
-                  )}
+                  <CardFooter className="flex justify-center">
+                    <div className="text-sm text-center text-neutral-600 dark:text-neutral-400">
+                      Already have an account?{" "}
+                      <Button 
+                        variant="link" 
+                        className="p-0 text-[#026d55] hover:text-[#025a47]" 
+                        onClick={() => setActiveTab("login")}
+                      >
+                        Sign in instead
+                      </Button>
+                    </div>
+                  </CardFooter>
                 </Card>
               </TabsContent>
-              
-              {!isRegistrationDisabled && (
-                <TabsContent value="register">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Create an account</CardTitle>
-                      <CardDescription>
-                        Fill in your details to register a new account
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Form {...registerForm}>
-                        <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                          <FormField
-                            control={registerForm.control}
-                            name="name"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Full Name</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="John Doe" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={registerForm.control}
-                            name="username"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Username</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="johndoe" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={registerForm.control}
-                            name="email"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="john@example.com" type="email" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={registerForm.control}
-                            name="password"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Password</FormLabel>
-                                <FormControl>
-                                  <Input type="password" placeholder="••••••••" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={registerForm.control}
-                            name="confirmPassword"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Confirm Password</FormLabel>
-                                <FormControl>
-                                  <Input type="password" placeholder="••••••••" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <input type="hidden" {...registerForm.register("role")} value="viewer" />
-                          <Button 
-                            type="submit" 
-                            className="w-full bg-[#026d55] hover:bg-[#025a47] dark:bg-[#026d55] dark:hover:bg-[#025a47] dark:text-white text-white"
-                            disabled={registerMutation.isPending}
-                          >
-                            {registerMutation.isPending && (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            )}
-                            Create Account
-                          </Button>
-                        </form>
-                      </Form>
-                    </CardContent>
-                    <CardFooter className="flex flex-col space-y-4">
-                      <div className="text-sm text-center text-neutral-500 dark:text-neutral-400">
-                        Already have an account?{" "}
-                        <Button 
-                          variant="link" 
-                          className="p-0" 
-                          onClick={() => setActiveTab("login")}
-                        >
-                          Sign in instead
-                        </Button>
-                      </div>
-                    </CardFooter>
-                  </Card>
-                </TabsContent>
-              )}
-            </Tabs>
-          )}
-        </div>
-      </div>
-      
-      {/* Right Side - Hero Area */}
-      <div className="relative flex-1 hidden w-0 lg:block">
-        <div className="absolute inset-0 bg-gradient-to-r from-teal-700 to-teal-500 flex flex-col items-center justify-center text-white px-12">
-          <div className="max-w-md">
-            <div className="flex justify-center w-full mb-24">
-              <div className="h-32 mb-6">
-                <Logo size="lg" withText={false} className="text-white scale-[5]" />
-              </div>
-            </div>
-            <h1 className="text-4xl font-bold mb-6">Streamline Your Media Review Process</h1>
-            <p className="text-lg mb-8 text-white/90">
-              Obviu.io is a powerful platform for teams to collaborate on media projects. 
-              Upload videos, leave timestamped comments, and get approvals—all in one place.
-            </p>
-            <ul className="space-y-3">
-              <li className="flex items-center">
-                <svg className="h-6 w-6 mr-2 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Timestamped comments & feedback
-              </li>
-              <li className="flex items-center">
-                <svg className="h-6 w-6 mr-2 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Simple approval workflow
-              </li>
-              <li className="flex items-center">
-                <svg className="h-6 w-6 mr-2 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Team collaboration tools
-              </li>
-            </ul>
-          </div>
-        </div>
+            )}
+          </Tabs>
+        )}
       </div>
     </div>
   );
