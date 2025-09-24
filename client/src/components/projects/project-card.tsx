@@ -78,10 +78,10 @@ export default function ProjectCard({ project }: ProjectCardProps) {
 
   return (
     <Link href={`/projects/${project.id}`}>
-      <Card className="cursor-pointer transition-shadow hover:shadow-md">
-        <CardHeader className="pb-2">
+      <Card className="cursor-pointer transition-shadow hover:shadow-md text-sm">
+        <CardHeader className="pb-1.5 px-4 pt-4">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg font-semibold line-clamp-1">{project.name}</CardTitle>
+            <CardTitle className="text-base font-semibold line-clamp-1">{project.name}</CardTitle>
             {getStatusBadge(project.status)}
           </div>
         </CardHeader>
@@ -89,7 +89,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         {/* Video Preview Section */}
         {project.latestVideoFile ? (
           <div 
-            className="relative aspect-video bg-gray-800 rounded-t-none mx-4 mb-2 overflow-hidden"
+            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden"
             onMouseMove={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
               if (!video || !isFinite(video.duration) || video.duration <= 0) return;
@@ -151,24 +151,24 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               </video>
             )}
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-              <PlayCircle className="h-12 w-12 text-white" />
+              <PlayCircle className="h-10 w-10 text-white" />
             </div>
-            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+            <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
               {project.latestVideoFile.filename}
             </div>
           </div>
         ) : (
-          <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-t-none mx-4 mb-2 flex items-center justify-center">
+          <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-t-none mx-3 mb-1.5 flex items-center justify-center">
             <div className="text-center text-gray-400 dark:text-gray-500">
-              <PlayCircle className="h-12 w-12 mx-auto mb-2" />
-              <p className="text-sm">No video files</p>
+              <PlayCircle className="h-10 w-10 mx-auto mb-2" />
+              <p className="text-xs">No video files</p>
             </div>
           </div>
         )}
         
-        <CardContent>
+        <CardContent className="px-4 py-3">
           <p className={cn(
-            "text-neutral-600 text-sm mb-4",
+            "text-neutral-600 text-xs mb-3",
             project.description ? "line-clamp-2" : "italic text-neutral-400"
           )}>
             {project.description || "No description provided"}
@@ -190,7 +190,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="pt-2 border-t">
+        <CardFooter className="pt-1.5 px-4 pb-3 border-t">
           <div className="w-full flex justify-between items-center">
             <span className="text-xs text-neutral-500">
               Click to view project
