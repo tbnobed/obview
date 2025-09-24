@@ -262,18 +262,18 @@ export class VideoProcessor {
     try {
       const outputPath = path.join(outputDir, `${filename}_scrub.mp4`);
       
-      // Generate I-frame only version for instant seeking
+      // Generate I-frame only version for instant seeking - ultra-optimized for speed
       const args = [
         '-i', inputPath,
         '-c:v', 'libx264',
         '-preset', 'ultrafast', // Fast encoding for scrub version
-        '-crf', '28', // Lower quality for scrub version
+        '-crf', '32', // Higher compression for smaller file size
         '-g', '1', // I-frame only (keyframe interval = 1)
         '-keyint_min', '1',
         '-sc_threshold', '0',
-        '-vf', 'scale=854:480:force_original_aspect_ratio=decrease,pad=854:480:(ow-iw)/2:(oh-ih)/2',
+        '-vf', 'scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2', // 360p for faster loading
         '-c:a', 'aac',
-        '-b:a', '64k',
+        '-b:a', '32k', // Ultra-low audio bitrate for scrub version
         '-movflags', '+faststart',
         '-f', 'mp4',
         '-y',
