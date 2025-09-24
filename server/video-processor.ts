@@ -60,14 +60,13 @@ export class VideoProcessor {
     // Generate I-frame only version for smooth scrubbing
     const scrubPromise = this.generateScrubVersion(inputPath, scrubDir, filename);
     
-    // Generate thumbnail sprite for hover previews
-    const spritePromise = this.generateThumbnailSprite(inputPath, thumbsDir, filename, metadata);
+    // Skip sprite generation - not needed for scrubbing
+    // const spritePromise = this.generateThumbnailSprite(inputPath, thumbsDir, filename, metadata);
     
     // Execute all processing in parallel
-    const [qualities, scrubVersion, thumbnailSprite] = await Promise.all([
+    const [qualities, scrubVersion] = await Promise.all([
       Promise.all(qualityPromises),
-      scrubPromise,
-      spritePromise
+      scrubPromise
     ]);
     
     console.log(`[VideoProcessor] Processing completed for: ${filename}`);
@@ -75,8 +74,8 @@ export class VideoProcessor {
     return {
       qualities: qualities.filter(q => q !== null) as VideoQuality[],
       scrubVersion,
-      thumbnailSprite: thumbnailSprite.path,
-      spriteMetadata: thumbnailSprite.metadata,
+      thumbnailSprite: null, // No sprite generation
+      spriteMetadata: null,
       duration: metadata.duration,
       frameRate: metadata.frameRate
     };
@@ -262,18 +261,17 @@ export class VideoProcessor {
     try {
       const outputPath = path.join(outputDir, `${filename}_scrub.mp4`);
       
-      // Generate I-frame only version for instant seeking - ultra-optimized for speed
+      // Generate I-frame only version for instant seeking - ultra-lightweight, no audio
       const args = [
         '-i', inputPath,
         '-c:v', 'libx264',
         '-preset', 'ultrafast', // Fast encoding for scrub version
-        '-crf', '32', // Higher compression for smaller file size
+        '-crf', '35', // Even higher compression for minimal file size
         '-g', '1', // I-frame only (keyframe interval = 1)
         '-keyint_min', '1',
         '-sc_threshold', '0',
-        '-vf', 'scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2', // 360p for faster loading
-        '-c:a', 'aac',
-        '-b:a', '32k', // Ultra-low audio bitrate for scrub version
+        '-vf', 'scale=320:180:force_original_aspect_ratio=decrease,pad=320:180:(ow-iw)/2:(oh-ih)/2', // 180p for ultra-fast loading
+        '-an', // No audio at all
         '-movflags', '+faststart',
         '-f', 'mp4',
         '-y',

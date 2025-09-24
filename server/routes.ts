@@ -1392,6 +1392,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ============ VIDEO PROCESSING API ENDPOINTS ============
   
+  // Trigger reprocessing of an existing video file
+  app.post("/api/files/:id/reprocess", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+
+      console.log(`🎬 [REPROCESS] Request for file ID: ${fileId}`);
+
+      // Get the file
+      const file = await storage.getFile(fileId);
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      // Check if it's a video file
+      if (!file.mimeType.startsWith('video/')) {
+        return res.status(400).json({ message: "File is not a video" });
+      }
+
+      // Check if file exists on disk
+      if (!existsSync(file.filePath)) {
+        return res.status(404).json({ message: "File not found on disk" });
+      }
+
+      // Get or create processing record
+      let processing = await storage.getVideoProcessing(fileId);
+      if (!processing) {
+        processing = await storage.createVideoProcessing({
+          fileId: file.id,
+          status: "pending"
+        });
+      } else {
+        // Update existing record to pending
+        await storage.updateVideoProcessing(processing.id, {
+          status: "pending"
+        });
+      }
+
+      // Start reprocessing in background
+      processVideoInBackground(file, processing.id).catch(error => {
+        console.error(`[Video Reprocessing] Failed for file ${file.id}:`, error);
+      });
+
+      console.log(`🎬 [REPROCESS] Started reprocessing for: ${file.filename}`);
+
+      res.json({ 
+        message: "Reprocessing started", 
+        processingId: processing.id,
+        status: "pending"
+      });
+    } catch (error) {
+      console.error("[Video Reprocessing API] Error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
   // Get video processing status and metadata
   app.get("/api/files/:id/processing", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
