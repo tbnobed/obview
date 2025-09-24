@@ -864,10 +864,10 @@ export default function PublicSharePage() {
               <video
                 ref={previewVideoRef}
                 className="w-48 h-30 rounded object-cover bg-gray-800"
-                src={`/public/share/${token}`}
+                src={`/api/share/${token}/scrub`}
                 onLoadedData={handlePreviewVideoLoad}
                 muted
-                preload="metadata"
+                preload="auto"
                 data-testid="scrub-preview-video"
               />
             </div>
