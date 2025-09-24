@@ -59,12 +59,21 @@ const getProcessingStatus = (fileId: number) => {
 interface MediaCardProps {
   file: StorageFile;
   onSelect: (fileId: number) => void;
+  isActive?: boolean;
+  onHover?: (fileId: number | null) => void;
 }
 
-function MediaCard({ file, onSelect }: MediaCardProps) {
+function MediaCard({ file, onSelect, isActive = false, onHover }: MediaCardProps) {
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
+  const [canScrub, setCanScrub] = useState(false);
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(0);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rafIdRef = useRef<number>();
   const processing = getProcessingStatus(file.id);
   
   // Try to load scrub preview for video files (Frame.io style)
@@ -76,6 +85,8 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
   const FileIcon = getFileIcon(file.fileType);
   
   const handleCardClick = () => {
+    // Don't trigger selection if user was scrubbing
+    if (isScrubbing) return;
     onSelect(file.id);
   };
 
@@ -88,6 +99,111 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
     setThumbnailError(true);
     setThumbnailLoaded(false);
   };
+
+  const handleVideoLoadedMetadata = () => {
+    const video = videoRef.current;
+    if (video && video.duration && isFinite(video.duration)) {
+      setVideoDuration(video.duration);
+      setCanScrub(true);
+    }
+    handleThumbnailLoad();
+  };
+
+  const scrubToPosition = (clientX: number) => {
+    const video = videoRef.current;
+    const container = containerRef.current;
+    
+    if (!video || !container || !canScrub || videoDuration === 0) return;
+    
+    const rect = container.getBoundingClientRect();
+    const progress = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const targetTime = progress * videoDuration;
+    
+    video.currentTime = targetTime;
+  };
+
+  const throttledScrub = (clientX: number) => {
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+    }
+    
+    rafIdRef.current = requestAnimationFrame(() => {
+      scrubToPosition(clientX);
+    });
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+    onHover?.(file.id);
+    
+    const video = videoRef.current;
+    if (video && isActive) {
+      video.pause();
+      // Switch to auto preload for better scrubbing performance
+      video.preload = 'auto';
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    setIsScrubbing(false);
+    onHover?.(null);
+    
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+    }
+    
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.currentTime = 0;
+      // Switch back to metadata preload
+      video.preload = 'metadata';
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isActive || !canScrub || !isHovering) return;
+    
+    setIsScrubbing(true);
+    throttledScrub(e.clientX);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!isActive || !canScrub) return;
+    
+    e.preventDefault();
+    const container = containerRef.current;
+    if (container) {
+      container.setPointerCapture(e.pointerId);
+      setIsScrubbing(true);
+      scrubToPosition(e.clientX);
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isActive || !canScrub || !isScrubbing) return;
+    
+    e.preventDefault();
+    throttledScrub(e.clientX);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    const container = containerRef.current;
+    if (container) {
+      container.releasePointerCapture(e.pointerId);
+    }
+    setIsScrubbing(false);
+  };
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
 
   // Get status badge color and text
   const getStatusInfo = () => {
@@ -123,32 +239,32 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
     >
       <CardContent className="p-0">
         {/* Thumbnail Container */}
-        <div className="relative aspect-video bg-gray-900 rounded-t-lg overflow-hidden">
+        <div 
+          ref={containerRef}
+          className="relative aspect-video bg-gray-900 rounded-t-lg overflow-hidden"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onMouseMove={handleMouseMove}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={{ touchAction: 'none' }}
+        >
           {file.fileType === 'video' && thumbnailSrc ? (
             <>
               {!thumbnailError ? (
                 <video
+                  ref={videoRef}
                   src={thumbnailSrc}
                   muted
-                  preload="metadata"
+                  playsInline
+                  preload={isActive ? "auto" : "metadata"}
                   className={cn(
-                    "w-full h-full object-cover transition-opacity duration-200",
+                    "w-full h-full object-cover transition-opacity duration-200 pointer-events-none",
                     thumbnailLoaded ? "opacity-100" : "opacity-0"
                   )}
-                  onLoadedData={handleThumbnailLoad}
+                  onLoadedMetadata={handleVideoLoadedMetadata}
                   onError={handleThumbnailError}
-                  onMouseEnter={(e) => {
-                    const video = e.target as HTMLVideoElement;
-                    video.currentTime = 0;
-                    video.play().catch(() => {
-                      // Ignore autoplay failures
-                    });
-                  }}
-                  onMouseLeave={(e) => {
-                    const video = e.target as HTMLVideoElement;
-                    video.pause();
-                    video.currentTime = 0;
-                  }}
                 />
               ) : null}
               
@@ -170,6 +286,20 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
               {duration && (
                 <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-mono">
                   {formatDuration(duration)}
+                </div>
+              )}
+              
+              {/* Scrub Progress Indicator */}
+              {isActive && isHovering && canScrub && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+                  <div 
+                    className="h-full bg-white transition-all duration-75"
+                    style={{ 
+                      width: videoDuration > 0 && videoRef.current 
+                        ? `${(videoRef.current.currentTime / videoDuration) * 100}%` 
+                        : '0%'
+                    }}
+                  />
                 </div>
               )}
             </>
@@ -254,6 +384,8 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
 }
 
 export default function MediaCardGrid({ files, onSelectFile, projectId }: MediaCardGridProps) {
+  const [hoveredFileId, setHoveredFileId] = useState<number | null>(null);
+  
   return (
     <div className="p-6">
       {/* Header */}
@@ -278,6 +410,8 @@ export default function MediaCardGrid({ files, onSelectFile, projectId }: MediaC
             key={file.id} 
             file={file} 
             onSelect={onSelectFile}
+            isActive={hoveredFileId === file.id}
+            onHover={setHoveredFileId}
           />
         ))}
       </div>
