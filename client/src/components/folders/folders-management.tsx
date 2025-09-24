@@ -10,8 +10,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Edit, Trash2, Folder, FolderOpen } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Folder, FolderOpen, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 interface FoldersManagementProps {
   className?: string;
@@ -447,6 +448,7 @@ function FolderCard({ folder, onClick, onEdit, onDelete, isDeleting }: FolderCar
 // Component to show projects in a folder
 function FolderProjectsList({ folderId }: { folderId: number }) {
   const { data: projects, isLoading } = useFolderProjects(folderId);
+  const [, navigate] = useLocation();
   
   if (isLoading) {
     return (
@@ -470,10 +472,15 @@ function FolderProjectsList({ folderId }: { folderId: number }) {
       {projects.map((project) => (
         <div 
           key={project.id} 
-          className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
+          className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors cursor-pointer group"
+          onClick={() => navigate(`/projects/${project.id}`)}
+          data-testid={`project-item-${project.id}`}
         >
-          <div>
-            <h4 className="font-medium">{project.name}</h4>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h4 className="font-medium group-hover:text-primary-600 transition-colors">{project.name}</h4>
+              <ExternalLink className="h-4 w-4 text-neutral-400 group-hover:text-primary-600 transition-colors" />
+            </div>
             {project.description && (
               <p className="text-sm text-neutral-600 mt-1">{project.description}</p>
             )}
