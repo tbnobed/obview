@@ -29,7 +29,9 @@ type CreateFolderInput = z.infer<typeof createFolderSchema>;
 export default function FoldersManagement({ className }: FoldersManagementProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [projectsDialogOpen, setProjectsDialogOpen] = useState(false);
   const [editingFolder, setEditingFolder] = useState<any>(null);
+  const [selectedFolder, setSelectedFolder] = useState<any>(null);
 
   const { data: folders, isLoading } = useFolders();
   const createMutation = useCreateFolder();
@@ -205,6 +207,10 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
             <FolderCard
               key={folder.id}
               folder={folder}
+              onClick={() => {
+                setSelectedFolder(folder);
+                setProjectsDialogOpen(true);
+              }}
               onEdit={() => openEditDialog(folder)}
               onDelete={() => handleDeleteFolder(folder.id)}
               isDeleting={deleteMutation.isPending}
@@ -231,6 +237,22 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
           </CardContent>
         </Card>
       )}
+
+      {/* Projects Dialog */}
+      <Dialog open={projectsDialogOpen} onOpenChange={setProjectsDialogOpen}>
+        <DialogContent className="max-w-4xl" data-testid="dialog-folder-projects">
+          <DialogHeader>
+            <DialogTitle>{selectedFolder?.name} Projects</DialogTitle>
+            <DialogDescription>
+              {selectedFolder?.description && `${selectedFolder.description} • `}
+              Projects organized in this folder
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto">
+            {selectedFolder && <FolderProjectsList folderId={selectedFolder.id} />}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -306,17 +328,22 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
 
 interface FolderCardProps {
   folder: any;
+  onClick?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   isDeleting: boolean;
 }
 
-function FolderCard({ folder, onEdit, onDelete, isDeleting }: FolderCardProps) {
+function FolderCard({ folder, onClick, onEdit, onDelete, isDeleting }: FolderCardProps) {
   const { data: projects } = useFolderProjects(folder.id);
   const projectCount = projects?.length || 0;
 
   return (
-    <Card className="hover:shadow-md transition-shadow" data-testid={`card-folder-${folder.id}`}>
+    <Card 
+      className={`hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`} 
+      data-testid={`card-folder-${folder.id}`}
+      onClick={onClick}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -410,5 +437,46 @@ function FolderCard({ folder, onEdit, onDelete, isDeleting }: FolderCardProps) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Component to show projects in a folder
+function FolderProjectsList({ folderId }: { folderId: number }) {
+  const { data: projects, isLoading } = useFolderProjects(folderId);
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  
+  if (!projects || projects.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Folder className="mx-auto h-12 w-12 text-neutral-400 mb-4" />
+        <p className="text-neutral-500">No projects in this folder yet</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-3">
+      {projects.map((project) => (
+        <div 
+          key={project.id} 
+          className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
+        >
+          <div>
+            <h4 className="font-medium">{project.name}</h4>
+            {project.description && (
+              <p className="text-sm text-neutral-600 mt-1">{project.description}</p>
+            )}
+          </div>
+          <Badge variant="secondary">{project.status || 'draft'}</Badge>
+        </div>
+      ))}
+    </div>
   );
 }

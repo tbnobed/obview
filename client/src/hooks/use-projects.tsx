@@ -40,6 +40,8 @@ export const useCreateProject = () => {
         description: "Your new project has been created successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      // Invalidate all folder project queries
+      queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
     },
     onError: (error: Error) => {
       toast({
@@ -66,6 +68,8 @@ export const useUpdateProject = (projectId: number) => {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
+      // Invalidate all folder project queries since project may have been moved between folders
+      queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
     },
     onError: (error: Error) => {
       toast({
