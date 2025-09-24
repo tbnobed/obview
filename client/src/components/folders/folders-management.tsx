@@ -472,20 +472,20 @@ function FolderProjectsList({ folderId }: { folderId: number }) {
       {projects.map((project) => (
         <div 
           key={project.id} 
-          className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors cursor-pointer group"
+          className="flex items-center justify-between p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 hover:border-primary-300 transition-all cursor-pointer group shadow-sm"
           onClick={() => navigate(`/projects/${project.id}`)}
           data-testid={`project-item-${project.id}`}
         >
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h4 className="font-medium group-hover:text-primary-600 transition-colors">{project.name}</h4>
+              <h4 className="font-semibold text-neutral-900 dark:text-white group-hover:text-primary-600 transition-colors">{project.name}</h4>
               <ExternalLink className="h-4 w-4 text-neutral-400 group-hover:text-primary-600 transition-colors" />
             </div>
             {project.description && (
-              <p className="text-sm text-neutral-600 mt-1">{project.description}</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{project.description}</p>
             )}
           </div>
-          <Badge variant="secondary">{project.status || 'draft'}</Badge>
+          <Badge variant="secondary" className="ml-3">{project.status || 'draft'}</Badge>
         </div>
       ))}
     </div>
