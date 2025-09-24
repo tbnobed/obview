@@ -1856,26 +1856,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = req.params.token;
       const quality = req.params.quality;
       
+      console.log(`[PRODUCTION QUALITY] Request for token: ${token}, quality: ${quality}`);
+      
       const file = await storage.getFileByShareToken(token);
       if (!file) {
-        return res.status(404).json({ message: "Shared file not found" });
+        console.error(`[PRODUCTION QUALITY] File not found for token: ${token}`);
+        return res.status(404).send('File not found');
       }
       
+      console.log(`[PRODUCTION QUALITY] Found file: ${file.filename} (ID: ${file.id})`);
+      
       if (file.isAvailable === false) {
-        return res.status(404).json({ 
-          message: "Shared file not available", 
-          code: "FILE_UNAVAILABLE"
-        });
+        console.log(`[PRODUCTION QUALITY] File marked as unavailable for token ${token}`);
+        return res.status(404).send('File not available');
       }
 
       const processing = await storage.getVideoProcessing(file.id);
+      console.log(`[PRODUCTION QUALITY] Processing data:`, processing ? {
+        status: processing.status,
+        hasQualities: !!processing.qualities,
+        qualitiesCount: processing.qualities?.length || 0
+      } : 'No processing data found');
+      
       if (!processing || !processing.qualities) {
-        return res.status(404).json({ message: "Processed qualities not available" });
+        console.log(`[PRODUCTION QUALITY] No processed qualities available for file ${file.id}`);
+        return res.status(404).send('Quality not available');
       }
 
       const qualityVersion = processing.qualities.find(q => q.resolution === quality);
-      if (!qualityVersion || !existsSync(qualityVersion.path)) {
-        return res.status(404).json({ message: "Quality version not found" });
+      if (!qualityVersion) {
+        console.log(`[PRODUCTION QUALITY] Quality ${quality} not found for file ${file.id}`);
+        console.log(`[PRODUCTION QUALITY] Available qualities:`, processing.qualities.map(q => q.resolution));
+        return res.status(404).send('Quality version not found');
+      }
+      
+      console.log(`[PRODUCTION QUALITY] Found quality version at path: ${qualityVersion.path}`);
+      
+      if (!existsSync(qualityVersion.path)) {
+        console.error(`[PRODUCTION QUALITY] Quality file does not exist at path: ${qualityVersion.path}`);
+        return res.status(404).send('Quality file not found');
       }
 
       // Set appropriate headers for video streaming with range support
@@ -1912,8 +1931,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stream.pipe(res);
       }
     } catch (error) {
-      console.error("[Shared Video Processing] Error serving quality:", error);
-      res.status(500).json({ message: "Internal server error" });
+      console.error("[PRODUCTION QUALITY] Error serving quality:", error);
+      if (!res.headersSent) {
+        res.status(500).send('Internal server error');
+      }
+    }
+  });
+
+  // Get scrub version for shared files (no authentication required)
+  app.get("/api/share/:token/scrub", async (req, res) => {
+    try {
+      const token = req.params.token;
+      
+      console.log(`[PRODUCTION SCRUB] Request for token: ${token}`);
+      
+      const file = await storage.getFileByShareToken(token);
+      if (!file) {
+        console.error(`[PRODUCTION SCRUB] File not found for token: ${token}`);
+        return res.status(404).send('File not found');
+      }
+      
+      console.log(`[PRODUCTION SCRUB] Found file: ${file.filename} (ID: ${file.id})`);
+      
+      if (file.isAvailable === false) {
+        console.log(`[PRODUCTION SCRUB] File marked as unavailable for token ${token}`);
+        return res.status(404).send('File not available');
+      }
+
+      const processing = await storage.getVideoProcessing(file.id);
+      console.log(`[PRODUCTION SCRUB] Processing data:`, processing ? {
+        status: processing.status,
+        hasScrubVersion: !!processing.scrubVersionPath,
+        scrubPath: processing.scrubVersionPath
+      } : 'No processing data found');
+      
+      if (!processing || !processing.scrubVersionPath) {
+        console.log(`[PRODUCTION SCRUB] No scrub version available for file ${file.id}`);
+        return res.status(404).send('Scrub version not available');
+      }
+      
+      console.log(`[PRODUCTION SCRUB] Found scrub version at path: ${processing.scrubVersionPath}`);
+      
+      if (!existsSync(processing.scrubVersionPath)) {
+        console.error(`[PRODUCTION SCRUB] Scrub file does not exist at path: ${processing.scrubVersionPath}`);
+        return res.status(404).send('Scrub file not found');
+      }
+
+      // Set appropriate headers for video streaming with range support
+      const stats = await fsPromises.stat(processing.scrubVersionPath);
+      const range = req.headers.range;
+
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stats.size - 1;
+        const chunksize = (end - start) + 1;
+
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${stats.size}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': 'video/mp4',
+          'Cache-Control': 'public, max-age=3600',
+          'Cross-Origin-Resource-Policy': 'cross-origin'
+        });
+
+        const stream = fs.createReadStream(processing.scrubVersionPath, { start, end });
+        stream.pipe(res);
+      } else {
+        res.writeHead(200, {
+          'Content-Length': stats.size,
+          'Content-Type': 'video/mp4',
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=3600',
+          'Cross-Origin-Resource-Policy': 'cross-origin'
+        });
+
+        const stream = fs.createReadStream(processing.scrubVersionPath);
+        stream.pipe(res);
+      }
+    } catch (error) {
+      console.error("[PRODUCTION SCRUB] Error serving scrub:", error);
+      if (!res.headersSent) {
+        res.status(500).send('Internal server error');
+      }
     }
   });
 
@@ -2006,65 +2107,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/public/share/:token", async (req, res, next) => {
     try {
       const token = req.params.token;
+      console.log(`[PRODUCTION SHARE] Request for token: ${token}`);
+      
       // Find file by share token
       const files = await storage.getAllFiles();
       const file = files.find((f: StorageFile) => f.shareToken === token);
       
       if (!file) {
-        return res.status(404).json({ message: "Shared file not found" });
+        console.error(`[PRODUCTION SHARE] File not found for token: ${token}`);
+        // Return 404 without JSON to avoid Content-Type issues
+        return res.status(404).send('File not found');
       }
+      
+      console.log(`[PRODUCTION SHARE] Found file: ${file.filename} (ID: ${file.id})`);
+      console.log(`[PRODUCTION SHARE] File path: ${file.filePath}`);
       
       // Check if file is marked as unavailable
       if (file.isAvailable === false) {
-        console.log(`Shared file with token ${token} was requested but is marked as unavailable`);
-        return res.status(404).json({ 
-          message: "Shared file not available", 
-          code: "FILE_UNAVAILABLE",
-          details: "This file has been deleted from the server."
-        });
+        console.log(`[PRODUCTION SHARE] File marked as unavailable for token ${token}`);
+        return res.status(404).send('File not available');
       }
       
       // Check if the file physically exists before sending
-      console.log(`[DEBUG] Checking if shared file exists at path: ${file.filePath}`);
+      console.log(`[PRODUCTION SHARE] Checking if file exists at path: ${file.filePath}`);
       const fileExists = await fileSystem.fileExists(file.filePath);
-      console.log(`[DEBUG] Shared file exists check result: ${fileExists}`);
+      console.log(`[PRODUCTION SHARE] File exists check result: ${fileExists}`);
       
       if (!fileExists) {
-        console.error(`Shared file with token ${token} physical file not found at ${file.filePath}`);
+        console.error(`[PRODUCTION SHARE] Physical file not found at ${file.filePath}`);
         
         // If file doesn't physically exist but is not marked as unavailable, mark it now
         if (file.isAvailable !== false) {
-          console.log(`Marking shared file with ID ${file.id} as unavailable since it was not found on disk`);
+          console.log(`[PRODUCTION SHARE] Marking file ID ${file.id} as unavailable (missing from disk)`);
           try {
-            // Update all database records with similar file paths
-            const missingFiles = files.filter(f => 
-              // Look for files with the same path
-              f.filePath === file.filePath ||
-              // Or files with the same timestamp-based filename pattern
-              (file.filePath.includes('/uploads/') && 
-               f.filePath.includes('/uploads/') &&
-               file.filePath.split('/').pop() === f.filePath.split('/').pop())
-            );
-            
-            console.log(`Found ${missingFiles.length} database records with the same missing file path`);
-            
-            // Update all these files as unavailable
-            for (const missingFile of missingFiles) {
-              await storage.updateFile(missingFile.id, { isAvailable: false });
-              console.log(`Updated file ID ${missingFile.id} (${missingFile.filename}) as unavailable`);
-            }
-          } catch (updateError) {
-            console.error('Error updating missing file statuses:', updateError);
-            // Continue with the request, just mark the current file
             await storage.updateFile(file.id, { isAvailable: false });
+            console.log(`[PRODUCTION SHARE] Successfully marked file as unavailable`);
+          } catch (updateError) {
+            console.error('[PRODUCTION SHARE] Error updating file status:', updateError);
           }
         }
         
-        return res.status(404).json({ 
-          message: "Shared file not available", 
-          code: "FILE_UNAVAILABLE",
-          details: "This file has been deleted from the server."
-        });
+        // Return 404 without JSON to avoid Content-Type issues
+        return res.status(404).send('File not available');
       }
       
       // Set appropriate content type headers based on file extension first, then fallback to stored MIME type
@@ -2108,7 +2192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       
       // Log that we're sending the file
-      console.log(`Serving file ${file.id} (${file.filename}) - type: ${contentType}, path: ${file.filePath}`);
+      console.log(`[PRODUCTION SHARE] Serving file ${file.id} (${file.filename}) - type: ${contentType}, path: ${file.filePath}`);
       
       // Send the file content with proper options
       res.sendFile(file.filePath, { 
@@ -2116,6 +2200,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headers: {
           'Content-Type': contentType,
           'Accept-Ranges': 'bytes'
+        }
+      }, (err) => {
+        if (err) {
+          console.error(`[PRODUCTION SHARE] Error sending file: ${err.message}`);
+          if (!res.headersSent) {
+            res.status(500).send('Error serving file');
+          }
+        } else {
+          console.log(`[PRODUCTION SHARE] File sent successfully`);
         }
       });
     } catch (error) {

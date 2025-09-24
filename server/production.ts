@@ -23,8 +23,8 @@ if (fs.existsSync(staticPath)) {
   
   // Fallback to index.html for SPA routing
   app.get('*', (_req, res, next) => {
-    // Skip API routes
-    if (_req.path.startsWith('/api/')) {
+    // Skip API routes and public file sharing routes
+    if (_req.path.startsWith('/api/') || _req.path.startsWith('/public/')) {
       return next();
     }
     res.sendFile(path.join(staticPath, 'index.html'));
@@ -32,7 +32,7 @@ if (fs.existsSync(staticPath)) {
 } else {
   console.error("❌ Static files directory not found:", staticPath);
   app.get('*', (_req, res, next) => {
-    if (_req.path.startsWith('/api/')) {
+    if (_req.path.startsWith('/api/') || _req.path.startsWith('/public/')) {
       return next();
     }
     res.status(500).send('Application not properly built');
