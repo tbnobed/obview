@@ -180,8 +180,9 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
       return { color: "bg-green-500", text: "Ready" };
     }
     
-    // Video files without processing data are still processing
-    return { color: "bg-blue-500", text: "Processing" };
+    // For video files without processing data, assume they are legacy processed files
+    // New files will have processing records, old files without records are likely complete
+    return { color: "bg-green-500", text: "Ready" };
   };
 
   const statusInfo = getStatusInfo();
