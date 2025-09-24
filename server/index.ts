@@ -3,9 +3,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-// Configure Express to handle large files (5GB limit)
-app.use(express.json({ limit: '5120mb' }));
-app.use(express.urlencoded({ extended: false, limit: '5120mb' }));
+// Configure Express to handle large files (50GB limit)
+app.use(express.json({ limit: '51200mb' }));
+app.use(express.urlencoded({ extended: false, limit: '51200mb' }));
 
 // Increase the HTTP request timeout for large file uploads
 app.use((req, res, next) => {
