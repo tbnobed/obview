@@ -7,9 +7,9 @@ const app = express();
 app.use(express.json({ limit: '51200mb' }));
 app.use(express.urlencoded({ extended: false, limit: '51200mb' }));
 
-// Increase the HTTP request timeout for large file uploads
+// Disable HTTP response timeout for large file uploads
 app.use((req, res, next) => {
-  res.setTimeout(3600000); // 1 hour timeout
+  res.setTimeout(0); // Disable response timeout
   next();
 });
 
@@ -75,8 +75,8 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
   });
 
-  // CRITICAL: Configure Node.js HTTP server timeouts for large file uploads
-  server.timeout = 1800000;        // 30 minutes
-  server.requestTimeout = 1800000; // 30 minutes  
-  server.headersTimeout = 1800000; // 30 minutes
+  // CRITICAL: Disable Node.js HTTP server timeouts for large file uploads
+  server.timeout = 0;              // Disable idle timeout
+  server.requestTimeout = 0;       // Disable request timeout (no time limit)
+  server.headersTimeout = 7200000; // 2 hours for headers
 })();
