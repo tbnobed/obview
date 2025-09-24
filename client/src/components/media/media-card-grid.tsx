@@ -126,8 +126,9 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
     }
   }, [file.id, file.fileType, (processing as any)?.status]);
   
-  // Load sprite for video files, fallback to regular thumbnail for others
-  const thumbnailSrc = file.fileType === 'video' ? `/api/files/${file.id}/sprite` : null;
+  // Load sprite for video files using new multi-sheet format
+  const thumbnailSrc = file.fileType === 'video' && spriteMetadata ? 
+    `/api/files/${file.id}/sprite?dpi=@2x&sheet=0` : null;
   
   // Get duration from processing data
   const duration = (processing as any)?.originalDuration || null;
@@ -255,21 +256,32 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
                   data-testid={`sprite-preview-${file.id}`}
                   style={{
                     backgroundImage: `url(${thumbnailSrc})`,
-                    backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
+                    backgroundSize: (() => {
+                      // Get the @2x variant for high-res display
+                      const variant = spriteMetadata.variants?.find((v: any) => v.dpi === '@2x') || spriteMetadata.variants?.[0];
+                      const sheet = variant?.sheets?.[0];
+                      if (!sheet) return '100% 100%';
+                      return `${sheet.cols * 100}% ${sheet.rows * 100}%`;
+                    })(),
                     backgroundPosition: (() => {
                       if (!isScrubbing) {
                         // Show first frame when not scrubbing
                         return `0% 0%`;
                       }
                       
-                      // Calculate which thumbnail to show based on scrub position
-                      const thumbnailIndex = Math.floor(scrubPosition * (spriteMetadata.thumbnailCount - 1));
-                      const col = thumbnailIndex % spriteMetadata.cols;
-                      const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
+                      // Get the @2x variant for positioning calculations
+                      const variant = spriteMetadata.variants?.find((v: any) => v.dpi === '@2x') || spriteMetadata.variants?.[0];
+                      const sheet = variant?.sheets?.[0];
+                      if (!sheet) return '0% 0%';
                       
-                      // Calculate background position (negative values to shift the sprite)
-                      const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
-                      const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
+                      // Calculate which thumbnail to show based on scrub position
+                      const thumbnailIndex = Math.floor(scrubPosition * (sheet.thumbnailCount - 1));
+                      const col = thumbnailIndex % sheet.cols;
+                      const row = Math.floor(thumbnailIndex / sheet.cols);
+                      
+                      // Calculate background position (CSS positioning for sprite sheets)
+                      const xPercent = sheet.cols > 1 ? -(col / (sheet.cols - 1)) * 100 : 0;
+                      const yPercent = sheet.rows > 1 ? -(row / (sheet.rows - 1)) * 100 : 0;
                       
                       return `${xPercent}% ${yPercent}%`;
                     })()
