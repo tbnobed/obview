@@ -162,3 +162,156 @@ async function getFilesRecursively(dir: string): Promise<string[]> {
   
   return files;
 }
+
+// ========================================
+// COMPREHENSIVE FILE DELETION UTILITIES
+// ========================================
+
+const UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
+const PROCESSED_DIR = path.resolve(UPLOADS_DIR, 'processed');
+
+/**
+ * Safely remove a file or directory, ensuring it's within the allowed uploads directory
+ */
+export async function safeRemove(targetPath: string, retryCount = 1): Promise<boolean> {
+  try {
+    // Resolve the target path to prevent path traversal attacks
+    const resolvedTarget = path.resolve(targetPath);
+    
+    // Ensure the target is within the uploads directory
+    if (!resolvedTarget.startsWith(UPLOADS_DIR)) {
+      console.error(`[FILESYSTEM] Security violation: path outside uploads directory: ${resolvedTarget}`);
+      return false;
+    }
+    
+    // Check if file/directory exists
+    try {
+      await fsPromises.access(resolvedTarget);
+    } catch (error) {
+      // File doesn't exist - this is OK (idempotent delete)
+      console.log(`[FILESYSTEM] Target already removed or doesn't exist: ${resolvedTarget}`);
+      return true;
+    }
+    
+    // Remove the file or directory recursively
+    await fsPromises.rm(resolvedTarget, { recursive: true, force: true });
+    console.log(`[FILESYSTEM] ✅ Successfully removed: ${resolvedTarget}`);
+    return true;
+    
+  } catch (error: any) {
+    // Retry on transient errors
+    if (retryCount > 0 && (error.code === 'EBUSY' || error.code === 'EPERM')) {
+      console.log(`[FILESYSTEM] Transient error (${error.code}), retrying... ${targetPath}`);
+      await new Promise(resolve => setTimeout(resolve, 100)); // Brief delay
+      return safeRemove(targetPath, retryCount - 1);
+    }
+    
+    console.error(`[FILESYSTEM] ❌ Failed to remove ${targetPath}:`, error.message);
+    return false;
+  }
+}
+
+/**
+ * Remove original uploaded file
+ */
+export async function removeOriginalFile(filePath: string): Promise<boolean> {
+  if (!filePath) {
+    console.log('[FILESYSTEM] No file path provided for original file removal');
+    return true;
+  }
+  
+  console.log(`[FILESYSTEM] Removing original file: ${filePath}`);
+  return safeRemove(filePath);
+}
+
+/**
+ * Remove processed directory for a file ID (contains qualities, scrub, thumbnails)
+ */
+export async function removeProcessedDirectory(fileId: number): Promise<boolean> {
+  const processedDir = path.join(PROCESSED_DIR, fileId.toString());
+  console.log(`[FILESYSTEM] Removing processed directory: ${processedDir}`);
+  return safeRemove(processedDir);
+}
+
+/**
+ * Remove all files and processed versions for a file
+ */
+export async function removeFileCompletely(fileId: number, filePath: string): Promise<{ original: boolean; processed: boolean }> {
+  console.log(`[FILESYSTEM] Complete removal for file ${fileId}`);
+  
+  const [originalResult, processedResult] = await Promise.allSettled([
+    removeOriginalFile(filePath),
+    removeProcessedDirectory(fileId)
+  ]);
+  
+  return {
+    original: originalResult.status === 'fulfilled' ? originalResult.value : false,
+    processed: processedResult.status === 'fulfilled' ? processedResult.value : false
+  };
+}
+
+/**
+ * Remove files for multiple file IDs with concurrency limit
+ */
+export async function removeMultipleFiles(
+  files: Array<{ id: number; filePath: string }>, 
+  concurrencyLimit = 3
+): Promise<Array<{ fileId: number; success: boolean; errors: string[] }>> {
+  const results: Array<{ fileId: number; success: boolean; errors: string[] }> = [];
+  
+  // Process files in batches to avoid overwhelming the filesystem
+  for (let i = 0; i < files.length; i += concurrencyLimit) {
+    const batch = files.slice(i, i + concurrencyLimit);
+    
+    const batchResults = await Promise.allSettled(
+      batch.map(async (file) => {
+        const result = await removeFileCompletely(file.id, file.filePath);
+        const errors: string[] = [];
+        
+        if (!result.original) errors.push(`Failed to remove original file: ${file.filePath}`);
+        if (!result.processed) errors.push(`Failed to remove processed directory for file ${file.id}`);
+        
+        return {
+          fileId: file.id,
+          success: result.original && result.processed,
+          errors
+        };
+      })
+    );
+    
+    // Collect results from this batch
+    batchResults.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+      } else {
+        results.push({
+          fileId: -1,
+          success: false,
+          errors: [`Batch processing failed: ${result.reason}`]
+        });
+      }
+    });
+  }
+  
+  return results;
+}
+
+/**
+ * Check if filesystem cleanup was successful
+ */
+export function summarizeCleanupResults(results: Array<{ fileId: number; success: boolean; errors: string[] }>): {
+  successful: number;
+  failed: number;
+  totalErrors: string[];
+} {
+  const successful = results.filter(r => r.success).length;
+  const failed = results.filter(r => !r.success).length;
+  const totalErrors = results.flatMap(r => r.errors);
+  
+  console.log(`[FILESYSTEM] Cleanup summary: ${successful} successful, ${failed} failed`);
+  if (totalErrors.length > 0) {
+    console.error('[FILESYSTEM] Cleanup errors:', totalErrors);
+  }
+  
+  return { successful, failed, totalErrors };
+}
