@@ -339,7 +339,7 @@ export class VideoProcessor {
           const cols = Math.min(10, Math.ceil(Math.sqrt(sheetThumbnailCount)));
           const rows = Math.ceil(sheetThumbnailCount / cols);
           
-          const sheetPath = path.join(outputDir, `${filename}_sprite${variant.suffix}_sheet${sheetIndex}.webp`);
+          const sheetPath = path.join(outputDir, `${filename}_sprite${variant.suffix}_sheet${sheetIndex}.jpg`);
           
           // Generate this sprite sheet
           const args = [
@@ -353,7 +353,7 @@ export class VideoProcessor {
             ].join(','),
             '-frames:v', '1',
             '-q:v', variant.quality.toString(),
-            '-f', 'webp', // WebP for better quality/compression
+            '-f', 'image2', // JPEG format - universally supported
             '-y',
             sheetPath
           ];
