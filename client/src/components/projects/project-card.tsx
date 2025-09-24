@@ -103,9 +103,12 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 return;
               }
               
-              // Wait for video to be properly loaded
+              // If video isn't ready, try to trigger loading
               if (video.readyState < 1 || !isFinite(video.duration) || video.duration <= 0) {
-                console.log('🎬 [SCRUB] Video not ready:', video.readyState, video.duration);
+                if (video.readyState === 0) {
+                  video.load(); // Force load if not started
+                }
+                console.log('🎬 [SCRUB] Video not ready, triggering load:', video.readyState, video.duration);
                 return;
               }
               
@@ -135,14 +138,25 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               console.log('🎬 [SCRUB] Mouse entered - activating scrub mode');
               setIsScrubbing(true);
               
-              // Ensure video is ready for scrubbing
-              if (video.readyState >= 1 && video.paused) {
-                video.load(); // Refresh if needed
+              // Force video to start loading immediately if not already
+              if (video.readyState === 0) {
+                video.load();
+                console.log('🎬 [SCRUB] Forcing video load on hover');
               }
               
-              // Set initial position based on current time
+              // If video is ready, set initial position
               if (video.duration > 0) {
                 setScrubPosition(video.currentTime / video.duration);
+              } else {
+                // Retry setting position when video loads
+                const checkReady = () => {
+                  if (video.duration > 0) {
+                    setScrubPosition(video.currentTime / video.duration);
+                    console.log('🎬 [SCRUB] Video became ready, position set');
+                  }
+                };
+                video.addEventListener('loadedmetadata', checkReady, { once: true });
+                video.addEventListener('canplay', checkReady, { once: true });
               }
             }}
             onMouseLeave={(e) => {
@@ -175,7 +189,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               // Use best available video source for interactive scrubbing
               <video
                 className="w-full h-full object-cover pointer-events-none"
-                preload="metadata"
+                preload="auto"
                 muted
                 playsInline
                 data-testid={`video-preview-${project.id}`}
