@@ -249,7 +249,23 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
         >
           {file.fileType === 'video' && thumbnailSrc && spriteMetadata ? (
             <>
-              {!thumbnailError ? (
+              {/* Hidden image to detect sprite loading */}
+              <img
+                src={thumbnailSrc}
+                className="hidden"
+                onLoad={() => {
+                  console.log(`🎬 [SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
+                  setSpriteLoaded(true);
+                  handleThumbnailLoad();
+                }}
+                onError={() => {
+                  console.error(`🎬 [SPRITE] ❌ Sprite error for file ${file.id}`);
+                  handleThumbnailError();
+                }}
+                alt=""
+              />
+              
+              {!thumbnailError && thumbnailLoaded ? (
                 <div
                   className="w-full h-full bg-center bg-no-repeat bg-cover pointer-events-none"
                   data-testid={`sprite-preview-${file.id}`}
@@ -273,15 +289,6 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
                       
                       return `${xPercent}% ${yPercent}%`;
                     })()
-                  }}
-                  onLoad={() => {
-                    console.log(`🎬 [SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
-                    setSpriteLoaded(true);
-                    handleThumbnailLoad();
-                  }}
-                  onError={() => {
-                    console.error(`🎬 [SPRITE] ❌ Sprite error for file ${file.id}`);
-                    handleThumbnailError();
                   }}
                 />
               ) : null}
