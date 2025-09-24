@@ -1005,6 +1005,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===== FILE ROUTES =====
+  // Catch-all for invalid /api/files requests (without specific ID or project context)
+  app.get("/api/files", isAuthenticated, async (req, res) => {
+    res.status(400).json({ 
+      message: "Invalid request. Use /api/projects/:projectId/files to get files for a project, or /api/files/:fileId for a specific file." 
+    });
+  });
+
   // Get files for a project
   app.get("/api/projects/:projectId/files", hasProjectAccess, async (req, res, next) => {
     try {
