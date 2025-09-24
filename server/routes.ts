@@ -1948,7 +1948,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache for sprites
-      res.setHeader('Content-Type', 'image/webp'); // WebP format
+      res.setHeader('Content-Type', 'image/jpeg'); // JPEG format
       res.sendFile(path.resolve(sheetData.path));
     } catch (error) {
       console.error("[Video Processing API] Error serving sprite:", error);
