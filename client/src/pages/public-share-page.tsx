@@ -355,6 +355,51 @@ export default function PublicSharePage() {
     };
   }, [duration, isDragging, previewTime]);
   
+  // Keyboard controls for play/pause (matching authenticated player)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Check if the active element is not an input field or textarea
+      const activeElement = document.activeElement;
+      const isInput = activeElement instanceof HTMLInputElement || 
+                      activeElement instanceof HTMLTextAreaElement || 
+                      activeElement instanceof HTMLSelectElement;
+      
+      if (isInput) return;
+      
+      const mediaElement = videoRef.current || audioRef.current;
+      if (!mediaElement || mediaError || !file) return;
+      
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault(); // Prevent scrolling the page
+          togglePlay();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          // Skip back 5 seconds (or 1 second with Shift)
+          const backwardSkip = e.shiftKey ? 1 : 5;
+          const newBackTime = Math.max(0, currentTime - backwardSkip);
+          performSeek(newBackTime);
+          setCurrentTime(newBackTime);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          // Skip forward 5 seconds (or 1 second with Shift)
+          const forwardSkip = e.shiftKey ? 1 : 5;
+          const newForwardTime = Math.min(duration, currentTime + forwardSkip);
+          performSeek(newForwardTime);
+          setCurrentTime(newForwardTime);
+          break;
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyPress);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [isPlaying, mediaError, file, togglePlay, currentTime, duration]);
+  
   // Handle progress bar hover for scrub preview
   const handleProgressHover = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!progressRef.current || isDragging) return;
