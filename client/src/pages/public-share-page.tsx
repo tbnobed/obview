@@ -77,6 +77,10 @@ export default function PublicSharePage() {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isRequestChangesOpen, setIsRequestChangesOpen] = useState(false);
   
+  // Sprite scrubbing state for shared links
+  const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
+  const [spriteLoaded, setSpriteLoaded] = useState(false);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const mediaContainerRef = useRef<HTMLDivElement>(null);
@@ -130,6 +134,24 @@ export default function PublicSharePage() {
     enabled: !!token && !!file && file.fileType === 'video',
     retry: false
   });
+
+  // Load sprite metadata for shared video files
+  useEffect(() => {
+    if (file && file.fileType === 'video' && videoProcessing?.status === 'completed') {
+      fetch(`/api/share/${token}/sprite-metadata`)
+        .then(res => res.ok ? res.json() : null)
+        .then(metadata => {
+          if (metadata) {
+            setSpriteMetadata(metadata);
+            console.log(`🎬 [SHARE-SPRITE] Loaded metadata for shared file ${file.id}:`, metadata);
+          }
+        })
+        .catch(err => console.warn(`🎬 [SHARE-SPRITE] Failed to load metadata for shared file ${file.id}:`, err));
+    } else {
+      setSpriteMetadata(null);
+      setSpriteLoaded(false);
+    }
+  }, [file?.id, file?.fileType, videoProcessing?.status, token]);
 
   // Request changes form
   const requestChangesForm = useForm<z.infer<typeof requestChangesSchema>>({
