@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2 } from "lucide-react";
+import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useQuery } from "@tanstack/react-query";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 import { File as StorageFile } from "@shared/schema";
 
@@ -66,6 +68,35 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
   const [thumbnailError, setThumbnailError] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubPosition, setScrubPosition] = useState(0);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Delete file mutation
+  const deleteMutation = useMutation({
+    mutationFn: (fileId: number) => apiRequest(`/api/files/${fileId}`, 'DELETE'),
+    onSuccess: () => {
+      // Invalidate and refetch files
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', file.projectId, 'files'] });
+      toast({
+        title: "File deleted",
+        description: "The file has been successfully deleted.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting file",
+        description: error.message || "Failed to delete the file. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Are you sure you want to delete "${file.filename}"? This action cannot be undone.`)) {
+      deleteMutation.mutate(file.id);
+    }
+  };
   
   const processing = getProcessingStatus(file.id);
   
@@ -325,6 +356,15 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
                 <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                   <Share2 className="h-4 w-4 mr-2" />
                   Share Link
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleDelete}
+                  className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
