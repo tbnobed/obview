@@ -1583,7 +1583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve thumbnail sprite
-  app.get("/api/files/:id/sprite", isAuthenticated, hasProjectAccess, async (req, res) => {
+  app.get("/api/files/:id/sprite", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
       
@@ -1604,8 +1604,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve sprite metadata
-  app.get("/api/files/:id/sprite-metadata", isAuthenticated, hasProjectAccess, async (req, res) => {
+  // Serve sprite metadata  
+  app.get("/api/files/:id/sprite-metadata", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
       
