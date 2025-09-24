@@ -607,7 +607,7 @@ export default function ProjectPage() {
                         variant="outline" 
                         size="sm"
                         onClick={() => setViewMode('grid')}
-                        className="bg-white/90 backdrop-blur-sm border-gray-300"
+                        className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
                       >
                         ← Back to Grid
                       </Button>
