@@ -27,6 +27,8 @@ services:
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
       # Flag to signal a Docker environment to use proper database connection strategy
       - IS_DOCKER=true
+      # Upload directory for file operations
+      - UPLOAD_DIR=/app/uploads
     volumes:
       - uploads:/app/uploads
     networks:

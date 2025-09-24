@@ -79,9 +79,12 @@ EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 ENV IS_DOCKER=true
+ENV UPLOAD_DIR=/app/uploads
 
-# Create upload directories including processed video directories
-RUN mkdir -p /app/uploads/processed
+# Create upload directories including processed video directories with proper permissions
+RUN mkdir -p /app/uploads/processed && \
+    chmod -R 755 /app/uploads && \
+    chown -R node:node /app/uploads
 
 # Create a volume for uploads
 VOLUME /app/uploads

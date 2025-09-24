@@ -70,9 +70,22 @@ else
   echo "Setup script not found. This might cause issues if no admin user exists."
 fi
 
-# Create required directories
+# Create required directories with proper permissions
 mkdir -p /app/dist/server
-mkdir -p /app/uploads
+mkdir -p /app/uploads/processed
+
+# Ensure proper permissions for file operations
+chown -R $(whoami):$(whoami) /app/uploads 2>/dev/null || true
+chmod -R 755 /app/uploads
+
+# Verify filesystem utilities are available for cleanup operations
+echo "Verifying filesystem utilities for admin cleanup operations..."
+if [ ! -d "/app/uploads" ]; then
+  echo "Warning: Upload directory not found at /app/uploads"
+fi
+
+# Test write permissions
+touch /app/uploads/.test_write 2>/dev/null && rm -f /app/uploads/.test_write && echo "✅ Upload directory write permissions verified" || echo "⚠️  Warning: Upload directory may not be writable"
 
 # Find a valid entry point for the server - prefer built JS over TypeScript source  
 find_server_entry() {
