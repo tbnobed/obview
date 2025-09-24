@@ -45,7 +45,6 @@ COPY --from=builder /app/server ./server
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/client ./client
 COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/attached_assets ./attached_assets
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Copy dependencies and configuration files

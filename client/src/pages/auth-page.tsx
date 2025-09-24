@@ -13,7 +13,7 @@ import { queryClient } from "@/lib/queryClient";
 import { insertUserSchema } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 import Logo from "@/components/ui/logo";
-import backgroundVideo from "@assets/media_tiles_1758739085369.mp4";
+import backgroundVideo from "@/assets/background-video.mp4";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
