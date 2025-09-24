@@ -1,9 +1,10 @@
 /**
  * Format a date to a relative time ago string
  */
-export function formatTimeAgo(date: Date): string {
+export function formatTimeAgo(date: Date | string): string {
   const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
   
   if (diffInSeconds < 60) {
     return `${diffInSeconds} second${diffInSeconds !== 1 ? 's' : ''} ago`;
