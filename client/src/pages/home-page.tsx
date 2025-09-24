@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus, FileVideo } from "lucide-react";
 import ProjectCard from "@/components/projects/project-card";
+import FoldersManagement from "@/components/folders/folders-management";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -85,6 +86,8 @@ export default function HomePage() {
             </Card>
           )}
         </section>
+
+        <FoldersManagement />
       </div>
     </AppLayout>
   );
