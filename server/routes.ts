@@ -35,6 +35,7 @@ interface FileRequest extends Request {
 }
 import { 
   insertProjectSchema,
+  insertFolderSchema,
   insertCommentSchema,
   insertPublicCommentSchema,
   insertFileSchema,
@@ -674,6 +675,209 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ===== FOLDER ROUTES =====
+  // Get all folders for the current user
+  app.get("/api/folders", isAuthenticated, async (req, res, next) => {
+    try {
+      let folders;
+      
+      // Admins can see all folders
+      if (req.user.role === "admin") {
+        folders = await storage.getAllFolders();
+      } else {
+        folders = await storage.getFoldersByUser(req.user.id);
+      }
+      
+      res.json(folders);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Create a new folder
+  app.post("/api/folders", isAuthenticated, async (req, res, next) => {
+    try {
+      // Validate input using Zod schema
+      const validatedData = insertFolderSchema.parse({
+        ...req.body,
+        createdById: req.user.id, // Set the creator to the current user
+      });
+
+      const folder = await storage.createFolder(validatedData);
+      
+      // Log activity
+      await storage.logActivity({
+        action: "create",
+        entityType: "folder",
+        entityId: folder.id,
+        userId: req.user.id,
+        metadata: { folderName: folder.name },
+      });
+
+      res.status(201).json(folder);
+    } catch (error) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Get a specific folder by ID
+  app.get("/api/folders/:folderId", isAuthenticated, async (req, res, next) => {
+    try {
+      const folderId = parseInt(req.params.folderId);
+      
+      if (isNaN(folderId)) {
+        return res.status(400).json({ message: "Invalid folder ID" });
+      }
+
+      const folder = await storage.getFolder(folderId);
+      
+      if (!folder) {
+        return res.status(404).json({ message: "Folder not found" });
+      }
+
+      // Check if user has access to this folder
+      if (req.user.role !== "admin" && folder.createdById !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      res.json(folder);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Update a folder
+  app.patch("/api/folders/:folderId", isAuthenticated, async (req, res, next) => {
+    try {
+      const folderId = parseInt(req.params.folderId);
+      
+      if (isNaN(folderId)) {
+        return res.status(400).json({ message: "Invalid folder ID" });
+      }
+
+      const existingFolder = await storage.getFolder(folderId);
+      
+      if (!existingFolder) {
+        return res.status(404).json({ message: "Folder not found" });
+      }
+
+      // Check if user has access to edit this folder
+      if (req.user.role !== "admin" && existingFolder.createdById !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Validate input
+      const validatedData = insertFolderSchema.partial().parse(req.body);
+      
+      const updatedFolder = await storage.updateFolder(folderId, validatedData);
+      
+      if (!updatedFolder) {
+        return res.status(404).json({ message: "Folder not found" });
+      }
+
+      // Log activity
+      await storage.logActivity({
+        action: "update",
+        entityType: "folder",
+        entityId: folderId,
+        userId: req.user.id,
+        metadata: { folderName: updatedFolder.name },
+      });
+
+      res.json(updatedFolder);
+    } catch (error) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      next(error);
+    }
+  });
+
+  // Delete a folder
+  app.delete("/api/folders/:folderId", isAuthenticated, async (req, res, next) => {
+    try {
+      const folderId = parseInt(req.params.folderId);
+      
+      if (isNaN(folderId)) {
+        return res.status(400).json({ message: "Invalid folder ID" });
+      }
+
+      const existingFolder = await storage.getFolder(folderId);
+      
+      if (!existingFolder) {
+        return res.status(404).json({ message: "Folder not found" });
+      }
+
+      // Check if user has access to delete this folder
+      if (req.user.role !== "admin" && existingFolder.createdById !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Check if folder has projects - prevent deletion if it does
+      const projectsInFolder = await storage.getProjectsByFolder(folderId);
+      if (projectsInFolder.length > 0) {
+        return res.status(400).json({ 
+          message: "Cannot delete folder that contains projects. Move or delete projects first." 
+        });
+      }
+
+      const success = await storage.deleteFolder(folderId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Folder not found" });
+      }
+
+      // Log activity
+      await storage.logActivity({
+        action: "delete",
+        entityType: "folder",
+        entityId: folderId,
+        userId: req.user.id,
+        metadata: { folderName: existingFolder.name },
+      });
+
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get all projects in a specific folder
+  app.get("/api/folders/:folderId/projects", isAuthenticated, async (req, res, next) => {
+    try {
+      const folderId = parseInt(req.params.folderId);
+      
+      if (isNaN(folderId)) {
+        return res.status(400).json({ message: "Invalid folder ID" });
+      }
+
+      const folder = await storage.getFolder(folderId);
+      
+      if (!folder) {
+        return res.status(404).json({ message: "Folder not found" });
+      }
+
+      // Check if user has access to this folder
+      if (req.user.role !== "admin" && folder.createdById !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const projects = await storage.getProjectsByFolder(folderId);
+      res.json(projects);
     } catch (error) {
       next(error);
     }
