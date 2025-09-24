@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
-import { z } from "zod";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { queryClient } from "@/lib/queryClient";
+import { z } from "zod";
+import { useAuth } from "@/hooks/use-auth";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useLocation } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 import { insertUserSchema } from "@shared/schema";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
@@ -41,6 +41,9 @@ export default function AuthPage() {
   const [showResetForm, setShowResetForm] = useState(false);
   const { user, loginMutation, registerMutation, resetPasswordRequestMutation } = useAuth();
   const [_, setLocation] = useLocation();
+  
+  // Check if registration is disabled via environment variable
+  const isRegistrationDisabled = import.meta.env.VITE_DISABLE_REGISTRATION === 'true';
   
   // Extract invitation information from URL if coming from invitation page
   const searchParams = new URLSearchParams(window.location.search);
@@ -202,19 +205,21 @@ export default function AuthPage() {
             </Card>
           ) : (
             <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-neutral-100 dark:bg-gray-800">
+              <TabsList className={`grid w-full mb-6 bg-neutral-100 dark:bg-gray-800 ${isRegistrationDisabled ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 <TabsTrigger 
                   value="login"
                   className="data-[state=active]:bg-[#026d55] data-[state=active]:text-white hover:bg-[#025a4710] dark:data-[state=active]:bg-[#026d55] dark:data-[state=active]:text-white"
                 >
                   Login
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="register"
-                  className="data-[state=active]:bg-[#026d55] data-[state=active]:text-white hover:bg-[#025a4710] dark:data-[state=active]:bg-[#026d55] dark:data-[state=active]:text-white"
-                >
-                  Register
-                </TabsTrigger>
+                {!isRegistrationDisabled && (
+                  <TabsTrigger 
+                    value="register"
+                    className="data-[state=active]:bg-[#026d55] data-[state=active]:text-white hover:bg-[#025a4710] dark:data-[state=active]:bg-[#026d55] dark:data-[state=active]:text-white"
+                  >
+                    Register
+                  </TabsTrigger>
+                )}
               </TabsList>
               
               <TabsContent value="login">
@@ -277,125 +282,129 @@ export default function AuthPage() {
                       </form>
                     </Form>
                   </CardContent>
-                  <CardFooter className="flex flex-col space-y-4">
-                    <div className="text-sm text-center text-neutral-500 dark:text-neutral-400">
-                      Don't have an account?{" "}
-                      <Button 
-                        variant="link" 
-                        className="p-0" 
-                        onClick={() => setActiveTab("register")}
-                      >
-                        Create one now
-                      </Button>
-                    </div>
-                  </CardFooter>
+                  {!isRegistrationDisabled && (
+                    <CardFooter className="flex flex-col space-y-4">
+                      <div className="text-sm text-center text-neutral-500 dark:text-neutral-400">
+                        Don't have an account?{" "}
+                        <Button 
+                          variant="link" 
+                          className="p-0" 
+                          onClick={() => setActiveTab("register")}
+                        >
+                          Create one now
+                        </Button>
+                      </div>
+                    </CardFooter>
+                  )}
                 </Card>
               </TabsContent>
               
-              <TabsContent value="register">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Create an account</CardTitle>
-                    <CardDescription>
-                      Fill in your details to register a new account
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Form {...registerForm}>
-                      <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                        <FormField
-                          control={registerForm.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Full Name</FormLabel>
-                              <FormControl>
-                                <Input placeholder="John Doe" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={registerForm.control}
-                          name="username"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Username</FormLabel>
-                              <FormControl>
-                                <Input placeholder="johndoe" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={registerForm.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Email</FormLabel>
-                              <FormControl>
-                                <Input placeholder="john@example.com" type="email" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={registerForm.control}
-                          name="password"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Password</FormLabel>
-                              <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={registerForm.control}
-                          name="confirmPassword"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Confirm Password</FormLabel>
-                              <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <input type="hidden" {...registerForm.register("role")} value="viewer" />
+              {!isRegistrationDisabled && (
+                <TabsContent value="register">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Create an account</CardTitle>
+                      <CardDescription>
+                        Fill in your details to register a new account
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Form {...registerForm}>
+                        <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                          <FormField
+                            control={registerForm.control}
+                            name="name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Full Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="John Doe" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={registerForm.control}
+                            name="username"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Username</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="johndoe" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={registerForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="john@example.com" type="email" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={registerForm.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <Input type="password" placeholder="••••••••" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={registerForm.control}
+                            name="confirmPassword"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Confirm Password</FormLabel>
+                                <FormControl>
+                                  <Input type="password" placeholder="••••••••" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <input type="hidden" {...registerForm.register("role")} value="viewer" />
+                          <Button 
+                            type="submit" 
+                            className="w-full bg-[#026d55] hover:bg-[#025a47] dark:bg-[#026d55] dark:hover:bg-[#025a47] dark:text-white text-white"
+                            disabled={registerMutation.isPending}
+                          >
+                            {registerMutation.isPending && (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            )}
+                            Create Account
+                          </Button>
+                        </form>
+                      </Form>
+                    </CardContent>
+                    <CardFooter className="flex flex-col space-y-4">
+                      <div className="text-sm text-center text-neutral-500 dark:text-neutral-400">
+                        Already have an account?{" "}
                         <Button 
-                          type="submit" 
-                          className="w-full bg-[#026d55] hover:bg-[#025a47] dark:bg-[#026d55] dark:hover:bg-[#025a47] dark:text-white text-white"
-                          disabled={registerMutation.isPending}
+                          variant="link" 
+                          className="p-0" 
+                          onClick={() => setActiveTab("login")}
                         >
-                          {registerMutation.isPending && (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          )}
-                          Create Account
+                          Sign in instead
                         </Button>
-                      </form>
-                    </Form>
-                  </CardContent>
-                  <CardFooter className="flex flex-col space-y-4">
-                    <div className="text-sm text-center text-neutral-500 dark:text-neutral-400">
-                      Already have an account?{" "}
-                      <Button 
-                        variant="link" 
-                        className="p-0" 
-                        onClick={() => setActiveTab("login")}
-                      >
-                        Sign in instead
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </TabsContent>
+              )}
             </Tabs>
           )}
         </div>
@@ -416,7 +425,6 @@ export default function AuthPage() {
               Upload videos, leave timestamped comments, and get approvals—all in one place.
             </p>
             <ul className="space-y-3">
-
               <li className="flex items-center">
                 <svg className="h-6 w-6 mr-2 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
