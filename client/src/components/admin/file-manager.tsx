@@ -222,7 +222,8 @@ export default function FileManager() {
   // Force delete unlinked files mutation
   const forceDeleteMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/admin/force-delete-unlinked");
+      const response = await apiRequest("POST", "/api/admin/force-delete-unlinked");
+      return await response.json();
     },
     onSuccess: (data) => {
       console.log("Force delete completed:", data);
@@ -234,7 +235,7 @@ export default function FileManager() {
       
       toast({
         title: "Force Delete Complete",
-        description: `Successfully removed ${data.results.totalFilesRemoved} unlinked files.`,
+        description: `Successfully removed ${data.results?.totalFilesRemoved || 0} unlinked files.`,
       });
     },
     onError: (error: Error) => {
@@ -604,17 +605,17 @@ export default function FileManager() {
             <div className="space-y-4 py-2">
               <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900">
                 <h3 className="text-sm font-medium mb-2 text-red-700 dark:text-red-400">Files Permanently Deleted</h3>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{forceDeleteResults.results.deletedFiles}</p>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{forceDeleteResults.results?.deletedFiles || 0}</p>
               </div>
               
-              {forceDeleteResults.results.errors.length > 0 && (
+              {forceDeleteResults.results?.errors?.length > 0 && (
                 <div className="mt-4">
                   <h3 className="text-sm font-medium mb-2 flex items-center">
                     <AlertTriangle className="h-4 w-4 text-red-500 mr-1" />
-                    Errors ({forceDeleteResults.results.errors.length})
+                    Errors ({forceDeleteResults.results?.errors?.length || 0})
                   </h3>
                   <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg p-3 max-h-32 overflow-y-auto">
-                    {forceDeleteResults.results.errors.map((error: string, index: number) => (
+                    {forceDeleteResults.results?.errors?.map((error: string, index: number) => (
                       <div key={index} className="text-sm text-red-700 dark:text-red-400 mb-1">
                         {error}
                       </div>

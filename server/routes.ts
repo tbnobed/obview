@@ -3303,8 +3303,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const uploadDir = process.env.UPLOAD_DIR || './uploads';
       
-      // Get all database files
+      // Get all database files and valid projects
       const dbFiles = await storage.getAllFiles();
+      const projects = await storage.getAllProjects();
+      const validProjectIds = new Set(projects.map(p => p.id));
       
       let deleteResults = {
         deletedFiles: 0,
@@ -3312,15 +3314,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: [] as string[]
       };
       
-      // Find files that exist on disk and in database but have no project association
+      // Find files that exist on disk but have invalid project associations
       for (const dbFile of dbFiles) {
         try {
           // Check if file exists on disk
           const fileExistsOnDisk = await fileSystem.fileExists(dbFile.filePath);
           
           if (fileExistsOnDisk) {
-            // Check if file is linked to any project
-            if (!dbFile.projectId || dbFile.projectId === null) {
+            // Check if file is truly orphaned (no project or project no longer exists)
+            const isOrphaned = !dbFile.projectId || !validProjectIds.has(dbFile.projectId);
+            
+            if (isOrphaned) {
               console.log(`🗑️ [FORCE DELETE] Deleting unlinked file: ${dbFile.filename} (ID: ${dbFile.id})`);
               
               // Delete the physical file and its processed versions
