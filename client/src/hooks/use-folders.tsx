@@ -26,8 +26,7 @@ export const useCreateFolder = () => {
   
   return useMutation({
     mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", "/api/folders", data);
-      return await res.json();
+      return await apiRequest("POST", "/api/folders", data);
     },
     onSuccess: () => {
       toast({
@@ -51,8 +50,7 @@ export const useUpdateFolder = (folderId: number) => {
   
   return useMutation({
     mutationFn: async (data: any) => {
-      const res = await apiRequest("PATCH", `/api/folders/${folderId}`, data);
-      return await res.json();
+      return await apiRequest("PATCH", `/api/folders/${folderId}`, data);
     },
     onSuccess: () => {
       toast({
