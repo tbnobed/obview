@@ -212,7 +212,7 @@ export default function AuthPage() {
         ) : (
           <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
             {!isRegistrationDisabled && (
-              <TabsList className="grid w-full mb-6 bg-white/10 backdrop-blur-sm border-white/20">
+              <TabsList className="grid grid-cols-2 w-full mb-6 bg-white/10 backdrop-blur-sm border-white/20">
                 <TabsTrigger 
                   value="login"
                   className="data-[state=active]:bg-[#026d55] data-[state=active]:text-white text-white/80 hover:text-white"
