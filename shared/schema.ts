@@ -62,8 +62,8 @@ export const files = pgTable("files", {
   fileType: text("file_type").notNull(), // "video", "audio", "image"
   fileSize: bigint("file_size", { mode: "number" }).notNull(),
   filePath: text("file_path").notNull(),
-  projectId: integer("project_id").notNull(),
-  uploadedById: integer("uploaded_by_id").notNull(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  uploadedById: integer("uploaded_by_id").notNull().references(() => users.id),
   version: integer("version").notNull().default(1),
   isLatestVersion: boolean("is_latest_version").notNull().default(true),
   isAvailable: boolean("is_available").notNull().default(true), // Track if file is physically available
@@ -78,8 +78,8 @@ export const insertFileSchema = createInsertSchema(files)
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
-  fileId: integer("file_id").notNull(),
-  userId: integer("user_id").notNull(),
+  fileId: integer("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id),
   parentId: integer("parent_id"), // For comment replies (null if top-level)
   timestamp: integer("timestamp"), // For timestamped video comments (seconds)
   isResolved: boolean("is_resolved").notNull().default(false),
@@ -93,7 +93,7 @@ export const insertCommentSchema = createInsertSchema(comments)
 export const publicComments = pgTable("public_comments", {
   id: serial("id").primaryKey(),
   content: text("content").notNull(),
-  fileId: integer("file_id").notNull(),
+  fileId: integer("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
   displayName: text("display_name").notNull(),
   timestamp: integer("timestamp"), // For timestamped video comments (seconds)
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -110,8 +110,8 @@ export const insertPublicCommentSchema = createInsertSchema(publicComments)
 // PROJECT USER SCHEMA (for permissions)
 export const projectUsers = pgTable("project_users", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull(),
-  userId: integer("user_id").notNull(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id),
   role: text("role").notNull().default("viewer"), // "editor", "viewer"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -137,13 +137,13 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs)
 export const invitations = pgTable("invitations", {
   id: serial("id").primaryKey(),
   email: text("email").notNull(),
-  projectId: integer("project_id"),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }),
   role: text("role").notNull().default("viewer"),
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   isAccepted: boolean("is_accepted").notNull().default(false),
   emailSent: boolean("email_sent").notNull().default(false),
-  createdById: integer("created_by_id").notNull(),
+  createdById: integer("created_by_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -153,8 +153,8 @@ export const insertInvitationSchema = createInsertSchema(invitations)
 // APPROVAL SCHEMA
 export const approvals = pgTable("approvals", {
   id: serial("id").primaryKey(),
-  fileId: integer("file_id").notNull(),
-  userId: integer("user_id").notNull(),
+  fileId: integer("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id),
   status: text("status").notNull(), // "approved", "requested_changes"
   feedback: text("feedback"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -166,7 +166,7 @@ export const insertApprovalSchema = createInsertSchema(approvals)
 // PASSWORD RESET SCHEMA
 export const passwordResets = pgTable("password_resets", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   isUsed: boolean("is_used").notNull().default(false),
@@ -179,7 +179,7 @@ export const insertPasswordResetSchema = createInsertSchema(passwordResets)
 // VIDEO PROCESSING SCHEMA
 export const videoProcessing = pgTable("video_processing", {
   id: serial("id").primaryKey(),
-  fileId: integer("file_id").notNull(),
+  fileId: integer("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
   status: text("status").notNull().default("pending"), // "pending", "processing", "completed", "failed"
   qualities: json("qualities").$type<Array<{resolution: string, path: string, size: number, bitrate: string}>>(),
   scrubVersionPath: text("scrub_version_path"),
