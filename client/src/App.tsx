@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { SidebarProvider } from "@/hooks/use-sidebar";
 import { UploadManager } from "@/components/uploads/upload-manager";
+import { uploadService } from "@/lib/upload-service";
 import HomePage from "@/pages/home-page";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
@@ -53,6 +54,23 @@ function Router() {
 }
 
 function App() {
+  // Prevent accidental page refresh/navigation during active uploads
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (uploadService.hasActiveUploads()) {
+        event.preventDefault();
+        event.returnValue = 'You have uploads in progress. Are you sure you want to leave?';
+        return 'You have uploads in progress. Are you sure you want to leave?';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
