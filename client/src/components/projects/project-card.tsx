@@ -89,10 +89,13 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         {/* Video Preview Section */}
         {project.latestVideoFile ? (
           <div 
-            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden"
+            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden cursor-none"
             onMouseMove={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
-              if (!video || !isFinite(video.duration) || video.duration <= 0) return;
+              if (!video) return;
+              
+              // Wait for video to be properly loaded
+              if (video.readyState < 1 || !isFinite(video.duration) || video.duration <= 0) return;
               
               const rect = e.currentTarget.getBoundingClientRect();
               if (rect.width === 0) return;
@@ -100,16 +103,32 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
               const newTime = video.duration * pos;
               
-              // Only set currentTime if the calculated value is valid
-              if (isFinite(newTime) && newTime >= 0 && newTime <= video.duration) {
-                video.currentTime = newTime;
+              // More robust validation and scrubbing
+              if (isFinite(newTime) && newTime >= 0 && newTime <= video.duration && Math.abs(video.currentTime - newTime) > 0.1) {
+                try {
+                  video.currentTime = newTime;
+                } catch (error) {
+                  // Ignore seeking errors - video might still be loading
+                }
+              }
+            }}
+            onMouseEnter={(e) => {
+              const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
+              if (!video) return;
+              // Ensure video is ready for scrubbing
+              if (video.readyState >= 1 && video.paused) {
+                video.load(); // Refresh if needed
               }
             }}
             onMouseLeave={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
-              if (!video) return;
+              if (!video || !isFinite(video.duration)) return;
               // Reset to 1 second preview when not hovering
-              video.currentTime = Math.min(1, video.duration || 0);
+              try {
+                video.currentTime = Math.min(1, video.duration || 0);
+              } catch (error) {
+                // Ignore reset errors
+              }
             }}
             data-testid={`video-preview-container-${project.id}`}
           >
@@ -125,14 +144,27 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             ) : (
               // Use best available video source for interactive scrubbing
               <video
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover pointer-events-none"
                 preload="metadata"
                 muted
+                playsInline
                 data-testid={`video-preview-${project.id}`}
                 onLoadedMetadata={(e) => {
                   const video = e.target as HTMLVideoElement;
-                  video.currentTime = Math.min(1, video.duration || 0);
+                  // Set initial preview position
+                  try {
+                    video.currentTime = Math.min(1, video.duration || 0);
+                  } catch (error) {
+                    // Will try again when video is more ready
+                  }
                   console.log(`🎬 [PROJECT CARD] ✅ Video loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
+                }}
+                onCanPlay={(e) => {
+                  const video = e.target as HTMLVideoElement;
+                  // Ensure video is ready for smooth scrubbing
+                  if (video.currentTime === 0 && video.duration > 1) {
+                    video.currentTime = Math.min(1, video.duration);
+                  }
                 }}
                 onError={(e) => {
                   console.error(`🎬 [PROJECT CARD] ❌ Video error for project ${project.id}:`, e);
