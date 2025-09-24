@@ -73,7 +73,7 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
   
   // Delete file mutation
   const deleteMutation = useMutation({
-    mutationFn: (fileId: number) => apiRequest(`/api/files/${fileId}`, 'DELETE'),
+    mutationFn: (fileId: number) => apiRequest('DELETE', `/api/files/${fileId}`),
     onSuccess: () => {
       // Invalidate and refetch files
       queryClient.invalidateQueries({ queryKey: ['/api/projects', file.projectId, 'files'] });
