@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder, useFolderProjects } from "@/hooks/use-folders";
+import { useMediaFiles } from "@/hooks/use-media";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
     },
   });
 
-  // Reset edit form when editing folder changes
+  // Update edit form when editing folder changes
   useEffect(() => {
     if (editingFolder) {
       editForm.reset({
@@ -67,12 +68,10 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
     }
   }, [editingFolder, editForm]);
 
+  // Handle create folder
   const handleCreateFolder = async (data: CreateFolderInput) => {
     try {
-      await createMutation.mutateAsync({
-        name: data.name,
-        description: data.description || null,
-      });
+      await createMutation.mutateAsync(data);
       createForm.reset();
       setCreateDialogOpen(false);
     } catch (error) {
@@ -80,14 +79,12 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
     }
   };
 
+  // Handle update folder
   const handleUpdateFolder = async (data: CreateFolderInput) => {
     if (!editingFolder) return;
     
     try {
-      await updateMutation.mutateAsync({
-        name: data.name,
-        description: data.description || null,
-      });
+      await updateMutation.mutateAsync(data);
       editForm.reset();
       setEditDialogOpen(false);
       setEditingFolder(null);
@@ -96,6 +93,7 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
     }
   };
 
+  // Handle delete folder
   const handleDeleteFolder = async (folderId: number) => {
     try {
       await deleteMutation.mutateAsync(folderId);
@@ -104,22 +102,20 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
     }
   };
 
+  // Open edit dialog
   const openEditDialog = (folder: any) => {
     setEditingFolder(folder);
-    editForm.reset({
-      name: folder.name || "",
-      description: folder.description || "",
-    });
     setEditDialogOpen(true);
   };
 
   return (
     <div className={cn("space-y-6", className)}>
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">Folders</h2>
-          <p className="text-sm text-neutral-500 dark:text-gray-400">
-            Organize your projects into folders for better management
+          <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Folders</h2>
+          <p className="text-neutral-600 dark:text-gray-400 mt-1">
+            Organize your projects into folders for better structure and management.
           </p>
         </div>
         
@@ -467,27 +463,109 @@ function FolderProjectsList({ folderId }: { folderId: number }) {
     );
   }
   
+  // Match status badge styling from project cards
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-600">Approved</Badge>;
+      case 'in_review':
+        return <Badge className="bg-blue-600">In Review</Badge>;
+      case 'in_progress':
+      default:
+        return <Badge className="bg-yellow-600">In Progress</Badge>;
+    }
+  };
+  
   return (
     <div className="space-y-3">
       {projects.map((project) => (
-        <div 
-          key={project.id} 
-          className="flex items-center justify-between p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 hover:border-primary-300 transition-all cursor-pointer group shadow-sm"
-          onClick={() => navigate(`/projects/${project.id}`)}
-          data-testid={`project-item-${project.id}`}
-        >
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h4 className="font-semibold text-neutral-900 dark:text-white group-hover:text-primary-600 transition-colors">{project.name}</h4>
-              <ExternalLink className="h-4 w-4 text-neutral-400 group-hover:text-primary-600 transition-colors" />
-            </div>
-            {project.description && (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{project.description}</p>
-            )}
-          </div>
-          <Badge variant="secondary" className="ml-3">{project.status || 'draft'}</Badge>
-        </div>
+        <ProjectItem 
+          key={project.id}
+          project={project}
+          onNavigate={() => navigate(`/projects/${project.id}`)}
+          getStatusBadge={getStatusBadge}
+        />
       ))}
+    </div>
+  );
+}
+
+// Individual project item with thumbnail
+function ProjectItem({ project, onNavigate, getStatusBadge }: {
+  project: any;
+  onNavigate: () => void;
+  getStatusBadge: (status: string) => JSX.Element;
+}) {
+  const { data: files } = useMediaFiles(project.id);
+  
+  // Find the latest video file for thumbnail
+  const latestVideoFile = files?.find((file: any) => file.fileType === 'video') || null;
+  
+  return (
+    <div 
+      className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 hover:border-primary-300 transition-all cursor-pointer group shadow-sm"
+      onClick={onNavigate}
+      data-testid={`project-item-${project.id}`}
+    >
+      {/* Thumbnail Preview */}
+      <div className="flex-shrink-0">
+        {latestVideoFile ? (
+          <div className="relative w-20 h-12 bg-gray-900 rounded overflow-hidden">
+            <video
+              className="w-full h-full object-cover"
+              src={`/api/files/${latestVideoFile.id}/scrub`}
+              muted
+              playsInline
+              preload="metadata"
+              onError={(e) => {
+                // Fallback to file icon if video fails to load
+                e.currentTarget.style.display = 'none';
+                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+            {/* Fallback icon */}
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-800" style={{ display: 'none' }}>
+              <Folder className="h-6 w-6 text-gray-400" />
+            </div>
+            {/* Play indicator overlay */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+              <div className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center">
+                <ExternalLink className="h-3 w-3 text-gray-800" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="w-20 h-12 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
+            <Folder className="h-6 w-6 text-gray-400" />
+          </div>
+        )}
+      </div>
+      
+      {/* Project Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <h4 className="font-semibold text-neutral-900 dark:text-white group-hover:text-primary-600 transition-colors truncate">
+            {project.name}
+          </h4>
+          <ExternalLink className="h-4 w-4 text-neutral-400 group-hover:text-primary-600 transition-colors flex-shrink-0" />
+        </div>
+        {project.description && (
+          <p className="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-1">
+            {project.description}
+          </p>
+        )}
+        {files && files.length > 0 && (
+          <p className="text-xs text-neutral-500 mt-1">
+            {files.length} file{files.length !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+      
+      {/* Status Badge */}
+      <div className="flex-shrink-0">
+        {getStatusBadge(project.status || 'in_progress')}
+      </div>
     </div>
   );
 }
