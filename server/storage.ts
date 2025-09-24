@@ -1,6 +1,7 @@
 import {
   users,
   projects,
+  folders,
   files,
   comments,
   publicComments,
@@ -12,6 +13,8 @@ import {
   videoProcessing,
   type User,
   type InsertUser,
+  type Folder,
+  type InsertFolder,
   type Project,
   type InsertProject,
   type File,
@@ -53,10 +56,19 @@ export interface IStorage {
   updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
 
+  // Folder management
+  getFolder(id: number): Promise<Folder | undefined>;
+  getAllFolders(): Promise<Folder[]>;
+  getFoldersByUser(userId: number): Promise<Folder[]>;
+  createFolder(folder: InsertFolder): Promise<Folder>;
+  updateFolder(id: number, data: Partial<InsertFolder>): Promise<Folder | undefined>;
+  deleteFolder(id: number): Promise<boolean>;
+
   // Project management
   getProject(id: number): Promise<Project | undefined>;
   getAllProjects(): Promise<Project[]>;
   getProjectsByUser(userId: number): Promise<Project[]>;
+  getProjectsByFolder(folderId: number): Promise<Project[]>;
   getAllProjectsWithLatestVideo(): Promise<(Project & { latestVideoFile?: File })[]>;
   getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File })[]>;
   createProject(project: InsertProject): Promise<Project>;
@@ -133,6 +145,7 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
+  private folders: Map<number, Folder>;
   private projects: Map<number, Project>;
   private files: Map<number, File>;
   private comments: Map<number, Comment>;
@@ -146,6 +159,7 @@ export class MemStorage implements IStorage {
   sessionStore: any; // Using any to avoid type issues
 
   currentUserId: number;
+  currentFolderId: number;
   currentProjectId: number;
   currentFileId: number;
   currentCommentId: number;
@@ -159,6 +173,7 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.users = new Map();
+    this.folders = new Map();
     this.projects = new Map();
     this.files = new Map();
     this.comments = new Map();
@@ -171,6 +186,7 @@ export class MemStorage implements IStorage {
     this.videoProcessing = new Map();
     
     this.currentUserId = 1;
+    this.currentFolderId = 1;
     this.currentProjectId = 1;
     this.currentFileId = 1;
     this.currentCommentId = 1;
@@ -233,6 +249,51 @@ export class MemStorage implements IStorage {
     return this.users.delete(id);
   }
 
+  // Folder methods
+  async getFolder(id: number): Promise<Folder | undefined> {
+    return this.folders.get(id);
+  }
+
+  async getAllFolders(): Promise<Folder[]> {
+    return Array.from(this.folders.values());
+  }
+
+  async getFoldersByUser(userId: number): Promise<Folder[]> {
+    return Array.from(this.folders.values()).filter(
+      (folder) => folder.createdById === userId
+    );
+  }
+
+  async createFolder(insertFolder: InsertFolder): Promise<Folder> {
+    const id = this.currentFolderId++;
+    const now = new Date();
+    const folder: Folder = {
+      ...insertFolder,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.folders.set(id, folder);
+    return folder;
+  }
+
+  async updateFolder(id: number, data: Partial<InsertFolder>): Promise<Folder | undefined> {
+    const folder = this.folders.get(id);
+    if (!folder) return undefined;
+    
+    const updatedFolder: Folder = { 
+      ...folder, 
+      ...data,
+      updatedAt: new Date()
+    };
+    this.folders.set(id, updatedFolder);
+    return updatedFolder;
+  }
+
+  async deleteFolder(id: number): Promise<boolean> {
+    return this.folders.delete(id);
+  }
+
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {
     return this.projects.get(id);
@@ -250,6 +311,12 @@ export class MemStorage implements IStorage {
     return userProjectRoles.map(
       (pu) => this.projects.get(pu.projectId)!
     ).filter(Boolean);
+  }
+
+  async getProjectsByFolder(folderId: number): Promise<Project[]> {
+    return Array.from(this.projects.values()).filter(
+      (project) => project.folderId === folderId
+    );
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
@@ -734,10 +801,13 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // Note: Session store is now handled in auth.ts with PostgreSQL backing
-  
+  sessionStore: any; // Using any to avoid type issues
+
   constructor() {
     // Session store initialization moved to auth.ts for proper persistence
+    this.sessionStore = new PostgresSessionStore({
+      pool
+    });
   }
 
   // User methods
@@ -782,6 +852,48 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
+  // Folder methods
+  async getFolder(id: number): Promise<Folder | undefined> {
+    const [folder] = await db.select().from(folders).where(eq(folders.id, id));
+    return folder;
+  }
+
+  async getAllFolders(): Promise<Folder[]> {
+    return await db.select().from(folders);
+  }
+
+  async getFoldersByUser(userId: number): Promise<Folder[]> {
+    return await db
+      .select()
+      .from(folders)
+      .where(eq(folders.createdById, userId));
+  }
+
+  async createFolder(insertFolder: InsertFolder): Promise<Folder> {
+    const [folder] = await db.insert(folders).values(insertFolder).returning();
+    return folder;
+  }
+
+  async updateFolder(id: number, data: Partial<InsertFolder>): Promise<Folder | undefined> {
+    const [updatedFolder] = await db
+      .update(folders)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(folders.id, id))
+      .returning();
+    return updatedFolder;
+  }
+
+  async deleteFolder(id: number): Promise<boolean> {
+    const result = await db
+      .delete(folders)
+      .where(eq(folders.id, id))
+      .returning({ deletedId: folders.id });
+    return result.length > 0;
+  }
+
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {
     const [project] = await db.select().from(projects).where(eq(projects.id, id));
@@ -802,6 +914,13 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(projects, eq(projectUsers.projectId, projects.id));
 
     return userProjects.map((up: { project: Project }) => up.project);
+  }
+
+  async getProjectsByFolder(folderId: number): Promise<Project[]> {
+    return await db
+      .select()
+      .from(projects)
+      .where(eq(projects.folderId, folderId));
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
