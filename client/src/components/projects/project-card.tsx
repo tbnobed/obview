@@ -92,7 +92,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         {/* Video Preview Section */}
         {project.latestVideoFile ? (
           <div 
-            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden cursor-crosshair group"
+            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden cursor-grab hover:cursor-grabbing group"
             onMouseMove={(e) => {
               const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
               if (!video) {
@@ -230,13 +230,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             }`}>
               <PlayCircle className="h-10 w-10 text-white" />
             </div>
-            
-            {/* Scrubbing Status Indicator */}
-            {isScrubbing && (
-              <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-md font-medium">
-                📹 Scrubbing
-              </div>
-            )}
             <div className={`absolute bottom-1.5 right-1.5 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded transition-opacity ${
               isScrubbing ? 'opacity-50' : 'opacity-100'
             }`}>
