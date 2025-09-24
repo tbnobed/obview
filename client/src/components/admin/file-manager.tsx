@@ -222,8 +222,7 @@ export default function FileManager() {
   // Force delete unlinked files mutation
   const forceDeleteMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/force-delete-unlinked");
-      return await response.json();
+      return await apiRequest("POST", "/api/admin/force-delete-unlinked");
     },
     onSuccess: (data) => {
       console.log("Force delete completed:", data);
