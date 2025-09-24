@@ -1920,36 +1920,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve multi-sheet thumbnail sprites with DPI support
+  // Serve thumbnail sprite
   app.get("/api/files/:id/sprite", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
-      const dpi = req.query.dpi as string || '@2x'; // Default to @2x for high-res
-      const sheet = parseInt(req.query.sheet as string) || 0; // Default to first sheet
       
       if (isNaN(fileId)) {
         return res.status(400).json({ message: "Invalid file ID" });
       }
 
       const processing = await storage.getVideoProcessing(fileId);
-      if (!processing || !processing.spriteMetadata) {
-        return res.status(404).json({ message: "Sprite not available" });
-      }
-
-      // Find the requested variant and sheet
-      const variant = processing.spriteMetadata.variants?.find((v: any) => v.dpi === dpi);
-      if (!variant) {
-        return res.status(404).json({ message: `Sprite variant ${dpi} not available` });
-      }
-
-      const sheetData = variant.sheets?.find((s: any) => s.sheetIndex === sheet);
-      if (!sheetData || !existsSync(sheetData.path)) {
-        return res.status(404).json({ message: `Sprite sheet ${sheet} not available for ${dpi}` });
+      if (!processing || !processing.thumbnailSpritePath || !existsSync(processing.thumbnailSpritePath)) {
+        return res.status(404).json({ message: "Thumbnail sprite not available" });
       }
 
       res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache for sprites
-      res.setHeader('Content-Type', 'image/jpeg'); // JPEG format
-      res.sendFile(path.resolve(sheetData.path));
+      res.sendFile(path.resolve(processing.thumbnailSpritePath));
     } catch (error) {
       console.error("[Video Processing API] Error serving sprite:", error);
       res.status(500).json({ message: "Internal server error" });
