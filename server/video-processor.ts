@@ -303,9 +303,24 @@ export class VideoProcessor {
       const outputPath = path.join(outputDir, `${filename}_sprite.jpg`);
       const spriteJsonPath = path.join(outputDir, `${filename}_sprite.json`);
       
-      // Calculate thumbnail intervals (every 5 seconds)
-      const interval = 5; // seconds
-      const thumbnailCount = Math.min(Math.floor(metadata.duration / interval), 100); // Max 100 thumbnails
+      // Calculate thumbnail intervals based on video duration for optimal scrubbing
+      // For shorter videos, use smaller intervals; for longer videos, use larger intervals
+      let interval: number;
+      let thumbnailCount: number;
+      
+      if (metadata.duration <= 30) {
+        // Short videos: 1 thumbnail every 1-2 seconds (15-30 thumbnails)
+        interval = Math.max(1, metadata.duration / 20);
+        thumbnailCount = Math.min(Math.ceil(metadata.duration / interval), 25);
+      } else if (metadata.duration <= 300) {
+        // Medium videos (up to 5 minutes): 1 thumbnail every 3-5 seconds (60-100 thumbnails)
+        interval = Math.max(3, metadata.duration / 60);
+        thumbnailCount = Math.min(Math.ceil(metadata.duration / interval), 80);
+      } else {
+        // Long videos: 1 thumbnail every 5-10 seconds (max 100 thumbnails)
+        interval = Math.max(5, metadata.duration / 100);
+        thumbnailCount = Math.min(Math.ceil(metadata.duration / interval), 100);
+      }
       const cols = Math.ceil(Math.sqrt(thumbnailCount));
       const rows = Math.ceil(thumbnailCount / cols);
       
