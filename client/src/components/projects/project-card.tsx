@@ -186,7 +186,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 </div>
               </div>
             ) : (
-              // Use best available video source for interactive scrubbing  
+              // Use best available video source for interactive scrubbing
               <video
                 className="w-full h-full object-cover pointer-events-none"
                 preload="auto"
@@ -203,16 +203,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                   }
                   console.log(`🎬 [PROJECT CARD] ✅ Video loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
                 }}
-                onLoadStart={() => {
-                  console.log(`🎬 [PROJECT CARD] 🚀 Video loading started for project ${project.id}`);
-                }}
-                ref={(video) => {
-                  // Force immediate loading when video element is created and sources are available
-                  if (video && videoProcessing !== undefined) {
-                    console.log(`🎬 [PROJECT CARD] 🔄 Forcing immediate video load for project ${project.id}`);
-                    video.load();
-                  }
-                }}
                 onCanPlay={(e) => {
                   const video = e.target as HTMLVideoElement;
                   // Ensure video is ready for smooth scrubbing
@@ -226,13 +216,13 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               >
                 {/* Use scrub version for instant seeking if available */}
                 {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
-                  <source src={`/api/files/${project.latestVideoFile.id}/scrub`} type="video/mp4" key="scrub" />
+                  <source src={`/api/files/${project.latestVideoFile.id}/scrub`} type="video/mp4" />
                 ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p') ? (
                   /* Use 720p quality for better performance */
-                  <source src={`/api/files/${project.latestVideoFile.id}/qualities/720p`} type="video/mp4" key="720p" />
+                  <source src={`/api/files/${project.latestVideoFile.id}/qualities/720p`} type="video/mp4" />
                 ) : null}
                 {/* Always include original as fallback */}
-                <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" key="original" />
+                <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
             )}
