@@ -113,7 +113,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             }}
             data-testid={`video-preview-container-${project.id}`}
           >
-            {/* Wait for processing data before showing media */}
+            {/* Wait for processing data, then use best video source */}
             {videoProcessing === undefined ? (
               // Loading state - show placeholder while processing query loads
               <div className="w-full h-full flex items-center justify-center bg-gray-800">
@@ -122,20 +122,8 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                   <p className="text-xs">Loading preview...</p>
                 </div>
               </div>
-            ) : videoProcessing?.status === 'completed' && videoProcessing.thumbnailSpritePath ? (
-              // Use optimized sprite when available
-              <img
-                className="w-full h-full object-cover"
-                src={`/api/files/${project.latestVideoFile.id}/sprite`}
-                alt={project.latestVideoFile.filename}
-                data-testid={`sprite-preview-${project.id}`}
-                onLoad={() => console.log(`🎬 [PROJECT CARD] ✅ Sprite loaded for project ${project.id}: ${project.latestVideoFile?.filename}`)}
-                onError={(e) => {
-                  console.error(`🎬 [PROJECT CARD] ❌ Sprite failed for project ${project.id}:`, e);
-                }}
-              />
             ) : (
-              // Fallback to video only after confirming no sprite available
+              // Use best available video source for interactive scrubbing
               <video
                 className="w-full h-full object-cover"
                 preload="metadata"
@@ -144,9 +132,20 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 onLoadedMetadata={(e) => {
                   const video = e.target as HTMLVideoElement;
                   video.currentTime = Math.min(1, video.duration || 0);
-                  console.log(`🎬 [PROJECT CARD] 📺 Video fallback for project ${project.id}: ${project.latestVideoFile?.filename}`);
+                  console.log(`🎬 [PROJECT CARD] ✅ Video loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
+                }}
+                onError={(e) => {
+                  console.error(`🎬 [PROJECT CARD] ❌ Video error for project ${project.id}:`, e);
                 }}
               >
+                {/* Use scrub version for instant seeking if available */}
+                {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
+                  <source src={`/api/files/${project.latestVideoFile.id}/scrub`} type="video/mp4" />
+                ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p') ? (
+                  /* Use 720p quality for better performance */
+                  <source src={`/api/files/${project.latestVideoFile.id}/qualities/720p`} type="video/mp4" />
+                ) : null}
+                {/* Always include original as fallback */}
                 <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
