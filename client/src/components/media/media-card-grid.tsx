@@ -67,8 +67,8 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const processing = getProcessingStatus(file.id);
   
-  // Try to load thumbnail for video files
-  const thumbnailSrc = file.fileType === 'video' ? `/api/files/${file.id}/thumbnail` : null;
+  // Try to load scrub preview for video files (Frame.io style)
+  const thumbnailSrc = file.fileType === 'video' ? `/api/files/${file.id}/scrub` : null;
   
   // Get duration from processing data
   const duration = (processing as any)?.originalDuration || null;
@@ -127,15 +127,28 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
           {file.fileType === 'video' && thumbnailSrc ? (
             <>
               {!thumbnailError ? (
-                <img
+                <video
                   src={thumbnailSrc}
-                  alt={file.filename}
+                  muted
+                  preload="metadata"
                   className={cn(
                     "w-full h-full object-cover transition-opacity duration-200",
                     thumbnailLoaded ? "opacity-100" : "opacity-0"
                   )}
-                  onLoad={handleThumbnailLoad}
+                  onLoadedData={handleThumbnailLoad}
                   onError={handleThumbnailError}
+                  onMouseEnter={(e) => {
+                    const video = e.target as HTMLVideoElement;
+                    video.currentTime = 0;
+                    video.play().catch(() => {
+                      // Ignore autoplay failures
+                    });
+                  }}
+                  onMouseLeave={(e) => {
+                    const video = e.target as HTMLVideoElement;
+                    video.pause();
+                    video.currentTime = 0;
+                  }}
                 />
               ) : null}
               
