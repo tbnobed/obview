@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFolders } from "@/hooks/use-folders";
 
 interface ProjectFormProps {
   projectId?: number;
@@ -25,6 +26,7 @@ const createProjectSchema = z.object({
     .min(1, "Project name is required")
     .max(20, "Project name must be 20 characters or less"),
   description: z.string().nullable().optional(),
+  folderId: z.number().nullable().optional(),
   status: z.string().default("in_progress")
 });
 
@@ -38,6 +40,7 @@ export default function ProjectForm({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const isEditMode = !!projectId;
+  const { data: folders } = useFolders();
   
   // Fetch project data if in edit mode
   const { data: project } = useQuery<any>({
@@ -51,11 +54,13 @@ export default function ProjectForm({
     defaultValues: {
       name: "",
       description: "",
+      folderId: null,
       status: "in_progress",
     },
     values: project ? {
       name: project.name || "",
       description: project.description || "",
+      folderId: project.folderId || null,
       status: project.status || "in_progress",
     } : undefined
   });
@@ -75,6 +80,7 @@ export default function ProjectForm({
         body: JSON.stringify({
           name: data.name,
           description: data.description || null,
+          folderId: data.folderId || null,
           status: data.status
         }),
         credentials: 'include'
@@ -171,6 +177,42 @@ export default function ProjectForm({
               </FormControl>
               <FormDescription>
                 Briefly describe what this project is about
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="folderId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Folder (optional)</FormLabel>
+              <Select
+                onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
+                value={field.value ? field.value.toString() : "none"}
+              >
+                <FormControl>
+                  <SelectTrigger data-testid="select-folder">
+                    <SelectValue placeholder="Select a folder or leave unorganized" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="none">No folder (unorganized)</SelectItem>
+                  {folders && folders.map((folder) => (
+                    <SelectItem 
+                      key={folder.id} 
+                      value={folder.id.toString()}
+                      data-testid={`select-folder-${folder.id}`}
+                    >
+                      {folder.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Organize this project by placing it in a folder
               </FormDescription>
               <FormMessage />
             </FormItem>
