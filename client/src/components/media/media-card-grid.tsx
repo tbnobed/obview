@@ -50,6 +50,7 @@ const getFileIcon = (fileType: string) => {
 const getProcessingStatus = (fileId: number) => {
   const { data: processing } = useQuery({
     queryKey: ['/api/files', fileId, 'processing'],
+    queryFn: ({ signal }) => apiRequest('GET', `/api/files/${fileId}/processing`, undefined, { signal }),
     enabled: !!fileId,
     staleTime: 5000, // Cache for 5 seconds
     retry: false
