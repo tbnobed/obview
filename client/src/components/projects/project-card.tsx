@@ -162,11 +162,14 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                     }
                     
                     // Calculate which thumbnail to show based on scrub position
-                    const thumbnailIndex = Math.floor(scrubPosition * (spriteMetadata.thumbnailCount - 1));
+                    const thumbnailIndex = Math.min(
+                      Math.floor(scrubPosition * spriteMetadata.thumbnailCount), 
+                      spriteMetadata.thumbnailCount - 1
+                    );
                     const col = thumbnailIndex % spriteMetadata.cols;
                     const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
                     
-                    // Calculate background position
+                    // Calculate background position (CSS background-position works by moving the image)
                     const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
                     const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
                     
