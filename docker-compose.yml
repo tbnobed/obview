@@ -6,6 +6,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_DISABLE_REGISTRATION=${VITE_DISABLE_REGISTRATION:-false}
     container_name: obview_app
     restart: always
     ports:

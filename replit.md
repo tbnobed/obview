@@ -39,6 +39,7 @@ Preferred communication style: Simple, everyday language.
 - **Role-based Access Control**: Admin and user roles with different permission levels
 - **Password Security**: Salted and hashed passwords using crypto module
 - **Password Reset**: Email-based password reset workflow with temporary tokens
+- **Registration Control**: Configurable registration disable via VITE_DISABLE_REGISTRATION environment variable for Docker deployments
 
 ### Key Features Implementation
 - **Media Timeline Comments**: Timestamped comments system allowing precise feedback on video content

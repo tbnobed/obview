@@ -13,11 +13,16 @@ RUN npm ci
 # Copy source code including assets
 COPY . .
 
+# Accept build arguments for Vite environment variables
+ARG VITE_DISABLE_REGISTRATION=false
+ENV VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION
+
 # Verify the structure before building  
 RUN ls -la && echo "Content of server directory:" && ls -la server/
 
 # Build the application and production server
 RUN echo "=== BUILDING APPLICATION ===" && \
+    echo "VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION" && \
     npm run build && \
     echo "=== BUILD VERIFICATION ===" && \
     ls -la dist/ && \
