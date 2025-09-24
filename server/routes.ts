@@ -1640,6 +1640,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve individual thumbnail for cards (uses first frame of sprite)
+  app.get("/api/files/:id/thumbnail", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+
+      const processing = await storage.getVideoProcessing(fileId);
+      if (!processing || !processing.thumbnailSpritePath || !existsSync(processing.thumbnailSpritePath)) {
+        return res.status(404).json({ message: "Thumbnail not available" });
+      }
+
+      // For now, serve the sprite as thumbnail - in production you'd generate individual thumbnails
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache
+      res.sendFile(path.resolve(processing.thumbnailSpritePath));
+    } catch (error) {
+      console.error("[Video Processing API] Error serving thumbnail:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Serve thumbnail sprite
   app.get("/api/files/:id/sprite", isAuthenticated, hasFileAccess, async (req, res) => {
     try {

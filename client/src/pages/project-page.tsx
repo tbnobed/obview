@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ClipboardCheck } from "lucide-react";
 import MediaPlayer from "@/components/media/media-player";
+import MediaCardGrid from "@/components/media/media-card-grid";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
@@ -60,6 +61,7 @@ export default function ProjectPage() {
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
   const [initialTime, setInitialTime] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("media");
+  const [viewMode, setViewMode] = useState<'grid' | 'player'>('grid'); // Start with grid view
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
@@ -87,12 +89,13 @@ export default function ProjectPage() {
     }
   }, [project]);
 
-  useEffect(() => {
-    // Set the first file as selected when files load
-    if (files && files.length > 0 && !selectedFileId) {
-      setSelectedFileId(files[0].id);
-    }
-  }, [files, selectedFileId]);
+  // Remove auto-selection since we want to show grid first
+  // useEffect(() => {
+  //   // Set the first file as selected when files load
+  //   if (files && files.length > 0 && !selectedFileId) {
+  //     setSelectedFileId(files[0].id);
+  //   }
+  // }, [files, selectedFileId]);
   
   // Listen for custom event for timestamp navigation
   useEffect(() => {
@@ -105,6 +108,7 @@ export default function ProjectPage() {
         setSelectedFileId(fileId);
         setInitialTime(timestamp);
         setActiveTab("media");
+        setViewMode("player"); // Switch to player when jumping to timestamp
       }
     };
     
@@ -117,6 +121,7 @@ export default function ProjectPage() {
         setSelectedFileId(fileId);
         setInitialTime(timestamp);
         setActiveTab("media");
+        setViewMode("player"); // Switch to player when jumping to timestamp
       }
     };
     
@@ -582,14 +587,42 @@ export default function ProjectPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : files && files.length > 0 ? (
-              <MediaPlayer
-                file={selectedFile}
-                projectId={projectId}
-                onSelectFile={setSelectedFileId}
-                files={files}
-                initialTime={initialTime}
-                project={project}
-              />
+              <>
+                {viewMode === 'grid' && (
+                  <MediaCardGrid 
+                    files={files}
+                    projectId={projectId}
+                    onSelectFile={(fileId) => {
+                      setSelectedFileId(fileId);
+                      setViewMode('player');
+                    }}
+                  />
+                )}
+                
+                {viewMode === 'player' && selectedFileId && (
+                  <div className="relative">
+                    {/* Back to Grid Button */}
+                    <div className="absolute top-4 right-4 z-10">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setViewMode('grid')}
+                        className="bg-white/90 backdrop-blur-sm border-gray-300"
+                      >
+                        ← Back to Grid
+                      </Button>
+                    </div>
+                    <MediaPlayer
+                      file={files.find(f => f.id === selectedFileId) || null}
+                      projectId={projectId}
+                      onSelectFile={setSelectedFileId}
+                      files={files}
+                      initialTime={initialTime}
+                      project={project}
+                    />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center py-20">
                 <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
