@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Trash2, PlayCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +25,23 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   const deleteProjectMutation = useDeleteProject();
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubPosition, setScrubPosition] = useState(0);
+  const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
+  const [spriteLoaded, setSpriteLoaded] = useState(false);
+  
+  // Load sprite metadata for video files
+  useEffect(() => {
+    if (project.latestVideoFile && videoProcessing?.status === 'completed') {
+      fetch(`/api/files/${project.latestVideoFile.id}/sprite-metadata`)
+        .then(res => res.ok ? res.json() : null)
+        .then(metadata => {
+          if (metadata) {
+            setSpriteMetadata(metadata);
+            console.log(`🎬 [PROJECT-SPRITE] Loaded metadata for file ${project.latestVideoFile?.id}:`, metadata);
+          }
+        })
+        .catch(err => console.warn(`🎬 [PROJECT-SPRITE] Failed to load metadata for file ${project.latestVideoFile?.id}:`, err));
+    }
+  }, [project.latestVideoFile?.id, videoProcessing?.status]);
   
   // Fetch video processing data for optimal scrubbing (when video file exists)
   const { data: videoProcessing } = useQuery({
@@ -97,86 +114,31 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               cursor: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M8 5v10l8-5-8-5z' fill='%23ffffff'/%3e%3c/svg%3e") 10 10, pointer`
             }}
             onMouseMove={(e) => {
-              const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
-              if (!video) {
-                console.log('🎬 [SCRUB] No video element found');
-                return;
-              }
-              
-              // If video isn't ready, try to trigger loading
-              if (video.readyState < 1 || !isFinite(video.duration) || video.duration <= 0) {
-                if (video.readyState === 0) {
-                  video.load(); // Force load if not started
-                }
-                console.log('🎬 [SCRUB] Video not ready, triggering load:', video.readyState, video.duration);
-                return;
-              }
+              if (!spriteMetadata || !project.latestVideoFile) return;
               
               const rect = e.currentTarget.getBoundingClientRect();
               if (rect.width === 0) return;
               
               const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-              const newTime = video.duration * pos;
-              
-              // Update visual position immediately for responsiveness
               setScrubPosition(pos);
               
-              // More robust validation and scrubbing
-              if (isFinite(newTime) && newTime >= 0 && newTime <= video.duration) {
-                try {
-                  video.currentTime = newTime;
-                  console.log(`🎬 [SCRUB] Seeking to: ${newTime.toFixed(2)}s (${(pos * 100).toFixed(1)}%)`);
-                } catch (error) {
-                  console.warn('🎬 [SCRUB] Seek error:', error);
-                }
-              }
+              console.log(`🎬 [PROJECT-SPRITE-SCRUB] Position: ${(pos * 100).toFixed(1)}%`);
             }}
-            onMouseEnter={(e) => {
-              const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
-              if (!video) return;
+            onMouseEnter={() => {
+              if (!spriteMetadata || !project.latestVideoFile) return;
               
-              console.log('🎬 [SCRUB] Mouse entered - activating scrub mode');
+              console.log('🎬 [PROJECT-SPRITE-SCRUB] Mouse entered - activating sprite scrub mode');
               setIsScrubbing(true);
-              
-              // Force video to start loading immediately if not already
-              if (video.readyState === 0) {
-                video.load();
-                console.log('🎬 [SCRUB] Forcing video load on hover');
-              }
-              
-              // If video is ready, set initial position
-              if (video.duration > 0) {
-                setScrubPosition(video.currentTime / video.duration);
-              } else {
-                // Retry setting position when video loads
-                const checkReady = () => {
-                  if (video.duration > 0) {
-                    setScrubPosition(video.currentTime / video.duration);
-                    console.log('🎬 [SCRUB] Video became ready, position set');
-                  }
-                };
-                video.addEventListener('loadedmetadata', checkReady, { once: true });
-                video.addEventListener('canplay', checkReady, { once: true });
-              }
+              setScrubPosition(0);
             }}
-            onMouseLeave={(e) => {
-              const video = e.currentTarget.querySelector('video') as HTMLVideoElement;
-              if (!video || !isFinite(video.duration)) return;
-              
-              console.log('🎬 [SCRUB] Mouse left - deactivating scrub mode');
+            onMouseLeave={() => {
+              console.log('🎬 [PROJECT-SPRITE-SCRUB] Mouse left - deactivating sprite scrub mode');
               setIsScrubbing(false);
               setScrubPosition(0);
-              
-              // Reset to 1 second preview when not hovering
-              try {
-                video.currentTime = Math.min(1, video.duration || 0);
-              } catch (error) {
-                console.warn('🎬 [SCRUB] Reset error:', error);
-              }
             }}
             data-testid={`video-preview-container-${project.id}`}
           >
-            {/* Wait for processing data, then use best video source */}
+            {/* Wait for processing and sprite data */}
             {videoProcessing === undefined ? (
               // Loading state - show placeholder while processing query loads
               <div className="w-full h-full flex items-center justify-center bg-gray-800">
@@ -185,46 +147,48 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                   <p className="text-xs">Loading preview...</p>
                 </div>
               </div>
+            ) : spriteMetadata ? (
+              // Use sprite-based scrubbing
+              <div
+                className="w-full h-full bg-center bg-no-repeat bg-cover pointer-events-none"
+                data-testid={`sprite-preview-${project.id}`}
+                style={{
+                  backgroundImage: `url(/api/files/${project.latestVideoFile.id}/sprite)`,
+                  backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
+                  backgroundPosition: (() => {
+                    if (!isScrubbing) {
+                      // Show first frame when not scrubbing
+                      return `0% 0%`;
+                    }
+                    
+                    // Calculate which thumbnail to show based on scrub position
+                    const thumbnailIndex = Math.floor(scrubPosition * (spriteMetadata.thumbnailCount - 1));
+                    const col = thumbnailIndex % spriteMetadata.cols;
+                    const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
+                    
+                    // Calculate background position
+                    const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
+                    const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
+                    
+                    return `${xPercent}% ${yPercent}%`;
+                  })()
+                }}
+                onLoad={() => {
+                  console.log(`🎬 [PROJECT-SPRITE] ✅ Sprite loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
+                  setSpriteLoaded(true);
+                }}
+                onError={() => {
+                  console.error(`🎬 [PROJECT-SPRITE] ❌ Sprite error for project ${project.id}`);
+                }}
+              />
             ) : (
-              // Use best available video source for interactive scrubbing
-              <video
-                className="w-full h-full object-cover pointer-events-none"
-                preload="auto"
-                muted
-                playsInline
-                data-testid={`video-preview-${project.id}`}
-                onLoadedMetadata={(e) => {
-                  const video = e.target as HTMLVideoElement;
-                  // Set initial preview position
-                  try {
-                    video.currentTime = Math.min(1, video.duration || 0);
-                  } catch (error) {
-                    // Will try again when video is more ready
-                  }
-                  console.log(`🎬 [PROJECT CARD] ✅ Video loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
-                }}
-                onCanPlay={(e) => {
-                  const video = e.target as HTMLVideoElement;
-                  // Ensure video is ready for smooth scrubbing
-                  if (video.currentTime === 0 && video.duration > 1) {
-                    video.currentTime = Math.min(1, video.duration);
-                  }
-                }}
-                onError={(e) => {
-                  console.error(`🎬 [PROJECT CARD] ❌ Video error for project ${project.id}:`, e);
-                }}
-              >
-                {/* Use scrub version for instant seeking if available */}
-                {videoProcessing?.status === 'completed' && videoProcessing.scrubVersionPath ? (
-                  <source src={`/api/files/${project.latestVideoFile.id}/scrub`} type="video/mp4" />
-                ) : videoProcessing?.status === 'completed' && videoProcessing.qualities?.some((q: any) => q.resolution === '720p') ? (
-                  /* Use 720p quality for better performance */
-                  <source src={`/api/files/${project.latestVideoFile.id}/qualities/720p`} type="video/mp4" />
-                ) : null}
-                {/* Always include original as fallback */}
-                <source src={`/api/files/${project.latestVideoFile.id}/content`} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              // Fallback for no sprite data - show static thumbnail
+              <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                <div className="text-center text-gray-400">
+                  <PlayCircle className="h-8 w-8 mx-auto mb-1.5" />
+                  <p className="text-xs">Processing...</p>
+                </div>
+              </div>
             )}
             {/* Scrub Progress Bar */}
             {isScrubbing && (
