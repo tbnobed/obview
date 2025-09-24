@@ -28,21 +28,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   
-  // Load sprite metadata for video files
-  useEffect(() => {
-    if (project.latestVideoFile && videoProcessing?.status === 'completed') {
-      fetch(`/api/files/${project.latestVideoFile.id}/sprite-metadata`)
-        .then(res => res.ok ? res.json() : null)
-        .then(metadata => {
-          if (metadata) {
-            setSpriteMetadata(metadata);
-            console.log(`🎬 [PROJECT-SPRITE] Loaded metadata for file ${project.latestVideoFile?.id}:`, metadata);
-          }
-        })
-        .catch(err => console.warn(`🎬 [PROJECT-SPRITE] Failed to load metadata for file ${project.latestVideoFile?.id}:`, err));
-    }
-  }, [project.latestVideoFile?.id, videoProcessing?.status]);
-  
   // Fetch video processing data for optimal scrubbing (when video file exists)
   const { data: videoProcessing } = useQuery({
     queryKey: ['/api/files', project.latestVideoFile?.id, 'processing'],
@@ -62,6 +47,21 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     // Don't show query errors, processing is optional
     meta: { suppressErrorToast: true }
   });
+  
+  // Load sprite metadata for video files
+  useEffect(() => {
+    if (project.latestVideoFile && videoProcessing?.status === 'completed') {
+      fetch(`/api/files/${project.latestVideoFile.id}/sprite-metadata`)
+        .then(res => res.ok ? res.json() : null)
+        .then(metadata => {
+          if (metadata) {
+            setSpriteMetadata(metadata);
+            console.log(`🎬 [PROJECT-SPRITE] Loaded metadata for file ${project.latestVideoFile?.id}:`, metadata);
+          }
+        })
+        .catch(err => console.warn(`🎬 [PROJECT-SPRITE] Failed to load metadata for file ${project.latestVideoFile?.id}:`, err));
+    }
+  }, [project.latestVideoFile?.id, videoProcessing?.status]);
   
   // Check if user can delete this project (project creator or admin)
   const canDelete = user && (
