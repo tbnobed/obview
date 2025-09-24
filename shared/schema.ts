@@ -42,7 +42,7 @@ export const projects = pgTable("projects", {
   name: text("name").notNull(),
   description: text("description"),
   status: text("status").notNull().default("in_progress"), // "in_progress", "in_review", "approved"
-  folderId: integer("folder_id"), // Optional folder assignment
+  folderId: integer("folder_id").references(() => folders.id, { onDelete: "set null" }), // Optional folder assignment - sets to null if folder deleted
   createdById: integer("created_by_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
