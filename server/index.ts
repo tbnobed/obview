@@ -74,4 +74,9 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
   });
+
+  // CRITICAL: Configure Node.js HTTP server timeouts for large file uploads
+  server.timeout = 1800000;        // 30 minutes
+  server.requestTimeout = 1800000; // 30 minutes  
+  server.headersTimeout = 1800000; // 30 minutes
 })();
