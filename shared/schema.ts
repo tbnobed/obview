@@ -17,12 +17,32 @@ export const users = pgTable("users", {
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true });
 
+// FOLDER SCHEMA
+export const folders = pgTable("folders", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color").default("#6366f1"), // Hex color for folder
+  createdById: integer("created_by_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertFolderSchema = createInsertSchema(folders)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    name: z.string().min(1).max(50, "Folder name must be 50 characters or less"),
+    description: z.string().optional(),
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a valid hex color").optional()
+  });
+
 // PROJECT SCHEMA
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
   status: text("status").notNull().default("in_progress"), // "in_progress", "in_review", "approved"
+  folderId: integer("folder_id"), // Optional folder assignment
   createdById: integer("created_by_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -31,7 +51,8 @@ export const projects = pgTable("projects", {
 export const insertProjectSchema = createInsertSchema(projects)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
-    name: z.string().min(1).max(20, "Project name must be 20 characters or less")
+    name: z.string().min(1).max(20, "Project name must be 20 characters or less"),
+    folderId: z.number().optional()
   });
 
 // FILE SCHEMA
@@ -177,6 +198,9 @@ export const insertVideoProcessingSchema = createInsertSchema(videoProcessing)
 // Type definitions
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type Folder = typeof folders.$inferSelect;
+export type InsertFolder = z.infer<typeof insertFolderSchema>;
 
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
