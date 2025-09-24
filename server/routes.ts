@@ -1028,10 +1028,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { projectName: project.name },
       });
       
+      // Get all files for this project before deletion
+      console.log(`[PROJECT DELETE] Starting comprehensive cleanup for project ${projectId}: ${project.name}`);
+      const projectFiles = await storage.getFilesByProject(projectId);
+      console.log(`[PROJECT DELETE] Found ${projectFiles.length} files to cleanup`);
+      
+      // Comprehensive filesystem cleanup for all project files with concurrency limit
+      let filesystemErrors: string[] = [];
+      if (projectFiles.length > 0) {
+        const cleanupResults = await fileSystem.removeMultipleFiles(
+          projectFiles.map(f => ({ id: f.id, filePath: f.filePath })),
+          3 // Concurrency limit
+        );
+        
+        // Summarize cleanup results
+        const summary = fileSystem.summarizeCleanupResults(cleanupResults);
+        filesystemErrors = summary.totalErrors;
+        
+        // Check for critical filesystem failures
+        if (summary.failed > 0 && summary.successful === 0) {
+          console.error(`[PROJECT DELETE] Critical filesystem cleanup failure for project ${projectId}`);
+          return res.status(409).json({ 
+            message: `Failed to remove project files from filesystem. Database not modified to prevent orphaned records. Errors: ${filesystemErrors.slice(0, 3).join(', ')}`
+          });
+        }
+        
+        if (filesystemErrors.length > 0) {
+          console.warn(`[PROJECT DELETE] Some filesystem cleanup warnings for project ${projectId}:`, filesystemErrors);
+        }
+      }
+      
+      // Delete project record from database (this will cascade to related records with our schema)
       const success = await storage.deleteProject(projectId);
       
       if (!success) {
         return res.status(404).json({ message: "Project not found" });
+      }
+      
+      console.log(`[PROJECT DELETE] ✅ Successfully deleted project ${projectId}: ${project.name}`);
+      
+      // If there were filesystem warnings but deletion succeeded, log them
+      if (filesystemErrors.length > 0) {
+        console.log(`[PROJECT DELETE] Note: Some files may remain on disk despite successful deletion. Manual cleanup may be needed.`);
       }
       
       res.status(204).end();
@@ -2521,20 +2559,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
       
-      // Delete file record
+      // Comprehensive filesystem cleanup - remove original file and all processed versions
+      console.log(`[FILE DELETE] Starting comprehensive cleanup for file ${fileId}: ${file.filename}`);
+      const cleanupResult = await fileSystem.removeFileCompletely(file.id, file.filePath);
+      
+      // Check if filesystem cleanup had any critical failures
+      if (!cleanupResult.original && !cleanupResult.processed) {
+        console.error(`[FILE DELETE] Critical filesystem cleanup failure for file ${fileId}`);
+        return res.status(409).json({ 
+          message: "Failed to remove file from filesystem. Database not modified to prevent orphaned records." 
+        });
+      }
+      
+      // Log filesystem cleanup results
+      if (!cleanupResult.original) {
+        console.warn(`[FILE DELETE] Failed to remove original file: ${file.filePath}`);
+      }
+      if (!cleanupResult.processed) {
+        console.warn(`[FILE DELETE] Failed to remove processed directory for file ${fileId}`);
+      }
+      
+      // Delete file record from database (this will cascade to related records with our schema)
       const success = await storage.deleteFile(fileId);
       
       if (!success) {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Delete the actual file from disk
-      try {
-        await fileSystem.deleteFile(file.filePath);
-      } catch (err) {
-        console.error(`Failed to delete file ${file.filePath}:`, err);
-      }
-      
+      console.log(`[FILE DELETE] ✅ Successfully deleted file ${fileId}: ${file.filename}`);
       res.status(204).end();
     } catch (error) {
       next(error);
