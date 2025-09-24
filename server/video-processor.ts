@@ -290,8 +290,8 @@ export class VideoProcessor {
   }
 
   /**
-   * Generate thumbnail sprite for hover previews
-   * Creates a grid of thumbnails at regular intervals
+   * Generate high-quality multi-sheet sprite system for professional video scrubbing
+   * Creates multiple sprite sheets with different DPI variants to avoid GPU limits
    */
   private static async generateThumbnailSprite(
     inputPath: string,
@@ -300,53 +300,99 @@ export class VideoProcessor {
     metadata: any
   ): Promise<{ path: string; metadata: any }> {
     try {
-      const outputPath = path.join(outputDir, `${filename}_sprite.jpg`);
-      const spriteJsonPath = path.join(outputDir, `${filename}_sprite.json`);
+      // Professional sprite configuration - avoid massive single sheets
+      const interval = 1.0; // 1 second intervals for optimal balance
+      const maxThumbnailsPerSheet = 100; // 10x10 grid to stay under GPU limits
+      const totalThumbnails = Math.min(Math.ceil(metadata.duration / interval), 500);
+      const sheetCount = Math.ceil(totalThumbnails / maxThumbnailsPerSheet);
       
-      // High-resolution sprite generation with 0.5 second intervals
-      const interval = 0.5; // 0.5 seconds between thumbnails for smooth scrubbing
-      const thumbnailCount = Math.min(Math.ceil(metadata.duration / interval), 200); // Max 200 thumbnails
-      const cols = Math.ceil(Math.sqrt(thumbnailCount));
-      const rows = Math.ceil(thumbnailCount / cols);
-      
-      // Generate sprite with thumbnails
-      const args = [
-        '-i', inputPath,
-        '-vf', [
-          `fps=1/${interval}`,
-          'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
-          `tile=${cols}x${rows}`
-        ].join(','),
-        '-frames:v', '1',
-        '-q:v', '1', // Highest quality (1-31, lower is better)
-        '-f', 'image2',
-        '-y',
-        outputPath
+      // DPI variants for crisp display on all screens
+      const variants = [
+        { suffix: '@1x', width: 160, height: 90, quality: 2 },   // Standard DPI
+        { suffix: '@2x', width: 320, height: 180, quality: 1 },  // High DPI (Retina)
+        { suffix: '@3x', width: 480, height: 270, quality: 1 }   // Ultra High DPI
       ];
       
-      console.log(`[VideoProcessor] Generating thumbnail sprite...`);
-      await this.executeFFmpeg(args);
-      
-      // Create sprite metadata
-      const spriteInfo = {
-        cols,
-        rows,
-        thumbnailWidth: 800,
-        thumbnailHeight: 450,
+      const spriteMetadata: any = {
         interval,
-        thumbnailCount,
-        duration: metadata.duration
+        totalThumbnails,
+        sheetCount,
+        maxThumbnailsPerSheet,
+        duration: metadata.duration,
+        variants: [],
+        sheets: []
       };
       
-      await fs.writeFile(spriteJsonPath, JSON.stringify(spriteInfo, null, 2));
-      console.log(`[VideoProcessor] Sprite metadata saved to: ${spriteJsonPath}`);
+      console.log(`[VideoProcessor] Generating ${sheetCount} sprite sheets with ${variants.length} DPI variants each...`);
+      
+      // Generate each DPI variant
+      for (const variant of variants) {
+        const sheets = [];
+        
+        // Generate multiple sheets for this DPI variant
+        for (let sheetIndex = 0; sheetIndex < sheetCount; sheetIndex++) {
+          const startTime = sheetIndex * maxThumbnailsPerSheet * interval;
+          const endTime = Math.min((sheetIndex + 1) * maxThumbnailsPerSheet * interval, metadata.duration);
+          const sheetThumbnailCount = Math.min(maxThumbnailsPerSheet, totalThumbnails - (sheetIndex * maxThumbnailsPerSheet));
+          
+          // Calculate grid dimensions (10x10 max)
+          const cols = Math.min(10, Math.ceil(Math.sqrt(sheetThumbnailCount)));
+          const rows = Math.ceil(sheetThumbnailCount / cols);
+          
+          const sheetPath = path.join(outputDir, `${filename}_sprite${variant.suffix}_sheet${sheetIndex}.webp`);
+          
+          // Generate this sprite sheet
+          const args = [
+            '-i', inputPath,
+            '-ss', startTime.toString(),
+            '-t', (endTime - startTime).toString(),
+            '-vf', [
+              `fps=1/${interval}`,
+              `scale=${variant.width}:${variant.height}:force_original_aspect_ratio=decrease,pad=${variant.width}:${variant.height}:(ow-iw)/2:(oh-ih)/2`,
+              `tile=${cols}x${rows}`
+            ].join(','),
+            '-frames:v', '1',
+            '-q:v', variant.quality.toString(),
+            '-f', 'webp', // WebP for better quality/compression
+            '-y',
+            sheetPath
+          ];
+          
+          await this.executeFFmpeg(args);
+          
+          sheets.push({
+            sheetIndex,
+            path: sheetPath,
+            cols,
+            rows,
+            startTime,
+            endTime,
+            thumbnailCount: sheetThumbnailCount,
+            // Calculate final sheet dimensions
+            width: cols * variant.width,
+            height: rows * variant.height
+          });
+        }
+        
+        spriteMetadata.variants.push({
+          dpi: variant.suffix,
+          thumbnailWidth: variant.width,
+          thumbnailHeight: variant.height,
+          sheets
+        });
+      }
+      
+      // Save comprehensive metadata
+      const spriteJsonPath = path.join(outputDir, `${filename}_sprite.json`);
+      await fs.writeFile(spriteJsonPath, JSON.stringify(spriteMetadata, null, 2));
+      console.log(`[VideoProcessor] Generated ${sheetCount * variants.length} sprite sheets with metadata`);
       
       return {
-        path: outputPath,
-        metadata: spriteInfo
+        path: spriteJsonPath, // Return metadata path instead of single sprite
+        metadata: spriteMetadata
       };
     } catch (error) {
-      console.error('[VideoProcessor] Error generating thumbnail sprite:', error);
+      console.error('[VideoProcessor] Error generating thumbnail sprites:', error);
       throw error;
     }
   }
