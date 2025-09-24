@@ -1015,7 +1015,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(files);
     } catch (error) {
-      console.error(`[ERROR] Failed to get files for project ${projectId}:`, error);
+      console.error(`[ERROR] Failed to get files for project ${req.params.projectId}:`, error);
       next(error);
     }
   });
