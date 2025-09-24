@@ -197,8 +197,8 @@ class UploadService {
       }
     });
     
-    // Disable timeout for large files
-    xhr.timeout = 0; // No timeout
+    // Handle timeout with longer duration for files
+    xhr.timeout = 3600000; // 1 hour in milliseconds
     
     // Open connection
     xhr.open('POST', `/api/projects/${projectId}/upload`, true);
@@ -351,8 +351,8 @@ class UploadService {
         });
       });
       
-      // Disable timeout for large files
-      xhr.timeout = 0; // No timeout
+      // Setup longer timeout
+      xhr.timeout = 3600000; // 1 hour
       
       // Setup a progress check interval to detect connection termination
       progressCheckInterval = window.setInterval(() => {
