@@ -131,8 +131,22 @@ server {
     listen 80;
     server_name obviu.io www.obviu.io;
 
+    # Increase maximum upload size to 10GB
+    client_max_body_size 10G;
+    
+    # Increase timeouts for large uploads (2 hours)
+    client_body_timeout 7200s;
+    client_header_timeout 7200s;
+    keepalive_timeout 7200s;
+    send_timeout 7200s;
+    
+    # Optimize buffer settings for large uploads
+    client_body_buffer_size 10M;
+    client_body_in_file_only on;
+    client_body_temp_path /var/cache/nginx/client_temp 1 2;
+
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -141,8 +155,12 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         
-        # Set larger client_max_body_size for file uploads
-        client_max_body_size 100M;
+        # Proxy timeouts for large uploads
+        proxy_connect_timeout 7200s;
+        proxy_send_timeout 7200s;
+        proxy_read_timeout 7200s;
+        proxy_buffering off;
+        proxy_max_temp_file_size 0;
     }
 }
 
