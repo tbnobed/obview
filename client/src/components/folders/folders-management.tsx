@@ -370,7 +370,10 @@ function FolderCard({ folder, onClick, onEdit, onDelete, isDeleting }: FolderCar
             <Button
               variant="ghost"
               size="sm"
-              onClick={onEdit}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
               data-testid={`button-edit-folder-${folder.id}`}
             >
               <Edit className="h-4 w-4" />
@@ -381,6 +384,7 @@ function FolderCard({ folder, onClick, onEdit, onDelete, isDeleting }: FolderCar
                   variant="ghost"
                   size="sm"
                   disabled={isDeleting}
+                  onClick={(e) => e.stopPropagation()}
                   data-testid={`button-delete-folder-${folder.id}`}
                 >
                   {isDeleting ? (
