@@ -3296,6 +3296,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Force delete unlinked files (admin only)
+  app.post("/api/admin/force-delete-unlinked", isAdmin, async (req, res, next) => {
+    try {
+      console.log("🗑️ [FORCE DELETE] Starting deletion of files not linked to any projects");
+      
+      const uploadDir = process.env.UPLOAD_DIR || './uploads';
+      
+      // Get all database files
+      const dbFiles = await storage.getAllFiles();
+      
+      let deleteResults = {
+        deletedFiles: 0,
+        totalFilesRemoved: 0,
+        errors: [] as string[]
+      };
+      
+      // Find files that exist on disk and in database but have no project association
+      for (const dbFile of dbFiles) {
+        try {
+          // Check if file exists on disk
+          const fileExistsOnDisk = await fileSystem.fileExists(dbFile.filePath);
+          
+          if (fileExistsOnDisk) {
+            // Check if file is linked to any project
+            if (!dbFile.projectId || dbFile.projectId === null) {
+              console.log(`🗑️ [FORCE DELETE] Deleting unlinked file: ${dbFile.filename} (ID: ${dbFile.id})`);
+              
+              // Delete the physical file and its processed versions
+              const removed = await fileSystem.removeFileCompletely(dbFile.id, dbFile.filePath);
+              
+              if (removed.original) {
+                // Remove from database
+                await storage.deleteFile(dbFile.id);
+                deleteResults.deletedFiles++;
+                deleteResults.totalFilesRemoved++;
+                console.log(`🗑️ [FORCE DELETE] Successfully deleted file ${dbFile.id}: ${dbFile.filename}`);
+              } else {
+                deleteResults.errors.push(`Failed to delete file: ${dbFile.filename} (${dbFile.filePath})`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing file ${dbFile.id}:`, error);
+          deleteResults.errors.push(`Error processing file ${dbFile.filename}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      
+      console.log(`🗑️ [FORCE DELETE] Completed: ${deleteResults.totalFilesRemoved} files deleted, ${deleteResults.errors.length} errors`);
+      
+      res.json({
+        message: `Force deletion completed. Removed ${deleteResults.totalFilesRemoved} unlinked files.`,
+        results: deleteResults
+      });
+      
+    } catch (error) {
+      console.error("Error during force deletion:", error);
+      res.status(500).json({
+        error: 'Server error during force deletion',
+        message: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
   // Clean up orphaned files (admin only)
   app.post("/api/admin/cleanup-orphaned-files", isAdmin, async (req, res, next) => {
     try {

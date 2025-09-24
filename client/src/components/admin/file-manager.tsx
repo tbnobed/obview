@@ -64,6 +64,8 @@ export default function FileManager() {
   const [scanResults, setScanResults] = useState<FileScanResult | null>(null);
   const [showCleanupResults, setShowCleanupResults] = useState(false);
   const [cleanupResults, setCleanupResults] = useState<any>(null);
+  const [showForceDeleteResults, setShowForceDeleteResults] = useState(false);
+  const [forceDeleteResults, setForceDeleteResults] = useState<any>(null);
 
   // Fetch uploaded files
   const { data: files, isLoading, error } = useQuery<FileDetails[]>({
@@ -212,6 +214,34 @@ export default function FileManager() {
       toast({
         title: "Cleanup Failed",
         description: `Failed to cleanup orphaned files: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Force delete unlinked files mutation
+  const forceDeleteMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/admin/force-delete-unlinked");
+    },
+    onSuccess: (data) => {
+      console.log("Force delete completed:", data);
+      setForceDeleteResults(data);
+      setShowForceDeleteResults(true);
+      
+      // Refresh the file list
+      queryClient.invalidateQueries({ queryKey: ["/api/system/uploads"] });
+      
+      toast({
+        title: "Force Delete Complete",
+        description: `Successfully removed ${data.results.totalFilesRemoved} unlinked files.`,
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Force delete error:", error);
+      toast({
+        title: "Force Delete Failed",
+        description: `Failed to delete unlinked files: ${error.message}`,
         variant: "destructive",
       });
     }
@@ -418,6 +448,20 @@ export default function FileManager() {
             )}
             {cleanupMutation.isPending ? 'Cleaning...' : 'Clean Orphaned Files'}
           </Button>
+          
+          <Button 
+            onClick={() => forceDeleteMutation.mutate()}
+            variant="outline"
+            className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"
+            disabled={forceDeleteMutation.isPending}
+          >
+            {forceDeleteMutation.isPending ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            {forceDeleteMutation.isPending ? 'Deleting...' : 'Force Delete Unlinked'}
+          </Button>
           <Input
             className="max-w-xs"
             placeholder="Search files..."
@@ -539,6 +583,50 @@ export default function FileManager() {
           
           <DialogFooter>
             <Button onClick={() => setShowCleanupResults(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Force Delete Results Dialog */}
+      <Dialog open={showForceDeleteResults} onOpenChange={setShowForceDeleteResults}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Trash2 className="h-5 w-5 mr-2 text-red-500" />
+              Force Delete Results
+            </DialogTitle>
+            <DialogDescription>
+              Results of the force deletion of unlinked files
+            </DialogDescription>
+          </DialogHeader>
+          
+          {forceDeleteResults && (
+            <div className="space-y-4 py-2">
+              <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900">
+                <h3 className="text-sm font-medium mb-2 text-red-700 dark:text-red-400">Files Permanently Deleted</h3>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{forceDeleteResults.results.deletedFiles}</p>
+              </div>
+              
+              {forceDeleteResults.results.errors.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2 flex items-center">
+                    <AlertTriangle className="h-4 w-4 text-red-500 mr-1" />
+                    Errors ({forceDeleteResults.results.errors.length})
+                  </h3>
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg p-3 max-h-32 overflow-y-auto">
+                    {forceDeleteResults.results.errors.map((error: string, index: number) => (
+                      <div key={index} className="text-sm text-red-700 dark:text-red-400 mb-1">
+                        {error}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setShowForceDeleteResults(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
