@@ -82,9 +82,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   return (
     <Link href={`/projects/${project.id}`}>
       <Card className="cursor-pointer transition-shadow hover:shadow-md text-sm">
-        <CardHeader className="pb-1.5 px-4 pt-4">
+        <CardHeader className="pb-1 px-3 pt-3">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-base font-semibold line-clamp-1">{project.name}</CardTitle>
+            <CardTitle className="text-sm font-semibold line-clamp-1">{project.name}</CardTitle>
             {getStatusBadge(project.status)}
           </div>
         </CardHeader>
@@ -92,7 +92,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         {/* Video Preview Section */}
         {project.latestVideoFile ? (
           <div 
-            className="relative aspect-video bg-gray-800 rounded-t-none mx-3 mb-1.5 overflow-hidden group"
+            className="relative aspect-video bg-gray-800 rounded-t-none mx-2.5 mb-1 overflow-hidden group"
             style={{
               cursor: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M8 5v10l8-5-8-5z' fill='%23ffffff'/%3e%3c/svg%3e") 10 10, pointer`
             }}
@@ -245,26 +245,26 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             <div className={`absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity ${
               isScrubbing ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
             }`}>
-              <PlayCircle className="h-10 w-10 text-white" />
+              <PlayCircle className="h-8 w-8 text-white" />
             </div>
-            <div className={`absolute bottom-1.5 right-1.5 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded transition-opacity ${
+            <div className={`absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded transition-opacity ${
               isScrubbing ? 'opacity-50' : 'opacity-100'
             }`}>
               {project.latestVideoFile.filename}
             </div>
           </div>
         ) : (
-          <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-t-none mx-3 mb-1.5 flex items-center justify-center">
+          <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-t-none mx-2.5 mb-1 flex items-center justify-center">
             <div className="text-center text-gray-400 dark:text-gray-500">
-              <PlayCircle className="h-10 w-10 mx-auto mb-2" />
+              <PlayCircle className="h-8 w-8 mx-auto mb-1.5" />
               <p className="text-xs">No video files</p>
             </div>
           </div>
         )}
         
-        <CardContent className="px-4 py-3">
+        <CardContent className="px-3 py-2.5">
           <p className={cn(
-            "text-neutral-600 text-xs mb-3",
+            "text-neutral-600 text-xs mb-2.5",
             project.description ? "line-clamp-2" : "italic text-neutral-400"
           )}>
             {project.description || "No description provided"}
@@ -272,21 +272,21 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           
           <div className="flex justify-between items-center text-xs text-neutral-500">
             <div>
-              <svg className="inline-block h-4 w-4 mr-1 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="inline-block h-3.5 w-3.5 mr-1 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
               </svg>
               {formatTimeAgo(new Date(project.updatedAt))}
             </div>
             
             <div>
-              <svg className="inline-block h-4 w-4 mr-1 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="inline-block h-3.5 w-3.5 mr-1 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
               </svg>
               ID: {project.id}
             </div>
           </div>
         </CardContent>
-        <CardFooter className="pt-1.5 px-4 pb-3 border-t">
+        <CardFooter className="pt-1 px-3 pb-2.5 border-t">
           <div className="w-full flex justify-between items-center">
             <span className="text-xs text-neutral-500">
               Click to view project
@@ -295,11 +295,11 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2 text-destructive hover:bg-destructive/10"
+                className="h-7 px-1.5 text-destructive hover:bg-destructive/10"
                 onClick={handleDeleteProject}
                 disabled={deleteProjectMutation.isPending}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>
