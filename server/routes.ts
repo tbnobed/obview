@@ -39,6 +39,7 @@ import {
   insertFolderSchema,
   insertCommentSchema,
   insertPublicCommentSchema,
+  insertCommentsUnifiedSchema,
   insertFileSchema,
   insertProjectUserSchema,
   insertApprovalSchema
@@ -2073,8 +2074,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get unified comments (both regular and public comments)
-      const comments = await storage.getUnifiedCommentsByFile(file.id);
-      res.json(comments);
+      const comments = await storage.getUnifiedCommentsByFileV2(file.id);
+      // Strip creatorToken from response for security
+      const sanitizedComments = comments.map(comment => {
+        const { creatorToken, ...sanitizedComment } = comment;
+        return sanitizedComment;
+      });
+      res.json(sanitizedComments);
     } catch (error) {
       console.error("Error fetching shared file comments:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -2109,10 +2115,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Validate public comment data
-      const validationResult = insertPublicCommentSchema.safeParse({
+      // Validate unified comment data for public comment
+      const validationResult = insertCommentsUnifiedSchema.safeParse({
         ...req.body,
         fileId: file.id,
+        isPublic: true,
+        userId: null, // Public comments have no userId
+        authorName: req.body.displayName || req.body.authorName || "Anonymous", // Map displayName to authorName
+        authorEmail: req.body.authorEmail || req.body.email // Include email if provided
       });
       
       if (!validationResult.success) {
@@ -2125,13 +2135,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate a unique creator token for this comment
       const creatorToken = crypto.randomBytes(32).toString('hex');
       
-      // Create the public comment with the creator token
+      // Create the unified comment with the creator token
       const commentData = {
         ...validationResult.data,
         creatorToken
       };
       
-      const comment = await storage.createPublicComment(commentData);
+      const comment = await storage.createUnifiedComment(commentData);
       
       // Return the comment with the creator token for client-side storage
       res.status(201).json({
@@ -2644,10 +2654,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🔍 [COMMENT API] User ${req.user.id} authorized for file ${fileId}, fetching comments...`);
       
       // Get unified comments (includes both regular and public comments)
-      const comments = await storage.getUnifiedCommentsByFile(fileId);
+      const comments = await storage.getUnifiedCommentsByFileV2(fileId);
+      // Strip creatorToken from response for security
+      const sanitizedComments = comments.map(comment => {
+        const { creatorToken, ...sanitizedComment } = comment;
+        return sanitizedComment;
+      });
       
       console.log(`🔍 [COMMENT API] Returning ${comments.length} comments for file ${fileId}`);
-      res.json(comments);
+      res.json(sanitizedComments);
     } catch (error) {
       console.error(`🔍 [COMMENT API] Error getting comments for file ${req.params.fileId}:`, error);
       next(error);
@@ -2679,11 +2694,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 [COMMENT API] User ${req.user.id} authorized for file ${fileId}, validating comment data...`);
       
-      // Validate comment data
-      const validationResult = insertCommentSchema.safeParse({
+      // Validate unified comment data for authenticated comment
+      const validationResult = insertCommentsUnifiedSchema.safeParse({
         ...req.body,
         fileId,
         userId: req.user.id,
+        isPublic: false, // Authenticated comments are not public
+        authorName: req.user.name || req.user.username, // Use user's name or username
+        authorEmail: req.user.email // Include user's email
       });
       
       if (!validationResult.success) {
@@ -2696,27 +2714,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 [COMMENT API] Validation passed, comment data:`, JSON.stringify(validationResult.data));
       
-      // If it's a reply, check if parent comment exists (check both regular and public comments)
-      if (validationResult.data.parentId) {
-        let parentComment = await storage.getComment(validationResult.data.parentId);
-        let parentPublicComment = null;
-        
-        // If not found in regular comments, check public comments
-        if (!parentComment) {
-          parentPublicComment = await storage.getPublicComment(validationResult.data.parentId);
-        }
-        
-        // Check if parent exists and belongs to the same file
-        const parentExists = parentComment || parentPublicComment;
-        const parentFileId = parentComment?.fileId || parentPublicComment?.fileId;
-        
-        if (!parentExists || parentFileId !== fileId) {
-          return res.status(400).json({ message: "Invalid parent comment" });
-        }
-      }
-      
-      // Create the comment
-      const comment = await storage.createComment(validationResult.data);
+      // Create the unified comment (parentId validation handled automatically by storage layer)
+      const comment = await storage.createUnifiedComment(validationResult.data);
       
       // Get user details
       const { password, ...userWithoutPassword } = req.user;
@@ -2761,11 +2760,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update a comment (resolve/unresolve)
   app.patch("/api/comments/:commentId", isAuthenticated, async (req, res, next) => {
     try {
-      const commentId = parseInt(req.params.commentId);
-      const comment = await storage.getComment(commentId);
+      const commentId = req.params.commentId; // UUID string now
+      const comment = await storage.getUnifiedComment(commentId);
       
       if (!comment) {
         return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      // Explicitly reject public comment edits
+      if (comment.isPublic) {
+        return res.status(400).json({ message: "Public comments cannot be edited. Only authenticated comments can be updated." });
       }
       
       // Check if user is the comment author or has edit access to the project
@@ -2775,12 +2779,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Associated file not found" });
       }
       
-      let hasPermission = comment.userId === req.user.id || req.user.role === "admin";
-      
-      if (!hasPermission) {
+      // For unified comments: check if user owns the comment (authenticated) or is admin
+      let hasPermission = false;
+      if (req.user.role === "admin") {
+        hasPermission = true;
+      } else if (!comment.isPublic && comment.userId === req.user.id) {
+        hasPermission = true; // User owns their authenticated comment
+      } else if (!comment.isPublic) {
+        // For authenticated comments, also check project edit access
         const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
         hasPermission = !!projectUser && projectUser.role === "editor";
       }
+      // Note: Public comments cannot be updated via this route
       
       if (!hasPermission) {
         return res.status(403).json({ message: "You don't have permission to update this comment" });
@@ -2796,8 +2806,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Update the comment
-      const updatedComment = await storage.updateComment(commentId, updates);
+      // Update the unified comment
+      const updatedComment = await storage.updateUnifiedComment(commentId, updates);
       
       if (!updatedComment) {
         return res.status(404).json({ message: "Comment not found" });
@@ -2836,14 +2846,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete a comment
   app.delete("/api/comments/:commentId", isAuthenticated, async (req, res, next) => {
     try {
-      const commentId = parseInt(req.params.commentId);
-      const comment = await storage.getComment(commentId);
+      const commentId = req.params.commentId; // UUID string now
+      const comment = await storage.getUnifiedComment(commentId);
       
       if (!comment) {
         return res.status(404).json({ message: "Comment not found" });
       }
       
-      // Check if user is the comment author or an admin
+      // Check if user is the comment author or an admin (only for authenticated comments)
+      if (comment.isPublic) {
+        return res.status(400).json({ message: "Use the public comment deletion endpoint for public comments" });
+      }
+      
       if (comment.userId !== req.user.id && req.user.role !== "admin") {
         return res.status(403).json({ message: "You don't have permission to delete this comment" });
       }
@@ -2859,8 +2873,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
       
-      // Delete the comment
-      const success = await storage.deleteComment(commentId);
+      // Delete the unified comment
+      const success = await storage.deleteUnifiedComment({
+        id: commentId,
+        byUserId: req.user.id
+      });
       
       if (!success) {
         return res.status(404).json({ message: "Comment not found" });
@@ -2875,28 +2892,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete a public comment (requires creatorToken for authorization)
   app.delete("/api/public-comments/:commentId", async (req, res, next) => {
     try {
-      const commentId = parseInt(req.params.commentId);
+      const commentId = req.params.commentId; // UUID string now
       const { creatorToken } = req.body;
       
-      // Check if the public comment exists first
-      const publicComment = await storage.getPublicComment(commentId);
+      // Check if the unified comment exists first
+      const comment = await storage.getUnifiedComment(commentId);
       
-      if (!publicComment) {
+      if (!comment) {
         return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      // Check if it's actually a public comment
+      if (!comment.isPublic) {
+        return res.status(400).json({ message: "This is not a public comment" });
       }
       
       // Check authorization: only allow deletion if creatorToken matches
       // For backward compatibility, if comment has no creatorToken, deny deletion
-      if (!publicComment.creatorToken || !creatorToken) {
+      if (!comment.creatorToken || !creatorToken) {
         return res.status(403).json({ message: "You don't have permission to delete this comment" });
       }
       
-      if (publicComment.creatorToken !== creatorToken) {
+      if (comment.creatorToken !== creatorToken) {
         return res.status(403).json({ message: "You don't have permission to delete this comment" });
       }
       
-      // Delete the public comment
-      const success = await storage.deletePublicComment(commentId);
+      // Delete the unified comment
+      const success = await storage.deleteUnifiedComment({
+        id: commentId,
+        byCreatorToken: creatorToken
+      });
       
       if (!success) {
         return res.status(404).json({ message: "Comment not found" });
@@ -4678,18 +4703,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const file of files) {
         // Get unified comments (includes both regular and public comments)
-        const fileComments = await storage.getUnifiedCommentsByFile(file.id);
+        const fileComments = await storage.getUnifiedCommentsByFileV2(file.id);
         
         if (fileComments && fileComments.length > 0) {
-          // Add file info to each comment (unified comments already have author info)
-          const commentsWithFile = fileComments.map((comment) => ({
-            ...comment,
-            file: {
-              id: file.id,
-              filename: file.filename,
-              fileType: file.fileType
-            }
-          }));
+          // Add file info to each comment and strip creatorToken for security
+          const commentsWithFile = fileComments.map((comment) => {
+            const { creatorToken, ...sanitizedComment } = comment;
+            return {
+              ...sanitizedComment,
+              file: {
+                id: file.id,
+                filename: file.filename,
+                fileType: file.fileType
+              }
+            };
+          });
           
           allComments.push(...commentsWithFile);
         }
