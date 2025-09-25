@@ -133,7 +133,7 @@ export const insertCommentsUnifiedSchema = createInsertSchema(commentsUnified)
     authorName: z.string().min(2, "Name must be at least 2 characters").max(40, "Name must be 40 characters or less"),
     content: z.string().min(1, "Comment cannot be empty").max(1000, "Comment must be 1000 characters or less"),
     authorEmail: z.string().email("Invalid email format").optional(),
-    timestamp: z.number().min(0).optional(),
+    timestamp: z.number().min(0).optional().nullable().transform(val => val === null ? undefined : val),
     parentId: z.string().uuid().optional().nullable().transform(val => val || undefined),
   });
 
