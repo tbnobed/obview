@@ -27,6 +27,7 @@ export default function TimelineComments({
   const commentsRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<string>("all");
   const [markers, setMarkers] = useState<{ time: number, left: string, commentId: number }[]>([]);
+  const [replyingToId, setReplyingToId] = useState<number | null>(null);
   
   const { 
     data: comments, 
@@ -211,10 +212,25 @@ export default function TimelineComments({
                     {/* Reply Button */}
                     <button 
                       className="text-xs text-gray-400 hover:text-white transition-colors"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReplyingToId(replyingToId === comment.id ? null : comment.id);
+                      }}
                     >
-                      Reply
+                      {replyingToId === comment.id ? "Cancel Reply" : "Reply"}
                     </button>
+
+                    {/* Reply Form */}
+                    {replyingToId === comment.id && (
+                      <div className="mt-3 pl-4 border-l-2 border-gray-600">
+                        <CommentForm
+                          fileId={fileId}
+                          parentId={comment.id}
+                          onSuccess={() => setReplyingToId(null)}
+                          className="bg-gray-800 border-gray-600"
+                        />
+                      </div>
+                    )}
 
                     {/* Replies */}
                     {comments && comments.filter((c: any) => c.parentId === comment.id).length > 0 && (
