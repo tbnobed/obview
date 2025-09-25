@@ -5,6 +5,7 @@ import {
   files,
   comments,
   publicComments,
+  commentsUnified,
   projectUsers,
   activityLogs,
   invitations,
@@ -24,6 +25,8 @@ import {
   type PublicComment,
   type InsertPublicComment,
   type UnifiedComment,
+  type CommentUnified,
+  type InsertCommentUnified,
   type ProjectUser,
   type InsertProjectUser,
   type ActivityLog,
@@ -88,7 +91,15 @@ export interface IStorage {
   getVideoProcessing(fileId: number): Promise<VideoProcessing | undefined>;
   updateVideoProcessing(id: number, data: Partial<InsertVideoProcessing>): Promise<VideoProcessing | undefined>;
 
-  // Comment management
+  // New Unified Comment management (UUID-based) 
+  getUnifiedComment(id: string): Promise<CommentUnified | undefined>;
+  getUnifiedCommentsByFileV2(fileId: number): Promise<CommentUnified[]>;
+  getUnifiedReplies(parentId: string): Promise<CommentUnified[]>;
+  createUnifiedComment(comment: InsertCommentUnified): Promise<CommentUnified>;
+  updateUnifiedComment(id: string, data: Partial<InsertCommentUnified>): Promise<CommentUnified | undefined>;
+  deleteUnifiedComment(params: { id: string; byUserId?: number; byCreatorToken?: string }): Promise<boolean>;
+
+  // Legacy Comment management (DEPRECATED - use unified methods)
   getComment(id: number): Promise<Comment | undefined>;
   getCommentsByFile(fileId: number): Promise<Comment[]>;
   getCommentReplies(commentId: number): Promise<Comment[]>;
@@ -96,7 +107,7 @@ export interface IStorage {
   updateComment(id: number, data: Partial<InsertComment>): Promise<Comment | undefined>;
   deleteComment(id: number): Promise<boolean>;
 
-  // Public comment management
+  // Legacy Public comment management (DEPRECATED - use unified methods)
   getPublicComment(id: number): Promise<PublicComment | undefined>;
   getPublicCommentsByFile(fileId: number): Promise<PublicComment[]>;
   createPublicComment(publicComment: InsertPublicComment): Promise<PublicComment>;
@@ -150,6 +161,7 @@ export class MemStorage implements IStorage {
   private files: Map<number, File>;
   private comments: Map<number, Comment>;
   private publicComments: Map<number, PublicComment>;
+  private unifiedComments: Map<string, CommentUnified>;
   private projectUsers: Map<number, ProjectUser>;
   private activityLogs: Map<number, ActivityLog>;
   private invitations: Map<number, Invitation>;
@@ -178,6 +190,7 @@ export class MemStorage implements IStorage {
     this.files = new Map();
     this.comments = new Map();
     this.publicComments = new Map();
+    this.unifiedComments = new Map();
     this.projectUsers = new Map();
     this.activityLogs = new Map();
     this.invitations = new Map();
@@ -1021,6 +1034,165 @@ export class MemStorage implements IStorage {
     const updated: VideoProcessing = { ...existing, ...data };
     this.videoProcessing.set(id, updated);
     return updated;
+  }
+
+  // New Unified Comment methods (UUID-based)
+  async getUnifiedComment(id: string): Promise<CommentUnified | undefined> {
+    return this.unifiedComments.get(id);
+  }
+
+  async getUnifiedCommentsByFileV2(fileId: number): Promise<CommentUnified[]> {
+    const comments = Array.from(this.unifiedComments.values()).filter(
+      (comment) => comment.fileId === fileId
+    );
+    // Sort by creation date
+    return comments.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  async getUnifiedReplies(parentId: string): Promise<CommentUnified[]> {
+    return Array.from(this.unifiedComments.values()).filter(
+      (comment) => comment.parentId === parentId
+    );
+  }
+
+  async createUnifiedComment(insertComment: InsertCommentUnified): Promise<CommentUnified> {
+    // Validation: Check parent exists if provided
+    if (insertComment.parentId) {
+      const parentComment = this.unifiedComments.get(insertComment.parentId);
+      if (!parentComment) {
+        throw new Error("Parent comment does not exist");
+      }
+      
+      // Ensure parent belongs to same file
+      if (parentComment.fileId !== insertComment.fileId) {
+        throw new Error("Parent comment must belong to the same file");
+      }
+      
+      // Check for cycles
+      if (this.wouldCreateUnifiedCycle(insertComment.parentId)) {
+        throw new Error("Creating this comment would create a cycle in the comment thread");
+      }
+    }
+    
+    const id = crypto.randomUUID();
+    const now = new Date();
+    const comment: CommentUnified = {
+      id,
+      fileId: insertComment.fileId,
+      userId: insertComment.userId ?? null,
+      isPublic: insertComment.isPublic ?? false,
+      authorName: insertComment.authorName,
+      authorEmail: insertComment.authorEmail ?? null,
+      creatorToken: insertComment.creatorToken ?? null,
+      parentId: insertComment.parentId ?? null,
+      content: insertComment.content,
+      timestamp: insertComment.timestamp ?? null,
+      isResolved: insertComment.isResolved ?? false,
+      createdAt: now
+    };
+    this.unifiedComments.set(id, comment);
+    return comment;
+  }
+
+  async updateUnifiedComment(id: string, data: Partial<InsertCommentUnified>): Promise<CommentUnified | undefined> {
+    const comment = this.unifiedComments.get(id);
+    if (!comment) return undefined;
+    
+    // Validate parentId changes if provided
+    if (data.parentId !== undefined) {
+      if (data.parentId !== null) {
+        // Check parent exists
+        const parentComment = this.unifiedComments.get(data.parentId);
+        if (!parentComment) {
+          throw new Error("Parent comment does not exist");
+        }
+        
+        // Ensure parent belongs to same file
+        if (parentComment.fileId !== comment.fileId) {
+          throw new Error("Parent comment must belong to the same file");
+        }
+        
+        // Prevent self-parenting
+        if (data.parentId === id) {
+          throw new Error("Comment cannot be its own parent");
+        }
+        
+        // Check for cycles with the new parent
+        if (this.wouldCreateUnifiedCycle(data.parentId)) {
+          throw new Error("Updating this comment would create a cycle in the comment thread");
+        }
+      }
+    }
+    
+    const updatedComment: CommentUnified = { ...comment, ...data };
+    this.unifiedComments.set(id, updatedComment);
+    return updatedComment;
+  }
+
+  async deleteUnifiedComment(params: { id: string; byUserId?: number; byCreatorToken?: string }): Promise<boolean> {
+    const comment = this.unifiedComments.get(params.id);
+    if (!comment) return false;
+    
+    // Authorization check
+    if (params.byUserId !== undefined) {
+      // For authenticated users, check if they own the comment
+      if (comment.userId !== params.byUserId) {
+        return false; // Not authorized
+      }
+    } else if (params.byCreatorToken !== undefined) {
+      // For public comments only, check creator token
+      if (!comment.isPublic) {
+        return false; // Cannot use creator token for private comments
+      }
+      if (comment.creatorToken !== params.byCreatorToken) {
+        return false; // Creator token mismatch
+      }
+    } else {
+      return false; // No authorization provided
+    }
+    
+    // Delete comment and reparent children to null
+    this.unifiedComments.delete(params.id);
+    
+    // Update children to remove parent reference
+    const childComments = Array.from(this.unifiedComments.entries()).filter(
+      ([, comment]) => comment.parentId === params.id
+    );
+    
+    for (const [childId, childComment] of childComments) {
+      const updatedChild = { ...childComment, parentId: null };
+      this.unifiedComments.set(childId, updatedChild);
+    }
+    
+    return true;
+  }
+
+  // Helper for cycle detection in unified comments
+  private wouldCreateUnifiedCycle(parentId: string): boolean {
+    const visited = new Set<string>();
+    let currentId = parentId;
+    
+    while (currentId) {
+      if (visited.has(currentId)) {
+        return true; // Cycle detected
+      }
+      visited.add(currentId);
+      
+      const parent = this.unifiedComments.get(currentId);
+      if (!parent || !parent.parentId) {
+        break; // Reached root or non-existent parent
+      }
+      
+      currentId = parent.parentId;
+      
+      // Safety depth limit
+      if (visited.size > 50) {
+        console.warn(`MemStorage: Max depth exceeded during unified cycle check, assuming cycle`);
+        return true;
+      }
+    }
+    
+    return false;
   }
 }
 
@@ -2037,6 +2209,182 @@ export class DatabaseStorage implements IStorage {
       .where(eq(files.shareToken, token));
     
     return result[0];
+  }
+
+  // New Unified Comment methods (UUID-based) for DatabaseStorage
+  async getUnifiedComment(id: string): Promise<CommentUnified | undefined> {
+    const [comment] = await db
+      .select()
+      .from(commentsUnified)
+      .where(eq(commentsUnified.id, id));
+    return comment;
+  }
+
+  async getUnifiedCommentsByFileV2(fileId: number): Promise<CommentUnified[]> {
+    const comments = await db
+      .select()
+      .from(commentsUnified)
+      .where(eq(commentsUnified.fileId, fileId))
+      .orderBy(commentsUnified.createdAt);
+    return comments;
+  }
+
+  async getUnifiedReplies(parentId: string): Promise<CommentUnified[]> {
+    return await db
+      .select()
+      .from(commentsUnified)
+      .where(eq(commentsUnified.parentId, parentId));
+  }
+
+  async createUnifiedComment(insertComment: InsertCommentUnified): Promise<CommentUnified> {
+    // Validation: Check parent exists if provided
+    if (insertComment.parentId) {
+      const [parentComment] = await db
+        .select()
+        .from(commentsUnified)
+        .where(eq(commentsUnified.id, insertComment.parentId));
+      
+      if (!parentComment) {
+        throw new Error("Parent comment does not exist");
+      }
+      
+      // Ensure parent belongs to same file
+      if (parentComment.fileId !== insertComment.fileId) {
+        throw new Error("Parent comment must belong to the same file");
+      }
+      
+      // Check for cycles
+      if (await this.wouldCreateUnifiedCycleDB(insertComment.parentId)) {
+        throw new Error("Creating this comment would create a cycle in the comment thread");
+      }
+    }
+    
+    const [comment] = await db
+      .insert(commentsUnified)
+      .values(insertComment)
+      .returning();
+    return comment;
+  }
+
+  async updateUnifiedComment(id: string, data: Partial<InsertCommentUnified>): Promise<CommentUnified | undefined> {
+    // First get the existing comment
+    const [existingComment] = await db
+      .select()
+      .from(commentsUnified)
+      .where(eq(commentsUnified.id, id));
+    
+    if (!existingComment) return undefined;
+    
+    // Validate parentId changes if provided
+    if (data.parentId !== undefined) {
+      if (data.parentId !== null) {
+        // Check parent exists
+        const [parentComment] = await db
+          .select()
+          .from(commentsUnified)
+          .where(eq(commentsUnified.id, data.parentId));
+        
+        if (!parentComment) {
+          throw new Error("Parent comment does not exist");
+        }
+        
+        // Ensure parent belongs to same file
+        if (parentComment.fileId !== existingComment.fileId) {
+          throw new Error("Parent comment must belong to the same file");
+        }
+        
+        // Prevent self-parenting
+        if (data.parentId === id) {
+          throw new Error("Comment cannot be its own parent");
+        }
+        
+        // Check for cycles with the new parent
+        if (await this.wouldCreateUnifiedCycleDB(data.parentId)) {
+          throw new Error("Updating this comment would create a cycle in the comment thread");
+        }
+      }
+    }
+    
+    const [updatedComment] = await db
+      .update(commentsUnified)
+      .set(data)
+      .where(eq(commentsUnified.id, id))
+      .returning();
+    return updatedComment;
+  }
+
+  async deleteUnifiedComment(params: { id: string; byUserId?: number; byCreatorToken?: string }): Promise<boolean> {
+    // First, get the comment to check authorization
+    const [comment] = await db
+      .select()
+      .from(commentsUnified)
+      .where(eq(commentsUnified.id, params.id));
+    
+    if (!comment) return false;
+    
+    // Authorization check
+    if (params.byUserId !== undefined) {
+      // For authenticated users, check if they own the comment
+      if (comment.userId !== params.byUserId) {
+        return false; // Not authorized
+      }
+    } else if (params.byCreatorToken !== undefined) {
+      // For public comments only, check creator token
+      if (!comment.isPublic) {
+        return false; // Cannot use creator token for private comments
+      }
+      if (comment.creatorToken !== params.byCreatorToken) {
+        return false; // Creator token mismatch
+      }
+    } else {
+      return false; // No authorization provided
+    }
+    
+    // Update children to remove parent reference (set to null)
+    await db
+      .update(commentsUnified)
+      .set({ parentId: null })
+      .where(eq(commentsUnified.parentId, params.id));
+    
+    // Delete the comment
+    const result = await db
+      .delete(commentsUnified)
+      .where(eq(commentsUnified.id, params.id))
+      .returning({ deletedId: commentsUnified.id });
+      
+    return result.length > 0;
+  }
+
+  // Helper for cycle detection in unified comments (database version)
+  private async wouldCreateUnifiedCycleDB(parentId: string): Promise<boolean> {
+    const visited = new Set<string>();
+    let currentId = parentId;
+    
+    while (currentId) {
+      if (visited.has(currentId)) {
+        return true; // Cycle detected
+      }
+      visited.add(currentId);
+      
+      const [parent] = await db
+        .select()
+        .from(commentsUnified)
+        .where(eq(commentsUnified.id, currentId));
+        
+      if (!parent || !parent.parentId) {
+        break; // Reached root or non-existent parent
+      }
+      
+      currentId = parent.parentId;
+      
+      // Safety depth limit
+      if (visited.size > 50) {
+        console.warn(`DatabaseStorage: Max depth exceeded during unified cycle check, assuming cycle`);
+        return true;
+      }
+    }
+    
+    return false;
   }
 }
 
