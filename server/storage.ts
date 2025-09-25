@@ -1287,11 +1287,11 @@ export class DatabaseStorage implements IStorage {
     const rawComments = await db.select().from(comments).where(eq(comments.fileId, fileId));
     
     // Sanitize comments to break cycles and fix corrupt data
-    return this.sanitizeComments(rawComments);
+    return await this.sanitizeComments(rawComments);
   }
 
   // Helper method to sanitize comments and break cycles
-  private sanitizeComments(comments: Comment[]): Comment[] {
+  private async sanitizeComments(comments: Comment[]): Promise<Comment[]> {
     const sanitized: Comment[] = [];
     const commentMap = new Map<number, Comment>();
     
@@ -1308,9 +1308,9 @@ export class DatabaseStorage implements IStorage {
       commentMap.set(sanitizedComment.id, sanitizedComment);
     }
     
-    // Second pass: detect cycles using ancestor walking
+    // Second pass: detect cycles using cross-table aware ancestor walking
     for (const comment of commentMap.values()) {
-      if (comment.parentId && this.detectCommentCycle(comment, commentMap)) {
+      if (comment.parentId && await this.detectCommentCycleAcrossTables(comment, comment.fileId)) {
         console.warn(`Backend: Breaking cycle detected for comment ${comment.id}`);
         comment.parentId = null;
       }
@@ -1320,7 +1320,45 @@ export class DatabaseStorage implements IStorage {
     return sanitized;
   }
 
-  // Detect cycles by walking up parent chain
+  // Cross-table cycle detection that checks both regular and public comments
+  private async detectCommentCycleAcrossTables(comment: Comment | PublicComment, fileId: number): Promise<boolean> {
+    const visited = new Set<number>();
+    let currentId = comment.parentId;
+    
+    while (currentId) {
+      if (visited.has(currentId)) {
+        return true; // Cycle detected
+      }
+      visited.add(currentId);
+      
+      // Look for parent in both regular and public comments
+      const [parentRegular] = await db.select().from(comments).where(eq(comments.id, currentId)).limit(1);
+      const [parentPublic] = await db.select().from(publicComments).where(eq(publicComments.id, currentId)).limit(1);
+      
+      const parent = parentRegular || parentPublic;
+      if (!parent) {
+        // Parent doesn't exist in either table, this is valid (could be due to deletion)
+        break;
+      }
+      
+      // Ensure parent belongs to same file
+      if (parent.fileId !== fileId) {
+        break;
+      }
+      
+      currentId = parent.parentId;
+      
+      // Depth limit safety
+      if (visited.size > 50) {
+        console.warn(`Backend: Max depth exceeded, breaking chain for comment ${comment.id}`);
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // Detect cycles by walking up parent chain (legacy method for backward compatibility)
   private detectCommentCycle(comment: Comment, commentMap: Map<number, Comment>): boolean {
     const visited = new Set<number>();
     let current = comment;
@@ -1351,7 +1389,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Helper method to sanitize public comments and break cycles
-  private sanitizePublicComments(comments: PublicComment[]): PublicComment[] {
+  private async sanitizePublicComments(comments: PublicComment[]): Promise<PublicComment[]> {
     const sanitized: PublicComment[] = [];
     const commentMap = new Map<number, PublicComment>();
     
@@ -1368,9 +1406,9 @@ export class DatabaseStorage implements IStorage {
       commentMap.set(sanitizedComment.id, sanitizedComment);
     }
     
-    // Second pass: detect cycles using ancestor walking
+    // Second pass: detect cycles using cross-table aware ancestor walking
     for (const comment of commentMap.values()) {
-      if (comment.parentId && this.detectPublicCommentCycle(comment, commentMap)) {
+      if (comment.parentId && await this.detectCommentCycleAcrossTables(comment, comment.fileId)) {
         console.warn(`Backend: Breaking cycle detected for public comment ${comment.id}`);
         comment.parentId = null;
       }
@@ -1747,11 +1785,14 @@ export class DatabaseStorage implements IStorage {
 
   // Public Comment methods
   async getPublicCommentsByFile(fileId: number): Promise<PublicComment[]> {
-    return await db
+    const rawComments = await db
       .select()
       .from(publicComments)
       .where(eq(publicComments.fileId, fileId))
       .orderBy(desc(publicComments.createdAt));
+    
+    // Sanitize public comments to break cycles and fix corrupt data
+    return await this.sanitizePublicComments(rawComments);
   }
 
   async createPublicComment(insertPublicComment: InsertPublicComment): Promise<PublicComment> {
@@ -1836,10 +1877,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]> {
     const regularComments = await this.getCommentsByFile(fileId); // Already sanitized
-    const rawPublicComments = await this.getPublicCommentsByFile(fileId);
-    
-    // Sanitize public comments similar to regular comments
-    const sanitizedPublicComments = this.sanitizePublicComments(rawPublicComments);
+    const sanitizedPublicComments = await this.getPublicCommentsByFile(fileId); // Already sanitized
     
     // Convert regular comments to unified format
     const unifiedRegularComments: UnifiedComment[] = await Promise.all(
