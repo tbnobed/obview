@@ -1,0 +1,604 @@
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [SCRUB ENDPOINT] Request for file ID: 32
+obview_app  | 🎬 [SCRUB ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ File exists: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] Serving scrub file: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ Range stream opened successfully
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [SCRUB ENDPOINT] Request for file ID: 32
+obview_app  | 🎬 [SCRUB ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ File exists: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] Serving scrub file: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ Range stream opened successfully
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [SCRUB ENDPOINT] Request for file ID: 32
+obview_app  | 🎬 [SCRUB ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ File exists: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] Serving scrub file: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ Range stream opened successfully
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 32, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [SCRUB ENDPOINT] Request for file ID: 32
+obview_app  | 🎬 [SCRUB ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ File exists: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] Serving scrub file: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ Range stream opened successfully
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 32, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [SCRUB ENDPOINT] Request for file ID: 32
+obview_app  | 🎬 [SCRUB ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ File exists: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] Serving scrub file: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ Range stream opened successfully
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [SCRUB ENDPOINT] Request for file ID: 32
+obview_app  | 🎬 [SCRUB ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ File exists: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] Serving scrub file: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | 🎬 [SCRUB ENDPOINT] ✅ Range stream opened successfully
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [PRODUCTION SHARE] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 32 (How to Make a Google Account.mp4) - type: video/mp4, path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] Error sending file: Request aborted
+obview_app  | [PRODUCTION SHARE] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 32 (How to Make a Google Account.mp4) - type: video/mp4, path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] Error sending file: Request aborted
+obview_app  | [PRODUCTION SCRUB] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SCRUB] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | [PRODUCTION SCRUB] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SCRUB] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | [PRODUCTION SCRUB] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SCRUB] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | [PRODUCTION SCRUB] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SCRUB] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | [PRODUCTION SCRUB] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SCRUB] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | [PRODUCTION SCRUB] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SCRUB] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | [PRODUCTION SHARE] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 32 (How to Make a Google Account.mp4) - type: video/mp4, path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SCRUB] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SCRUB] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4
+obview_app  | [PRODUCTION SHARE] File sent successfully
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [DEBUG] Getting files for project ID: 16
+obview_app  | [DEBUG] Found 3 files for project ID 16
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 32
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 34
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/32/scrub/How to Make a Google Account_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 33
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/34/scrub/Dobson Best Of Exprt_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/33/scrub/How to Make a Microsoft Account_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_db   | 2025-09-25 18:11:23.746 UTC [27] LOG:  checkpoint starting: time
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [DEBUG] File content requested for fileId: 32
+obview_app  | [DEBUG] Database record found for file ID: 32 {
+obview_app  |   filename: 'How to Make a Google Account.mp4',
+obview_app  |   fileType: 'video',
+obview_app  |   filePath: '/app/uploads/1758822983186-821124254.mp4',
+obview_app  |   isAvailable: true
+obview_app  | }
+obview_app  | [DEBUG] Checking if file exists at path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] File exists check result: true
+obview_app  | Serving file 32 (How to Make a Google Account.mp4) - type: video, path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 32, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 32, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_db   | 2025-09-25 18:11:26.770 UTC [27] LOG:  checkpoint complete: wrote 31 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.014 s, sync=0.005 s, total=3.025 s; sync files=31, longest=0.002 s, average=0.001 s; distance=63 kB, estimate=271 kB; lsn=0/2D08BE0, redo lsn=0/2D07128
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 32, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 32, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Backend: Breaking self-parenting cycle for comment 14
+obview_app  | Backend: Breaking self-parenting cycle for comment 14
+obview_app  | [PRODUCTION SHARE] Request for token: e018e96db0040e250bf209e542df5e95510201df55f745685360ec9364d807b2
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Google Account.mp4 (ID: 32)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 32 (How to Make a Google Account.mp4) - type: video/mp4, path: /app/uploads/1758822983186-821124254.mp4
+obview_app  | [PRODUCTION SHARE] Error sending file: write EPIPE
