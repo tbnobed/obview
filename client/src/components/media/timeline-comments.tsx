@@ -108,7 +108,7 @@ export default function TimelineComments({
     return (
       <div className={`mt-3 space-y-3 ${depth > 0 ? 'ml-4 pl-4 border-l border-gray-600' : ''}`}>
         {replies.map((reply: any) => (
-          <div key={reply.id}>
+          <div key={`${(reply as any).isPublic ? 'public' : 'auth'}-${reply.id}`}>
             <div className="flex gap-3">
               <Avatar className="h-6 w-6 flex-shrink-0">
                 <AvatarImage src={reply.user?.avatar} />
@@ -284,8 +284,8 @@ export default function TimelineComments({
           <div className="divide-y divide-gray-700">
             {topLevelComments.map((comment: any, index: number) => (
               <div 
-                key={comment.id} 
-                id={`comment-${comment.id}`}
+                key={`${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
+                id={`comment-${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
                 onClick={comment.timestamp !== null ? () => onTimeClick(comment.timestamp) : undefined}
                 onKeyDown={comment.timestamp !== null ? (e) => {
                   if (e.key === 'Enter' || e.key === ' ') {

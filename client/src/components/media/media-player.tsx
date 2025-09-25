@@ -1127,7 +1127,7 @@ export default function MediaPlayer({
                       
                       return (
                         <div 
-                          key={comment.id}
+                          key={`${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
                           className="absolute -top-1 z-10 pointer-events-auto cursor-pointer"
                           style={{ 
                             left: `${position}%`, 

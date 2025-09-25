@@ -150,9 +150,12 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
     }
   }, [isActive]);
 
+  // Create unique ID to prevent conflicts between authenticated and public comments with same ID
+  const uniqueCommentId = `comment-${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`;
+
   return (
     <div 
-      id={`comment-${comment.id}`}
+      id={uniqueCommentId}
       className={cn(
         "mb-5 pb-5",
         comment.isResolved ? "opacity-60" : "",
@@ -301,7 +304,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
           {replies.length > 0 && (
             <div className="mt-3 space-y-3 pl-3 border-l border-neutral-200 dark:border-gray-800">
               {replies.map(reply => (
-                <div key={reply.id} className="flex space-x-2">
+                <div key={`${(reply as any).isPublic ? 'public' : 'auth'}-${reply.id}`} className="flex space-x-2">
                   <Avatar className="h-5 w-5 mt-0.5 hidden sm:block">
                     <AvatarFallback className="bg-primary-100 text-primary-700 text-[10px]">
                       {reply.user?.name ? reply.user.name.charAt(0).toUpperCase() : 'U'}
