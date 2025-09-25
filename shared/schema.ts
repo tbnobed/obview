@@ -95,6 +95,7 @@ export const publicComments = pgTable("public_comments", {
   content: text("content").notNull(),
   fileId: integer("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
   displayName: text("display_name").notNull(),
+  parentId: integer("parent_id"), // For comment replies (null if top-level)
   timestamp: integer("timestamp"), // For timestamped video comments (seconds)
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -104,7 +105,8 @@ export const insertPublicCommentSchema = createInsertSchema(publicComments)
   .extend({
     displayName: z.string().min(2, "Name must be at least 2 characters").max(40, "Name must be 40 characters or less"),
     content: z.string().min(1, "Comment cannot be empty").max(1000, "Comment must be 1000 characters or less"),
-    timestamp: z.number().min(0).optional()
+    timestamp: z.number().min(0).optional(),
+    parentId: z.number().optional()
   });
 
 // PROJECT USER SCHEMA (for permissions)

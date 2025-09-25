@@ -954,7 +954,13 @@ export default function PublicSharePage() {
 }
 
 // Public Comment Form Component
-function PublicCommentForm({ token, fileId, currentTime }: { token: string; fileId: number; currentTime: number }) {
+function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: { 
+  token: string; 
+  fileId: number; 
+  currentTime: number; 
+  parentId?: number;
+  onSuccess?: () => void;
+}) {
   const { toast } = useToast();
   
   // Load saved name from localStorage
@@ -966,6 +972,7 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
       displayName: savedName,
       content: "",
       fileId: fileId,
+      parentId: parentId || undefined,
       timestamp: Math.floor(currentTime), // Always include current time
     },
   });
@@ -983,13 +990,17 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
         displayName: currentName, // Preserve the name
         content: "",              // Clear only the comment content
         fileId: fileId,
+        parentId: parentId || undefined,
         timestamp: Math.floor(currentTime)
       });
       
       toast({
-        title: "Comment posted!",
-        description: "Your comment has been added to the discussion.",
+        title: parentId ? "Reply posted!" : "Comment posted!",
+        description: parentId ? "Your reply has been added." : "Your comment has been added to the discussion.",
       });
+      
+      // Call the onSuccess callback if provided (for closing reply form)
+      onSuccess?.();
     },
     onError: (error: Error) => {
       toast({
@@ -1006,17 +1017,18 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
       localStorage.setItem('public-commenter-name', data.displayName);
     }
     
-    // Always attach current time
+    // Always attach current time and parentId
     const dataWithTime = {
       ...data,
-      timestamp: Math.floor(currentTime)
+      timestamp: Math.floor(currentTime),
+      parentId: parentId || undefined
     };
     createCommentMutation.mutate(dataWithTime);
   };
 
   return (
     <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
-      <h3 className="font-semibold mb-4">Leave a comment</h3>
+      <h3 className="font-semibold mb-4">{parentId ? "Reply to comment" : "Leave a comment"}</h3>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -1077,6 +1089,7 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
 
 // Comments List Component
 function CommentsList({ token, onTimestampClick }: { token: string; onTimestampClick?: (timestamp: number) => void }) {
+  const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const { data: comments, isLoading, error } = useQuery<UnifiedComment[]>({
     queryKey: ['/api/share', token, 'comments'],
     queryFn: async () => {
@@ -1189,10 +1202,26 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
               {/* Reply Button */}
               <button 
                 className="text-xs text-gray-400 hover:text-white transition-colors"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReplyingToId(replyingToId === comment.id ? null : comment.id);
+                }}
               >
-                Reply
+                {replyingToId === comment.id ? "Cancel Reply" : "Reply"}
               </button>
+
+              {/* Reply Form */}
+              {replyingToId === comment.id && (
+                <div className="mt-3 pl-4 border-l-2 border-gray-600">
+                  <PublicCommentForm 
+                    token={token} 
+                    fileId={comment.fileId} 
+                    currentTime={comment.timestamp || 0}
+                    parentId={comment.id}
+                    onSuccess={() => setReplyingToId(null)}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
