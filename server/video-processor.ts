@@ -303,17 +303,27 @@ export class VideoProcessor {
       const outputPath = path.join(outputDir, `${filename}_sprite.jpg`);
       const spriteJsonPath = path.join(outputDir, `${filename}_sprite.json`);
       
-      // High-resolution sprite generation with 0.5 second intervals
-      const interval = 0.5; // 0.5 seconds between thumbnails for smooth scrubbing
-      const thumbnailCount = Math.min(Math.ceil(metadata.duration / interval), 200); // Max 200 thumbnails
+      // Adaptive interval generation to cover entire video duration
+      const maxThumbnails = 225; // 15x15 grid for reasonable sprite size
+      const baseInterval = 0.5; // Preferred 0.5 seconds for smooth scrubbing
+      
+      // Calculate adaptive interval to ensure full video coverage
+      const totalThumbnailsAtBaseInterval = Math.ceil(metadata.duration / baseInterval);
+      const effectiveInterval = totalThumbnailsAtBaseInterval > maxThumbnails 
+        ? metadata.duration / maxThumbnails 
+        : baseInterval;
+      
+      const thumbnailCount = Math.ceil(metadata.duration / effectiveInterval);
       const cols = Math.ceil(Math.sqrt(thumbnailCount));
       const rows = Math.ceil(thumbnailCount / cols);
+      
+      console.log(`[VideoProcessor] Sprite generation: ${metadata.duration}s video, ${effectiveInterval.toFixed(2)}s intervals, ${thumbnailCount} thumbnails (${cols}x${rows} grid)`);
       
       // Generate sprite with thumbnails
       const args = [
         '-i', inputPath,
         '-vf', [
-          `fps=1/${interval}`,
+          `fps=${(1/effectiveInterval).toFixed(6)}`,
           'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
           `tile=${cols}x${rows}`
         ].join(','),
@@ -333,7 +343,7 @@ export class VideoProcessor {
         rows,
         thumbnailWidth: 800,
         thumbnailHeight: 450,
-        interval,
+        interval: effectiveInterval,
         thumbnailCount,
         duration: metadata.duration
       };
