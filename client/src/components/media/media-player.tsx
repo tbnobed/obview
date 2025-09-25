@@ -563,7 +563,11 @@ export default function MediaPlayer({
       const activeElement = document.activeElement;
       const isInput = activeElement instanceof HTMLInputElement || 
                       activeElement instanceof HTMLTextAreaElement || 
-                      activeElement instanceof HTMLSelectElement;
+                      activeElement instanceof HTMLSelectElement ||
+                      activeElement?.tagName === 'TEXTAREA' ||
+                      activeElement?.contentEditable === 'true' ||
+                      activeElement?.closest('[contenteditable="true"]') ||
+                      activeElement?.closest('textarea');
       
       if (isInput) return;
       
