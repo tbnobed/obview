@@ -1060,6 +1060,12 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
                     placeholder="Share your thoughts..." 
                     className="min-h-[100px]" 
                     {...field}
+                    onKeyDownCapture={(e) => {
+                      // Defensive measure: prevent spacebar from bubbling to video controls
+                      if (e.key === ' ' || e.key === 'k') {
+                        e.stopPropagation();
+                      }
+                    }}
                     data-testid="textarea-comment"
                   />
                 </FormControl>

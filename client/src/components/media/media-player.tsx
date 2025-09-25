@@ -556,118 +556,86 @@ export default function MediaPlayer({
     }
   };
   
-  // Enhanced keyboard controls for play/pause and precise scrubbing
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // More robust check for input elements - especially for deeply nested comment forms
-      const activeElement = document.activeElement;
-      
-      // First check: Direct instance checks
-      if (activeElement instanceof HTMLInputElement || 
-          activeElement instanceof HTMLTextAreaElement || 
-          activeElement instanceof HTMLSelectElement) {
-        return;
-      }
-      
-      // Second check: Tag name and attributes (for deeply nested elements)
-      if (activeElement?.tagName === 'TEXTAREA' || 
-          activeElement?.tagName === 'INPUT' ||
-          (activeElement as HTMLElement)?.contentEditable === 'true') {
-        return;
-      }
-      
-      // Third check: Closest ancestors (for nested comment forms)
-      if (activeElement?.closest('textarea') || 
-          activeElement?.closest('input') ||
-          activeElement?.closest('[contenteditable="true"]')) {
-        return;
-      }
-      
-      // Fourth check: Look for comment form containers (specific to our app)
-      if (activeElement?.closest('.comment-form') ||
-          activeElement?.closest('[data-comment-form]') ||
-          // Check if we're inside any form element
-          activeElement?.closest('form')) {
-        return;
-      }
-      
-      const mediaElement = videoRef.current || audioRef.current;
-      if (!mediaElement || mediaError || !file) return;
-      
-      switch (e.code) {
-        case 'Space':
-          e.preventDefault(); // Prevent scrolling the page
-          togglePlay();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          // Skip back 5 seconds (or 1 second with Shift)
-          const backwardSkip = e.shiftKey ? 1 : 5;
-          const newBackTime = Math.max(0, currentTime - backwardSkip);
-          performSeek(newBackTime);
-          setCurrentTime(newBackTime);
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          // Skip forward 5 seconds (or 1 second with Shift)
-          const forwardSkip = e.shiftKey ? 1 : 5;
-          const newForwardTime = Math.min(duration, currentTime + forwardSkip);
-          performSeek(newForwardTime);
-          setCurrentTime(newForwardTime);
-          break;
-        case 'Home':
-          e.preventDefault();
-          // Jump to beginning
-          performSeek(0);
-          setCurrentTime(0);
-          break;
-        case 'End':
-          e.preventDefault();
-          // Jump to end
-          performSeek(duration);
-          setCurrentTime(duration);
-          break;
-        case 'Comma':
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            // Frame-by-frame backward (estimate 1/30 second)
-            const frameBackTime = Math.max(0, currentTime - (1/30));
-            performSeek(frameBackTime);
-            setCurrentTime(frameBackTime);
-          }
-          break;
-        case 'Period':
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            // Frame-by-frame forward (estimate 1/30 second)
-            const frameForwardTime = Math.min(duration, currentTime + (1/30));
-            performSeek(frameForwardTime);
-            setCurrentTime(frameForwardTime);
-          }
-          break;
-        case 'KeyJ':
-          e.preventDefault();
-          // Quick rewind (10 seconds)
-          const rewindTime = Math.max(0, currentTime - 10);
-          performSeek(rewindTime);
-          setCurrentTime(rewindTime);
-          break;
-        case 'KeyL':
-          e.preventDefault();
-          // Quick forward (10 seconds)
-          const fastForwardTime = Math.min(duration, currentTime + 10);
-          performSeek(fastForwardTime);
-          setCurrentTime(fastForwardTime);
-          break;
-      }
-    };
+  // Enhanced keyboard controls - only when media container is focused
+  
+  const handleMediaKeyPress = (e: React.KeyboardEvent) => {
+    // Check if target is an editable element
+    const target = e.target as HTMLElement;
+    if (target instanceof HTMLInputElement || 
+        target instanceof HTMLTextAreaElement || 
+        target instanceof HTMLSelectElement ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'INPUT' ||
+        target.contentEditable === 'true') {
+      return;
+    }
     
-    document.addEventListener('keydown', handleKeyPress);
+    const mediaElement = videoRef.current || audioRef.current;
+    if (!mediaElement || mediaError || !file) return;
     
-    return () => {
-      document.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [isPlaying, mediaError, file, togglePlay, currentTime, duration, performSeek]);
+    switch (e.code) {
+      case 'Space':
+        e.preventDefault();
+        togglePlay();
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        const backwardSkip = e.shiftKey ? 1 : 5;
+        const newBackTime = Math.max(0, currentTime - backwardSkip);
+        performSeek(newBackTime);
+        setCurrentTime(newBackTime);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        const forwardSkip = e.shiftKey ? 1 : 5;
+        const newForwardTime = Math.min(duration, currentTime + forwardSkip);
+        performSeek(newForwardTime);
+        setCurrentTime(newForwardTime);
+        break;
+      case 'Home':
+        e.preventDefault();
+        performSeek(0);
+        setCurrentTime(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        performSeek(duration);
+        setCurrentTime(duration);
+        break;
+      case 'Comma':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const frameBackTime = Math.max(0, currentTime - (1/30));
+          performSeek(frameBackTime);
+          setCurrentTime(frameBackTime);
+        }
+        break;
+      case 'Period':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const frameForwardTime = Math.min(duration, currentTime + (1/30));
+          performSeek(frameForwardTime);
+          setCurrentTime(frameForwardTime);
+        }
+        break;
+      case 'KeyJ':
+        e.preventDefault();
+        const rewindTime = Math.max(0, currentTime - 10);
+        performSeek(rewindTime);
+        setCurrentTime(rewindTime);
+        break;
+      case 'KeyL':
+        e.preventDefault();
+        const fastForwardTime = Math.min(duration, currentTime + 10);
+        performSeek(fastForwardTime);
+        setCurrentTime(fastForwardTime);
+        break;
+      case 'KeyK':
+        e.preventDefault();
+        togglePlay();
+        break;
+    }
+  };
 
   const handleVolumeChange = (value: string) => {
     const newVolume = parseFloat(value);
@@ -827,6 +795,8 @@ export default function MediaPlayer({
         <div
           ref={mediaContainerRef}
           className="relative w-full h-full bg-black"
+          tabIndex={0}
+          onKeyDown={handleMediaKeyPress}
         >
           {/* Fullscreen controls overlay - only visible in fullscreen mode */}
           {isFullscreen && (
@@ -934,6 +904,8 @@ export default function MediaPlayer({
         <div
           ref={mediaContainerRef}
           className="flex flex-col items-center justify-center h-full bg-neutral-900 text-white"
+          tabIndex={0}
+          onKeyDown={handleMediaKeyPress}
         >
           {/* Fullscreen controls overlay - only visible in fullscreen mode */}
           {isFullscreen && (

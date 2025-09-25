@@ -290,6 +290,12 @@ export default function CommentForm({
             }
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            onKeyDownCapture={(e) => {
+              // Defensive measure: prevent spacebar from bubbling to video controls
+              if (e.key === ' ' || e.key === 'k') {
+                e.stopPropagation();
+              }
+            }}
           />
           
           <div className="p-2 bg-neutral-50 dark:bg-gray-900 border-t border-neutral-200 dark:border-gray-700 flex justify-between items-center">
