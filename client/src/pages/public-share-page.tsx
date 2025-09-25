@@ -976,7 +976,16 @@ function PublicCommentForm({ token, fileId, currentTime }: { token: string; file
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/share', token, 'comments'] });
-      form.reset();
+      
+      // Get current name value before reset and preserve it
+      const currentName = form.getValues('displayName');
+      form.reset({
+        displayName: currentName, // Preserve the name
+        content: "",              // Clear only the comment content
+        fileId: fileId,
+        timestamp: Math.floor(currentTime)
+      });
+      
       toast({
         title: "Comment posted!",
         description: "Your comment has been added to the discussion.",
