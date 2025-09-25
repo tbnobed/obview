@@ -1591,9 +1591,12 @@ export default function MediaPlayer({
                     backgroundImage: `url(/api/files/${file.id}/sprite)`,
                     backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
                     backgroundPosition: (() => {
-                      // Calculate which thumbnail to show based on scrub time
-                      const progress = scrubPreviewTime / duration;
-                      const thumbnailIndex = Math.floor(progress * (spriteMetadata.thumbnailCount - 1));
+                      // Calculate which thumbnail to show based on exact scrub time and sprite interval
+                      // This ensures precise mapping to the video timeline
+                      const thumbnailIndex = Math.min(
+                        Math.floor(scrubPreviewTime / spriteMetadata.interval),
+                        spriteMetadata.thumbnailCount - 1
+                      );
                       const col = thumbnailIndex % spriteMetadata.cols;
                       const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
                       
