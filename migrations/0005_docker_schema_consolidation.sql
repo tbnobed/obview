@@ -62,7 +62,9 @@ CREATE TABLE IF NOT EXISTS public_comments (
     content TEXT NOT NULL,
     file_id INTEGER NOT NULL,
     display_name TEXT NOT NULL,
+    parent_id INTEGER,
     timestamp INTEGER,
+    creator_token TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -223,6 +225,12 @@ BEGIN
         ALTER TABLE password_resets ADD CONSTRAINT password_resets_user_id_fkey 
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
     END IF;
+
+    -- Public comments foreign keys
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'public_comments_parent_id_fkey') THEN
+        ALTER TABLE public_comments ADD CONSTRAINT public_comments_parent_id_fkey 
+        FOREIGN KEY (parent_id) REFERENCES public_comments(id) ON DELETE CASCADE;
+    END IF;
 END $$;
 
 -- Create indexes for better performance
@@ -233,6 +241,8 @@ CREATE INDEX IF NOT EXISTS idx_comments_file_id ON comments(file_id);
 CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_timestamp ON comments(timestamp);
 CREATE INDEX IF NOT EXISTS idx_public_comments_file_id ON public_comments(file_id);
+CREATE INDEX IF NOT EXISTS idx_public_comments_parent_id ON public_comments(parent_id);
+CREATE INDEX IF NOT EXISTS idx_public_comments_creator_token ON public_comments(creator_token);
 CREATE INDEX IF NOT EXISTS idx_project_users_project_id ON project_users(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_users_user_id ON project_users(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_entity_type_id ON activity_logs(entity_type, entity_id);

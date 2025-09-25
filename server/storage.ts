@@ -1394,8 +1394,7 @@ export class DatabaseStorage implements IStorage {
           user: user ? {
             id: user.id,
             name: user.name,
-            email: user.email,
-            role: user.role
+            username: user.username
           } : undefined,
           parentId: comment.parentId
         };
