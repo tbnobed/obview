@@ -2,10 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { useComments } from "@/hooks/use-comments";
 import CommentForm from "@/components/comments/comment-form";
 import CommentThread from "@/components/comments/comment-thread";
-import { Loader2, MessageSquare, MoreHorizontal, Filter, Search } from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface TimelineCommentsProps {
@@ -31,11 +35,65 @@ export default function TimelineComments({
   const [markers, setMarkers] = useState<{ time: number, left: string, commentId: number }[]>([]);
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
   const { 
     data: comments, 
     isLoading, 
     error 
   } = useComments(fileId);
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async ({ commentId, isPublic }: { commentId: number, isPublic: boolean }) => {
+      if (isPublic) {
+        // For public comments, we'd need the creatorToken from localStorage
+        const creatorToken = localStorage.getItem(`comment-token-${commentId}`);
+        return await apiRequest("DELETE", `/api/public-comments/${commentId}`, { creatorToken });
+      } else {
+        // For authenticated comments
+        return await apiRequest("DELETE", `/api/comments/${commentId}`);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been removed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete comment",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Check if user can delete a comment
+  const canDeleteComment = (comment: any) => {
+    if (!user) return false; // Only authenticated users can delete comments
+    
+    if (comment.isPublic) {
+      // For public comments, check if we have the creatorToken in localStorage
+      return localStorage.getItem(`comment-token-${comment.id}`) !== null;
+    } else {
+      // For authenticated comments, check if user is the author or admin
+      return comment.userId === user.id || user.role === 'admin';
+    }
+  };
+
+  // Handle delete comment
+  const handleDeleteComment = (comment: any) => {
+    if (window.confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
+      deleteCommentMutation.mutate({ 
+        commentId: comment.id, 
+        isPublic: comment.isPublic || false
+      });
+    }
+  };
 
   // Recursive component to render nested replies
   const RenderReplies = ({ comments, parentId, depth }: { 
@@ -71,16 +129,32 @@ export default function TimelineComments({
                   {reply.content}
                 </div>
                 
-                {/* Reply Button for nested replies */}
-                <button 
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setReplyingToId(replyingToId === reply.id ? null : reply.id);
-                  }}
-                >
-                  {replyingToId === reply.id ? "Cancel Reply" : "Reply"}
-                </button>
+                {/* Action Buttons for nested replies */}
+                <div className="flex items-center gap-3">
+                  <button 
+                    className="text-xs text-gray-400 hover:text-white transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReplyingToId(replyingToId === reply.id ? null : reply.id);
+                    }}
+                  >
+                    {replyingToId === reply.id ? "Cancel Reply" : "Reply"}
+                  </button>
+                  
+                  {canDeleteComment(reply) && (
+                    <button 
+                      className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteComment(reply);
+                      }}
+                      disabled={deleteCommentMutation.isPending}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </button>
+                  )}
+                </div>
 
                 {/* Reply Form for nested replies */}
                 {replyingToId === reply.id && (
@@ -277,16 +351,32 @@ export default function TimelineComments({
                       )}
                     </div>
 
-                    {/* Reply Button */}
-                    <button 
-                      className="text-xs text-gray-400 hover:text-white transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setReplyingToId(replyingToId === comment.id ? null : comment.id);
-                      }}
-                    >
-                      {replyingToId === comment.id ? "Cancel Reply" : "Reply"}
-                    </button>
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-3">
+                      <button 
+                        className="text-xs text-gray-400 hover:text-white transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReplyingToId(replyingToId === comment.id ? null : comment.id);
+                        }}
+                      >
+                        {replyingToId === comment.id ? "Cancel Reply" : "Reply"}
+                      </button>
+                      
+                      {canDeleteComment(comment) && (
+                        <button 
+                          className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteComment(comment);
+                          }}
+                          disabled={deleteCommentMutation.isPending}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </button>
+                      )}
+                    </div>
 
                     {/* Reply Form */}
                     {replyingToId === comment.id && (

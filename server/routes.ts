@@ -2121,9 +2121,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Create the public comment
-      const comment = await storage.createPublicComment(validationResult.data);
-      res.status(201).json(comment);
+      // Generate a unique creator token for this comment
+      const creatorToken = crypto.randomBytes(32).toString('hex');
+      
+      // Create the public comment with the creator token
+      const commentData = {
+        ...validationResult.data,
+        creatorToken
+      };
+      
+      const comment = await storage.createPublicComment(commentData);
+      
+      // Return the comment with the creator token for client-side storage
+      res.status(201).json({
+        ...comment,
+        creatorToken
+      });
     } catch (error) {
       console.error("Error creating public comment:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -2817,16 +2830,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete a public comment (no authentication required for anonymous users)
+  // Delete a public comment (requires creatorToken for authorization)
   app.delete("/api/public-comments/:commentId", async (req, res, next) => {
     try {
       const commentId = parseInt(req.params.commentId);
+      const { creatorToken } = req.body;
       
       // Check if the public comment exists first
       const publicComment = await storage.getPublicComment(commentId);
       
       if (!publicComment) {
         return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      // Check authorization: only allow deletion if creatorToken matches
+      // For backward compatibility, if comment has no creatorToken, deny deletion
+      if (!publicComment.creatorToken || !creatorToken) {
+        return res.status(403).json({ message: "You don't have permission to delete this comment" });
+      }
+      
+      if (publicComment.creatorToken !== creatorToken) {
+        return res.status(403).json({ message: "You don't have permission to delete this comment" });
       }
       
       // Delete the public comment

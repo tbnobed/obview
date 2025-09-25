@@ -97,6 +97,7 @@ export const publicComments = pgTable("public_comments", {
   displayName: text("display_name").notNull(),
   parentId: integer("parent_id"), // For comment replies (null if top-level)
   timestamp: integer("timestamp"), // For timestamped video comments (seconds)
+  creatorToken: text("creator_token"), // For tracking comment ownership (nullable for existing records)
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -106,7 +107,8 @@ export const insertPublicCommentSchema = createInsertSchema(publicComments)
     displayName: z.string().min(2, "Name must be at least 2 characters").max(40, "Name must be 40 characters or less"),
     content: z.string().min(1, "Comment cannot be empty").max(1000, "Comment must be 1000 characters or less"),
     timestamp: z.number().min(0).optional(),
-    parentId: z.number().optional()
+    parentId: z.number().optional(),
+    creatorToken: z.string().min(1, "Creator token is required").optional()
   });
 
 // PROJECT USER SCHEMA (for permissions)

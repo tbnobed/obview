@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "wouter";
-import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo } from "lucide-react";
+import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -981,8 +981,13 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
     mutationFn: async (data: z.infer<typeof insertPublicCommentSchema>) => {
       return await apiRequest("POST", `/api/share/${token}/comments`, data);
     },
-    onSuccess: () => {
+    onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/share', token, 'comments'] });
+      
+      // Store the creatorToken in localStorage for future deletion
+      if (response.creatorToken && response.id) {
+        localStorage.setItem(`comment-token-${response.id}`, response.creatorToken);
+      }
       
       // Get current name value before reset and preserve it
       const currentName = form.getValues('displayName');
@@ -1096,6 +1101,42 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
 // Comments List Component
 function CommentsList({ token, onTimestampClick }: { token: string; onTimestampClick?: (timestamp: number) => void }) {
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
+  const { toast } = useToast();
+  
+  // Delete comment mutation for public comments
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      const creatorToken = localStorage.getItem(`comment-token-${commentId}`);
+      return await apiRequest("DELETE", `/api/public-comments/${commentId}`, { creatorToken });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been removed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/share', token, 'comments'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete comment",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Check if user can delete a comment (based on localStorage creatorToken)
+  const canDeleteComment = (commentId: number) => {
+    return localStorage.getItem(`comment-token-${commentId}`) !== null;
+  };
+
+  // Handle delete comment
+  const handleDeleteComment = (commentId: number) => {
+    if (window.confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
+      deleteCommentMutation.mutate(commentId);
+    }
+  };
+  
   const { data: comments, isLoading, error } = useQuery<UnifiedComment[]>({
     queryKey: ['/api/share', token, 'comments'],
     queryFn: async () => {
@@ -1167,16 +1208,32 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                   {reply.content}
                 </div>
                 
-                {/* Reply Button for nested replies */}
-                <button 
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setReplyingToId(replyingToId === reply.id ? null : reply.id);
-                  }}
-                >
-                  {replyingToId === reply.id ? "Cancel Reply" : "Reply"}
-                </button>
+                {/* Action Buttons for nested replies */}
+                <div className="flex items-center gap-3">
+                  <button 
+                    className="text-xs text-gray-400 hover:text-white transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReplyingToId(replyingToId === reply.id ? null : reply.id);
+                    }}
+                  >
+                    {replyingToId === reply.id ? "Cancel Reply" : "Reply"}
+                  </button>
+                  
+                  {canDeleteComment(reply.id) && (
+                    <button 
+                      className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteComment(reply.id);
+                      }}
+                      disabled={deleteCommentMutation.isPending}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </button>
+                  )}
+                </div>
 
                 {/* Reply Form for nested replies */}
                 {replyingToId === reply.id && (
@@ -1275,16 +1332,32 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                 )}
               </div>
 
-              {/* Reply Button */}
-              <button 
-                className="text-xs text-gray-400 hover:text-white transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setReplyingToId(replyingToId === comment.id ? null : comment.id);
-                }}
-              >
-                {replyingToId === comment.id ? "Cancel Reply" : "Reply"}
-              </button>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
+                <button 
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setReplyingToId(replyingToId === comment.id ? null : comment.id);
+                  }}
+                >
+                  {replyingToId === comment.id ? "Cancel Reply" : "Reply"}
+                </button>
+                
+                {canDeleteComment(comment.id) && (
+                  <button 
+                    className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteComment(comment.id);
+                    }}
+                    disabled={deleteCommentMutation.isPending}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Delete
+                  </button>
+                )}
+              </div>
 
               {/* Reply Form */}
               {replyingToId === comment.id && (
