@@ -2140,6 +2140,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error creating public comment:", error);
+      
+      // Handle validation errors specifically
+      if (error.message?.includes("Parent comment does not exist") || 
+          error.message?.includes("Parent comment must belong to the same file") ||
+          error.message?.includes("cycle in the comment thread")) {
+        return res.status(400).json({ 
+          message: "Invalid comment data", 
+          details: error.message 
+        });
+      }
+      
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -2713,6 +2724,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(commentWithUser);
     } catch (error) {
+      console.error("Error creating authenticated comment:", error);
+      
+      // Handle validation errors specifically
+      if (error.message?.includes("Parent comment does not exist") || 
+          error.message?.includes("Parent comment must belong to the same file") ||
+          error.message?.includes("cycle in the comment thread")) {
+        return res.status(400).json({ 
+          message: "Invalid comment data", 
+          details: error.message 
+        });
+      }
+      
       next(error);
     }
   });
