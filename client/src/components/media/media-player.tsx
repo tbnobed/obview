@@ -1554,8 +1554,8 @@ export default function MediaPlayer({
         </DialogContent>
       </Dialog>
 
-      {/* Portal-based sprite scrub preview that can extend beyond progress bar */}
-      {showScrubPreview && duration > 0 && file?.fileType === 'video' && spriteMetadata && createPortal(
+      {/* Portal-based scrub preview that can extend beyond progress bar */}
+      {showScrubPreview && duration > 0 && file?.fileType === 'video' && createPortal(
         <div
           ref={scrubPreviewRef}
           className="pointer-events-none z-50"
@@ -1567,52 +1567,19 @@ export default function MediaPlayer({
         >
           <div className="p-2">
             <div className="relative">
-              {/* Hidden image to detect sprite loading */}
-              <img
-                src={`/api/files/${file.id}/sprite`}
-                className="hidden"
-                onLoad={() => {
-                  console.log(`🎬 [PLAYER-SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
-                  setSpriteLoaded(true);
+              {/* Video-based scrub preview using scrub version */}
+              <video
+                className="w-48 h-32 rounded object-cover bg-gray-800 pointer-events-none"
+                data-testid="video-scrub-preview"
+                src={`/api/files/${file.id}/scrub`}
+                muted
+                playsInline
+                ref={(video) => {
+                  if (video && !isNaN(scrubPreviewTime)) {
+                    video.currentTime = scrubPreviewTime;
+                  }
                 }}
-                onError={() => {
-                  console.error(`🎬 [PLAYER-SPRITE] ❌ Sprite error for file ${file.id}`);
-                  setSpriteLoaded(false);
-                }}
-                alt=""
               />
-              
-              {/* Sprite-based scrub preview */}
-              {spriteLoaded ? (
-                <div
-                  className="w-48 h-32 rounded object-cover bg-gray-800 pointer-events-none"
-                  data-testid="sprite-scrub-preview"
-                  style={{
-                    backgroundImage: `url(/api/files/${file.id}/sprite)`,
-                    backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
-                    backgroundPosition: (() => {
-                      // Calculate which thumbnail to show based on exact scrub time and sprite interval
-                      // This ensures precise mapping to the video timeline
-                      const thumbnailIndex = Math.min(
-                        Math.floor(scrubPreviewTime / spriteMetadata.interval),
-                        spriteMetadata.thumbnailCount - 1
-                      );
-                      const col = thumbnailIndex % spriteMetadata.cols;
-                      const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
-                      
-                      // Calculate background position (negative values to shift the sprite)
-                      const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
-                      const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
-                      
-                      return `${xPercent}% ${yPercent}%`;
-                    })()
-                  }}
-                />
-              ) : (
-                <div className="w-48 h-32 rounded bg-gray-800 flex items-center justify-center">
-                  <FileVideo className="h-8 w-8 text-gray-500" />
-                </div>
-              )}
             </div>
             <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
               {formatTime(scrubPreviewTime)}
