@@ -2653,9 +2653,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // If it's a reply, check if parent comment exists
+      // If it's a reply, check if parent comment exists (check both regular and public comments)
       if (validationResult.data.parentId) {
-        const parentComment = await storage.getComment(validationResult.data.parentId);
+        let parentComment = await storage.getComment(validationResult.data.parentId);
+        
+        // If not found in regular comments, check public comments
+        if (!parentComment) {
+          parentComment = await storage.getPublicComment(validationResult.data.parentId);
+        }
+        
         if (!parentComment || parentComment.fileId !== fileId) {
           return res.status(400).json({ message: "Invalid parent comment" });
         }
