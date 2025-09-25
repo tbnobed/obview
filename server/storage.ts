@@ -513,8 +513,11 @@ export class MemStorage implements IStorage {
   async createComment(insertComment: InsertComment): Promise<Comment> {
     // Same validation as DatabaseStorage for consistency
     if (insertComment.parentId !== undefined && insertComment.parentId !== null) {
-      // 1. Check if parent exists
-      const parentComment = this.comments.get(insertComment.parentId);
+      // 1. Check if parent exists in either regular comments or public comments
+      const parentRegularComment = this.comments.get(insertComment.parentId);
+      const parentPublicComment = this.publicComments.get(insertComment.parentId);
+      
+      const parentComment = parentRegularComment || parentPublicComment;
       if (!parentComment) {
         throw new Error("Parent comment does not exist");
       }
@@ -1417,8 +1420,11 @@ export class DatabaseStorage implements IStorage {
   async createComment(insertComment: InsertComment): Promise<Comment> {
     // Comprehensive validation before creating comment
     if (insertComment.parentId !== undefined && insertComment.parentId !== null) {
-      // 1. Check if parent exists
-      const [parentComment] = await db.select().from(comments).where(eq(comments.id, insertComment.parentId)).limit(1);
+      // 1. Check if parent exists in either regular comments or public comments
+      const [parentRegularComment] = await db.select().from(comments).where(eq(comments.id, insertComment.parentId)).limit(1);
+      const [parentPublicComment] = await db.select().from(publicComments).where(eq(publicComments.id, insertComment.parentId)).limit(1);
+      
+      const parentComment = parentRegularComment || parentPublicComment;
       if (!parentComment) {
         throw new Error("Parent comment does not exist");
       }
