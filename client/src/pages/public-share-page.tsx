@@ -980,7 +980,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
 
   const createCommentMutation = useMutation({
     mutationFn: async (data: z.infer<typeof insertCommentsUnifiedSchema>) => {
-      return await apiRequest("POST", `/api/files/${fileId}/comments`, data);
+      return await apiRequest("POST", `/api/share/${token}/comments`, data);
     },
     onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/share', token, 'comments'] });
