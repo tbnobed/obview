@@ -134,7 +134,7 @@ export const insertCommentsUnifiedSchema = createInsertSchema(commentsUnified)
     content: z.string().min(1, "Comment cannot be empty").max(1000, "Comment must be 1000 characters or less"),
     authorEmail: z.string().email("Invalid email format").optional(),
     timestamp: z.number().min(0).optional(),
-    parentId: z.string().uuid().optional(),
+    parentId: z.string().uuid().optional().nullable().transform(val => val || undefined),
   });
 
 // PROJECT USER SCHEMA (for permissions)
