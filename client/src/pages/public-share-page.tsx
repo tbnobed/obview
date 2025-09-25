@@ -1180,7 +1180,23 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
     parentId: number, 
     depth: number
   }) => {
-    const replies = comments?.filter((c: any) => c.parentId === parentId) || [];
+    // Prevent infinite loops with maximum depth limit
+    if (depth > 10) {
+      console.warn(`Maximum comment depth (${depth}) reached for parentId ${parentId}`);
+      return null;
+    }
+    
+    // Filter replies and ensure parent actually exists to prevent orphaned references
+    const replies = comments?.filter((c: any) => {
+      if (c.parentId !== parentId) return false;
+      // Verify the parent comment actually exists in the comments array
+      const parentExists = comments.some((parent: any) => parent.id === parentId);
+      if (!parentExists) {
+        console.warn(`Orphaned comment reference: Comment ${c.id} references non-existent parent ${parentId}`);
+        return false;
+      }
+      return true;
+    }) || [];
     
     if (replies.length === 0) return null;
     
@@ -1249,7 +1265,7 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                 )}
               </div>
             </div>
-            {/* Recursively render nested replies */}
+            {/* Recursively render nested replies with depth protection */}
             <RenderReplies comments={comments} parentId={reply.id} depth={depth + 1} />
           </div>
         ))}
