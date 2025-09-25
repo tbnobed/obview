@@ -1294,31 +1294,21 @@ export class DatabaseStorage implements IStorage {
     return sanitized;
   }
 
-  // Helper method to sanitize comments and break cycles
+  // Helper method to sanitize comments - ONLY check for true self-parenting within same type
   private async sanitizeComments(comments: Comment[]): Promise<Comment[]> {
     const sanitized: Comment[] = [];
-    const commentMap = new Map<number, Comment>();
     
-    // First pass: build map and fix self-parenting
     for (const comment of comments) {
       let sanitizedComment = { ...comment };
       
-      // Fix self-parenting
+      // ONLY fix actual self-parenting (where auth comment references itself)
+      // Do NOT break cross-table references to public comments with same numeric ID
       if (sanitizedComment.parentId === sanitizedComment.id) {
-        console.warn(`Backend: Breaking self-parenting cycle for comment ${sanitizedComment.id}`);
+        console.warn(`Backend: Breaking TRUE self-parenting cycle for auth comment ${sanitizedComment.id}`);
         sanitizedComment.parentId = null;
       }
       
-      commentMap.set(sanitizedComment.id, sanitizedComment);
-    }
-    
-    // Second pass: detect cycles using cross-table aware ancestor walking
-    for (const comment of commentMap.values()) {
-      if (comment.parentId && await this.detectCommentCycleAcrossTables(comment, comment.fileId)) {
-        console.warn(`Backend: Breaking cycle detected for comment ${comment.id}`);
-        comment.parentId = null;
-      }
-      sanitized.push(comment);
+      sanitized.push(sanitizedComment);
     }
     
     return sanitized;
@@ -1392,31 +1382,21 @@ export class DatabaseStorage implements IStorage {
     return false;
   }
 
-  // Helper method to sanitize public comments and break cycles
+  // Helper method to sanitize public comments - ONLY check for true self-parenting within same type
   private async sanitizePublicComments(comments: PublicComment[]): Promise<PublicComment[]> {
     const sanitized: PublicComment[] = [];
-    const commentMap = new Map<number, PublicComment>();
     
-    // First pass: build map and fix self-parenting
     for (const comment of comments) {
       let sanitizedComment = { ...comment };
       
-      // Fix self-parenting
+      // ONLY fix actual self-parenting (where public comment references itself)
+      // Do NOT break cross-table references to auth comments with same numeric ID
       if (sanitizedComment.parentId === sanitizedComment.id) {
-        console.warn(`Backend: Breaking self-parenting cycle for public comment ${sanitizedComment.id}`);
+        console.warn(`Backend: Breaking TRUE self-parenting cycle for public comment ${sanitizedComment.id}`);
         sanitizedComment.parentId = null;
       }
       
-      commentMap.set(sanitizedComment.id, sanitizedComment);
-    }
-    
-    // Second pass: detect cycles using cross-table aware ancestor walking
-    for (const comment of commentMap.values()) {
-      if (comment.parentId && await this.detectCommentCycleAcrossTables(comment, comment.fileId)) {
-        console.warn(`Backend: Breaking cycle detected for public comment ${comment.id}`);
-        comment.parentId = null;
-      }
-      sanitized.push(comment);
+      sanitized.push(sanitizedComment);
     }
     
     return sanitized;
@@ -1945,16 +1925,38 @@ export class DatabaseStorage implements IStorage {
   async getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]> {
     console.log(`🔍 [UNIFIED] Getting unified comments for file ${fileId}`);
     
-    const regularComments = await this.getCommentsByFile(fileId); // Already sanitized
+    const regularComments = await this.getCommentsByFile(fileId);
     console.log(`🔍 [UNIFIED] Got ${regularComments.length} authenticated comments`);
     
-    const sanitizedPublicComments = await this.getPublicCommentsByFile(fileId); // Already sanitized
-    console.log(`🔍 [UNIFIED] Got ${sanitizedPublicComments.length} public comments`);
+    const publicComments = await this.getPublicCommentsByFile(fileId);
+    console.log(`🔍 [UNIFIED] Got ${publicComments.length} public comments`);
     
-    // Convert regular comments to unified format
+    // Build separate maps by type to prevent ID collision
+    const authById = new Map<number, Comment>();
+    const publicById = new Map<number, PublicComment>();
+    
+    // Build auth comment map
+    for (const comment of regularComments) {
+      authById.set(comment.id, comment);
+    }
+    
+    // Build public comment map  
+    for (const comment of publicComments) {
+      publicById.set(comment.id, comment);
+    }
+    
+    // Convert regular comments to unified format with type-aware parent resolution
     const unifiedRegularComments: UnifiedComment[] = await Promise.all(
       regularComments.map(async (comment) => {
         const user = await this.getUser(comment.userId);
+        
+        // For auth comments, resolve parentId only within auth comments
+        let resolvedParentId = comment.parentId;
+        if (comment.parentId && !authById.has(comment.parentId)) {
+          console.warn(`🔍 [UNIFIED] Auth comment ${comment.id} references non-existent auth parent ${comment.parentId}`);
+          resolvedParentId = null;
+        }
+        
         return {
           id: comment.id,
           content: comment.content,
@@ -1969,24 +1971,46 @@ export class DatabaseStorage implements IStorage {
             name: user.name,
             username: user.username
           } : undefined,
-          parentId: comment.parentId
+          parentId: resolvedParentId
         };
       })
     );
 
-    // Convert public comments to unified format
-    const unifiedPublicComments: UnifiedComment[] = sanitizedPublicComments.map((comment) => ({
-      id: comment.id,
-      content: comment.content,
-      fileId: comment.fileId,
-      timestamp: comment.timestamp,
-      isResolved: false,
-      createdAt: comment.createdAt,
-      isPublic: true,
-      authorName: comment.displayName,
-      user: undefined,
-      parentId: comment.parentId
-    }));
+    // Convert public comments to unified format with cross-table parent resolution
+    const unifiedPublicComments: UnifiedComment[] = publicComments.map((comment) => {
+      let resolvedParentId = comment.parentId;
+      
+      if (comment.parentId) {
+        // First try to find parent in auth comments (cross-table reference)
+        if (authById.has(comment.parentId)) {
+          console.log(`🔍 [UNIFIED] Public comment ${comment.id} correctly references auth parent ${comment.parentId}`);
+          resolvedParentId = comment.parentId;
+        }
+        // Then try public comments (same-table reference)
+        else if (publicById.has(comment.parentId)) {
+          console.log(`🔍 [UNIFIED] Public comment ${comment.id} references public parent ${comment.parentId}`);
+          resolvedParentId = comment.parentId;
+        }
+        // Parent not found in either table
+        else {
+          console.warn(`🔍 [UNIFIED] Public comment ${comment.id} references non-existent parent ${comment.parentId}`);
+          resolvedParentId = null;
+        }
+      }
+      
+      return {
+        id: comment.id,
+        content: comment.content,
+        fileId: comment.fileId,
+        timestamp: comment.timestamp,
+        isResolved: false,
+        createdAt: comment.createdAt,
+        isPublic: true,
+        authorName: comment.displayName,
+        user: undefined,
+        parentId: resolvedParentId
+      };
+    });
 
     // Combine and sort by creation date
     const allComments = [...unifiedRegularComments, ...unifiedPublicComments];
