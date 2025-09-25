@@ -5,6 +5,8 @@ import CommentThread from "@/components/comments/comment-thread";
 import { Loader2, MessageSquare, MoreHorizontal, Filter, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getUserInitials } from "@/lib/utils";
+
 
 interface TimelineCommentsProps {
   fileId: number;
@@ -34,6 +36,49 @@ export default function TimelineComments({
     isLoading, 
     error 
   } = useComments(fileId);
+
+  // Recursive component to render nested replies
+  const RenderReplies = ({ comments, parentId, depth }: { 
+    comments: any[], 
+    parentId: number, 
+    depth: number
+  }) => {
+    const replies = comments?.filter((c: any) => c.parentId === parentId) || [];
+    
+    if (replies.length === 0) return null;
+    
+    return (
+      <div className={`mt-3 space-y-3 ${depth > 0 ? 'ml-4 pl-4 border-l border-gray-600' : ''}`}>
+        {replies.map((reply: any) => (
+          <div key={reply.id}>
+            <div className="flex gap-3">
+              <Avatar className="h-6 w-6 flex-shrink-0">
+                <AvatarImage src={reply.user?.avatar} />
+                <AvatarFallback className="bg-gray-600 text-white text-xs">
+                  {getUserInitials((reply as any).authorName || reply.user?.name || reply.user?.username || 'U')}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-medium text-white">
+                    {(reply as any).authorName || reply.user?.name || reply.user?.username || 'Unknown User'}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(reply.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-200">
+                  {reply.content}
+                </div>
+              </div>
+            </div>
+            {/* Recursively render nested replies */}
+            <RenderReplies comments={comments} parentId={reply.id} depth={depth + 1} />
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   // Format time for Frame.io style (HH:MM:SS:FF - hours:minutes:seconds:frames)
   const formatTime = (time: number) => {
@@ -233,33 +278,7 @@ export default function TimelineComments({
                     )}
 
                     {/* Replies */}
-                    {comments && comments.filter((c: any) => c.parentId === comment.id).length > 0 && (
-                      <div className="mt-3 space-y-3">
-                        {comments.filter((c: any) => c.parentId === comment.id).map((reply: any) => (
-                          <div key={reply.id} className="flex gap-3">
-                            <Avatar className="h-6 w-6 flex-shrink-0">
-                              <AvatarImage src={reply.user?.avatar} />
-                              <AvatarFallback className="bg-gray-600 text-white text-xs">
-                                {getUserInitials((reply as any).authorName || reply.user?.name || reply.user?.username || 'U')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-medium text-white">
-                                  {(reply as any).authorName || reply.user?.name || reply.user?.username || 'Unknown User'}
-                                </span>
-                                <span className="text-xs text-gray-400">
-                                  {new Date(reply.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                              <div className="text-xs text-gray-200">
-                                {reply.content}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <RenderReplies comments={comments} parentId={comment.id} depth={0} />
                   </div>
                 </div>
               </div>
