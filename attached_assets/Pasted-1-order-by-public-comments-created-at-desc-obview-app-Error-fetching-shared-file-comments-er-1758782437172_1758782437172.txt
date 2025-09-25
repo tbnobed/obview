@@ -1,0 +1,35 @@
+1 order by "public_comments"."created_at" desc
+obview_app  | Error fetching shared file comments: error: column "parent_id" does not exist
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+obview_app  |     at async DatabaseStorage.getPublicCommentsByFile (file:///app/dist/production.js:1007:12)
+obview_app  |     at async DatabaseStorage.getUnifiedCommentsByFile (file:///app/dist/production.js:1023:32)
+obview_app  |     at async file:///app/dist/production.js:3420:25 {
+obview_app  |   length: 109,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42703',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: '52',
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'parse_relation.c',
+obview_app  |   line: '3722',
+obview_app  |   routine: 'errorMissingColumn'
+obview_app  | }
+obview_app  | [PRODUCTION SHARE] Request for token: c0abd0cbb9b34b445e073d751e398af566c5287d1166437f1d13f5fdea9e26f3
+obview_app  | [PRODUCTION SHARE] Found file: ESCHATOLOGY.mp4 (ID: 30)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758775310933-449249978.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758775310933-449249978.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758775310933-449249978.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758775310933-449249978.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 30 (ESCHATOLOGY.mp4) - type: video/mp4, path: /app/uploads/1758775310933-449249978.mp4
+obview_app  | [PRODUCTION SHARE] Error sending file: write EPIPE
