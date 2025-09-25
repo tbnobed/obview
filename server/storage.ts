@@ -436,9 +436,72 @@ export class MemStorage implements IStorage {
   }
 
   async getCommentsByFile(fileId: number): Promise<Comment[]> {
-    return Array.from(this.comments.values()).filter(
+    const rawComments = Array.from(this.comments.values()).filter(
       (comment) => comment.fileId === fileId
     );
+    
+    // Sanitize comments to break cycles and fix corrupt data (same as DatabaseStorage)
+    return this.sanitizeMemStorageComments(rawComments);
+  }
+
+  // MemStorage version of comment sanitization
+  private sanitizeMemStorageComments(comments: Comment[]): Comment[] {
+    const sanitized: Comment[] = [];
+    const commentMap = new Map<number, Comment>();
+    
+    // First pass: build map and fix self-parenting
+    for (const comment of comments) {
+      let sanitizedComment = { ...comment };
+      
+      // Fix self-parenting
+      if (sanitizedComment.parentId === sanitizedComment.id) {
+        console.warn(`MemStorage: Breaking self-parenting cycle for comment ${sanitizedComment.id}`);
+        sanitizedComment.parentId = null;
+      }
+      
+      commentMap.set(sanitizedComment.id, sanitizedComment);
+    }
+    
+    // Second pass: detect cycles using ancestor walking
+    for (const comment of commentMap.values()) {
+      if (comment.parentId && this.detectMemStorageCommentCycle(comment, commentMap)) {
+        console.warn(`MemStorage: Breaking cycle detected for comment ${comment.id}`);
+        comment.parentId = null;
+      }
+      sanitized.push(comment);
+    }
+    
+    return sanitized;
+  }
+
+  // MemStorage cycle detection for reading
+  private detectMemStorageCommentCycle(comment: Comment, commentMap: Map<number, Comment>): boolean {
+    const visited = new Set<number>();
+    let current = comment;
+    
+    while (current.parentId) {
+      if (visited.has(current.id)) {
+        return true; // Cycle detected
+      }
+      visited.add(current.id);
+      
+      const parent = commentMap.get(current.parentId);
+      if (!parent) {
+        // Parent doesn't exist, break chain
+        console.warn(`MemStorage: Parent ${current.parentId} not found for comment ${current.id}`);
+        break;
+      }
+      
+      current = parent;
+      
+      // Depth limit safety
+      if (visited.size > 50) {
+        console.warn(`MemStorage: Max depth exceeded, breaking chain for comment ${comment.id}`);
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   async getCommentReplies(commentId: number): Promise<Comment[]> {
@@ -448,6 +511,25 @@ export class MemStorage implements IStorage {
   }
 
   async createComment(insertComment: InsertComment): Promise<Comment> {
+    // Same validation as DatabaseStorage for consistency
+    if (insertComment.parentId !== undefined && insertComment.parentId !== null) {
+      // 1. Check if parent exists
+      const parentComment = this.comments.get(insertComment.parentId);
+      if (!parentComment) {
+        throw new Error("Parent comment does not exist");
+      }
+      
+      // 2. Ensure parent belongs to the same file
+      if (parentComment.fileId !== insertComment.fileId) {
+        throw new Error("Parent comment must belong to the same file");
+      }
+      
+      // 3. Check for cycles by walking up the parent chain
+      if (this.wouldCreateCommentCycle(insertComment.parentId)) {
+        throw new Error("Creating this comment would create a cycle in the comment thread");
+      }
+    }
+    
     const id = this.currentCommentId++;
     const now = new Date();
     const comment: Comment = {
@@ -457,6 +539,34 @@ export class MemStorage implements IStorage {
     };
     this.comments.set(id, comment);
     return comment;
+  }
+
+  // Helper for MemStorage cycle detection
+  private wouldCreateCommentCycle(parentId: number): boolean {
+    const visited = new Set<number>();
+    let currentId = parentId;
+    
+    while (currentId) {
+      if (visited.has(currentId)) {
+        return true; // Cycle detected
+      }
+      visited.add(currentId);
+      
+      const parent = this.comments.get(currentId);
+      if (!parent || !parent.parentId) {
+        break; // Reached root or non-existent parent
+      }
+      
+      currentId = parent.parentId;
+      
+      // Safety depth limit
+      if (visited.size > 50) {
+        console.warn(`MemStorage: Max depth exceeded during cycle check, assuming cycle`);
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   async updateComment(id: number, data: Partial<InsertComment>): Promise<Comment | undefined> {
@@ -478,12 +588,94 @@ export class MemStorage implements IStorage {
   }
 
   async getPublicCommentsByFile(fileId: number): Promise<PublicComment[]> {
-    return Array.from(this.publicComments.values()).filter(
+    const rawComments = Array.from(this.publicComments.values()).filter(
       (comment) => comment.fileId === fileId
     );
+    
+    // Sanitize public comments to break cycles and fix corrupt data (same as DatabaseStorage)
+    return this.sanitizeMemStoragePublicComments(rawComments);
+  }
+
+  // MemStorage version of public comment sanitization
+  private sanitizeMemStoragePublicComments(comments: PublicComment[]): PublicComment[] {
+    const sanitized: PublicComment[] = [];
+    const commentMap = new Map<number, PublicComment>();
+    
+    // First pass: build map and fix self-parenting
+    for (const comment of comments) {
+      let sanitizedComment = { ...comment };
+      
+      // Fix self-parenting
+      if (sanitizedComment.parentId === sanitizedComment.id) {
+        console.warn(`MemStorage: Breaking self-parenting cycle for public comment ${sanitizedComment.id}`);
+        sanitizedComment.parentId = null;
+      }
+      
+      commentMap.set(sanitizedComment.id, sanitizedComment);
+    }
+    
+    // Second pass: detect cycles using ancestor walking
+    for (const comment of commentMap.values()) {
+      if (comment.parentId && this.detectMemStoragePublicCommentCycle(comment, commentMap)) {
+        console.warn(`MemStorage: Breaking cycle detected for public comment ${comment.id}`);
+        comment.parentId = null;
+      }
+      sanitized.push(comment);
+    }
+    
+    return sanitized;
+  }
+
+  // MemStorage public comment cycle detection for reading
+  private detectMemStoragePublicCommentCycle(comment: PublicComment, commentMap: Map<number, PublicComment>): boolean {
+    const visited = new Set<number>();
+    let current = comment;
+    
+    while (current.parentId) {
+      if (visited.has(current.id)) {
+        return true; // Cycle detected
+      }
+      visited.add(current.id);
+      
+      const parent = commentMap.get(current.parentId);
+      if (!parent) {
+        // Parent doesn't exist, break chain
+        console.warn(`MemStorage: Public comment parent ${current.parentId} not found for comment ${current.id}`);
+        break;
+      }
+      
+      current = parent;
+      
+      // Depth limit safety
+      if (visited.size > 50) {
+        console.warn(`MemStorage: Max depth exceeded for public comment, breaking chain for comment ${comment.id}`);
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   async createPublicComment(insertPublicComment: InsertPublicComment): Promise<PublicComment> {
+    // Same validation as DatabaseStorage for consistency
+    if (insertPublicComment.parentId !== undefined && insertPublicComment.parentId !== null) {
+      // 1. Check if parent exists
+      const parentComment = this.publicComments.get(insertPublicComment.parentId);
+      if (!parentComment) {
+        throw new Error("Parent comment does not exist");
+      }
+      
+      // 2. Ensure parent belongs to the same file
+      if (parentComment.fileId !== insertPublicComment.fileId) {
+        throw new Error("Parent comment must belong to the same file");
+      }
+      
+      // 3. Check for cycles by walking up the parent chain
+      if (this.wouldCreatePublicCommentCycle(insertPublicComment.parentId)) {
+        throw new Error("Creating this comment would create a cycle in the comment thread");
+      }
+    }
+    
     const id = this.currentPublicCommentId++;
     const now = new Date();
     const publicComment: PublicComment = {
@@ -493,6 +685,34 @@ export class MemStorage implements IStorage {
     };
     this.publicComments.set(id, publicComment);
     return publicComment;
+  }
+
+  // Helper for MemStorage public comment cycle detection
+  private wouldCreatePublicCommentCycle(parentId: number): boolean {
+    const visited = new Set<number>();
+    let currentId = parentId;
+    
+    while (currentId) {
+      if (visited.has(currentId)) {
+        return true; // Cycle detected
+      }
+      visited.add(currentId);
+      
+      const parent = this.publicComments.get(currentId);
+      if (!parent || !parent.parentId) {
+        break; // Reached root or non-existent parent
+      }
+      
+      currentId = parent.parentId;
+      
+      // Safety depth limit
+      if (visited.size > 50) {
+        console.warn(`MemStorage: Max depth exceeded during public comment cycle check, assuming cycle`);
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   async deletePublicComment(id: number): Promise<boolean> {
@@ -1061,7 +1281,130 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCommentsByFile(fileId: number): Promise<Comment[]> {
-    return await db.select().from(comments).where(eq(comments.fileId, fileId));
+    const rawComments = await db.select().from(comments).where(eq(comments.fileId, fileId));
+    
+    // Sanitize comments to break cycles and fix corrupt data
+    return this.sanitizeComments(rawComments);
+  }
+
+  // Helper method to sanitize comments and break cycles
+  private sanitizeComments(comments: Comment[]): Comment[] {
+    const sanitized: Comment[] = [];
+    const commentMap = new Map<number, Comment>();
+    
+    // First pass: build map and fix self-parenting
+    for (const comment of comments) {
+      let sanitizedComment = { ...comment };
+      
+      // Fix self-parenting
+      if (sanitizedComment.parentId === sanitizedComment.id) {
+        console.warn(`Backend: Breaking self-parenting cycle for comment ${sanitizedComment.id}`);
+        sanitizedComment.parentId = null;
+      }
+      
+      commentMap.set(sanitizedComment.id, sanitizedComment);
+    }
+    
+    // Second pass: detect cycles using ancestor walking
+    for (const comment of commentMap.values()) {
+      if (comment.parentId && this.detectCommentCycle(comment, commentMap)) {
+        console.warn(`Backend: Breaking cycle detected for comment ${comment.id}`);
+        comment.parentId = null;
+      }
+      sanitized.push(comment);
+    }
+    
+    return sanitized;
+  }
+
+  // Detect cycles by walking up parent chain
+  private detectCommentCycle(comment: Comment, commentMap: Map<number, Comment>): boolean {
+    const visited = new Set<number>();
+    let current = comment;
+    
+    while (current.parentId) {
+      if (visited.has(current.id)) {
+        return true; // Cycle detected
+      }
+      visited.add(current.id);
+      
+      const parent = commentMap.get(current.parentId);
+      if (!parent) {
+        // Parent doesn't exist, break chain
+        console.warn(`Backend: Parent ${current.parentId} not found for comment ${current.id}`);
+        break;
+      }
+      
+      current = parent;
+      
+      // Depth limit safety
+      if (visited.size > 50) {
+        console.warn(`Backend: Max depth exceeded, breaking chain for comment ${comment.id}`);
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // Helper method to sanitize public comments and break cycles
+  private sanitizePublicComments(comments: PublicComment[]): PublicComment[] {
+    const sanitized: PublicComment[] = [];
+    const commentMap = new Map<number, PublicComment>();
+    
+    // First pass: build map and fix self-parenting
+    for (const comment of comments) {
+      let sanitizedComment = { ...comment };
+      
+      // Fix self-parenting
+      if (sanitizedComment.parentId === sanitizedComment.id) {
+        console.warn(`Backend: Breaking self-parenting cycle for public comment ${sanitizedComment.id}`);
+        sanitizedComment.parentId = null;
+      }
+      
+      commentMap.set(sanitizedComment.id, sanitizedComment);
+    }
+    
+    // Second pass: detect cycles using ancestor walking
+    for (const comment of commentMap.values()) {
+      if (comment.parentId && this.detectPublicCommentCycle(comment, commentMap)) {
+        console.warn(`Backend: Breaking cycle detected for public comment ${comment.id}`);
+        comment.parentId = null;
+      }
+      sanitized.push(comment);
+    }
+    
+    return sanitized;
+  }
+
+  // Detect cycles by walking up parent chain for public comments
+  private detectPublicCommentCycle(comment: PublicComment, commentMap: Map<number, PublicComment>): boolean {
+    const visited = new Set<number>();
+    let current = comment;
+    
+    while (current.parentId) {
+      if (visited.has(current.id)) {
+        return true; // Cycle detected
+      }
+      visited.add(current.id);
+      
+      const parent = commentMap.get(current.parentId);
+      if (!parent) {
+        // Parent doesn't exist, break chain
+        console.warn(`Backend: Public comment parent ${current.parentId} not found for comment ${current.id}`);
+        break;
+      }
+      
+      current = parent;
+      
+      // Depth limit safety
+      if (visited.size > 50) {
+        console.warn(`Backend: Max depth exceeded for public comment, breaking chain for comment ${comment.id}`);
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   async getCommentReplies(commentId: number): Promise<Comment[]> {
@@ -1072,8 +1415,63 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createComment(insertComment: InsertComment): Promise<Comment> {
+    // Comprehensive validation before creating comment
+    if (insertComment.parentId !== undefined && insertComment.parentId !== null) {
+      // 1. Check if parent exists
+      const [parentComment] = await db.select().from(comments).where(eq(comments.id, insertComment.parentId)).limit(1);
+      if (!parentComment) {
+        throw new Error("Parent comment does not exist");
+      }
+      
+      // 2. Ensure parent belongs to the same file
+      if (parentComment.fileId !== insertComment.fileId) {
+        throw new Error("Parent comment must belong to the same file");
+      }
+      
+      // 3. Prevent immediate self-parenting (can't happen during creation, but safety check)
+      // (Self-parenting with new ID is impossible, but this validates the logic)
+      
+      // 4. Check for cycles by walking up the parent chain
+      const existingComments = await db.select().from(comments).where(eq(comments.fileId, insertComment.fileId));
+      const commentMap = new Map<number, Comment>();
+      existingComments.forEach(c => commentMap.set(c.id, c));
+      
+      // Simulate adding our new comment to check for cycles
+      if (this.wouldCreateCycle(insertComment.parentId, commentMap)) {
+        throw new Error("Creating this comment would create a cycle in the comment thread");
+      }
+    }
+    
     const [comment] = await db.insert(comments).values(insertComment).returning();
     return comment;
+  }
+
+  // Helper to check if adding a comment with parentId would create a cycle
+  private wouldCreateCycle(parentId: number, commentMap: Map<number, Comment>): boolean {
+    const visited = new Set<number>();
+    let currentId = parentId;
+    
+    while (currentId) {
+      if (visited.has(currentId)) {
+        return true; // Cycle detected
+      }
+      visited.add(currentId);
+      
+      const parent = commentMap.get(currentId);
+      if (!parent || !parent.parentId) {
+        break; // Reached root or non-existent parent
+      }
+      
+      currentId = parent.parentId;
+      
+      // Safety depth limit
+      if (visited.size > 50) {
+        console.warn(`Backend: Max depth exceeded during cycle check, assuming cycle`);
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   async updateComment(id: number, data: Partial<InsertComment>): Promise<Comment | undefined> {
@@ -1351,11 +1749,64 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPublicComment(insertPublicComment: InsertPublicComment): Promise<PublicComment> {
+    // Comprehensive validation before creating public comment
+    if (insertPublicComment.parentId !== undefined && insertPublicComment.parentId !== null) {
+      // 1. Check if parent exists
+      const [parentComment] = await db.select().from(publicComments).where(eq(publicComments.id, insertPublicComment.parentId)).limit(1);
+      if (!parentComment) {
+        throw new Error("Parent comment does not exist");
+      }
+      
+      // 2. Ensure parent belongs to the same file
+      if (parentComment.fileId !== insertPublicComment.fileId) {
+        throw new Error("Parent comment must belong to the same file");
+      }
+      
+      // 3. Check for cycles by walking up the parent chain
+      const existingComments = await db.select().from(publicComments).where(eq(publicComments.fileId, insertPublicComment.fileId));
+      const commentMap = new Map<number, PublicComment>();
+      existingComments.forEach(c => commentMap.set(c.id, c));
+      
+      // Simulate adding our new comment to check for cycles
+      if (this.wouldCreatePublicCommentCycle(insertPublicComment.parentId, commentMap)) {
+        throw new Error("Creating this comment would create a cycle in the comment thread");
+      }
+    }
+    
     const [publicComment] = await db
       .insert(publicComments)
       .values(insertPublicComment)
       .returning();
+    
     return publicComment;
+  }
+
+  // Helper to check if adding a public comment with parentId would create a cycle
+  private wouldCreatePublicCommentCycle(parentId: number, commentMap: Map<number, PublicComment>): boolean {
+    const visited = new Set<number>();
+    let currentId = parentId;
+    
+    while (currentId) {
+      if (visited.has(currentId)) {
+        return true; // Cycle detected
+      }
+      visited.add(currentId);
+      
+      const parent = commentMap.get(currentId);
+      if (!parent || !parent.parentId) {
+        break; // Reached root or non-existent parent
+      }
+      
+      currentId = parent.parentId;
+      
+      // Safety depth limit
+      if (visited.size > 50) {
+        console.warn(`Backend: Max depth exceeded during public comment cycle check, assuming cycle`);
+        return true;
+      }
+    }
+    
+    return false;
   }
 
   async getPublicComment(id: number): Promise<PublicComment | undefined> {
@@ -1375,8 +1826,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]> {
-    const regularComments = await this.getCommentsByFile(fileId);
-    const publicCommentsList = await this.getPublicCommentsByFile(fileId);
+    const regularComments = await this.getCommentsByFile(fileId); // Already sanitized
+    const rawPublicComments = await this.getPublicCommentsByFile(fileId);
+    
+    // Sanitize public comments similar to regular comments
+    const sanitizedPublicComments = this.sanitizePublicComments(rawPublicComments);
     
     // Convert regular comments to unified format
     const unifiedRegularComments: UnifiedComment[] = await Promise.all(
@@ -1402,7 +1856,7 @@ export class DatabaseStorage implements IStorage {
     );
 
     // Convert public comments to unified format
-    const unifiedPublicComments: UnifiedComment[] = publicCommentsList.map((comment) => ({
+    const unifiedPublicComments: UnifiedComment[] = sanitizedPublicComments.map((comment) => ({
       id: comment.id,
       content: comment.content,
       fileId: comment.fileId,
