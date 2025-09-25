@@ -1284,10 +1284,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCommentsByFile(fileId: number): Promise<Comment[]> {
+    console.log(`🔍 [COMMENTS] Getting authenticated comments for file ${fileId}`);
     const rawComments = await db.select().from(comments).where(eq(comments.fileId, fileId));
+    console.log(`🔍 [COMMENTS] Found ${rawComments.length} raw authenticated comments for file ${fileId}`);
     
     // Sanitize comments to break cycles and fix corrupt data
-    return await this.sanitizeComments(rawComments);
+    const sanitized = await this.sanitizeComments(rawComments);
+    console.log(`🔍 [COMMENTS] Returning ${sanitized.length} sanitized authenticated comments for file ${fileId}`);
+    return sanitized;
   }
 
   // Helper method to sanitize comments and break cycles
@@ -1876,8 +1880,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnifiedCommentsByFile(fileId: number): Promise<UnifiedComment[]> {
+    console.log(`🔍 [UNIFIED] Getting unified comments for file ${fileId}`);
+    
     const regularComments = await this.getCommentsByFile(fileId); // Already sanitized
+    console.log(`🔍 [UNIFIED] Got ${regularComments.length} authenticated comments`);
+    
     const sanitizedPublicComments = await this.getPublicCommentsByFile(fileId); // Already sanitized
+    console.log(`🔍 [UNIFIED] Got ${sanitizedPublicComments.length} public comments`);
     
     // Convert regular comments to unified format
     const unifiedRegularComments: UnifiedComment[] = await Promise.all(
@@ -1918,7 +1927,12 @@ export class DatabaseStorage implements IStorage {
 
     // Combine and sort by creation date
     const allComments = [...unifiedRegularComments, ...unifiedPublicComments];
-    return allComments.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    console.log(`🔍 [UNIFIED] Created ${allComments.length} total unified comments for file ${fileId}`);
+    
+    const sorted = allComments.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    console.log(`🔍 [UNIFIED] Returning ${sorted.length} sorted unified comments for file ${fileId}`);
+    
+    return sorted;
   }
 
   async getFileByShareToken(token: string): Promise<File | undefined> {

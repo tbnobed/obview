@@ -2623,9 +2623,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/files/:fileId/comments", isAuthenticated, async (req, res, next) => {
     try {
       const fileId = parseInt(req.params.fileId);
+      console.log(`🔍 [COMMENT API] GET /api/files/${fileId}/comments requested by user ${req.user.id}`);
+      
       const file = await storage.getFile(fileId);
       
       if (!file) {
+        console.log(`🔍 [COMMENT API] File ${fileId} not found`);
         return res.status(404).json({ message: "File not found" });
       }
       
@@ -2633,15 +2636,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user.role !== "admin") {
         const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
         if (!projectUser) {
+          console.log(`🔍 [COMMENT API] User ${req.user.id} has no access to project ${file.projectId}`);
           return res.status(403).json({ message: "You don't have access to this file" });
         }
       }
       
+      console.log(`🔍 [COMMENT API] User ${req.user.id} authorized for file ${fileId}, fetching comments...`);
+      
       // Get unified comments (includes both regular and public comments)
       const comments = await storage.getUnifiedCommentsByFile(fileId);
       
+      console.log(`🔍 [COMMENT API] Returning ${comments.length} comments for file ${fileId}`);
       res.json(comments);
     } catch (error) {
+      console.error(`🔍 [COMMENT API] Error getting comments for file ${req.params.fileId}:`, error);
       next(error);
     }
   });
@@ -2650,9 +2658,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/files/:fileId/comments", isAuthenticated, async (req, res, next) => {
     try {
       const fileId = parseInt(req.params.fileId);
+      console.log(`🔍 [COMMENT API] POST /api/files/${fileId}/comments requested by user ${req.user.id}`);
+      console.log(`🔍 [COMMENT API] Request body:`, JSON.stringify(req.body));
+      
       const file = await storage.getFile(fileId);
       
       if (!file) {
+        console.log(`🔍 [COMMENT API] File ${fileId} not found for comment creation`);
         return res.status(404).json({ message: "File not found" });
       }
       
@@ -2660,9 +2672,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user.role !== "admin") {
         const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
         if (!projectUser) {
+          console.log(`🔍 [COMMENT API] User ${req.user.id} has no access to project ${file.projectId} for comment creation`);
           return res.status(403).json({ message: "You don't have access to this file" });
         }
       }
+      
+      console.log(`🔍 [COMMENT API] User ${req.user.id} authorized for file ${fileId}, validating comment data...`);
       
       // Validate comment data
       const validationResult = insertCommentSchema.safeParse({
@@ -2672,11 +2687,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (!validationResult.success) {
+        console.log(`🔍 [COMMENT API] Validation failed:`, validationResult.error.errors);
         return res.status(400).json({ 
           message: "Invalid comment data", 
           errors: validationResult.error.errors 
         });
       }
+      
+      console.log(`🔍 [COMMENT API] Validation passed, comment data:`, JSON.stringify(validationResult.data));
       
       // If it's a reply, check if parent comment exists (check both regular and public comments)
       if (validationResult.data.parentId) {
