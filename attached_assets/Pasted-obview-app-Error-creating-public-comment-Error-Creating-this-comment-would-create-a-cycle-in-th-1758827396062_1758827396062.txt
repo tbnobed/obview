@@ -1,0 +1,41 @@
+obview_app  | Error creating public comment: Error: Creating this comment would create a cycle in the comment thread
+obview_app  |     at DatabaseStorage.createPublicComment (file:///app/dist/production.js:1183:15)
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async file:///app/dist/production.js:3665:23
+obview_app  | 🔍 [UNIFIED] Getting unified comments for file 33
+obview_app  | 🔍 [COMMENTS] Getting authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Found 3 raw authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Returning 3 sanitized authenticated comments for file 33
+obview_app  | 🔍 [UNIFIED] Got 3 authenticated comments
+obview_app  | 🔍 [UNIFIED] Got 1 public comments
+obview_app  | Backend: Breaking self-parenting cycle for public comment 16
+obview_app  | [PRODUCTION SHARE] Request for token: 85d9a4b7b7b4e19ff493eb19dd793a58d71e991e7a1aa0b60a1087b8d2c322a4
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Microsoft Account.mp4 (ID: 33)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 33 (How to Make a Microsoft Account.mp4) - type: video/mp4, path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | 🔍 [UNIFIED] Created 4 total unified comments for file 33
+obview_app  | 🔍 [UNIFIED] Returning 4 sorted unified comments for file 33
+obview_app  | [PRODUCTION SHARE] Error sending file: Request aborted
+obview_app  | [PRODUCTION SHARE] Request for token: 85d9a4b7b7b4e19ff493eb19dd793a58d71e991e7a1aa0b60a1087b8d2c322a4
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Microsoft Account.mp4 (ID: 33)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 33 (How to Make a Microsoft Account.mp4) - type: video/mp4, path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] File sent successfully
+obview_app  | 🔍 [UNIFIED] Getting unified comments for file 33
+obview_app  | 🔍 [COMMENTS] Getting authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Found 3 raw authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Returning 3 sanitized authenticated comments for file 33
+obview_app  | 🔍 [UNIFIED] Got 3 authenticated comments
+obview_app  | 🔍 [UNIFIED] Got 2 public comments
+obview_app  | Backend: Breaking self-parenting cycle for public comment 17
+obview_app  | Backend: Breaking self-parenting cycle for public comment 16
+obview_app  | 🔍 [UNIFIED] Created 5 total unified comments for file 33
+obview_app  | 🔍 [UNIFIED] Returning 5 sorted unified comments for file 33

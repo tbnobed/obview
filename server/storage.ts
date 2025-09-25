@@ -1800,6 +1800,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPublicComment(insertPublicComment: InsertPublicComment): Promise<PublicComment> {
+    console.log(`🔍 [PUBLIC COMMENT] Creating public comment with parentId: ${insertPublicComment.parentId}`);
+    
     // Comprehensive validation before creating public comment
     if (insertPublicComment.parentId !== undefined && insertPublicComment.parentId !== null) {
       // 1. Check if parent exists in either public comments or regular comments
@@ -1808,23 +1810,36 @@ export class DatabaseStorage implements IStorage {
       
       const parentComment = parentPublicComment || parentRegularComment;
       if (!parentComment) {
+        console.log(`🔍 [PUBLIC COMMENT] Parent comment ${insertPublicComment.parentId} not found in either table`);
         throw new Error("Parent comment does not exist");
       }
       
+      console.log(`🔍 [PUBLIC COMMENT] Found parent comment ${insertPublicComment.parentId} in ${parentPublicComment ? 'public' : 'regular'} comments table`);
+      
       // 2. Ensure parent belongs to the same file
       if (parentComment.fileId !== insertPublicComment.fileId) {
+        console.log(`🔍 [PUBLIC COMMENT] Parent fileId ${parentComment.fileId} doesn't match ${insertPublicComment.fileId}`);
         throw new Error("Parent comment must belong to the same file");
       }
       
-      // 3. Check for cycles by walking up the parent chain
-      const existingComments = await db.select().from(publicComments).where(eq(publicComments.fileId, insertPublicComment.fileId));
-      const commentMap = new Map<number, PublicComment>();
-      existingComments.forEach(c => commentMap.set(c.id, c));
+      // 3. Check for cycles by walking up the parent chain with cross-table support
+      const existingPublicComments = await db.select().from(publicComments).where(eq(publicComments.fileId, insertPublicComment.fileId));
+      const existingRegularComments = await db.select().from(comments).where(eq(comments.fileId, insertPublicComment.fileId));
       
-      // Simulate adding our new comment to check for cycles
-      if (this.wouldCreatePublicCommentCycle(insertPublicComment.parentId, commentMap)) {
+      const publicCommentMap = new Map<number, PublicComment>();
+      const regularCommentMap = new Map<number, Comment>();
+      existingPublicComments.forEach(c => publicCommentMap.set(c.id, c));
+      existingRegularComments.forEach(c => regularCommentMap.set(c.id, c));
+      
+      console.log(`🔍 [PUBLIC COMMENT] Checking cycles with ${existingPublicComments.length} public and ${existingRegularComments.length} regular comments`);
+      
+      // Simulate adding our new comment to check for cycles with cross-table support
+      if (this.wouldCreatePublicCommentCycleWithCrossTable(insertPublicComment.parentId, publicCommentMap, regularCommentMap)) {
+        console.log(`🔍 [PUBLIC COMMENT] Cycle detected when replying to ${insertPublicComment.parentId}`);
         throw new Error("Creating this comment would create a cycle in the comment thread");
       }
+      
+      console.log(`🔍 [PUBLIC COMMENT] No cycle detected, proceeding with creation`);
     }
     
     const [publicComment] = await db
@@ -1860,6 +1875,54 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
+    return false;
+  }
+
+  // Helper to check if adding a public comment with parentId would create a cycle (with cross-table support)
+  private wouldCreatePublicCommentCycleWithCrossTable(
+    parentId: number, 
+    publicCommentMap: Map<number, PublicComment>,
+    regularCommentMap: Map<number, Comment>
+  ): boolean {
+    const visited = new Set<number>();
+    let currentId = parentId;
+    
+    console.log(`🔍 [CYCLE CHECK] Starting cycle check from parentId: ${currentId}`);
+    
+    while (currentId) {
+      if (visited.has(currentId)) {
+        console.log(`🔍 [CYCLE CHECK] Cycle detected! Already visited ${currentId}`);
+        return true; // Cycle detected
+      }
+      visited.add(currentId);
+      console.log(`🔍 [CYCLE CHECK] Visiting comment ${currentId}`);
+      
+      // Try to find parent in public comments first, then regular comments
+      const publicParent = publicCommentMap.get(currentId);
+      const regularParent = regularCommentMap.get(currentId);
+      const parent = publicParent || regularParent;
+      
+      if (!parent) {
+        console.log(`🔍 [CYCLE CHECK] No parent found for ${currentId}, ending chain`);
+        break; // Reached root or non-existent parent
+      }
+      
+      if (!parent.parentId) {
+        console.log(`🔍 [CYCLE CHECK] Comment ${currentId} has no parentId, ending chain`);
+        break; // Reached root comment
+      }
+      
+      console.log(`🔍 [CYCLE CHECK] Comment ${currentId} found in ${publicParent ? 'public' : 'regular'} table, parent: ${parent.parentId}`);
+      currentId = parent.parentId;
+      
+      // Safety depth limit
+      if (visited.size > 50) {
+        console.warn(`🔍 [CYCLE CHECK] Max depth exceeded during cross-table cycle check, assuming cycle`);
+        return true;
+      }
+    }
+    
+    console.log(`🔍 [CYCLE CHECK] No cycle detected, traversed ${visited.size} comments`);
     return false;
   }
 
