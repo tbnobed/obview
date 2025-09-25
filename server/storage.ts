@@ -1396,7 +1396,8 @@ export class DatabaseStorage implements IStorage {
             name: user.name,
             email: user.email,
             role: user.role
-          } : undefined
+          } : undefined,
+          parentId: comment.parentId
         };
       })
     );
@@ -1411,7 +1412,8 @@ export class DatabaseStorage implements IStorage {
       createdAt: comment.createdAt,
       isPublic: true,
       authorName: comment.displayName,
-      user: undefined
+      user: undefined,
+      parentId: comment.parentId
     }));
 
     // Combine and sort by creation date
