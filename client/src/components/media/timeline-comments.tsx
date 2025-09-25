@@ -67,9 +67,32 @@ export default function TimelineComments({
                     {new Date(reply.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <div className="text-xs text-gray-200">
+                <div className="text-xs text-gray-200 mb-2">
                   {reply.content}
                 </div>
+                
+                {/* Reply Button for nested replies */}
+                <button 
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setReplyingToId(replyingToId === reply.id ? null : reply.id);
+                  }}
+                >
+                  {replyingToId === reply.id ? "Cancel Reply" : "Reply"}
+                </button>
+
+                {/* Reply Form for nested replies */}
+                {replyingToId === reply.id && (
+                  <div className="mt-3 pl-4 border-l-2 border-gray-600">
+                    <CommentForm
+                      fileId={fileId}
+                      parentId={reply.id}
+                      onSuccess={() => setReplyingToId(null)}
+                      className="bg-gray-800 border-gray-600"
+                    />
+                  </div>
+                )}
               </div>
             </div>
             {/* Recursively render nested replies */}
