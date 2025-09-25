@@ -463,7 +463,7 @@ export class MemStorage implements IStorage {
     }
     
     // Second pass: detect cycles using ancestor walking
-    for (const comment of commentMap.values()) {
+    for (const comment of Array.from(commentMap.values())) {
       if (comment.parentId && this.detectMemStorageCommentCycle(comment, commentMap)) {
         console.warn(`MemStorage: Breaking cycle detected for comment ${comment.id}`);
         comment.parentId = null;
@@ -618,7 +618,7 @@ export class MemStorage implements IStorage {
     }
     
     // Second pass: detect cycles using ancestor walking
-    for (const comment of commentMap.values()) {
+    for (const comment of Array.from(commentMap.values())) {
       if (comment.parentId && this.detectMemStoragePublicCommentCycle(comment, commentMap)) {
         console.warn(`MemStorage: Breaking cycle detected for public comment ${comment.id}`);
         comment.parentId = null;
