@@ -1917,16 +1917,29 @@ export class DatabaseStorage implements IStorage {
       publicById.set(comment.id, comment);
     }
     
-    // Convert regular comments to unified format with type-aware parent resolution
+    // Convert regular comments to unified format with cross-table parent resolution
     const unifiedRegularComments: UnifiedComment[] = await Promise.all(
       regularComments.map(async (comment) => {
         const user = await this.getUser(comment.userId);
         
-        // For auth comments, resolve parentId only within auth comments
+        // For auth comments, resolve parentId across both auth and public comments
         let resolvedParentId = comment.parentId;
-        if (comment.parentId && !authById.has(comment.parentId)) {
-          console.warn(`🔍 [UNIFIED] Auth comment ${comment.id} references non-existent auth parent ${comment.parentId}`);
-          resolvedParentId = null;
+        if (comment.parentId) {
+          // First try auth comments (same-table reference)
+          if (authById.has(comment.parentId)) {
+            console.log(`🔍 [UNIFIED] Auth comment ${comment.id} references auth parent ${comment.parentId}`);
+            resolvedParentId = comment.parentId;
+          }
+          // Then try public comments (cross-table reference)
+          else if (publicById.has(comment.parentId)) {
+            console.log(`🔍 [UNIFIED] Auth comment ${comment.id} correctly references public parent ${comment.parentId}`);
+            resolvedParentId = comment.parentId;
+          }
+          // Parent not found in either table
+          else {
+            console.warn(`🔍 [UNIFIED] Auth comment ${comment.id} references non-existent parent ${comment.parentId}`);
+            resolvedParentId = null;
+          }
         }
         
         return {
