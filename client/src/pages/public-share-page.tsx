@@ -943,10 +943,10 @@ export default function PublicSharePage() {
                 alt=""
               />
               
-              {/* Sprite-based scrub preview - Ultra High Resolution Display */}
+              {/* Sprite-based scrub preview */}
               {spriteLoaded ? (
                 <div
-                  className="w-80 h-52 rounded object-cover bg-gray-800 pointer-events-none shadow-2xl border border-gray-600"
+                  className="w-48 h-32 rounded object-cover bg-gray-800 pointer-events-none"
                   data-testid="shared-sprite-scrub-preview"
                   style={{
                     backgroundImage: `url(/api/share/${token}/sprite)`,
@@ -967,7 +967,7 @@ export default function PublicSharePage() {
                   }}
                 />
               ) : (
-                <div className="w-80 h-52 rounded bg-gray-800 flex items-center justify-center">
+                <div className="w-48 h-32 rounded bg-gray-800 flex items-center justify-center">
                   <FileVideo className="h-8 w-8 text-gray-500" />
                 </div>
               )}
