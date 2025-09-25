@@ -1292,14 +1292,12 @@ export class DatabaseStorage implements IStorage {
 
   // Helper method to sanitize comments and break cycles
   private async sanitizeComments(comments: Comment[]): Promise<Comment[]> {
-    console.log(`🔍 [SANITIZE AUTH] Starting sanitization for ${comments.length} authenticated comments`);
     const sanitized: Comment[] = [];
     const commentMap = new Map<number, Comment>();
     
     // First pass: build map and fix self-parenting
     for (const comment of comments) {
       let sanitizedComment = { ...comment };
-      console.log(`🔍 [SANITIZE AUTH] Processing comment ${sanitizedComment.id}, parentId: ${sanitizedComment.parentId}`);
       
       // Fix self-parenting
       if (sanitizedComment.parentId === sanitizedComment.id) {
@@ -1313,15 +1311,12 @@ export class DatabaseStorage implements IStorage {
     // Second pass: detect cycles using cross-table aware ancestor walking
     for (const comment of commentMap.values()) {
       if (comment.parentId && await this.detectCommentCycleAcrossTables(comment, comment.fileId)) {
-        console.warn(`🚨 [SANITIZE AUTH] Breaking cycle detected for comment ${comment.id} with parentId ${comment.parentId}`);
+        console.warn(`Backend: Breaking cycle detected for comment ${comment.id}`);
         comment.parentId = null;
-      } else if (comment.parentId) {
-        console.log(`✅ [SANITIZE AUTH] No cycle detected for comment ${comment.id} with parentId ${comment.parentId}`);
       }
       sanitized.push(comment);
     }
     
-    console.log(`🔍 [SANITIZE AUTH] Finished sanitization, returning ${sanitized.length} comments`);
     return sanitized;
   }
 
@@ -1395,14 +1390,12 @@ export class DatabaseStorage implements IStorage {
 
   // Helper method to sanitize public comments and break cycles
   private async sanitizePublicComments(comments: PublicComment[]): Promise<PublicComment[]> {
-    console.log(`🔍 [SANITIZE PUBLIC] Starting sanitization for ${comments.length} public comments`);
     const sanitized: PublicComment[] = [];
     const commentMap = new Map<number, PublicComment>();
     
     // First pass: build map and fix self-parenting
     for (const comment of comments) {
       let sanitizedComment = { ...comment };
-      console.log(`🔍 [SANITIZE PUBLIC] Processing comment ${sanitizedComment.id}, parentId: ${sanitizedComment.parentId}`);
       
       // Fix self-parenting
       if (sanitizedComment.parentId === sanitizedComment.id) {
@@ -1416,15 +1409,12 @@ export class DatabaseStorage implements IStorage {
     // Second pass: detect cycles using cross-table aware ancestor walking
     for (const comment of commentMap.values()) {
       if (comment.parentId && await this.detectCommentCycleAcrossTables(comment, comment.fileId)) {
-        console.warn(`🚨 [SANITIZE PUBLIC] Breaking cycle detected for comment ${comment.id} with parentId ${comment.parentId}`);
+        console.warn(`Backend: Breaking cycle detected for public comment ${comment.id}`);
         comment.parentId = null;
-      } else if (comment.parentId) {
-        console.log(`✅ [SANITIZE PUBLIC] No cycle detected for comment ${comment.id} with parentId ${comment.parentId}`);
       }
       sanitized.push(comment);
     }
     
-    console.log(`🔍 [SANITIZE PUBLIC] Finished sanitization, returning ${sanitized.length} comments`);
     return sanitized;
   }
 
