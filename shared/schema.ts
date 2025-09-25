@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, bigint, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, bigint, boolean, timestamp, json, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -111,6 +111,32 @@ export const insertPublicCommentSchema = createInsertSchema(publicComments)
     creatorToken: z.string().min(1, "Creator token is required").optional()
   });
 
+// UNIFIED COMMENT SCHEMA (replacement for comments + publicComments with UUID)
+export const commentsUnified = pgTable("comments_unified", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  fileId: integer("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
+  userId: integer("user_id").references(() => users.id), // Nullable for public comments
+  isPublic: boolean("is_public").notNull().default(false),
+  authorName: text("author_name").notNull(), // Display name for both auth and public users
+  authorEmail: text("author_email"), // Optional email for public users
+  creatorToken: text("creator_token"), // For public comment deletion
+  parentId: text("parent_id").references((): any => commentsUnified.id), // Self-reference with UUID
+  content: text("content").notNull(),
+  timestamp: integer("timestamp"), // For timestamped video comments (seconds)
+  isResolved: boolean("is_resolved").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCommentsUnifiedSchema = createInsertSchema(commentsUnified)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    authorName: z.string().min(2, "Name must be at least 2 characters").max(40, "Name must be 40 characters or less"),
+    content: z.string().min(1, "Comment cannot be empty").max(1000, "Comment must be 1000 characters or less"),
+    authorEmail: z.string().email("Invalid email format").optional(),
+    timestamp: z.number().min(0).optional(),
+    parentId: z.string().uuid().optional(),
+  });
+
 // PROJECT USER SCHEMA (for permissions)
 export const projectUsers = pgTable("project_users", {
   id: serial("id").primaryKey(),
@@ -221,7 +247,10 @@ export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type PublicComment = typeof publicComments.$inferSelect;
 export type InsertPublicComment = z.infer<typeof insertPublicCommentSchema>;
 
-// Unified comment type for merging authenticated and public comments
+export type CommentUnified = typeof commentsUnified.$inferSelect;
+export type InsertCommentUnified = z.infer<typeof insertCommentsUnifiedSchema>;
+
+// Unified comment type for merging authenticated and public comments (LEGACY - to be replaced)
 export type UnifiedComment = {
   id: number;
   content: string;
@@ -237,6 +266,23 @@ export type UnifiedComment = {
     username: string;
   };
   parentId?: number | null;
+};
+
+// New unified comment API response type with UUID IDs and stable structure
+export type GlobalComment = {
+  id: string; // UUID
+  parentId: string | null; // UUID reference 
+  fileId: number;
+  content: string;
+  isPublic: boolean;
+  timestamp: number | null;
+  isResolved: boolean;
+  createdAt: Date;
+  author: {
+    id?: number; // Present for authenticated users
+    name: string;
+  };
+  canDelete: boolean; // Server-computed based on ownership/permissions
 };
 
 export type ProjectUser = typeof projectUsers.$inferSelect;
