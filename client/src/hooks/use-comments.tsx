@@ -25,7 +25,7 @@ export const useCreateComment = (fileId: number) => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: (data: { content: string; timestamp?: number | null; parentId?: number | null }) => {
+    mutationFn: (data: { content: string; timestamp?: number | null; parentId?: string | null }) => {
       return apiRequest('POST', `/api/files/${fileId}/comments`, data);
     },
     onSuccess: () => {
@@ -51,7 +51,7 @@ export const useToggleCommentResolution = (fileId: number) => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: ({ commentId, isResolved }: { commentId: number, isResolved: boolean }) => {
+    mutationFn: ({ commentId, isResolved }: { commentId: string, isResolved: boolean }) => {
       return apiRequest('PATCH', `/api/comments/${commentId}`, { isResolved });
     },
     onSuccess: () => {
@@ -74,16 +74,20 @@ export const useToggleCommentResolution = (fileId: number) => {
   });
 };
 
-// Hook to delete a comment (handles both regular and public comments)
+// Hook to delete a comment (unified endpoint approach)
 export const useDeleteComment = (fileId: number) => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: ({ commentId, isPublic }: { commentId: number; isPublic?: boolean }) => {
-      const endpoint = isPublic 
-        ? `/api/public-comments/${commentId}`
-        : `/api/comments/${commentId}`;
-      return apiRequest('DELETE', endpoint);
+    mutationFn: ({ commentId, creatorToken }: { commentId: string; creatorToken?: string }) => {
+      // Use unified endpoint for all comment deletions
+      if (creatorToken) {
+        // For public comments, include creator token in request body
+        return apiRequest('DELETE', `/api/public-comments/${commentId}`, { creatorToken });
+      } else {
+        // For authenticated comments
+        return apiRequest('DELETE', `/api/comments/${commentId}`);
+      }
     },
     onSuccess: () => {
       // Invalidate and refetch with the array format query key

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 interface CommentFormProps {
   fileId: number;
-  parentId?: number;
+  parentId?: string;
   currentTime?: number;
   onSuccess?: () => void;
   className?: string;

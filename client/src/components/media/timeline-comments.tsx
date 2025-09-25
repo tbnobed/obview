@@ -17,8 +17,8 @@ interface TimelineCommentsProps {
   duration: number;
   currentTime: number;
   onTimeClick: (time: number) => void;
-  activeCommentId?: number;
-  onCommentSelect?: (commentId: number) => void;
+  activeCommentId?: string;
+  onCommentSelect?: (commentId: string) => void;
 }
 
 export default function TimelineComments({ 
@@ -32,8 +32,8 @@ export default function TimelineComments({
   const timelineRef = useRef<HTMLDivElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<string>("all");
-  const [markers, setMarkers] = useState<{ time: number, left: string, commentId: number }[]>([]);
-  const [replyingToId, setReplyingToId] = useState<number | null>(null);
+  const [markers, setMarkers] = useState<{ time: number, left: string, commentId: string }[]>([]);
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -44,12 +44,11 @@ export default function TimelineComments({
     error 
   } = useComments(fileId);
 
-  // Delete comment mutation
+  // Delete comment mutation  
   const deleteCommentMutation = useMutation({
-    mutationFn: async ({ commentId, isPublic }: { commentId: number, isPublic: boolean }) => {
-      if (isPublic) {
-        // For public comments, we'd need the creatorToken from localStorage
-        const creatorToken = localStorage.getItem(`comment-token-${commentId}`);
+    mutationFn: async ({ commentId, creatorToken }: { commentId: string, creatorToken?: string }) => {
+      if (creatorToken) {
+        // For public comments, include creator token
         return await apiRequest("DELETE", `/api/public-comments/${commentId}`, { creatorToken });
       } else {
         // For authenticated comments
@@ -74,23 +73,22 @@ export default function TimelineComments({
 
   // Check if user can delete a comment
   const canDeleteComment = (comment: any) => {
-    if (!user) return false; // Only authenticated users can delete comments
-    
     if (comment.isPublic) {
-      // For public comments, check if we have the creatorToken in localStorage
-      return localStorage.getItem(`comment-token-${comment.id}`) !== null;
+      // For public comments, allow deletion if we have the creatorToken OR user is admin
+      return !!localStorage.getItem(`comment-token-${comment.id}`) || (user?.role === 'admin');
     } else {
       // For authenticated comments, check if user is the author or admin
-      return comment.userId === user.id || user.role === 'admin';
+      return !!user && (comment.userId === user.id || user.role === 'admin');
     }
   };
 
   // Handle delete comment
   const handleDeleteComment = (comment: any) => {
     if (window.confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
+      const creatorToken = comment.isPublic ? localStorage.getItem(`comment-token-${comment.id}`) : undefined;
       deleteCommentMutation.mutate({ 
         commentId: comment.id, 
-        isPublic: comment.isPublic || false
+        creatorToken: creatorToken || undefined
       });
     }
   };
@@ -98,7 +96,7 @@ export default function TimelineComments({
   // Recursive component to render nested replies
   const RenderReplies = ({ comments, parentId, depth }: { 
     comments: any[], 
-    parentId: number, 
+    parentId: string, 
     depth: number
   }) => {
     const replies = comments?.filter((c: any) => c.parentId === parentId) || [];

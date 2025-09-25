@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Comment } from "@shared/schema";
+import { CommentUnified } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -15,8 +15,8 @@ import remarkGfm from "remark-gfm";
 import { useDeleteComment } from "@/hooks/use-comments";
 
 interface CommentThreadProps {
-  comment: Comment & { user?: any };
-  comments: (Comment & { user?: any })[];
+  comment: CommentUnified & { user?: any };
+  comments: (CommentUnified & { user?: any })[];
   onTimeClick?: (time: number) => void;
   isActive?: boolean;
 }
@@ -39,7 +39,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
     
     // For authenticated comments, we typically only show one level of replies
     // But we still need cycle detection in case of data corruption
-    const visitedIds = new Set<number>();
+    const visitedIds = new Set<string>();
     const safeReplies: any[] = [];
     
     directReplies.forEach(reply => {
@@ -116,9 +116,10 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
   // Handle delete comment
   const handleDeleteComment = () => {
     if (window.confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
+      const creatorToken = comment.isPublic ? localStorage.getItem(`comment-token-${comment.id}`) : undefined;
       deleteCommentMutation.mutate({ 
         commentId: comment.id, 
-        isPublic: (comment as any).isPublic 
+        creatorToken: creatorToken || undefined
       });
     }
   };
@@ -326,9 +327,10 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                             className="text-[10px] p-0 h-auto text-destructive"
                             onClick={() => {
                               if (window.confirm("Are you sure you want to delete this reply?")) {
+                                const creatorToken = reply.isPublic ? localStorage.getItem(`comment-token-${reply.id}`) : undefined;
                                 deleteCommentMutation.mutate({ 
                                   commentId: reply.id, 
-                                  isPublic: (reply as any).isPublic 
+                                  creatorToken: creatorToken || undefined
                                 });
                               }
                             }}
