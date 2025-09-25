@@ -2655,27 +2655,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If it's a reply, check if parent comment exists (check both regular and public comments)
       if (validationResult.data.parentId) {
-        console.log(`[DEBUG] Validating parentId: ${validationResult.data.parentId} for fileId: ${fileId}`);
         let parentComment = await storage.getComment(validationResult.data.parentId);
-        console.log(`[DEBUG] Regular comment lookup result:`, parentComment);
         
         // If not found in regular comments, check public comments
         if (!parentComment) {
           parentComment = await storage.getPublicComment(validationResult.data.parentId);
-          console.log(`[DEBUG] Public comment lookup result:`, parentComment);
         }
         
-        if (!parentComment) {
-          console.log(`[DEBUG] Parent comment not found in either table`);
+        if (!parentComment || parentComment.fileId !== fileId) {
           return res.status(400).json({ message: "Invalid parent comment" });
         }
-        
-        if (parentComment.fileId !== fileId) {
-          console.log(`[DEBUG] Parent comment fileId mismatch: ${parentComment.fileId} !== ${fileId}`);
-          return res.status(400).json({ message: "Invalid parent comment" });
-        }
-        
-        console.log(`[DEBUG] Parent comment validation passed`);
       }
       
       // Create the comment

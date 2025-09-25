@@ -534,7 +534,8 @@ export class MemStorage implements IStorage {
       timestamp: comment.timestamp,
       createdAt: comment.createdAt,
       isPublic: true,
-      authorName: comment.displayName
+      authorName: comment.displayName,
+      parentId: comment.parentId
     }));
     
     // Merge and sort by creation date and timestamp
