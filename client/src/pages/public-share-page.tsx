@@ -1027,7 +1027,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
   };
 
   return (
-    <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+    <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800" data-comment-form>
       <h3 className="font-semibold mb-4">{parentId ? "Reply to comment" : "Leave a comment"}</h3>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

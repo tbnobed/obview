@@ -268,7 +268,7 @@ export default function CommentForm({
   };
 
   return (
-    <div className={cn("flex items-start space-x-2", className)}>
+    <div className={cn("flex items-start space-x-2", className)} data-comment-form>
       <Avatar className="h-7 w-7 mt-1 hidden sm:block">
         <AvatarFallback className="bg-primary-100 text-primary-700 text-xs">
           {userInitial}

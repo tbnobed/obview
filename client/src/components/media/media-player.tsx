@@ -559,17 +559,37 @@ export default function MediaPlayer({
   // Enhanced keyboard controls for play/pause and precise scrubbing
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Check if the active element is not an input field or textarea
+      // More robust check for input elements - especially for deeply nested comment forms
       const activeElement = document.activeElement;
-      const isInput = activeElement instanceof HTMLInputElement || 
-                      activeElement instanceof HTMLTextAreaElement || 
-                      activeElement instanceof HTMLSelectElement ||
-                      activeElement?.tagName === 'TEXTAREA' ||
-                      activeElement?.contentEditable === 'true' ||
-                      activeElement?.closest('[contenteditable="true"]') ||
-                      activeElement?.closest('textarea');
       
-      if (isInput) return;
+      // First check: Direct instance checks
+      if (activeElement instanceof HTMLInputElement || 
+          activeElement instanceof HTMLTextAreaElement || 
+          activeElement instanceof HTMLSelectElement) {
+        return;
+      }
+      
+      // Second check: Tag name and attributes (for deeply nested elements)
+      if (activeElement?.tagName === 'TEXTAREA' || 
+          activeElement?.tagName === 'INPUT' ||
+          (activeElement as HTMLElement)?.contentEditable === 'true') {
+        return;
+      }
+      
+      // Third check: Closest ancestors (for nested comment forms)
+      if (activeElement?.closest('textarea') || 
+          activeElement?.closest('input') ||
+          activeElement?.closest('[contenteditable="true"]')) {
+        return;
+      }
+      
+      // Fourth check: Look for comment form containers (specific to our app)
+      if (activeElement?.closest('.comment-form') ||
+          activeElement?.closest('[data-comment-form]') ||
+          // Check if we're inside any form element
+          activeElement?.closest('form')) {
+        return;
+      }
       
       const mediaElement = videoRef.current || audioRef.current;
       if (!mediaElement || mediaError || !file) return;
