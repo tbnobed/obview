@@ -1582,10 +1582,10 @@ export default function MediaPlayer({
                 alt=""
               />
               
-              {/* Sprite-based scrub preview */}
+              {/* Sprite-based scrub preview - Ultra High Resolution Display */}
               {spriteLoaded ? (
                 <div
-                  className="w-48 h-32 rounded object-cover bg-gray-800 pointer-events-none"
+                  className="w-80 h-52 rounded object-cover bg-gray-800 pointer-events-none shadow-2xl border border-gray-600"
                   data-testid="sprite-scrub-preview"
                   style={{
                     backgroundImage: `url(/api/files/${file.id}/sprite)`,
@@ -1606,7 +1606,7 @@ export default function MediaPlayer({
                   }}
                 />
               ) : (
-                <div className="w-48 h-32 rounded bg-gray-800 flex items-center justify-center">
+                <div className="w-80 h-52 rounded bg-gray-800 flex items-center justify-center">
                   <FileVideo className="h-8 w-8 text-gray-500" />
                 </div>
               )}
