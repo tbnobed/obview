@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Comment } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -30,8 +30,43 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
   // Delete comment mutation
   const deleteCommentMutation = useDeleteComment(comment.fileId);
   
-  // Find replies to this comment
-  const replies = comments.filter(c => c.parentId === comment.id);
+  // Build safe comment replies with cycle detection - similar to public comment approach
+  const replies = useMemo(() => {
+    if (!comments?.length) return [];
+    
+    // Filter direct replies to this comment
+    const directReplies = comments.filter(c => c.parentId === comment.id);
+    
+    // For authenticated comments, we typically only show one level of replies
+    // But we still need cycle detection in case of data corruption
+    const visitedIds = new Set<number>();
+    const safeReplies: any[] = [];
+    
+    directReplies.forEach(reply => {
+      // Safety checks
+      if (!reply?.id || visitedIds.has(reply.id)) {
+        console.warn(`Skipping reply ${reply?.id}: already visited or invalid`);
+        return;
+      }
+      
+      // Check for self-parenting cycle
+      if (reply.id === reply.parentId) {
+        console.warn(`Cycle detected: reply ${reply.id} is self-parenting`);
+        return;
+      }
+      
+      // Check for immediate cycle with parent
+      if (reply.id === comment.id) {
+        console.warn(`Cycle detected: reply ${reply.id} references parent ${comment.id}`);
+        return;
+      }
+      
+      visitedIds.add(reply.id);
+      safeReplies.push(reply);
+    });
+    
+    return safeReplies;
+  }, [comments, comment.id]);
   
   // Format time (seconds to MM:SS)
   const formatTime = (time: number | null) => {

@@ -1148,6 +1148,60 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
     },
   });
 
+  // Build comment threads safely with cycle detection
+  const buildCommentThreads = useMemo(() => {
+    if (!comments?.length) return [];
+    
+    // Step 1: Build a map of all comments for fast lookup
+    const commentMap = new Map<number, any>();
+    
+    // Initialize all comments with empty children arrays
+    comments.forEach((comment: any) => {
+      commentMap.set(comment.id, { ...comment, children: [] });
+    });
+    
+    // Step 2: Build parent-child relationships with cycle detection
+    comments.forEach((comment: any) => {
+      if (comment.parentId) {
+        const parent = commentMap.get(comment.parentId);
+        const child = commentMap.get(comment.id);
+        
+        // Check for cycles and orphaned references
+        if (parent && child) {
+          // Detect cycles by checking if we're trying to make an ancestor a child
+          let currentParent = parent;
+          let cycleDetected = false;
+          let depth = 0;
+          
+          while (currentParent && depth < 15) {
+            if (currentParent.id === comment.id) {
+              cycleDetected = true;
+              break;
+            }
+            currentParent = currentParent.parentId ? commentMap.get(currentParent.parentId) : null;
+            depth++;
+          }
+          
+          if (!cycleDetected && depth < 10) {
+            parent.children.push(child);
+          } else {
+            // Break the cycle by making this a top-level comment
+            console.warn(`Cycle detected or max depth exceeded for comment ${comment.id}, making it top-level`);
+            child.parentId = null;
+          }
+        }
+      }
+    });
+    
+    // Step 3: Return only top-level comments (those without parents)
+    return Array.from(commentMap.values()).filter((comment: any) => !comment.parentId);
+  }, [comments]);
+
+  // Get user initials for avatar
+  const getUserInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -1181,6 +1235,12 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
     depth?: number,
     visited?: Set<number>
   }) => {
+    // Safety check - ensure comment exists
+    if (!comment || !comment.id) {
+      console.warn('RenderReplies: comment is undefined or missing id');
+      return null;
+    }
+
     // Prevent infinite loops with multiple safety checks
     if (depth > 10 || visited.has(comment.id)) {
       console.warn(`Cycle or max depth detected for comment ${comment.id} at depth ${depth}`);
@@ -1279,7 +1339,7 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
 
   return (
     <div className="divide-y divide-gray-700" data-testid="comments-list">
-      {topLevelComments.map((comment: any) => (
+      {topLevelComments.map((comment: any, index: number) => (
         <div 
           key={comment.id} 
           onClick={comment.timestamp !== null ? () => onTimestampClick?.(comment.timestamp!) : undefined}
@@ -1389,8 +1449,19 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                 </div>
               )}
 
-              {/* Nested Replies */}
-              <RenderReplies comments={comments} parentId={comment.id} depth={0} />
+              {/* Nested Replies - Render children with cycle-safe recursion */}
+              {comment.children?.length > 0 && (
+                <div className="mt-3 ml-4 pl-4 border-l border-gray-600 space-y-3">
+                  {comment.children.map((child: any) => (
+                    <RenderReplies 
+                      key={child.id}
+                      comment={child} 
+                      depth={1} 
+                      visited={new Set()}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
