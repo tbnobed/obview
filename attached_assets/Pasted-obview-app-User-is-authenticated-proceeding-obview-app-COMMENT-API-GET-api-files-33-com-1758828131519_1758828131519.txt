@@ -1,0 +1,165 @@
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/33/comments requested by user 2
+obview_app  | 🔍 [COMMENT API] User 2 authorized for file 33, fetching comments...
+obview_app  | 🔍 [UNIFIED] Getting unified comments for file 33
+obview_app  | 🔍 [COMMENTS] Getting authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Found 4 raw authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Returning 4 sanitized authenticated comments for file 33
+obview_app  | 🔍 [UNIFIED] Got 4 authenticated comments
+obview_app  | Backend: Breaking self-parenting cycle for public comment 17
+obview_app  | Backend: Breaking self-parenting cycle for public comment 16
+obview_app  | 🔍 [UNIFIED] Got 3 public comments
+obview_app  | 🔍 [UNIFIED] Created 7 total unified comments for file 33
+obview_app  | 🔍 [UNIFIED] Returning 7 sorted unified comments for file 33
+obview_app  | 🔍 [COMMENT API] Returning 7 comments for file 33
+obview_app  | 🔍 [UNIFIED] Getting unified comments for file 33
+obview_app  | 🔍 [COMMENTS] Getting authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Found 4 raw authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Returning 4 sanitized authenticated comments for file 33
+obview_app  | 🔍 [UNIFIED] Got 4 authenticated comments
+obview_app  | Backend: Breaking self-parenting cycle for public comment 17
+obview_app  | Backend: Breaking self-parenting cycle for public comment 16
+obview_app  | 🔍 [UNIFIED] Got 3 public comments
+obview_app  | 🔍 [UNIFIED] Created 7 total unified comments for file 33
+obview_app  | 🔍 [UNIFIED] Returning 7 sorted unified comments for file 33
+obview_app  | [PRODUCTION SHARE] Request for token: 85d9a4b7b7b4e19ff493eb19dd793a58d71e991e7a1aa0b60a1087b8d2c322a4
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Microsoft Account.mp4 (ID: 33)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 33 (How to Make a Microsoft Account.mp4) - type: video/mp4, path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] Error sending file: Request aborted
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 33, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 33, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] POST /api/files/33/comments requested by user 2
+obview_app  | 🔍 [COMMENT API] Request body: {"content":"I need this changed!","fileId":33,"parentId":null,"timestamp":11}
+obview_app  | 🔍 [COMMENT API] User 2 authorized for file 33, validating comment data...
+obview_app  | 🔍 [COMMENT API] Validation passed, comment data: {"content":"I need this changed!","fileId":33,"userId":2,"parentId":null,"timestamp":11}
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/33/comments requested by user 2
+obview_app  | 🔍 [COMMENT API] User 2 authorized for file 33, fetching comments...
+obview_app  | 🔍 [UNIFIED] Getting unified comments for file 33
+obview_app  | 🔍 [COMMENTS] Getting authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Found 5 raw authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Returning 5 sanitized authenticated comments for file 33
+obview_app  | 🔍 [UNIFIED] Got 5 authenticated comments
+obview_app  | Backend: Breaking self-parenting cycle for public comment 17
+obview_app  | Backend: Breaking self-parenting cycle for public comment 16
+obview_app  | 🔍 [UNIFIED] Got 3 public comments
+obview_app  | 🔍 [UNIFIED] Created 8 total unified comments for file 33
+obview_app  | 🔍 [UNIFIED] Returning 8 sorted unified comments for file 33
+obview_app  | 🔍 [COMMENT API] Returning 8 comments for file 33
+obview_app  | 🔍 [UNIFIED] Getting unified comments for file 33
+obview_app  | 🔍 [COMMENTS] Getting authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Found 5 raw authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Returning 5 sanitized authenticated comments for file 33
+obview_app  | 🔍 [UNIFIED] Got 5 authenticated comments
+obview_app  | Backend: Breaking self-parenting cycle for public comment 17
+obview_app  | Backend: Breaking self-parenting cycle for public comment 16
+obview_app  | 🔍 [UNIFIED] Got 3 public comments
+obview_app  | 🔍 [UNIFIED] Created 8 total unified comments for file 33
+obview_app  | 🔍 [UNIFIED] Returning 8 sorted unified comments for file 33
+obview_app  | [PRODUCTION SHARE] Request for token: 85d9a4b7b7b4e19ff493eb19dd793a58d71e991e7a1aa0b60a1087b8d2c322a4
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Microsoft Account.mp4 (ID: 33)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 33 (How to Make a Microsoft Account.mp4) - type: video/mp4, path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] Error sending file: Request aborted
+obview_app  | [PRODUCTION SHARE] Request for token: 85d9a4b7b7b4e19ff493eb19dd793a58d71e991e7a1aa0b60a1087b8d2c322a4
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Microsoft Account.mp4 (ID: 33)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 33 (How to Make a Microsoft Account.mp4) - type: video/mp4, path: /app/uploads/1758822989246-398854149.mp4
+obview_app  | [PRODUCTION SHARE] File sent successfully
+obview_app  | 🔍 [PUBLIC COMMENT] Creating public comment with parentId: 19
+obview_app  | 🔍 [PUBLIC COMMENT] Found parent comment 19 in regular comments table
+obview_app  | 🔍 [PUBLIC COMMENT] Checking cycles with 3 public and 5 regular comments
+obview_app  | 🔍 [CYCLE CHECK] Starting cycle check from parentId: 19
+obview_app  | 🔍 [CYCLE CHECK] Visiting comment 19
+obview_app  | 🔍 [CYCLE CHECK] Comment 19 has no parentId, ending chain
+obview_app  | 🔍 [CYCLE CHECK] No cycle detected, traversed 1 comments
+obview_app  | 🔍 [PUBLIC COMMENT] No cycle detected, proceeding with creation
+obview_app  | 🔍 [UNIFIED] Getting unified comments for file 33
+obview_app  | 🔍 [COMMENTS] Getting authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Found 5 raw authenticated comments for file 33
+obview_app  | 🔍 [COMMENTS] Returning 5 sanitized authenticated comments for file 33
+obview_app  | 🔍 [UNIFIED] Got 5 authenticated comments
+obview_app  | Backend: Breaking self-parenting cycle for public comment 19
+obview_app  | Backend: Breaking self-parenting cycle for public comment 17
+obview_app  | Backend: Breaking self-parenting cycle for public comment 16
+obview_app  | 🔍 [UNIFIED] Got 4 public comments
+obview_app  | 🔍 [UNIFIED] Created 9 total unified comments for file 33
+obview_app  | 🔍 [UNIFIED] Returning 9 sorted unified comments for file 33
