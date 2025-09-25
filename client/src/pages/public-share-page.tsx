@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "wouter";
 import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo, Trash2 } from "lucide-react";
@@ -1174,111 +1174,112 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
     );
   }
 
-  // Recursive component to render nested replies
-  const RenderReplies = ({ comments, parentId, depth }: { 
-    comments: UnifiedComment[], 
-    parentId: number, 
-    depth: number
+
+  // Recursive component to render nested replies with strict safety
+  const RenderReplies = ({ comment, depth = 0, visited = new Set() }: { 
+    comment: any, 
+    depth?: number,
+    visited?: Set<number>
   }) => {
-    // Prevent infinite loops with maximum depth limit
-    if (depth > 10) {
-      console.warn(`Maximum comment depth (${depth}) reached for parentId ${parentId}`);
+    // Prevent infinite loops with multiple safety checks
+    if (depth > 10 || visited.has(comment.id)) {
+      console.warn(`Cycle or max depth detected for comment ${comment.id} at depth ${depth}`);
       return null;
     }
     
-    // Filter replies and ensure parent actually exists to prevent orphaned references
-    const replies = comments?.filter((c: any) => {
-      if (c.parentId !== parentId) return false;
-      // Verify the parent comment actually exists in the comments array
-      const parentExists = comments.some((parent: any) => parent.id === parentId);
-      if (!parentExists) {
-        console.warn(`Orphaned comment reference: Comment ${c.id} references non-existent parent ${parentId}`);
-        return false;
-      }
-      return true;
-    }) || [];
-    
-    if (replies.length === 0) return null;
+    // Add to visited set for this render path
+    const newVisited = new Set(visited);
+    newVisited.add(comment.id);
     
     return (
-      <div className={`mt-3 space-y-3 ${depth > 0 ? 'ml-4 pl-4 border-l border-gray-600' : ''}`}>
-        {replies.map((reply: any) => (
-          <div key={reply.id}>
-            <div className="flex gap-3">
-              <Avatar className="h-6 w-6 flex-shrink-0">
-                <AvatarImage src={undefined} />
-                <AvatarFallback className="bg-gray-600 text-white text-xs">
-                  {getUserInitials(reply.authorName || 'A')}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-white">
-                    {reply.authorName || 'Anonymous'}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {new Date(reply.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-200 mb-2">
-                  {reply.content}
-                </div>
-                
-                {/* Action Buttons for nested replies */}
-                <div className="flex items-center gap-3">
-                  <button 
-                    className="text-xs text-gray-400 hover:text-white transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setReplyingToId(replyingToId === reply.id ? null : reply.id);
-                    }}
-                  >
-                    {replyingToId === reply.id ? "Cancel Reply" : "Reply"}
-                  </button>
-                  
-                  {canDeleteComment(reply.id) && (
-                    <button 
-                      className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteComment(reply.id);
-                      }}
-                      disabled={deleteCommentMutation.isPending}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Delete
-                    </button>
-                  )}
-                </div>
-
-                {/* Reply Form for nested replies */}
-                {replyingToId === reply.id && (
-                  <div className="mt-3 pl-4 border-l-2 border-gray-600">
-                    <PublicCommentForm 
-                      token={token} 
-                      fileId={reply.fileId} 
-                      currentTime={reply.timestamp || 0}
-                      parentId={reply.id}
-                      onSuccess={() => setReplyingToId(null)}
-                    />
-                  </div>
-                )}
-              </div>
+      <div key={comment.id}>
+        <div className="flex gap-3">
+          <Avatar className="h-6 w-6 flex-shrink-0">
+            <AvatarImage src={undefined} />
+            <AvatarFallback className="bg-gray-600 text-white text-xs">
+              {getUserInitials(comment.authorName || 'A')}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-medium text-white">
+                {comment.authorName || 'Anonymous'}
+              </span>
+              <span className="text-xs text-gray-400">
+                {new Date(comment.createdAt).toLocaleDateString()}
+              </span>
             </div>
-            {/* Recursively render nested replies with depth protection */}
-            <RenderReplies comments={comments} parentId={reply.id} depth={depth + 1} />
+            <div className="text-xs text-gray-200 mb-2">
+              {comment.content}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
+              <button 
+                className="text-xs text-gray-400 hover:text-white transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReplyingToId(replyingToId === comment.id ? null : comment.id);
+                }}
+              >
+                Reply
+              </button>
+              
+              {canDeleteComment(comment) && (
+                <button
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm("Are you sure you want to delete this comment?")) {
+                      deleteCommentMutation.mutate(comment.id);
+                    }
+                  }}
+                  disabled={deleteCommentMutation.isPending}
+                >
+                  <Trash2 className="h-3 w-3 inline mr-1" />
+                  Delete
+                </button>
+              )}
+            </div>
+
+            {/* Reply Form */}
+            {replyingToId === comment.id && (
+              <div className="mt-3 pl-4 border-l-2 border-gray-600">
+                <PublicCommentForm 
+                  token={token} 
+                  fileId={comment.fileId} 
+                  currentTime={comment.timestamp || 0}
+                  parentId={comment.id}
+                  onSuccess={() => setReplyingToId(null)}
+                />
+              </div>
+            )}
+
+            {/* Render children recursively with safety checks */}
+            {comment.children?.length > 0 && (
+              <div className="mt-3 ml-4 pl-4 border-l border-gray-600 space-y-3">
+                {comment.children.map((child: any) => (
+                  <RenderReplies 
+                    key={child.id}
+                    comment={child} 
+                    depth={depth + 1} 
+                    visited={newVisited}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        ))}
+        </div>
       </div>
     );
   };
 
   // Filter for top-level comments only (no parent)
-  const topLevelComments = comments.filter((comment: any) => !comment.parentId);
+  const topLevelComments = buildCommentThreads;
 
   return (
     <div className="divide-y divide-gray-700" data-testid="comments-list">
-      {topLevelComments.map((comment, index) => (
+      {topLevelComments.map((comment: any) => (
         <div 
           key={comment.id} 
           onClick={comment.timestamp !== null ? () => onTimestampClick?.(comment.timestamp!) : undefined}
