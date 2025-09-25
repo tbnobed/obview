@@ -11,6 +11,7 @@ import * as fileSystem from "./utils/filesystem";
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import { existsSync } from 'fs';
+import * as crypto from 'crypto';
 
 // Extended Request type to handle file uploads
 // Using declaration merging with Express namespace
@@ -2108,9 +2109,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Log incoming data for debugging
-      console.log("[DEBUG] Creating public comment - req.body:", req.body);
-      
       // Validate public comment data
       const validationResult = insertPublicCommentSchema.safeParse({
         ...req.body,
@@ -2118,18 +2116,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (!validationResult.success) {
-        console.log("[DEBUG] Validation failed:", validationResult.error.errors);
         return res.status(400).json({ 
           message: "Invalid comment data", 
           errors: validationResult.error.errors 
         });
       }
       
-      console.log("[DEBUG] Validation successful - validated data:", validationResult.data);
-      
       // Generate a unique creator token for this comment
       const creatorToken = crypto.randomBytes(32).toString('hex');
-      console.log("[DEBUG] Generated creatorToken:", creatorToken);
       
       // Create the public comment with the creator token
       const commentData = {
@@ -2137,10 +2131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         creatorToken
       };
       
-      console.log("[DEBUG] Final comment data to store:", commentData);
-      
       const comment = await storage.createPublicComment(commentData);
-      console.log("[DEBUG] Stored comment result:", comment);
       
       // Return the comment with the creator token for client-side storage
       res.status(201).json({
