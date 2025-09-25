@@ -1,0 +1,26 @@
+ Error creating public comment: Error: Parent comment does not exist
+obview_app  |     at DatabaseStorage.createPublicComment (file:///app/dist/production.js:1139:15)
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async file:///app/dist/production.js:3625:23
+obview_app  | [PRODUCTION SHARE] Request for token: cc9738cd17dde696e851be21c8e2ccf215facaa2ba479c92a474a413e94c8b1b
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Google Account.mp4 (ID: 28)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 28 (How to Make a Google Account.mp4) - type: video/mp4, path: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [PRODUCTION SHARE] Error sending file: Request aborted
+obview_app  | [PRODUCTION SHARE] Request for token: cc9738cd17dde696e851be21c8e2ccf215facaa2ba479c92a474a413e94c8b1b
+obview_app  | [PRODUCTION SHARE] Found file: How to Make a Google Account.mp4 (ID: 28)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Serving file 28 (How to Make a Google Account.mp4) - type: video/mp4, path: /app/uploads/1758768899530-964369070.mp4
+obview_app  | [PRODUCTION SHARE] File sent successfully
+obview_app  | Error creating public comment: Error: Parent comment does not exist
+obview_app  |     at DatabaseStorage.createPublicComment (file:///app/dist/production.js:1139:15)
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async file:///app/dist/production.js:3625:23

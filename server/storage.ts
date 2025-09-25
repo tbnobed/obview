@@ -1751,8 +1751,11 @@ export class DatabaseStorage implements IStorage {
   async createPublicComment(insertPublicComment: InsertPublicComment): Promise<PublicComment> {
     // Comprehensive validation before creating public comment
     if (insertPublicComment.parentId !== undefined && insertPublicComment.parentId !== null) {
-      // 1. Check if parent exists
-      const [parentComment] = await db.select().from(publicComments).where(eq(publicComments.id, insertPublicComment.parentId)).limit(1);
+      // 1. Check if parent exists in either public comments or regular comments
+      const [parentPublicComment] = await db.select().from(publicComments).where(eq(publicComments.id, insertPublicComment.parentId)).limit(1);
+      const [parentRegularComment] = await db.select().from(comments).where(eq(comments.id, insertPublicComment.parentId)).limit(1);
+      
+      const parentComment = parentPublicComment || parentRegularComment;
       if (!parentComment) {
         throw new Error("Parent comment does not exist");
       }
