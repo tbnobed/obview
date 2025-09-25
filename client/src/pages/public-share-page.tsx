@@ -1133,9 +1133,55 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
     );
   }
 
+  // Recursive component to render nested replies
+  const RenderReplies = ({ comments, parentId, depth }: { 
+    comments: UnifiedComment[], 
+    parentId: number, 
+    depth: number
+  }) => {
+    const replies = comments?.filter((c: any) => c.parentId === parentId) || [];
+    
+    if (replies.length === 0) return null;
+    
+    return (
+      <div className={`mt-3 space-y-3 ${depth > 0 ? 'ml-4 pl-4 border-l border-gray-600' : ''}`}>
+        {replies.map((reply: any) => (
+          <div key={reply.id}>
+            <div className="flex gap-3">
+              <Avatar className="h-6 w-6 flex-shrink-0">
+                <AvatarImage src={undefined} />
+                <AvatarFallback className="bg-gray-600 text-white text-xs">
+                  {getUserInitials(reply.authorName || 'A')}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-medium text-white">
+                    {reply.authorName || 'Anonymous'}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(reply.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-200">
+                  {reply.content}
+                </div>
+              </div>
+            </div>
+            {/* Recursively render nested replies */}
+            <RenderReplies comments={comments} parentId={reply.id} depth={depth + 1} />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Filter for top-level comments only (no parent)
+  const topLevelComments = comments.filter((comment: any) => !comment.parentId);
+
   return (
     <div className="divide-y divide-gray-700" data-testid="comments-list">
-      {comments.map((comment, index) => (
+      {topLevelComments.map((comment, index) => (
         <div 
           key={comment.id} 
           onClick={comment.timestamp !== null ? () => onTimestampClick?.(comment.timestamp!) : undefined}
@@ -1228,6 +1274,9 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                   />
                 </div>
               )}
+
+              {/* Nested Replies */}
+              <RenderReplies comments={comments} parentId={comment.id} depth={0} />
             </div>
           </div>
         </div>
