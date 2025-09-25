@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertPublicCommentSchema, type UnifiedComment } from "@shared/schema";
+import { insertCommentsUnifiedSchema, type UnifiedComment } from "@shared/schema";
 import { z } from "zod";
 
 // Schema for request changes form
@@ -958,7 +958,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
   token: string; 
   fileId: number; 
   currentTime: number; 
-  parentId?: number;
+  parentId?: string;
   onSuccess?: () => void;
 }) {
   const { toast } = useToast();
@@ -966,20 +966,21 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
   // Load saved name from localStorage
   const savedName = typeof window !== 'undefined' ? localStorage.getItem('public-commenter-name') || '' : '';
   
-  const form = useForm<z.infer<typeof insertPublicCommentSchema>>({
-    resolver: zodResolver(insertPublicCommentSchema),
+  const form = useForm<z.infer<typeof insertCommentsUnifiedSchema>>({
+    resolver: zodResolver(insertCommentsUnifiedSchema),
     defaultValues: {
-      displayName: savedName,
+      authorName: savedName,
       content: "",
       fileId: fileId,
       parentId: parentId || undefined,
       timestamp: Math.floor(currentTime), // Always include current time
+      isPublic: true,
     },
   });
 
   const createCommentMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertPublicCommentSchema>) => {
-      return await apiRequest("POST", `/api/share/${token}/comments`, data);
+    mutationFn: async (data: z.infer<typeof insertCommentsUnifiedSchema>) => {
+      return await apiRequest("POST", `/api/files/${fileId}/comments`, data);
     },
     onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/share', token, 'comments'] });
@@ -990,13 +991,14 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
       }
       
       // Get current name value before reset and preserve it
-      const currentName = form.getValues('displayName');
+      const currentName = form.getValues('authorName');
       form.reset({
-        displayName: currentName, // Preserve the name
+        authorName: currentName, // Preserve the name
         content: "",              // Clear only the comment content
         fileId: fileId,
         parentId: parentId || undefined,
-        timestamp: Math.floor(currentTime)
+        timestamp: Math.floor(currentTime),
+        isPublic: true,
       });
       
       toast({
@@ -1016,17 +1018,18 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
     },
   });
 
-  const onSubmit = (data: z.infer<typeof insertPublicCommentSchema>) => {
+  const onSubmit = (data: z.infer<typeof insertCommentsUnifiedSchema>) => {
     // Save name to localStorage for future comments
-    if (typeof window !== 'undefined' && data.displayName) {
-      localStorage.setItem('public-commenter-name', data.displayName);
+    if (typeof window !== 'undefined' && data.authorName) {
+      localStorage.setItem('public-commenter-name', data.authorName);
     }
     
     // Always attach current time and parentId
     const dataWithTime = {
       ...data,
       timestamp: Math.floor(currentTime),
-      parentId: parentId || undefined
+      parentId: parentId || undefined,
+      isPublic: true,
     };
     createCommentMutation.mutate(dataWithTime);
   };
@@ -1038,7 +1041,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
-            name="displayName"
+            name="authorName"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Your Name</FormLabel>
