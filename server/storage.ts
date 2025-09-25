@@ -1294,24 +1294,10 @@ export class DatabaseStorage implements IStorage {
     return sanitized;
   }
 
-  // Helper method to sanitize comments - ONLY check for true self-parenting within same type
+  // Helper method to return comments as-is - NO SANITIZATION at this level
   private async sanitizeComments(comments: Comment[]): Promise<Comment[]> {
-    const sanitized: Comment[] = [];
-    
-    for (const comment of comments) {
-      let sanitizedComment = { ...comment };
-      
-      // ONLY fix actual self-parenting (where auth comment references itself)
-      // Do NOT break cross-table references to public comments with same numeric ID
-      if (sanitizedComment.parentId === sanitizedComment.id) {
-        console.warn(`Backend: Breaking TRUE self-parenting cycle for auth comment ${sanitizedComment.id}`);
-        sanitizedComment.parentId = null;
-      }
-      
-      sanitized.push(sanitizedComment);
-    }
-    
-    return sanitized;
+    // Return comments unchanged - all validation happens in unified comment builder
+    return comments;
   }
 
   // Cross-table cycle detection that checks both regular and public comments
@@ -1382,24 +1368,10 @@ export class DatabaseStorage implements IStorage {
     return false;
   }
 
-  // Helper method to sanitize public comments - ONLY check for true self-parenting within same type
+  // Helper method to return public comments as-is - NO SANITIZATION at this level  
   private async sanitizePublicComments(comments: PublicComment[]): Promise<PublicComment[]> {
-    const sanitized: PublicComment[] = [];
-    
-    for (const comment of comments) {
-      let sanitizedComment = { ...comment };
-      
-      // ONLY fix actual self-parenting (where public comment references itself)
-      // Do NOT break cross-table references to auth comments with same numeric ID
-      if (sanitizedComment.parentId === sanitizedComment.id) {
-        console.warn(`Backend: Breaking TRUE self-parenting cycle for public comment ${sanitizedComment.id}`);
-        sanitizedComment.parentId = null;
-      }
-      
-      sanitized.push(sanitizedComment);
-    }
-    
-    return sanitized;
+    // Return comments unchanged - all validation happens in unified comment builder
+    return comments;
   }
 
   // Detect cycles by walking up parent chain for public comments

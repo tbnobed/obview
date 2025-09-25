@@ -1,0 +1,94 @@
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/35/comments requested by user 2
+obview_app  | 🔍 [COMMENT API] User 2 authorized for file 35, fetching comments...
+obview_app  | 🔍 [UNIFIED] Getting unified comments for file 35
+obview_app  | 🔍 [COMMENTS] Getting authenticated comments for file 35
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENTS] Found 2 raw authenticated comments for file 35
+obview_app  | 🔍 [COMMENTS] Returning 2 sanitized authenticated comments for file 35
+obview_app  | 🔍 [UNIFIED] Got 2 authenticated comments
+obview_app  | Backend: Breaking TRUE self-parenting cycle for public comment 22
+obview_app  | Backend: Breaking TRUE self-parenting cycle for public comment 21
+obview_app  | 🔍 [UNIFIED] Got 2 public comments
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [DEBUG] File content requested for fileId: 35
+obview_app  | 🔍 [UNIFIED] Created 4 total unified comments for file 35
+obview_app  | 🔍 [UNIFIED] Returning 4 sorted unified comments for file 35
+obview_app  | 🔍 [COMMENT API] Returning 4 comments for file 35
+obview_app  | [DEBUG] Database record found for file ID: 35 {
+obview_app  |   filename: 'How to Make a Google Account.mp4',
+obview_app  |   fileType: 'video',
+obview_app  |   filePath: '/app/uploads/1758833422480-951355776.mp4',
+obview_app  |   isAvailable: true
+obview_app  | }
+obview_app  | [DEBUG] Checking if file exists at path: /app/uploads/1758833422480-951355776.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758833422480-951355776.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758833422480-951355776.mp4
+obview_app  | [DEBUG] File exists check result: true
+obview_app  | Serving file 35 (How to Make a Google Account.mp4) - type: video, path: /app/uploads/1758833422480-951355776.mp4
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 35, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2025-10-25T17:35:29.682Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 35, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
