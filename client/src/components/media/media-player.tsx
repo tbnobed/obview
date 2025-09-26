@@ -1025,17 +1025,286 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex h-[calc(100vh-200px)] min-h-[600px]">
-      {/* Media Player Section - Takes remaining space */}
-      <div className="flex-1 relative">
-        <div className="h-full bg-neutral-900 overflow-visible">
-          {renderMediaContent()}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+      {/* Media Viewer - Takes 2/3 of the space on large screens */}
+      <div className="lg:col-span-2">
+        <div className="relative">
+          <div className="h-[calc(100vh-300px)] min-h-[500px] bg-neutral-900 rounded-t-lg overflow-visible">
+            {renderMediaContent()}
+          </div>
+          
+          <div className="bg-white dark:bg-[#0a0d14] p-4 border-t border-neutral-100 dark:border-gray-800">
+            {/* Media player controls - Only shown when no error */}
+            {!mediaError && (
+              <div className="flex items-center mb-2 space-x-2">
+                <Button
+                  onClick={togglePlay}
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6" />
+                  )}
+                </Button>
+                
+                <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+                
+                {/* Progress bar and markers container */}
+                <div className="flex-grow flex flex-col gap-1 mx-4 relative">
+                  
+                  {/* Extended hover area around progress bar */}
+                  <div
+                    className="relative py-4 cursor-pointer"
+                    onClick={handleProgressClick}
+                    onMouseMove={(e) => {
+                      if (e.buttons === 1 && progressRef.current) {
+                        // Handle dragging (mouse down + move)
+                        handleProgressClick(e);
+                      } else {
+                        // Handle hover for scrub preview with pixel positioning
+                        if (!progressRef.current || isDragging) return;
+                        
+                        const rect = progressRef.current.getBoundingClientRect();
+                        // Calculate viewport position for preview
+                        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                        const hoverTime = duration * pos;
+                        
+                        // Position preview using viewport coordinates
+                        const previewWidth = 208; // w-48 + padding = 192 + 16
+                        const previewHeight = 150; // Approximate height
+                        const desiredLeft = e.clientX - previewWidth / 2;
+                        const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
+                        const top = rect.top - previewHeight - 12;
+                        
+                        setScrubPreviewTime(hoverTime);
+                        setScrubPreviewLeft(left);
+                        setScrubPreviewTop(top);
+                        setShowScrubPreview(true);
+                        
+                        if (previewVideoRef.current && duration > 0) {
+                          previewVideoRef.current.currentTime = hoverTime;
+                        }
+                      }
+                    }}
+                    onMouseLeave={handleProgressLeave}
+                    data-testid="progress-bar-extended-area"
+                  >
+                    {/* Progress bar */}
+                    <div
+                      ref={progressRef}
+                      className="video-progress relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
+                      data-testid="progress-bar"
+                    >
+                      <div
+                        className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
+                        style={{ width: `${(currentTime / duration) * 100}%` }}
+                      ></div>
+                      <div
+                        className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ left: `${(currentTime / duration) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  {/* Comment markers rail */}
+                  <div className="relative h-5 overflow-visible pointer-events-none" aria-hidden="true">
+                    {duration > 0 && comments && comments.length > 0 && comments.map((comment: Comment) => {
+                      // Only show markers for comments with timestamps (not replies)
+                      if (comment.parentId !== null && comment.parentId !== undefined) return null;
+                      if (comment.timestamp === null || comment.timestamp === undefined) return null;
+                      
+                      // Calculate percentage position - safely handle divide by zero
+                      const timestamp = comment.timestamp || 0;
+                      const position = duration > 0 ? (timestamp / duration) * 100 : 0;
+                      
+                      // Skip markers that would be off the timeline
+                      if (position < 0 || position > 100) return null;
+                      
+                      return (
+                        <div 
+                          key={`${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
+                          className="absolute -top-1 z-10 pointer-events-auto cursor-pointer"
+                          style={{ 
+                            left: `${position}%`, 
+                            transform: 'translateX(-50%)'
+                          }}
+                          onMouseEnter={(e) => {
+                            setHoveredComment(comment.id);
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setTooltipPosition({
+                              x: rect.left + rect.width / 2,
+                              y: rect.top - 10
+                            });
+                          }}
+                          onMouseLeave={() => {
+                            setHoveredComment(null);
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Set active comment and jump to timestamp
+                            setActiveCommentId(comment.id);
+                            const mediaElement = videoRef.current || audioRef.current;
+                            if (mediaElement && comment.timestamp !== null) {
+                              mediaElement.currentTime = comment.timestamp;
+                              setCurrentTime(comment.timestamp);
+                            }
+                          }}
+                          data-testid={`comment-marker-${comment.id}`}
+                        >
+                          <div className={`w-6 h-6 ${activeCommentId === comment.id ? 'bg-blue-500' : 'bg-yellow-400'} rounded-full flex items-center justify-center text-xs font-bold text-black shadow-lg border-2 border-white`}>
+                            {(comment as any).authorName?.charAt(0)?.toUpperCase() || (comment as any).user?.name?.charAt(0)?.toUpperCase() || 'A'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* Comment Marker Tooltip */}
+                {hoveredComment && comments && (
+                  (() => {
+                    const comment = comments.find((c: Comment) => c.id === hoveredComment);
+                    if (!comment) return null;
+                    
+                    // Position tooltip using viewport coordinates
+                    const hasActivePreview = showScrubPreview && duration > 0 && file?.fileType === 'video';
+                    const positionStyle = hasActivePreview ? {
+                      position: 'fixed' as const,
+                      left: tooltipPosition.x - 180, // Position to the left of preview
+                      top: tooltipPosition.y - 80,
+                      transform: 'translateY(-100%)',
+                      zIndex: 60
+                    } : {
+                      position: 'fixed' as const,
+                      left: tooltipPosition.x,
+                      top: tooltipPosition.y,
+                      transform: 'translate(-50%, -100%)',
+                      zIndex: 60
+                    };
+                    
+                    return (
+                      <div
+                        className="pointer-events-none fixed z-50"
+                        style={positionStyle}
+                      >
+                        <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium">
+                              {(comment as any).authorName?.charAt(0) || (comment as any).user?.name?.charAt(0) || 'A'}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-xs">
+                                {(comment as any).authorName || (comment as any).user?.name || 'Anonymous'}
+                              </span>
+                              <span className="text-yellow-400 text-xs font-mono">
+                                {formatTime(comment.timestamp)}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs leading-relaxed break-words">
+                            {comment.content}
+                          </p>
+                        </div>
+                        {/* Arrow pointing down */}
+                        <div className="absolute left-1/2 transform -translate-x-1/2 top-full">
+                          <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+                
+                <div className="flex items-center">
+                  <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={volume}
+                    onChange={(e) => handleVolumeChange(e.target.value)}
+                    className="w-20"
+                  />
+                </div>
+                
+                <Button
+                  onClick={toggleFullscreen}
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                  title="Toggle fullscreen"
+                >
+                  <Maximize className="h-5 w-5" />
+                </Button>
+              </div>
+            )}
+            
+            {/* File selector and actions - Always visible regardless of error state */}
+            <div className={cn(
+              "flex justify-end items-center",
+              !mediaError ? "mt-2 pt-2" : "pt-1"
+            )}>
+              <div className="flex space-x-1">
+                {file && (
+                  <>
+                    <ShareLinkButton 
+                      fileId={file.id} 
+                      size="sm"
+                      variant="ghost"
+                      compact={true}
+                      className="h-7 w-7 p-0"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 w-7 p-0 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-900 dark:hover:bg-orange-950"
+                      onClick={handleRequestChanges}
+                      disabled={approveMutation.isPending}
+                      title="Request changes"
+                    >
+                      <AlertCircle className="h-3 w-3" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700"
+                      onClick={handleApprove}
+                      disabled={approveMutation.isPending}
+                      title="Approve"
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    {(user?.role === 'admin' || user?.role === 'editor') && project && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        className="h-7 w-7 p-0 dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
+                        onClick={handleMarkAsInReview}
+                        disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
+                        title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
+                      >
+                        {isUpdatingStatus ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <ClipboardCheck className="h-3 w-3" />
+                        )}
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
-      {/* Comments Section - Half width */}
+      {/* Comments Section - Takes 1/3 of the space on large screens */}
       {file && (
-        <div className="w-1/2 border-l border-neutral-200 dark:border-gray-800 flex flex-col dark:bg-[#0f1218] min-h-0">
+        <div className="border border-neutral-200 dark:border-gray-800 rounded-lg h-[calc(100vh-200px)] min-h-[600px] flex flex-col dark:bg-[#0f1218]">
           <Tabs defaultValue="comments" className="h-full flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="dark:bg-gray-900">
