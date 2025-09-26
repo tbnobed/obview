@@ -11,6 +11,12 @@ echo "Waiting for database to be ready..."
   exit 1
 }
 
+# Sync database schema first (for unified comment system)
+echo "Syncing database schema..."
+npm run db:push --force || {
+  echo "Warning: Schema sync encountered issues. Attempting to continue..."
+}
+
 # Run migrations with error handling
 echo "Running database migrations..."
 run_migrations() {
