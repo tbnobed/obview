@@ -110,7 +110,7 @@ export function useCommentReactionsWithUsers(commentId: string) {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['/api/comments', commentId, 'reactions', 'with-users'],
+    queryKey: ['/api/comments', commentId, 'reactions', { includeUsers: true }],
     queryFn: async (): Promise<CommentReactionWithUsers[]> => {
       const headers: Record<string, string> = {};
       
@@ -132,7 +132,13 @@ export function useCommentReactionsWithUsers(commentId: string) {
         throw new Error(`Failed to fetch reactions with users: ${response.statusText}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      
+      // Ensure users array exists for each reaction
+      return data.map((reaction: any) => ({
+        ...reaction,
+        users: reaction.users || []
+      }));
     },
   });
 }
