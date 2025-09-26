@@ -1246,33 +1246,9 @@ export default function MediaPlayer({
             
             {/* File selector and actions - Always visible regardless of error state */}
             <div className={cn(
-              "flex justify-between items-center border-t border-neutral-100 dark:border-gray-800",
+              "flex justify-end items-center border-t border-neutral-100 dark:border-gray-800",
               !mediaError ? "mt-2 pt-2" : "pt-1"
             )}>
-              <div className="flex space-x-1 items-center">
-                <Select 
-                  value={file?.id.toString()} 
-                  onValueChange={(value) => onSelectFile(parseInt(value))}
-                >
-                  <SelectTrigger className="w-auto min-w-[140px] h-7 text-xs">
-                    <SelectValue placeholder="Select file" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {files.map((f) => (
-                      <SelectItem key={f.id} value={f.id.toString()} className="text-xs">
-                        {f.filename} {f.isLatestVersion && "(Latest)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                {file && (
-                  <div className="text-xs text-neutral-500 dark:text-gray-400">
-                    v{file.version}
-                  </div>
-                )}
-              </div>
-              
               <div className="flex space-x-1">
                 {file && (
                   <>
