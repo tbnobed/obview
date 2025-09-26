@@ -55,9 +55,9 @@ export default function MediaPlayer({
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
-  // Mobile-specific state
-  const [isMobile, setIsMobile] = useState(false);
-  const [isLandscape, setIsLandscape] = useState(false);
+  // Mobile-specific state - start with proper detection
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  const [isLandscape, setIsLandscape] = useState(() => typeof window !== 'undefined' ? window.innerWidth > window.innerHeight && window.innerWidth < 1024 : false);
   const [commentsPanelHeight, setCommentsPanelHeight] = useState(120); // Start with input height
   const [isDraggingPanel, setIsDraggingPanel] = useState(false);
   const [dragStartY, setDragStartY] = useState(0);
