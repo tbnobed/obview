@@ -55,13 +55,6 @@ export default function MediaPlayer({
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
-  // Mobile-specific state - start with proper detection
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-  const [isLandscape, setIsLandscape] = useState(() => typeof window !== 'undefined' ? window.innerWidth > window.innerHeight && window.innerWidth < 1024 : false);
-  const [commentsPanelHeight, setCommentsPanelHeight] = useState(120); // Start with input height
-  const [isDraggingPanel, setIsDraggingPanel] = useState(false);
-  const [dragStartY, setDragStartY] = useState(0);
-  const [dragStartHeight, setDragStartHeight] = useState(0);
   
   // Sprite scrubbing state
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
@@ -372,202 +365,109 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className={cn(
-      "h-full min-h-0",
-      // Mobile layout
-      isMobile && !isLandscape ? "flex flex-col" : 
-      // Desktop layout  
-      "flex flex-col lg:flex-row"
-    )}>
-      {/* Mobile Landscape - Full screen video */}
-      {isMobile && isLandscape ? (
-        <div className="relative h-full w-full bg-black">
+    <div className="h-full min-h-0 flex flex-col lg:flex-row">
+      {/* Media Viewer - Takes remaining space */}
+      <div className="flex-1 min-h-0 grid grid-rows-[auto,1fr,auto]">
+        <div></div>
+        
+        {/* Media container - grows to fill space */}
+        <div className="relative min-h-0 bg-black overflow-hidden">
           {renderMediaContent()}
-          {/* Minimal controls overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-            <div className="flex items-center justify-between">
+        </div>
+        
+        {/* Desktop controls area - ALWAYS SHOW */}
+        <div className="bg-black p-6 border-t border-gray-800">
+          {/* Media player controls - Only shown when no error */}
+          {!mediaError && (
+            <div className="flex items-center mb-2 space-x-2">
               <Button
                 onClick={togglePlay}
                 variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/20"
+                size="icon"
+                className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
               >
-                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                {isPlaying ? (
+                  <Pause className="h-6 w-6" />
+                ) : (
+                  <Play className="h-6 w-6" />
+                )}
               </Button>
-              <span className="font-mono text-sm text-white/80">
+              
+              <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Media Viewer - Takes remaining space */}
-          <div className={cn(
-            "flex-1 min-h-0",
-            isMobile ? "relative" : "grid grid-rows-[auto,1fr,auto]"
-          )}>
-            {!isMobile && <div></div>}
-            
-            {/* Media container - grows to fill space */}
-            <div className={cn(
-              "relative min-h-0 bg-black overflow-hidden",
-              isMobile ? "h-full" : ""
-            )}>
-              {renderMediaContent()}
-            </div>
-            
-            {/* Desktop controls area */}
-            {!isMobile && (
-              <div className="bg-black p-6 border-t border-gray-800">
-                {/* Media player controls - Only shown when no error */}
-                {!mediaError && (
-                  <div className="flex items-center mb-2 space-x-2">
-                    <Button
-                      onClick={togglePlay}
-                      variant="ghost"
-                      size="icon"
-                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
-                    >
-                      {isPlaying ? (
-                        <Pause className="h-6 w-6" />
-                      ) : (
-                        <Play className="h-6 w-6" />
-                      )}
-                    </Button>
-                    
-                    <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
-                      {formatTime(currentTime)} / {formatTime(duration)}
-                    </span>
-                    
-                    {/* Progress bar container */}
-                    <div className="flex-grow mx-4 relative">
-                      <div
-                        className="relative py-4 cursor-pointer"
-                        onClick={handleProgressClick}
-                        onMouseLeave={handleProgressLeave}
-                        data-testid="progress-bar-extended-area"
-                      >
-                        {/* Progress bar */}
-                        <div
-                          ref={progressRef}
-                          className="video-progress relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
-                          data-testid="progress-bar"
-                        >
-                          <div
-                            className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
-                            style={{ width: `${(currentTime / duration) * 100}%` }}
-                          ></div>
-                          <div
-                            className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{ left: `${(currentTime / duration) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Volume and fullscreen controls */}
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
-                      >
-                        <Volume2 className="h-5 w-5" />
-                      </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
-                      >
-                        <Maximize className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Comments Panel - Swipeable from bottom */}
-          {isMobile && (
-            <div 
-              className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#0f1218] border-t border-gray-200 dark:border-gray-700 transition-all duration-300"
-              style={{ height: commentsPanelHeight }}
-            >
-              {/* Drag handle */}
-              <div 
-                className="w-full py-3 flex justify-center cursor-grab active:cursor-grabbing"
-                onTouchStart={handlePanelTouchStart}
-                onTouchMove={handlePanelTouchMove}
-                onTouchEnd={handlePanelTouchEnd}
-              >
-                <div className="w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-              </div>
               
-              {/* Comments content */}
-              <div className="px-4 pb-4 h-full overflow-y-auto">
-                {commentsPanelHeight > 150 && (
-                  <div className="mb-4">
-                    <TimelineComments
-                      fileId={file?.id || 0}
-                      currentTime={currentTime}
-                      duration={duration}
-                      onTimeClick={(time: number) => {
-                        const mediaElement = videoRef.current || audioRef.current;
-                        if (mediaElement) {
-                          mediaElement.currentTime = time;
-                          setCurrentTime(time);
-                        }
-                      }}
-                    />
+              {/* Progress bar container */}
+              <div className="flex-grow mx-4 relative">
+                <div
+                  className="relative py-4 cursor-pointer"
+                  onClick={handleProgressClick}
+                  onMouseLeave={handleProgressLeave}
+                  data-testid="progress-bar-extended-area"
+                >
+                  {/* Progress bar */}
+                  <div
+                    ref={progressRef}
+                    className="video-progress relative h-2 bg-neutral-200 dark:bg-gray-800 hover:bg-neutral-300 dark:hover:bg-gray-700 cursor-pointer rounded-full group"
+                    data-testid="progress-bar"
+                  >
+                    <div
+                      className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
+                      style={{ width: `${(currentTime / duration) * 100}%` }}
+                    ></div>
+                    <div
+                      className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ left: `${(currentTime / duration) * 100}%` }}
+                    ></div>
                   </div>
-                )}
-                
-                {/* Comment input always visible */}
-                <div className="mt-auto">
-                  <TimelineComments
-                    fileId={file?.id || 0}
-                    currentTime={currentTime}
-                    duration={duration}
-                    onTimeClick={(time: number) => {
-                      const mediaElement = videoRef.current || audioRef.current;
-                      if (mediaElement) {
-                        mediaElement.currentTime = time;
-                        setCurrentTime(time);
-                      }
-                    }}
-                  />
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Desktop Comments Section */}
-          {!isMobile && file && (
-            <div className="w-96 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1218] flex flex-col min-h-0">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-                <h3 className="font-medium text-gray-900 dark:text-white">Comments</h3>
-              </div>
-              
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <TimelineComments
-                  fileId={file.id}
-                  currentTime={currentTime}
-                  duration={duration}
-                  onTimeClick={(time: number) => {
-                    const mediaElement = videoRef.current || audioRef.current;
-                    if (mediaElement) {
-                      mediaElement.currentTime = time;
-                      setCurrentTime(time);
-                    }
-                  }}
-                />
+              {/* Volume and fullscreen controls */}
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                >
+                  <Volume2 className="h-5 w-5" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                >
+                  <Maximize className="h-5 w-5" />
+                </Button>
               </div>
             </div>
           )}
-        </>
+        </div>
+      </div>
+
+      {/* Desktop Comments Section */}
+      {file && (
+        <div className="w-96 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1218] flex flex-col min-h-0">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+            <h3 className="font-medium text-gray-900 dark:text-white">Comments</h3>
+          </div>
+          
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <TimelineComments
+              fileId={file.id}
+              currentTime={currentTime}
+              duration={duration}
+              onTimeClick={(time: number) => {
+                const mediaElement = videoRef.current || audioRef.current;
+                if (mediaElement) {
+                  mediaElement.currentTime = time;
+                  setCurrentTime(time);
+                }
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
