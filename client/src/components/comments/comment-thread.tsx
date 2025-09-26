@@ -13,6 +13,8 @@ import { Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useDeleteComment } from "@/hooks/use-comments";
+import ReactionPicker from "./reaction-picker";
+import ReactionsDisplay from "./reactions-display";
 
 interface CommentThreadProps {
   comment: CommentUnified & { user?: any };
@@ -255,6 +257,11 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
             </ReactMarkdown>
           </div>
           
+          {/* Reactions Display */}
+          <ReactionsDisplay 
+            commentId={comment.id}
+          />
+          
           <div className="mt-2 flex flex-wrap gap-3">
             <Button 
               variant="link" 
@@ -263,6 +270,10 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
             >
               {showReplyForm ? "Cancel" : "Reply"}
             </Button>
+            
+            <ReactionPicker 
+              commentId={comment.id}
+            />
             
             {canResolve && (
               <Button 

@@ -2943,7 +2943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/comments/:commentId/reactions", async (req, res, next) => {
     try {
       const commentId = req.params.commentId;
-      const { reactionType, creatorToken } = req.body;
+      const { reactionType, creatorToken, visitorToken } = req.body;
       
       // Check if the comment exists
       const comment = await storage.getUnifiedComment(commentId);
@@ -2952,12 +2952,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let userId = null;
+      let authToken = null;
       
-      // Handle authentication - either authenticated user or public user with token
+      // Handle authentication - either authenticated user or anonymous visitor
       if (req.user) {
         userId = req.user.id;
-      } else if (!creatorToken) {
-        return res.status(401).json({ message: "Authentication required" });
+      } else {
+        // For anonymous users, use visitorToken (not creatorToken)
+        authToken = visitorToken || creatorToken;
+        if (!authToken) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
       }
       
       // Validate reaction type
@@ -2970,7 +2975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const reaction = await storage.addCommentReaction({
         commentId,
         userId,
-        creatorToken,
+        creatorToken: authToken,
         reactionType
       });
       
@@ -2981,25 +2986,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Remove reaction from a comment
-  app.delete("/api/comments/:commentId/reactions/:reactionType", async (req, res, next) => {
+  app.delete("/api/comments/:commentId/reactions", async (req, res, next) => {
     try {
       const commentId = req.params.commentId;
-      const reactionType = req.params.reactionType;
-      const { creatorToken } = req.body;
+      const { reactionType, creatorToken, visitorToken } = req.body;
+      
+      if (!reactionType) {
+        return res.status(400).json({ message: "reactionType is required" });
+      }
       
       let userId = null;
+      let authToken = null;
       
-      // Handle authentication
+      // Handle authentication - either authenticated user or anonymous visitor
       if (req.user) {
         userId = req.user.id;
-      } else if (!creatorToken) {
-        return res.status(401).json({ message: "Authentication required" });
+      } else {
+        // For anonymous users, use visitorToken (not creatorToken)
+        authToken = visitorToken || creatorToken;
+        if (!authToken) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
       }
       
       const success = await storage.removeCommentReaction({
         commentId,
         userId,
-        creatorToken,
+        creatorToken: authToken,
         reactionType
       });
       
@@ -3024,7 +3037,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Comment not found" });
       }
       
-      const reactions = await storage.getCommentReactions(commentId);
+      // Get visitor token from headers or query params for anonymous users
+      const visitorToken = req.get('X-Visitor-Token') || req.query.visitorToken as string;
+      
+      // Determine user identity
+      let userId: number | undefined;
+      let authToken: string | undefined;
+      
+      if (req.user) {
+        userId = req.user.id;
+      } else if (visitorToken) {
+        authToken = visitorToken;
+      }
+      
+      const reactions = await storage.getCommentReactionsWithUserStatus(commentId, userId, authToken);
       res.json(reactions);
     } catch (error) {
       next(error);

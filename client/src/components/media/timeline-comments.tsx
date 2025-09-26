@@ -12,6 +12,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import ReactionPicker from "@/components/comments/reaction-picker";
+import ReactionsDisplay from "@/components/comments/reactions-display";
 
 
 interface TimelineCommentsProps {
@@ -45,6 +47,7 @@ export default function TimelineComments({
     isLoading, 
     error 
   } = useComments(fileId);
+  
 
   // Delete comment mutation  
   const deleteCommentMutation = useMutation({
@@ -168,6 +171,19 @@ export default function TimelineComments({
                   >
                     {reply.content}
                   </ReactMarkdown>
+                </div>
+                
+                {/* Reactions Display for Reply */}
+                <ReactionsDisplay 
+                  commentId={reply.id}
+                />
+                
+                <div className="flex gap-2 mt-1">
+                  <div style={{scale: '0.8', transformOrigin: 'left'}}>
+                    <ReactionPicker 
+                      commentId={reply.id}
+                    />
+                  </div>
                 </div>
                 
                 {/* Action Buttons for nested replies */}
@@ -406,18 +422,32 @@ export default function TimelineComments({
                         </ReactMarkdown>
                       </div>
 
-                      <button 
-                        className="text-xs font-medium transition-colors"
-                        style={{color: 'hsl(var(--comments-muted))'}}
-                        onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setReplyingToId(replyingToId === comment.id ? null : comment.id);
-                        }}
-                      >
-                        Reply
-                      </button>
+                      {/* Reactions Display */}
+                      <ReactionsDisplay 
+                        commentId={comment.id}
+                      />
+
+                      <div className="flex gap-3 mt-2">
+                        <button
+                          className="text-xs font-medium transition-colors"
+                          style={{color: 'hsl(var(--comments-muted))'}}
+                          onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReplyingToId(replyingToId === comment.id ? null : comment.id);
+                          }}
+                        >
+                          Reply
+                        </button>
+                        
+                        <div style={{scale: '0.9', transformOrigin: 'left'}}>
+                          <ReactionPicker 
+                            commentId={comment.id}
+                          />
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 

@@ -157,6 +157,7 @@ export interface IStorage {
   addCommentReaction(reaction: InsertCommentReaction): Promise<CommentReaction>;
   removeCommentReaction(params: { commentId: string; userId?: number | null; creatorToken?: string; reactionType: string }): Promise<boolean>;
   getCommentReactions(commentId: string): Promise<{ reactionType: string; count: number; userReacted?: boolean }[]>;
+  getCommentReactionsWithUserStatus(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean }[]>;
 
   // Session store
   sessionStore: any; // Using any to avoid type issues
@@ -1223,6 +1224,11 @@ export class MemStorage implements IStorage {
   }
 
   async getCommentReactions(commentId: string): Promise<{ reactionType: string; count: number; userReacted?: boolean }[]> {
+    // For MemStorage, return empty array
+    return [];
+  }
+
+  async getCommentReactionsWithUserStatus(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean }[]> {
     // For MemStorage, return empty array
     return [];
   }
@@ -2516,6 +2522,36 @@ export class DatabaseStorage implements IStorage {
     return Array.from(reactionCounts.entries()).map(([reactionType, count]) => ({
       reactionType,
       count
+    }));
+  }
+
+  async getCommentReactionsWithUserStatus(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean }[]> {
+    // Get all reactions for this comment
+    const reactions = await db
+      .select()
+      .from(commentReactions)
+      .where(eq(commentReactions.commentId, commentId));
+    
+    // Group by reaction type and count
+    const reactionCounts = new Map<string, number>();
+    const userReactedTypes = new Set<string>();
+    
+    for (const reaction of reactions) {
+      const current = reactionCounts.get(reaction.reactionType) || 0;
+      reactionCounts.set(reaction.reactionType, current + 1);
+      
+      // Check if this reaction is from the current user/visitor
+      if ((userId && reaction.userId === userId) || 
+          (creatorToken && reaction.creatorToken === creatorToken)) {
+        userReactedTypes.add(reaction.reactionType);
+      }
+    }
+    
+    // Convert to the expected format with userReacted status
+    return Array.from(reactionCounts.entries()).map(([reactionType, count]) => ({
+      reactionType,
+      count,
+      userReacted: userReactedTypes.has(reactionType)
     }));
   }
 }
