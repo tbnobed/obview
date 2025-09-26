@@ -1163,6 +1163,16 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const { toast } = useToast();
   
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowFilterMenu(false);
+      setShowMoreMenu(false);
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+  
   // Delete comment mutation for public comments
   const deleteCommentMutation = useMutation({
     mutationFn: async (commentId: number) => {
@@ -1478,15 +1488,6 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
   // Filter for top-level comments only (no parent)
   const topLevelComments = buildCommentThreads;
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowFilterMenu(false);
-      setShowMoreMenu(false);
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
 
   return (
     <div className="space-y-3 w-full max-w-none" data-testid="comments-list">
