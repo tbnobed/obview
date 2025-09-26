@@ -514,7 +514,7 @@ export default function MediaPlayer({
                       fileId={file?.id || 0}
                       currentTime={currentTime}
                       duration={duration}
-                      onSeekToTime={(time: number) => {
+                      onTimeClick={(time: number) => {
                         const mediaElement = videoRef.current || audioRef.current;
                         if (mediaElement) {
                           mediaElement.currentTime = time;
@@ -531,7 +531,7 @@ export default function MediaPlayer({
                     fileId={file?.id || 0}
                     currentTime={currentTime}
                     duration={duration}
-                    onSeekToTime={(time: number) => {
+                    onTimeClick={(time: number) => {
                       const mediaElement = videoRef.current || audioRef.current;
                       if (mediaElement) {
                         mediaElement.currentTime = time;
@@ -556,7 +556,7 @@ export default function MediaPlayer({
                   fileId={file.id}
                   currentTime={currentTime}
                   duration={duration}
-                  onSeekToTime={(time: number) => {
+                  onTimeClick={(time: number) => {
                     const mediaElement = videoRef.current || audioRef.current;
                     if (mediaElement) {
                       mediaElement.currentTime = time;

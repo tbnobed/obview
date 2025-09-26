@@ -81,6 +81,7 @@ export default function PublicSharePage() {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isRequestChangesOpen, setIsRequestChangesOpen] = useState(false);
   
+  
   // Sprite scrubbing state for shared links
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
@@ -156,6 +157,7 @@ export default function PublicSharePage() {
       setSpriteLoaded(false);
     }
   }, [file?.id, file?.fileType, videoProcessing?.status, token]);
+
 
   // Request changes form
   const requestChangesForm = useForm<z.infer<typeof requestChangesSchema>>({
@@ -600,7 +602,6 @@ export default function PublicSharePage() {
 
       {/* Main content area - fills remaining height */}
       <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4">
-        {/* Grid layout: single column when view-only, two columns when comments enabled */}
         <div className={cn(
           "h-full grid gap-2 sm:gap-4",
           isViewOnly ? "grid-rows-[minmax(0,1fr)]" : "grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-none"
@@ -878,8 +879,9 @@ export default function PublicSharePage() {
             </Card>
           </div>
 
-          {/* Comments Section - Responsive width sidebar, hidden in view-only mode */}
-          {!isViewOnly && (
+
+          {/* Desktop Comments Section - Only show on desktop and not view-only */}
+          {!isMobile && !isViewOnly && (
             <div className="min-h-0 flex flex-col overflow-hidden">
               <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                 {/* Header */}
