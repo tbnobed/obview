@@ -2518,12 +2518,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (processing && processing.status === 'completed' && processing.qualities) {
             const quality720p = processing.qualities.find((q: any) => q.resolution === '720p');
             
-            if (quality720p && typeof quality720p.path === 'string' && existsSync(quality720p.path)) {
-              fileToServe = quality720p.path;
-              finalContentType = 'video/mp4'; // H.264 files are always MP4
-              console.log(`[PRODUCTION SHARE] Using optimized 720p H.264 version: ${quality720p.path}`);
+            if (quality720p && typeof quality720p.path === 'string') {
+              // Double-check file existence with better error handling
+              try {
+                const fileExists = await fileSystem.fileExists(quality720p.path);
+                if (fileExists) {
+                  // Additional check to ensure file is not empty/corrupted
+                  const stats = await fs.promises.stat(quality720p.path);
+                  if (stats.size > 0) {
+                    fileToServe = quality720p.path;
+                    finalContentType = 'video/mp4'; // H.264 files are always MP4
+                    console.log(`[PRODUCTION SHARE] Using optimized 720p H.264 version: ${quality720p.path} (${stats.size} bytes)`);
+                  } else {
+                    console.log(`[PRODUCTION SHARE] 720p file exists but is empty (${stats.size} bytes), using original file`);
+                  }
+                } else {
+                  console.log(`[PRODUCTION SHARE] 720p file path in database but file missing on disk: ${quality720p.path}`);
+                }
+              } catch (fileCheckError) {
+                console.error(`[PRODUCTION SHARE] Error checking 720p file existence:`, fileCheckError);
+                console.log(`[PRODUCTION SHARE] Falling back to original file due to file check error`);
+              }
             } else {
-              console.log(`[PRODUCTION SHARE] No 720p version available, using original file`);
+              console.log(`[PRODUCTION SHARE] No valid 720p version available, using original file`);
             }
           } else {
             console.log(`[PRODUCTION SHARE] No video processing data or not completed, using original file`);

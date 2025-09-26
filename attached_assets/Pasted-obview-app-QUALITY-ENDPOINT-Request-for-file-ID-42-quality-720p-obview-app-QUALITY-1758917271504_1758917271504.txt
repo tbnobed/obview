@@ -1,0 +1,60 @@
+obview_app  | 🎬 [QUALITY ENDPOINT] Request for file ID: 42, quality: 720p
+obview_app  | 🎬 [QUALITY ENDPOINT] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   availableQualities: [ '720p' ]
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Request for token: a08e48e17d013b0a1c66406ba6e95bc7ba63cb9a0b09571bcf5b03a8d6968939
+obview_app  | [PRODUCTION SCRUB] Found file: Dobson Best Of Exprt.mp4 (ID: 42)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4
+obview_app  | [PRODUCTION SHARE] Request for token: a08e48e17d013b0a1c66406ba6e95bc7ba63cb9a0b09571bcf5b03a8d6968939
+obview_app  | [PRODUCTION SHARE] Found file: Dobson Best Of Exprt.mp4 (ID: 42)
+obview_app  | [PRODUCTION SHARE] File path: /app/uploads/1758916008174-485775507.mp4
+obview_app  | [PRODUCTION SHARE] Checking if file exists at path: /app/uploads/1758916008174-485775507.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1758916008174-485775507.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1758916008174-485775507.mp4
+obview_app  | [PRODUCTION SHARE] File exists check result: true
+obview_app  | [PRODUCTION SHARE] Video file detected, checking for optimized versions...
+obview_app  | [PRODUCTION SHARE] Using optimized 720p H.264 version: /app/uploads/processed/42/qualities/Dobson Best Of Exprt_720p.mp4
+obview_app  | [PRODUCTION SHARE] Serving file 42 (Dobson Best Of Exprt.mp4) - type: video/mp4, path: /app/uploads/processed/42/qualities/Dobson Best Of Exprt_720p.mp4
+obview_app  | [PRODUCTION SCRUB] Request for token: a08e48e17d013b0a1c66406ba6e95bc7ba63cb9a0b09571bcf5b03a8d6968939
+obview_app  | [PRODUCTION SCRUB] Found file: Dobson Best Of Exprt.mp4 (ID: 42)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4
+obview_app  | [PRODUCTION SCRUB] Request for token: a08e48e17d013b0a1c66406ba6e95bc7ba63cb9a0b09571bcf5b03a8d6968939
+obview_app  | [PRODUCTION SCRUB] Found file: Dobson Best Of Exprt.mp4 (ID: 42)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4
+obview_app  | [PRODUCTION SCRUB] Request for token: a08e48e17d013b0a1c66406ba6e95bc7ba63cb9a0b09571bcf5b03a8d6968939
+obview_app  | [PRODUCTION SCRUB] Found file: Dobson Best Of Exprt.mp4 (ID: 42)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4
+obview_db   | 2025-09-26 20:06:15.199 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2025-09-26 20:06:16.414 UTC [27] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.208 s, sync=0.003 s, total=1.215 s; sync files=8, longest=0.002 s, average=0.001 s; distance=68 kB, estimate=259 kB; lsn=0/37330C0, redo lsn=0/3733088
+obview_app  | [PRODUCTION SHARE] Error sending file: Request aborted
+
+obview_app  | [PRODUCTION SCRUB] Request for token: a08e48e17d013b0a1c66406ba6e95bc7ba63cb9a0b09571bcf5b03a8d6968939
+obview_app  | [PRODUCTION SCRUB] Found file: Dobson Best Of Exprt.mp4 (ID: 42)
+obview_app  | [PRODUCTION SCRUB] Processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasScrubVersion: true,
+obview_app  |   scrubPath: '/app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4'
+obview_app  | }
+obview_app  | [PRODUCTION SCRUB] Found scrub version at path: /app/uploads/processed/42/scrub/Dobson Best Of Exprt_scrub.mp4
