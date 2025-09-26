@@ -1033,7 +1033,7 @@ export default function MediaPlayer({
         </div>
         
         {/* Bottom controls area */}
-        <div className="sticky bottom-0 inset-x-0 z-30 bg-black/90 backdrop-blur p-3 sm:p-6 border-t border-gray-800" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+        <div className="bg-black/90 backdrop-blur p-3 sm:p-6 border-t border-gray-800" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
               <div className="flex items-center mb-2 space-x-2">
