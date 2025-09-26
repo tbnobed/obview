@@ -508,7 +508,7 @@ export default function PublicSharePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col w-full">
+    <div className="h-[100svh] bg-gray-50 dark:bg-gray-900 flex flex-col w-full overflow-hidden">
       {/* Compact Header */}
       <div className="flex-shrink-0 py-2 px-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
@@ -595,15 +595,18 @@ export default function PublicSharePage() {
       </div>
 
       {/* Main content area - fills remaining height */}
-      <div className="flex-1 p-2 sm:p-4 pb-20" style={{ height: 'calc(100vh - 120px)' }}>
-        {/* Flexbox layout: single column when view-only, two columns when comments enabled */}
-        <div className={cn("h-full w-full flex gap-2 sm:gap-4", isViewOnly ? "flex-col" : "flex-col lg:flex-row")}>
-          {/* Media Player - Full width when view-only, 66% when comments shown */}
-          <div className={cn("h-full w-full", !isViewOnly && "lg:flex-1")}>
-            <Card className="h-full w-full flex flex-col">
-              <CardContent className="flex-1 flex flex-col p-2">
+      <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4">
+        {/* Grid layout: single column when view-only, two columns when comments enabled */}
+        <div className={cn(
+          "h-full grid gap-2 sm:gap-4",
+          isViewOnly ? "grid-rows-[minmax(0,1fr)]" : "grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-none"
+        )}>
+          {/* Media Player - Full width when view-only, takes remaining space when comments shown */}
+          <div className="min-h-0 flex flex-col overflow-hidden">
+            <Card className="h-full flex flex-col overflow-hidden">
+              <CardContent className="flex-1 min-h-0 flex flex-col p-2">
                 {/* Video container - fills available space */}
-                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full h-full">
+                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full flex-1">
               {!mediaError ? (
                 <>
                   {file.fileType === 'video' && (
@@ -871,10 +874,10 @@ export default function PublicSharePage() {
             </Card>
           </div>
 
-          {/* Comments Section - Takes responsive space on large screens, hidden in view-only mode */}
+          {/* Comments Section - Responsive width sidebar, hidden in view-only mode */}
           {!isViewOnly && (
-            <div className="h-full w-full lg:w-80 xl:w-96 2xl:w-[28rem] flex-shrink-0">
-              <div className="h-full w-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
+            <div className="min-h-0 flex flex-col overflow-hidden">
+              <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                   <div className="flex items-center gap-2">
@@ -894,15 +897,15 @@ export default function PublicSharePage() {
                   </div>
                 </div>
 
-                {/* Comments List */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 w-full">
+                {/* Comments List - Scrollable area */}
+                <div className="flex-1 min-h-0 overflow-auto p-3 space-y-3">
                   <CommentsList token={token!} onTimestampClick={seekToTimestamp} />
                 </div>
 
-                {/* Comment Input - Frame.io Style Single Element */}
-                <div className="mx-3 mb-3 mt-6">
+                {/* Comment Input - Sticky bottom composer */}
+                <div className="flex-shrink-0 sticky bottom-0 mx-3 mb-3 mt-6" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                   <div 
-                    className="rounded-lg p-3 w-full max-w-none"
+                    className="rounded-lg p-3 w-full"
                     style={{
                       backgroundColor: 'hsl(210, 20%, 12%)',
                       border: '1px solid hsl(210, 15%, 18%)'
