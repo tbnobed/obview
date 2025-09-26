@@ -35,7 +35,7 @@ export default function NewProjectPage() {
           <CardHeader>
             <CardTitle>Project Details</CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
+          <CardContent className="px-4 py-6 md:px-6">
             <ProjectForm 
               className="max-w-none"
               onSuccess={(projectId) => {

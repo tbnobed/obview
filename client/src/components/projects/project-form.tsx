@@ -194,7 +194,7 @@ export default function ProjectForm({
                 value={field.value ? field.value.toString() : "none"}
               >
                 <FormControl>
-                  <SelectTrigger data-testid="select-folder">
+                  <SelectTrigger className="w-full" data-testid="select-folder">
                     <SelectValue placeholder="Select a folder or leave unorganized" />
                   </SelectTrigger>
                 </FormControl>
@@ -231,7 +231,7 @@ export default function ProjectForm({
                 value={field.value}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                 </FormControl>
