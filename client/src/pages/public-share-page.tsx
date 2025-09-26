@@ -598,9 +598,9 @@ export default function PublicSharePage() {
       <div className="flex-1 p-2 sm:p-4 pb-20">
         {/* Side-by-side layout: Media Player on left, Comments on right (unless view-only) */}
         <div className={cn("h-full grid grid-cols-1 gap-2 sm:gap-4", !isViewOnly && "lg:grid-cols-4")}>
-          {/* Media Player - Takes 3/4 of space on large screens, full width in view-only mode */}
+          {/* Media Player - Takes 3/4 of space on large screens, full width in view-only mode with max-width constraint */}
           <div className={cn("h-full", !isViewOnly ? "lg:col-span-3" : "lg:col-span-4")}>
-            <Card className="h-full flex flex-col">
+            <Card className={cn("h-full flex flex-col", isViewOnly && "max-w-5xl mx-auto")}>
               <CardContent className="p-2 md:p-4 flex-1 flex flex-col pb-16">
                 {/* Video container - fills available space */}
                 <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-visible flex-1 w-full">
