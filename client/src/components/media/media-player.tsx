@@ -1036,7 +1036,7 @@ export default function MediaPlayer({
         </div>
         
         {/* Bottom controls area */}
-        <div className="bg-black p-6 border-t border-gray-800">
+        <div className="bg-black p-3 sm:p-6 border-t border-gray-800">
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
               <div className="flex items-center mb-2 space-x-2">
