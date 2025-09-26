@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { Loader2 } from "lucide-react";
@@ -47,9 +46,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <main className="flex-1 overflow-y-auto dark:text-gray-300">
           {children}
         </main>
-        
-        {/* Footer */}
-        <Footer />
       </div>
     </div>
   );
