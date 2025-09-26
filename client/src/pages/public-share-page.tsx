@@ -873,8 +873,8 @@ export default function PublicSharePage() {
 
           {/* Comments Section - Takes 1/3 of space on large screens, hidden in view-only mode */}
           {!isViewOnly && (
-            <div className="col-span-1 h-full w-full">
-              <div className="h-full flex flex-col rounded-lg overflow-hidden w-full" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
+            <div className="col-span-1 h-full w-full min-w-0">
+              <div className="h-full flex flex-col rounded-lg overflow-hidden w-full max-w-none" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                   <div className="flex items-center gap-2">
@@ -895,14 +895,14 @@ export default function PublicSharePage() {
                 </div>
 
                 {/* Comments List */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 w-full">
                   <CommentsList token={token!} onTimestampClick={seekToTimestamp} />
                 </div>
 
                 {/* Comment Input - Frame.io Style Single Element */}
                 <div className="mx-3 mb-3 mt-6">
                   <div 
-                    className="rounded-lg p-3 max-w-full"
+                    className="rounded-lg p-3 w-full max-w-none"
                     style={{
                       backgroundColor: 'hsl(210, 20%, 12%)',
                       border: '1px solid hsl(210, 15%, 18%)'
@@ -1422,7 +1422,7 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
   const topLevelComments = buildCommentThreads;
 
   return (
-    <div className="space-y-3" data-testid="comments-list">
+    <div className="space-y-3 w-full max-w-none" data-testid="comments-list">
       {topLevelComments.map((comment: any, index: number) => (
         <div 
           key={comment.id} 
