@@ -595,15 +595,15 @@ export default function PublicSharePage() {
       </div>
 
       {/* Main content area - fills remaining height */}
-      <div className="flex-1 p-2 sm:p-4 pb-20" style={{ minHeight: 'calc(100vh - 200px)' }}>
+      <div className="flex-1 p-2 sm:p-4 pb-20" style={{ height: 'calc(100vh - 120px)' }}>
         {/* Flexbox layout: single column when view-only, two columns when comments enabled */}
-        <div className={cn("flex gap-2 sm:gap-4", isViewOnly ? "flex-col" : "flex-col lg:flex-row")} style={{ minHeight: 'calc(100vh - 250px)' }}>
+        <div className={cn("h-full w-full flex gap-2 sm:gap-4", isViewOnly ? "flex-col" : "flex-col lg:flex-row")}>
           {/* Media Player - Full width when view-only, 66% when comments shown */}
-          <div className={cn("flex-1", !isViewOnly && "lg:w-2/3")}>
-            <Card className="h-full flex flex-col w-full">
+          <div className={cn("h-full w-full", !isViewOnly && "lg:flex-1")}>
+            <Card className="h-full w-full flex flex-col">
               <CardContent className="flex-1 flex flex-col p-2">
                 {/* Video container - fills available space */}
-                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full flex-1">
+                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full h-full">
               {!mediaError ? (
                 <>
                   {file.fileType === 'video' && (
@@ -871,10 +871,10 @@ export default function PublicSharePage() {
             </Card>
           </div>
 
-          {/* Comments Section - Takes 34% of space on large screens, hidden in view-only mode */}
+          {/* Comments Section - Takes responsive space on large screens, hidden in view-only mode */}
           {!isViewOnly && (
-            <div className="flex-shrink-0 h-full lg:w-1/3 w-full">
-              <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
+            <div className="h-full w-full lg:w-80 xl:w-96 2xl:w-[28rem] flex-shrink-0">
+              <div className="h-full w-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                   <div className="flex items-center gap-2">
