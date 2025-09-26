@@ -2313,7 +2313,7 @@ export class DatabaseStorage implements IStorage {
     return updatedComment;
   }
 
-  async deleteUnifiedComment(params: { id: string; byUserId?: number; byCreatorToken?: string }): Promise<boolean> {
+  async deleteUnifiedComment(params: { id: string; byUserId?: number; byCreatorToken?: string; byAdminUserId?: number }): Promise<boolean> {
     // First, get the comment to check authorization
     const [comment] = await db
       .select()
@@ -2323,7 +2323,11 @@ export class DatabaseStorage implements IStorage {
     if (!comment) return false;
     
     // Authorization check
-    if (params.byUserId !== undefined) {
+    if (params.byAdminUserId !== undefined) {
+      // Admin can delete any comment (for moderation)
+      // We trust the route-level authorization check for admin role
+      // No additional authorization needed here
+    } else if (params.byUserId !== undefined) {
       // For authenticated users, check if they own the comment
       if (comment.userId !== params.byUserId) {
         return false; // Not authorized

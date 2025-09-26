@@ -2853,13 +2853,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Comment not found" });
       }
       
-      // Check if user is the comment author or an admin (only for authenticated comments)
+      // Authorization check: user must own the comment OR be an admin
       if (comment.isPublic) {
-        return res.status(400).json({ message: "Use the public comment deletion endpoint for public comments" });
-      }
-      
-      if (comment.userId !== req.user.id && req.user.role !== "admin") {
-        return res.status(403).json({ message: "You don't have permission to delete this comment" });
+        // For public comments: only admins can delete via this endpoint (moderation)
+        if (req.user.role !== "admin") {
+          return res.status(400).json({ message: "Use the public comment deletion endpoint for public comments" });
+        }
+      } else {
+        // For authenticated comments: user must own it OR be admin
+        if (comment.userId !== req.user.id && req.user.role !== "admin") {
+          return res.status(403).json({ message: "You don't have permission to delete this comment" });
+        }
       }
       
       // Log activity before deletion
@@ -2876,7 +2880,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete the unified comment
       const success = await storage.deleteUnifiedComment({
         id: commentId,
-        byUserId: req.user.id
+        byUserId: comment.isPublic ? undefined : req.user!.id, // Only pass userId for auth comments
+        byAdminUserId: comment.isPublic ? req.user!.id : undefined // Pass admin ID for public comment moderation
       });
       
       if (!success) {
