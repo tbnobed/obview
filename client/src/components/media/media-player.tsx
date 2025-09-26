@@ -1246,7 +1246,7 @@ export default function MediaPlayer({
             
             {/* File selector and actions - Always visible regardless of error state */}
             <div className={cn(
-              "flex justify-end items-center border-t border-neutral-100 dark:border-gray-800",
+              "flex justify-end items-center",
               !mediaError ? "mt-2 pt-2" : "pt-1"
             )}>
               <div className="flex space-x-1">
