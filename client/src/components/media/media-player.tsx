@@ -1306,7 +1306,7 @@ export default function MediaPlayer({
       
       {/* Comments Section - Fixed width for optimal button spacing */}
       {file && (
-        <div className="w-full lg:w-88 h-full min-h-0 flex flex-col dark:bg-[#0f1218]">
+        <div className="w-full lg:w-[352px] h-full min-h-0 flex flex-col dark:bg-[#0f1218]">
           <Tabs defaultValue="comments" className="h-full flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="dark:bg-gray-900">
