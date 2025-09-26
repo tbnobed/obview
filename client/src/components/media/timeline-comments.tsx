@@ -246,7 +246,7 @@ export default function TimelineComments({
   return (
     <div className="h-full flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
       {/* Comments List */}
-      <div className="flex-1 overflow-y-auto space-y-3">
+      <div className="flex-1 overflow-y-auto space-y-3 px-3">
         {isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" style={{color: 'hsl(var(--comments-muted))'}} />
@@ -374,7 +374,7 @@ export default function TimelineComments({
 
       {/* Comment Input at Bottom - Single Row Compact Design */}
       <div 
-        className="border-t py-3 flex items-center gap-3"
+        className="border-t py-3 px-3 flex items-center gap-3"
         style={{
           borderColor: 'hsl(var(--comments-card-border))',
           backgroundColor: 'hsl(var(--comments-bg))'
