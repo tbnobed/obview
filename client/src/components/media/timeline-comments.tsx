@@ -182,13 +182,9 @@ export default function TimelineComments({
     const seconds = Math.floor(time % 60);
     const frames = Math.floor((time % 1) * 24); // Assume 24fps for frame calculation
     
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')};${frames.toString().padStart(2, '0')}`;
   };
 
-  // Get user initials for avatar fallback
-  const getUserInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
 
   // Calculate timeline markers positions
   useEffect(() => {
@@ -376,26 +372,72 @@ export default function TimelineComments({
         )}
       </div>
 
-      {/* Comment Input at Bottom */}
-      <div className="border-t border-gray-600 px-4 pt-4 pb-4">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-yellow-400 font-mono text-xs bg-yellow-400/20 px-1.5 py-0.5 rounded">
-            {formatTime(currentTime)}
-          </span>
-          <span className="text-gray-400 text-sm">Leave your comment...</span>
-        </div>
-        <div className="flex items-center gap-2">
+      {/* Comment Input at Bottom - Single Row Compact Design */}
+      <div 
+        className="border-t px-4 py-3 flex items-center gap-3"
+        style={{
+          borderColor: 'hsl(var(--comments-card-border))',
+          backgroundColor: 'hsl(var(--comments-bg))'
+        }}
+      >
+        {/* Timestamp chip */}
+        <span 
+          className="text-xs font-mono px-2 py-1 rounded shrink-0"
+          style={{
+            backgroundColor: 'hsl(var(--comments-timestamp-bg))',
+            color: 'hsl(var(--comments-timestamp-fg))'
+          }}
+        >
+          {formatTime(currentTime)}
+        </span>
+        
+        {/* Comment input - flex-1 to take remaining space */}
+        <div className="flex-1 relative">
           <CommentForm 
             fileId={fileId} 
             currentTime={currentTime} 
-            className="bg-transparent border-0 p-0 flex-1"
+            className="bg-transparent border-0 p-0 w-full"
           />
-          <div className="flex items-center gap-1 text-gray-400">
-            <button className="p-1 hover:text-white"><Paperclip className="h-3 w-3" /></button>
-            <button className="p-1 hover:text-white"><Smile className="h-3 w-3" /></button>
-            <div className="bg-gray-600 px-2 py-1 rounded text-xs">Public</div>
-            <button className="text-blue-400 hover:text-blue-300 ml-2"><Send className="h-3 w-3" /></button>
+        </div>
+        
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button 
+            className="p-1.5 rounded hover:bg-gray-700/50 transition-colors"
+            style={{color: 'hsl(var(--comments-muted))'}}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+          <button 
+            className="p-1.5 rounded hover:bg-gray-700/50 transition-colors"
+            style={{color: 'hsl(var(--comments-muted))'}}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
+          >
+            <Smile className="h-4 w-4" />
+          </button>
+          <div 
+            className="px-3 py-1 rounded text-xs font-medium"
+            style={{
+              backgroundColor: 'hsl(var(--comments-card-border))', 
+              color: 'hsl(var(--comments-muted))'
+            }}
+          >
+            Public
           </div>
+          <button 
+            className="p-2 rounded-full transition-all duration-200 hover:shadow-lg"
+            style={{
+              backgroundColor: '#7c3aed',
+              color: 'white'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6d28d9'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7c3aed'}
+          >
+            <Send className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>
