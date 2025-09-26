@@ -15,7 +15,7 @@ export default function NewProjectPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-3xl mx-auto">
+      <div className="p-6 max-w-5xl mx-auto">
         <div className="mb-6">
           <Button 
             variant="ghost" 
@@ -25,7 +25,7 @@ export default function NewProjectPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to Projects
           </Button>
-          <h1 className="text-2xl font-bold text-neutral-900">Create New Project</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Create New Project</h1>
           <p className="text-neutral-500 mt-1">
             Set up a new project to start reviewing media files
           </p>
