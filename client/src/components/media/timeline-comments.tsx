@@ -504,7 +504,7 @@ export default function TimelineComments({
       </div>
 
       {/* Comment Input - Using CommentForm component with full functionality */}
-      <div className="mx-3 mb-3 mt-6">
+      <div className="mx-3 mb-3 mt-6" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}
