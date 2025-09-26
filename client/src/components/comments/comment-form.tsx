@@ -7,7 +7,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Paperclip, Image, Smile } from "lucide-react";
+import { Loader2, Paperclip, Image, Smile, Send, Clock } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -268,244 +268,263 @@ export default function CommentForm({
   };
 
   return (
-    <div className={cn("flex items-start space-x-2", className)} data-comment-form>
-      <Avatar className="h-7 w-7 mt-1 hidden sm:block">
-        <AvatarFallback className="bg-primary-100 text-primary-700 text-xs">
-          {userInitial}
-        </AvatarFallback>
-      </Avatar>
-      
-      <div className="flex-1">
-        <div className="border border-neutral-300 dark:border-gray-700 rounded-lg overflow-hidden focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
-          <Textarea 
-            ref={textareaRef}
-            rows={2} 
-            className="block w-full px-3 py-2 border-0 resize-none focus:ring-0 text-xs sm:text-sm dark:bg-gray-800 dark:text-gray-200" 
-            placeholder={
-              parentId 
-                ? "Add a reply..." 
-                : includeTimestamp && currentTime !== undefined
-                  ? `Add a comment at ${formatTime(currentTime)}...`
-                  : "Add a comment..."
+    <div 
+      className={cn("rounded-lg p-3 w-full", className)} 
+      style={{
+        backgroundColor: 'hsl(210, 20%, 12%)',
+        border: '1px solid hsl(210, 15%, 18%)'
+      }}
+      data-comment-form
+    >
+      <div className="flex items-start gap-3 w-full">
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              handleSubmit();
             }
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDownCapture={(e) => {
-              // Defensive measure: prevent spacebar from bubbling to video controls
-              if (e.key === ' ' || e.key === 'k') {
-                e.stopPropagation();
-              }
-            }}
-          />
+            // Prevent spacebar from triggering video controls
+            if (e.key === ' ' || e.key === 'k') {
+              e.stopPropagation();
+            }
+          }}
+          placeholder={
+            parentId 
+              ? "Write a reply..." 
+              : includeTimestamp && currentTime !== undefined
+                ? `Add a comment at ${formatTime(currentTime)}...`
+                : "Leave your comment..."
+          }
+          className="flex-1 bg-transparent text-white placeholder-gray-400 text-sm resize-none border-none outline-none min-h-[2.5rem] leading-relaxed"
+          style={{ 
+            fontFamily: 'inherit',
+            overflow: 'hidden',
+            resize: 'none'
+          }}
+          rows={1}
+          data-testid="textarea-comment"
+          required
+        />
+        
+        <button
+          type="submit"
+          disabled={content.trim() === "" || createCommentMutation.isPending}
+          className="flex-shrink-0 p-2 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+          data-testid="button-submit-comment"
+          onClick={handleSubmit}
+        >
+          {createCommentMutation.isPending ? (
+            <Loader2 className="h-4 w-4 text-white animate-spin" />
+          ) : (
+            <Send className="h-4 w-4 text-white" />
+          )}
+        </button>
+      </div>
+      
+      {/* Timestamp indicator and tools */}
+      {!parentId && currentTime !== undefined && (
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-600">
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <Clock className="h-3 w-3" />
+            <span>Will be posted at {includeTimestamp ? formatTime(currentTime) : 'current time'}</span>
+          </div>
           
-          <div className="p-2 bg-neutral-50 dark:bg-gray-900 border-t border-neutral-200 dark:border-gray-700 flex justify-between items-center">
+          <div className="flex items-center gap-1">
+            {/* Tools */}
             <div className="flex space-x-1">
-              {/* Tools */}
-              <div className="hidden sm:flex space-x-1">
-                {/* Paperclip button */}
+              {/* Paperclip button */}
+              <Button 
+                type="button" 
+                size="icon" 
+                variant="ghost" 
+                className="h-7 w-7 rounded text-gray-400 hover:text-white hover:bg-gray-700"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Paperclip className="h-3.5 w-3.5" />
+                )}
+              </Button>
+              
+              {/* File input (hidden) */}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                onChange={handleFileSelect}
+                accept=".pdf,.doc,.docx,.txt"
+              />
+              
+              {/* Image button */}
+              <Button 
+                type="button" 
+                size="icon" 
+                variant="ghost" 
+                className="h-7 w-7 rounded text-gray-400 hover:text-white hover:bg-gray-700"
+                onClick={() => {
+                  if (isUploading) return;
+                  const imageInput = document.createElement('input');
+                  imageInput.type = 'file';
+                  imageInput.accept = 'image/*';
+                  imageInput.onchange = (e) => {
+                    if (e && e.target) {
+                      handleFileSelect(e as unknown as React.ChangeEvent<HTMLInputElement>);
+                    }
+                  };
+                  imageInput.click();
+                }}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Image className="h-3.5 w-3.5" />
+                )}
+              </Button>
+              
+              {/* Emoji button */}
+              <div className="relative">
                 <Button 
                   type="button" 
                   size="icon" 
                   variant="ghost" 
-                  className="h-7 w-7 rounded text-neutral-500 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-gray-800"
-                  onClick={() => fileInputRef.current?.click()}
+                  className="h-7 w-7 rounded text-gray-400 hover:text-blue-400 hover:bg-gray-700"
+                  onClick={() => !isUploading && setShowEmojiPicker(!showEmojiPicker)}
                   disabled={isUploading}
                 >
-                  {isUploading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Paperclip className="h-3.5 w-3.5" />
-                  )}
+                  <Smile className="h-3.5 w-3.5" />
                 </Button>
                 
-                {/* File input (hidden) */}
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  onChange={handleFileSelect}
-                  accept=".pdf,.doc,.docx,.txt"
-                />
-                
-                {/* Image button */}
-                <Button 
-                  type="button" 
-                  size="icon" 
-                  variant="ghost" 
-                  className="h-7 w-7 rounded text-neutral-500 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-gray-800"
-                  onClick={() => {
-                    if (isUploading) return;
-                    const imageInput = document.createElement('input');
-                    imageInput.type = 'file';
-                    imageInput.accept = 'image/*';
-                    imageInput.onchange = (e) => {
-                      if (e && e.target) {
-                        handleFileSelect(e as unknown as React.ChangeEvent<HTMLInputElement>);
-                      }
-                    };
-                    imageInput.click();
-                  }}
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Image className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-                
-                {/* Emoji button */}
-                <div className="relative">
-                  <Button 
-                    type="button" 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-7 w-7 rounded text-neutral-500 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-[#026d55] hover:bg-neutral-100 dark:hover:bg-gray-800"
-                    onClick={() => !isUploading && setShowEmojiPicker(!showEmojiPicker)}
-                    disabled={isUploading}
-                  >
-                    <Smile className="h-3.5 w-3.5" />
-                  </Button>
-                  
-                  {/* Emoji picker popup */}
-                  {showEmojiPicker && (
-                    <>
-                      {/* Overlay to capture outside clicks */}
-                      <div 
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowEmojiPicker(false)}
-                      />
-                      <div 
-                        className="fixed z-50 bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700 shadow-lg" 
-                        ref={emojiPickerRef}
-                        style={{ 
-                          position: 'fixed', 
-                          bottom: 'auto',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          zIndex: 1000,
-                          width: '320px',
-                        }}
-                      >
-                        <div className="emoji-picker-container">
-                          {/* Emoji Category Tabs */}
-                          <div className="border-b border-gray-200 dark:border-gray-700 flex overflow-x-auto">
-                            {Object.keys(emojiCategories).map((category) => (
-                              <button
-                                key={category}
-                                type="button"
-                                className={`px-2 py-1 text-xs font-medium ${
-                                  activeEmojiCategory === category
-                                    ? "text-primary-600 dark:text-[#026d55] border-b-2 border-primary-600 dark:border-[#026d55]"
-                                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                                }`}
-                                onClick={() => setActiveEmojiCategory(category)}
-                              >
-                                {categoryLabels[category]}
-                              </button>
-                            ))}
-                          </div>
-                          
-                          {/* Emoji Grid */}
-                          <div className="grid grid-cols-6 gap-1 emoji-grid p-2 max-h-[180px] overflow-y-auto">
-                            {emojiCategories[activeEmojiCategory as keyof typeof emojiCategories].map((emoji, index) => (
-                              <div
-                                key={index}
-                                className="p-1.5 rounded cursor-pointer flex items-center justify-center hover:bg-gray-100 text-xl"
-                                onClick={() => {
-                                  // Get the textarea DOM element directly
-                                  if (textareaRef.current) {
-                                    // Get current caret position
-                                    const start = textareaRef.current.selectionStart || 0;
-                                    const end = textareaRef.current.selectionEnd || 0;
-                                    
-                                    // Get current value
-                                    const currentValue = textareaRef.current.value;
-                                    
-                                    // Add spaces around emoji if needed for better readability
-                                    const needsSpaceBefore = start > 0 && currentValue.charAt(start - 1) !== ' ' && currentValue.charAt(start - 1) !== '\n';
-                                    const needsSpaceAfter = end < currentValue.length && currentValue.charAt(end) !== ' ' && currentValue.charAt(end) !== '\n';
-                                    
-                                    // Build new value with emoji inserted at cursor position
-                                    const newValue = currentValue.substring(0, start) + 
-                                                    (needsSpaceBefore ? ' ' : '') + 
-                                                    emoji + 
-                                                    (needsSpaceAfter ? ' ' : '') + 
-                                                    currentValue.substring(end);
-                                    
-                                    // Set new value directly on the textarea
-                                    textareaRef.current.value = newValue;
-                                    
-                                    // Update the cursor position to after the emoji
-                                    const spacesBefore = needsSpaceBefore ? 1 : 0;
-                                    const newPosition = start + spacesBefore + emoji.length;
-                                    textareaRef.current.setSelectionRange(newPosition, newPosition);
-                                    
-                                    // Also update state
-                                    setContent(newValue);
-                                    
-                                    // Focus the textarea
-                                    textareaRef.current.focus();
-                                  }
+                {/* Emoji picker popup */}
+                {showEmojiPicker && (
+                  <>
+                    {/* Overlay to capture outside clicks */}
+                    <div 
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowEmojiPicker(false)}
+                    />
+                    <div 
+                      className="fixed z-50 rounded-md border shadow-lg" 
+                      ref={emojiPickerRef}
+                      style={{ 
+                        position: 'fixed', 
+                        bottom: 'auto',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 1000,
+                        width: '320px',
+                        backgroundColor: 'hsl(210, 20%, 12%)',
+                        borderColor: 'hsl(210, 15%, 18%)'
+                      }}
+                    >
+                      <div className="emoji-picker-container">
+                        {/* Emoji Category Tabs */}
+                        <div className="border-b border-gray-600 flex overflow-x-auto">
+                          {Object.keys(emojiCategories).map((category) => (
+                            <button
+                              key={category}
+                              type="button"
+                              className={`px-2 py-1 text-xs font-medium ${
+                                activeEmojiCategory === category
+                                  ? "text-blue-400 border-b-2 border-blue-400"
+                                  : "text-gray-400 hover:text-gray-300"
+                              }`}
+                              onClick={() => setActiveEmojiCategory(category)}
+                            >
+                              {categoryLabels[category]}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        {/* Emoji Grid */}
+                        <div className="grid grid-cols-6 gap-1 emoji-grid p-2 max-h-[180px] overflow-y-auto">
+                          {emojiCategories[activeEmojiCategory as keyof typeof emojiCategories].map((emoji, index) => (
+                            <div
+                              key={index}
+                              className="p-1.5 rounded cursor-pointer flex items-center justify-center hover:bg-gray-700 text-xl"
+                              onClick={() => {
+                                // Get the textarea DOM element directly
+                                if (textareaRef.current) {
+                                  // Get current caret position
+                                  const start = textareaRef.current.selectionStart || 0;
+                                  const end = textareaRef.current.selectionEnd || 0;
                                   
-                                  // Close the emoji picker after selection
-                                  setTimeout(() => {
-                                    setShowEmojiPicker(false);
-                                  }, 100);
-                                }}
-                              >
-                                {emoji}
-                              </div>
-                            ))}
-                          </div>
-                          
-                          {/* Helper text */}
-                          <div className="px-3 pb-2 pt-1 border-t border-gray-200">
-                            <div className="text-xs text-gray-500 text-center">
-                              Click an emoji to add it
+                                  // Get current value
+                                  const currentValue = textareaRef.current.value;
+                                  
+                                  // Add spaces around emoji if needed for better readability
+                                  const needsSpaceBefore = start > 0 && currentValue.charAt(start - 1) !== ' ' && currentValue.charAt(start - 1) !== '\n';
+                                  const needsSpaceAfter = end < currentValue.length && currentValue.charAt(end) !== ' ' && currentValue.charAt(end) !== '\n';
+                                  
+                                  // Build new value with emoji inserted at cursor position
+                                  const newValue = currentValue.substring(0, start) + 
+                                                  (needsSpaceBefore ? ' ' : '') + 
+                                                  emoji + 
+                                                  (needsSpaceAfter ? ' ' : '') + 
+                                                  currentValue.substring(end);
+                                  
+                                  // Set new value directly on the textarea
+                                  textareaRef.current.value = newValue;
+                                  
+                                  // Update the cursor position to after the emoji
+                                  const spacesBefore = needsSpaceBefore ? 1 : 0;
+                                  const newPosition = start + spacesBefore + emoji.length;
+                                  textareaRef.current.setSelectionRange(newPosition, newPosition);
+                                  
+                                  // Also update state
+                                  setContent(newValue);
+                                  
+                                  // Focus the textarea
+                                  textareaRef.current.focus();
+                                }
+                                
+                                // Close the emoji picker after selection
+                                setTimeout(() => {
+                                  setShowEmojiPicker(false);
+                                }, 100);
+                              }}
+                            >
+                              {emoji}
                             </div>
+                          ))}
+                        </div>
+                        
+                        {/* Helper text */}
+                        <div className="px-3 pb-2 pt-1 border-t border-gray-600">
+                          <div className="text-xs text-gray-400 text-center">
+                            Click an emoji to add it
                           </div>
                         </div>
                       </div>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </>
+                )}
               </div>
-              
-              {!parentId && currentTime !== undefined && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-7 text-xs px-2",
-                    includeTimestamp 
-                      ? "text-primary-600 dark:text-[#026d55]" 
-                      : "text-neutral-500 dark:text-gray-400 dark:hover:text-[#026d55]"
-                  )}
-                  onClick={() => setIncludeTimestamp(!includeTimestamp)}
-                >
-                  {includeTimestamp ? `${formatTime(currentTime)}` : "Add time"}
-                </Button>
-              )}
             </div>
             
-            <Button 
-              type="button" 
+            <Button
+              type="button"
+              variant="ghost"
               size="sm"
-              className="h-7 px-3 text-xs dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white"
-              onClick={handleSubmit}
-              disabled={createCommentMutation.isPending || content.trim() === ""}
-            >
-              {createCommentMutation.isPending && (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              className={cn(
+                "h-7 text-xs px-2",
+                includeTimestamp 
+                  ? "text-blue-400" 
+                  : "text-gray-400 hover:text-blue-400"
               )}
-              {parentId ? "Reply" : "Submit"}
+              onClick={() => setIncludeTimestamp(!includeTimestamp)}
+            >
+              {includeTimestamp ? `${formatTime(currentTime)}` : "Add time"}
             </Button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
