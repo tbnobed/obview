@@ -148,14 +148,14 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
   const handleShareLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      // Generate a share link using the file's share token
-      const shareUrl = `${window.location.origin}/share/${file.shareToken}`;
+      // Generate a view-only share link (no comments) using the file's share token
+      const shareUrl = `${window.location.origin}/share/${file.shareToken}?viewOnly=true`;
       
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(shareUrl);
         toast({
-          title: "Share link copied",
-          description: "The share link has been copied to your clipboard.",
+          title: "View-only link copied",
+          description: "The view-only share link has been copied to your clipboard.",
         });
       } else {
         // Fallback for older browsers
@@ -167,8 +167,8 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
         document.body.removeChild(textArea);
         
         toast({
-          title: "Share link copied",
-          description: "The share link has been copied to your clipboard.",
+          title: "View-only link copied",
+          description: "The view-only share link has been copied to your clipboard.",
         });
       }
     } catch (error) {
