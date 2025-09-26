@@ -281,11 +281,6 @@ export default function TimelineComments({
                   role={comment.timestamp !== null ? 'button' : undefined}
                   tabIndex={comment.timestamp !== null ? 0 : undefined}
                 >
-                  {/* Blue indicator dot - positioned at left edge */}
-                  <div 
-                    className="absolute left-0 top-4 w-2 h-2 rounded-full -translate-x-1"
-                    style={{backgroundColor: 'hsl(var(--comments-accent-blue))'}}
-                  ></div>
 
                   <div className="flex gap-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
