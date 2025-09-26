@@ -344,16 +344,16 @@ export default function ProjectPage() {
       <header className="bg-white shadow-sm dark:bg-[#0f1218] dark:border-b dark:border-gray-800">
         <div className="px-3 sm:px-4 lg:px-6 py-1 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <h1 className="text-sm font-medium text-neutral-900 dark:text-teal-300 truncate">{project.name}</h1>
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-gray-400 shrink-0">
+            <h1 className="text-sm sm:text-base font-medium text-neutral-900 dark:text-teal-300 min-w-0 break-words">{project.name}</h1>
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-neutral-500 dark:text-gray-400 shrink-0">
               <span>Updated {formatTimeAgo(new Date(project.updatedAt))}</span>
               <span className="text-neutral-300 dark:text-gray-700">•</span>
               {getStatusBadge(project.status)}
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            {/* Share Button */}
-            <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+              {/* Share Button */}
+              <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
                   variant="outline" 
@@ -529,6 +529,7 @@ export default function ProjectPage() {
             )}
           </div>
         </div>
+      </header>
         
         {/* Tabs */}
         <div className="px-4 sm:px-6 lg:px-8">
@@ -581,7 +582,6 @@ export default function ProjectPage() {
             </nav>
           </div>
         </div>
-      </header>
       
       {/* Main Content */}
       <div className={cn(
