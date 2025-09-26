@@ -364,36 +364,38 @@ export default function TimelineComments({
         )}
       </div>
 
-      {/* Comment Input at Bottom - Single Row Compact Design */}
+      {/* Comment Input at Bottom - Unified Input Section */}
       <div 
-        className="border-t py-3 px-3 flex items-center gap-3"
+        className="border-t"
         style={{
           borderColor: 'hsl(var(--comments-card-border))',
           backgroundColor: 'hsl(var(--comments-bg))'
         }}
       >
-        {/* Timestamp chip */}
-        <span 
-          className="text-xs font-mono px-2 py-1 rounded shrink-0"
+        <div className="px-3 py-3 flex items-center gap-2 rounded-lg border mx-3 my-3"
           style={{
-            backgroundColor: 'hsl(var(--comments-timestamp-bg))',
-            color: 'hsl(var(--comments-timestamp-fg))'
+            backgroundColor: 'hsl(var(--comments-card))',
+            borderColor: 'hsl(var(--comments-card-border))'
           }}
         >
-          {formatTime(currentTime)}
-        </span>
-        
-        {/* Comment input - flex-1 to take remaining space */}
-        <div className="flex-1 relative">
-          <CommentForm 
-            fileId={fileId} 
-            currentTime={currentTime} 
-            className="bg-transparent border-0 p-0 w-full"
-          />
-        </div>
-        
-        {/* Action buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+          <span 
+            className="text-xs font-mono px-2 py-1 rounded shrink-0"
+            style={{
+              backgroundColor: 'hsl(var(--comments-timestamp-bg))',
+              color: 'hsl(var(--comments-timestamp-fg))'
+            }}
+          >
+            {formatTime(currentTime)}
+          </span>
+          
+          <div className="flex-1">
+            <CommentForm 
+              fileId={fileId} 
+              currentTime={currentTime} 
+              className="bg-transparent border-0 p-0 w-full"
+            />
+          </div>
+          
           <button 
             className="p-1.5 rounded hover:bg-gray-700/50 transition-colors"
             style={{color: 'hsl(var(--comments-muted))'}}
