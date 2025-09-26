@@ -586,7 +586,7 @@ export default function ProjectPage() {
       <main className={cn(
         "flex-1 overflow-y-auto bg-neutral-100 dark:bg-[#080b12]",
         activeTab === "media" && viewMode === "player" 
-          ? "p-0 h-[calc(100vh-64px)] min-h-0 flex flex-col" 
+          ? "p-0 h-[calc(100vh-140px)] min-h-0 flex flex-col" 
           : "p-4 sm:p-6 lg:p-8"
       )}>
         {activeTab === "media" && (
