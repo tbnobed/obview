@@ -367,7 +367,7 @@ export default function TimelineComments({
       {/* Comment Input - Frame.io Style Single Element */}
       <div className="p-3">
         <div 
-          className="flex items-center gap-3 px-3 py-2 rounded-lg"
+          className="flex items-center gap-3 px-3 py-3 rounded-lg min-h-[64px]"
           style={{
             backgroundColor: 'hsl(var(--comments-card))',
             border: '1px solid hsl(var(--comments-card-border))'
@@ -389,7 +389,7 @@ export default function TimelineComments({
           <input
             type="text"
             placeholder="Leave your comment..."
-            className="flex-1 bg-transparent border-0 outline-none text-sm placeholder:text-gray-500"
+            className="flex-1 bg-transparent border-0 outline-none text-sm placeholder:text-gray-500 h-8"
             style={{ color: 'hsl(var(--comments-text))' }}
             data-testid="input-comment"
           />
