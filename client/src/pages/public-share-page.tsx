@@ -882,10 +882,7 @@ export default function PublicSharePage() {
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-medium text-white">
-                      {filterType === 'timestamped' ? 'Timeline comments' : 
-                       filterType === 'general' ? 'General comments' : 'All comments'}
-                    </span>
+                    <span className="text-sm font-medium text-white">All comments</span>
                   </div>
                   <div className="flex items-center gap-1 relative">
                     <Button 
