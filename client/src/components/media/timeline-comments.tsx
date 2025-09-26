@@ -14,6 +14,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ReactionPicker from "@/components/comments/reaction-picker";
 import ReactionsDisplay from "@/components/comments/reactions-display";
+import { useCommentReactions } from "@/hooks/use-reactions";
 
 
 interface TimelineCommentsProps {
@@ -49,6 +50,12 @@ export default function TimelineComments({
   } = useComments(fileId);
   
 
+  // Helper function to get user reactions for a comment
+  const getUserReactions = (commentId: string) => {
+    const { data: reactions = [] } = useCommentReactions(commentId);
+    return reactions.filter(r => r.userReacted).map(r => r.reactionType);
+  };
+  
   // Delete comment mutation  
   const deleteCommentMutation = useMutation({
     mutationFn: async ({ commentId, creatorToken }: { commentId: string, creatorToken?: string }) => {
@@ -182,6 +189,7 @@ export default function TimelineComments({
                   <div style={{scale: '0.8', transformOrigin: 'left'}}>
                     <ReactionPicker 
                       commentId={reply.id}
+                      userReactions={getUserReactions(reply.id)}
                     />
                   </div>
                 </div>
@@ -444,6 +452,7 @@ export default function TimelineComments({
                         <div style={{scale: '0.9', transformOrigin: 'left'}}>
                           <ReactionPicker 
                             commentId={comment.id}
+                            userReactions={getUserReactions(comment.id)}
                           />
                         </div>
                       </div>
