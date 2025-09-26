@@ -508,7 +508,7 @@ export default function PublicSharePage() {
   }
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col w-full overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col w-full">
       {/* Compact Header */}
       <div className="flex-shrink-0 py-2 px-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
@@ -595,9 +595,9 @@ export default function PublicSharePage() {
       </div>
 
       {/* Main content area - fills remaining height */}
-      <div className="flex-1 p-2 sm:p-4 pb-20">
+      <div className="flex-1 p-2 sm:p-4 pb-20" style={{ minHeight: 'calc(100vh - 200px)' }}>
         {/* Flexbox layout: single column when view-only, two columns when comments enabled */}
-        <div className={cn("h-full flex gap-2 sm:gap-4", isViewOnly ? "flex-col" : "flex-col lg:flex-row")}>
+        <div className={cn("flex gap-2 sm:gap-4", isViewOnly ? "flex-col" : "flex-col lg:flex-row")} style={{ minHeight: 'calc(100vh - 250px)' }}>
           {/* Media Player - Full width when view-only, 66% when comments shown */}
           <div className={cn("flex-1", !isViewOnly && "lg:w-2/3")}>
             <Card className="h-full flex flex-col w-full">
