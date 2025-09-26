@@ -222,6 +222,11 @@ class UploadService {
         
         // Invalidate the query to refresh the file list
         queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
+        
+        // Auto-remove completed upload after 3 seconds
+        setTimeout(() => {
+          this.removeUpload(uploadId);
+        }, 3000);
       } else {
         // Error
         const errorMessage = xhr.responseText || `Upload failed with status ${xhr.status}`;
@@ -451,6 +456,11 @@ class UploadService {
           
           // Invalidate the query to refresh the file list
           queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
+          
+          // Auto-remove completed upload after 3 seconds
+          setTimeout(() => {
+            this.removeUpload(uploadId);
+          }, 3000);
         } else {
           // Request was completed but server returned an error
           const errorMessage = xhr.responseText || `Upload failed with status ${xhr.status}`;
