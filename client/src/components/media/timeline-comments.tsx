@@ -186,10 +186,7 @@ export default function TimelineComments({
                 {/* Action Buttons and Emoji Picker on same row for nested replies */}
                 <div className="flex items-center gap-3 mt-1">
                   <button 
-                    className="text-xs font-medium transition-colors"
-                    style={{color: '#00ffff'}}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#00ccff'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#00ffff'}
+                    className="text-xs font-medium transition-colors text-gray-300 hover:text-cyan-400"
                     onClick={(e) => {
                       e.stopPropagation();
                       setReplyingToId(replyingToId === reply.id ? null : reply.id);
@@ -200,7 +197,7 @@ export default function TimelineComments({
                   
                   {canDeleteComment(reply) && (
                     <button 
-                      className="text-xs text-red-500 hover:text-red-400 transition-colors flex items-center"
+                      className="text-xs text-gray-300 hover:text-red-500 transition-colors flex items-center"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteComment(reply);
@@ -434,10 +431,7 @@ export default function TimelineComments({
 
                       <div className="flex gap-3 mt-2">
                         <button
-                          className="text-xs font-medium transition-colors"
-                          style={{color: '#00ffff'}}
-                          onMouseEnter={(e) => e.currentTarget.style.color = '#00ccff'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = '#00ffff'}
+                          className="text-xs font-medium transition-colors text-gray-300 hover:text-cyan-400"
                           onClick={(e) => {
                             e.stopPropagation();
                             setReplyingToId(replyingToId === comment.id ? null : comment.id);
@@ -451,8 +445,8 @@ export default function TimelineComments({
                           <Button 
                             variant="link" 
                             className={cn(
-                              "text-xs p-0 h-auto font-medium",
-                              comment.isResolved ? "text-neutral-500" : "text-green-500"
+                              "text-xs p-0 h-auto font-medium transition-colors",
+                              "text-gray-300 hover:text-green-500"
                             )}
                             onClick={(e) => {
                               e.stopPropagation();
