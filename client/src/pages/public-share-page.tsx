@@ -596,14 +596,14 @@ export default function PublicSharePage() {
 
       {/* Main content area - fills remaining height */}
       <div className="flex-1 p-2 sm:p-4 pb-20">
-        {/* Side-by-side layout: Media Player on left, Comments on right (unless view-only) */}
-        <div className={cn("h-full grid grid-cols-1 gap-2 sm:gap-4", !isViewOnly && "lg:grid-cols-4")}>
-          {/* Media Player - Takes 3/4 of space on large screens, full width in view-only mode */}
-          <div className={cn("h-full", !isViewOnly ? "lg:col-span-3" : "lg:col-span-4")}>
+        {/* Responsive layout: single column when view-only, two columns when comments enabled */}
+        <div className={cn("h-full grid gap-2 sm:gap-4", isViewOnly ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-4")}>
+          {/* Media Player - Full width when view-only, 3/4 when comments shown */}
+          <div className={cn("h-full", isViewOnly ? "col-span-1" : "col-span-1 lg:col-span-3")}>
             <Card className="h-full flex flex-col w-full">
-              <CardContent className="flex-1 flex flex-col p-2 md:p-4">
+              <CardContent className="flex-1 flex flex-col p-2">
                 {/* Video container - fills available space */}
-                <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-visible flex-1 w-full min-h-[400px] md:min-h-[500px] lg:min-h-[600px]">
+                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full aspect-video">
               {!mediaError ? (
                 <>
                   {file.fileType === 'video' && (
