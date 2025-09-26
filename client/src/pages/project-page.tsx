@@ -340,28 +340,26 @@ export default function ProjectPage() {
     <AppLayout>
       {/* Project Header */}
       <header className="bg-white shadow-sm dark:bg-[#0f1218] dark:border-b dark:border-gray-800">
-        <div className="px-3 sm:px-4 lg:px-6 py-2 md:flex md:items-center md:justify-between">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-medium text-neutral-900 dark:text-teal-300">{project.name}</h1>
-            <div className="flex items-center mt-0.5">
-              <span className="text-xs text-neutral-500 dark:text-gray-400">
-                Updated {formatTimeAgo(new Date(project.updatedAt))}
-              </span>
-              <span className="mx-1.5 text-neutral-300 dark:text-gray-700">•</span>
+        <div className="px-3 sm:px-4 lg:px-6 py-1 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <h1 className="text-sm font-medium text-neutral-900 dark:text-teal-300 truncate">{project.name}</h1>
+            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-gray-400 shrink-0">
+              <span>Updated {formatTimeAgo(new Date(project.updatedAt))}</span>
+              <span className="text-neutral-300 dark:text-gray-700">•</span>
               {getStatusBadge(project.status)}
             </div>
           </div>
-          <div className="mt-2 flex flex-wrap gap-1 md:mt-0 md:ml-2">
+          <div className="flex items-center gap-1 shrink-0">
             {/* Share Button */}
             <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="flex items-center dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                  className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                  title="Share project"
                 >
-                  <Share2 className="h-3 w-3 mr-1" />
-                  <span className="hidden sm:inline">Share</span>
+                  <Share2 className="h-3 w-3" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
@@ -399,10 +397,10 @@ export default function ProjectPage() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="flex items-center dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                  className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                  title="Download files"
                 >
-                  <Download className="h-3 w-3 mr-1" />
-                  <span className="hidden sm:inline">Download</span>
+                  <Download className="h-3 w-3" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -461,10 +459,10 @@ export default function ProjectPage() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="flex items-center dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                  className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                  title="Invite members"
                 >
-                  <UserPlus className="h-3 w-3 mr-1" />
-                  <span className="hidden sm:inline">Invite</span>
+                  <UserPlus className="h-3 w-3" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -501,10 +499,10 @@ export default function ProjectPage() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="flex items-center dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                      className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                      title="Edit project"
                     >
-                      <Edit className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">Edit</span>
+                      <Edit className="h-3 w-3" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -519,11 +517,11 @@ export default function ProjectPage() {
                 </Dialog>
                 <Button 
                   size="sm"
-                  className="flex items-center dark:bg-[#026d55] dark:text-white dark:hover:bg-[#025943]" 
+                  className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:hover:bg-[#025943]" 
                   onClick={() => navigate(`/projects/${projectId}/upload`)}
+                  title="Upload media"
                 >
-                  <Plus className="h-3 w-3 mr-1" />
-                  <span className="hidden sm:inline">Upload</span>
+                  <Plus className="h-3 w-3" />
                 </Button>
               </>
             )}
