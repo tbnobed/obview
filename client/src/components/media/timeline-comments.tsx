@@ -304,9 +304,9 @@ export default function TimelineComments({
   });
 
   return (
-    <div className="h-full flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
+    <div className="min-h-0 flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
       {/* Comments List */}
-      <div className="flex-1 overflow-y-auto space-y-3 px-3">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+88px)]">
         {isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" style={{color: 'hsl(var(--comments-muted))'}} />
@@ -503,15 +503,8 @@ export default function TimelineComments({
         )}
       </div>
 
-      {/* Comment Input - Using CommentForm component with full functionality */}
-      <div 
-        className="mx-3 mb-3 mt-6 sticky bottom-0 bg-[#0f1218]" 
-        style={{ 
-          paddingBottom: 'max(6rem, calc(env(safe-area-inset-bottom) + 4rem))',
-          paddingTop: '1rem',
-          marginBottom: 'max(4rem, calc(env(safe-area-inset-bottom) + 2rem))'
-        }}
-      >
+      {/* Comment Input - Sticky footer inside the flex column */}
+      <div className="sticky bottom-0 z-20 border-t px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] bg-[hsl(var(--comments-bg))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--comments-bg))]/80" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}

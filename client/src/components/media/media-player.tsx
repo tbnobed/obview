@@ -1306,7 +1306,7 @@ export default function MediaPlayer({
       {/* Comments Section - Fixed width for optimal button spacing */}
       {file && (
         <div className="w-full lg:w-[387px] h-full max-h-[40vh] lg:max-h-none min-h-0 flex flex-col dark:bg-[#0f1218]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <Tabs defaultValue="comments" className="h-full flex flex-col">
+          <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="dark:bg-gray-900">
                 <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
