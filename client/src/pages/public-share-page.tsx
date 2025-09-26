@@ -884,121 +884,18 @@ export default function PublicSharePage() {
                     <MessageSquare className="h-4 w-4 text-gray-400" />
                     <span className="text-sm font-medium text-white">All comments</span>
                   </div>
-                  <div className="flex items-center gap-1 relative">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className={`h-7 w-7 p-0 transition-colors ${
-                        showSearch ? 'text-blue-400 bg-gray-700' : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                      }`}
-                      onClick={() => setShowSearch(!showSearch)}
-                      title="Search comments"
-                    >
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
                       <Search className="h-4 w-4" />
                     </Button>
-                    <div className="relative">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className={`h-7 w-7 p-0 transition-colors ${
-                          showFilterMenu || filterType !== 'all' ? 'text-blue-400 bg-gray-700' : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                        }`}
-                        onClick={() => setShowFilterMenu(!showFilterMenu)}
-                        title="Filter comments"
-                      >
-                        <Filter className="h-4 w-4" />
-                      </Button>
-                      {showFilterMenu && (
-                        <div className="absolute right-0 top-8 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-40">
-                          <div className="p-2">
-                            <button
-                              className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 ${
-                                filterType === 'all' ? 'text-blue-400 bg-gray-700' : 'text-gray-300'
-                              }`}
-                              onClick={() => { setFilterType('all'); setShowFilterMenu(false); }}
-                            >
-                              All comments
-                            </button>
-                            <button
-                              className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 ${
-                                filterType === 'timestamped' ? 'text-blue-400 bg-gray-700' : 'text-gray-300'
-                              }`}
-                              onClick={() => { setFilterType('timestamped'); setShowFilterMenu(false); }}
-                            >
-                              Timeline comments
-                            </button>
-                            <button
-                              className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 ${
-                                filterType === 'general' ? 'text-blue-400 bg-gray-700' : 'text-gray-300'
-                              }`}
-                              onClick={() => { setFilterType('general'); setShowFilterMenu(false); }}
-                            >
-                              General comments
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className={`h-7 w-7 p-0 transition-colors ${
-                          showMoreMenu ? 'text-blue-400 bg-gray-700' : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                        }`}
-                        onClick={() => setShowMoreMenu(!showMoreMenu)}
-                        title="More options"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                      {showMoreMenu && (
-                        <div className="absolute right-0 top-8 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-40">
-                          <div className="p-2">
-                            <button
-                              className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 text-gray-300"
-                              onClick={() => {
-                                setSearchQuery('');
-                                setFilterType('all');
-                                setShowSearch(false);
-                                setShowMoreMenu(false);
-                                toast({ title: 'Filters cleared', description: 'All filters have been reset.' });
-                              }}
-                            >
-                              Clear all filters
-                            </button>
-                            <button
-                              className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 text-gray-300"
-                              onClick={() => {
-                                const commentCount = comments?.length || 0;
-                                setShowMoreMenu(false);
-                                toast({ 
-                                  title: 'Comment statistics', 
-                                  description: `Total comments: ${commentCount}` 
-                                });
-                              }}
-                            >
-                              Show statistics
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                
-                {/* Search bar */}
-                {showSearch && (
-                  <div className="px-4 py-3 border-b border-gray-700">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search comments..."
-                      className="w-full px-3 py-2 text-sm rounded border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                      autoFocus
-                    />
-                  </div>
-                )}
 
                 {/* Comments List - Scrollable area */}
                 <div className="flex-1 min-h-0 overflow-auto p-3 space-y-3">
