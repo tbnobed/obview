@@ -367,15 +367,14 @@ export default function TimelineComments({
       {/* Comment Input - Frame.io Style Single Element */}
       <div className="mx-3 mb-3">
         <div 
-          className="flex items-center justify-between gap-2 px-4 py-4 rounded-lg min-h-[80px] max-w-full"
+          className="rounded-lg p-3 min-h-[80px] max-w-full"
           style={{
             backgroundColor: 'hsl(var(--comments-card))',
-            border: '1px solid hsl(var(--comments-card-border))',
-            boxSizing: 'border-box'
+            border: '1px solid hsl(var(--comments-card-border))'
           }}
         >
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {/* Timestamp chip */}
+          {/* Top row with timestamp and buttons */}
+          <div className="flex items-center justify-between mb-2">
             <span 
               className="text-xs font-mono px-2 py-1 rounded shrink-0"
               style={{
@@ -387,49 +386,48 @@ export default function TimelineComments({
               {formatTime(currentTime)}
             </span>
             
-            {/* Comment input field */}
-            <input
-              type="text"
-              placeholder="Leave your comment..."
-              className="flex-1 bg-transparent border-0 outline-none text-sm placeholder:text-gray-500 min-w-0"
-              style={{ color: 'hsl(var(--comments-text))' }}
-              data-testid="input-comment"
-            />
+            <div className="flex items-center gap-1">
+              <button 
+                className="p-1.5 rounded hover:bg-gray-700/30 transition-colors"
+                style={{color: 'hsl(var(--comments-muted))'}}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
+                data-testid="button-attach"
+              >
+                <Paperclip className="h-4 w-4" />
+              </button>
+              
+              <button 
+                className="p-1.5 rounded hover:bg-gray-700/30 transition-colors"
+                style={{color: 'hsl(var(--comments-muted))'}}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
+                data-testid="button-emoji"
+              >
+                <Smile className="h-4 w-4" />
+              </button>
+              
+              <button 
+                className="p-2 rounded transition-all duration-200 hover:opacity-80"
+                style={{
+                  backgroundColor: '#7c3aed',
+                  color: 'white'
+                }}
+                data-testid="button-send"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
           </div>
           
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Action buttons */}
-            <button 
-              className="p-1.5 rounded hover:bg-gray-700/30 transition-colors"
-              style={{color: 'hsl(var(--comments-muted))'}}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
-              data-testid="button-attach"
-            >
-              <Paperclip className="h-4 w-4" />
-            </button>
-            
-            <button 
-              className="p-1.5 rounded hover:bg-gray-700/30 transition-colors"
-              style={{color: 'hsl(var(--comments-muted))'}}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
-              data-testid="button-emoji"
-            >
-              <Smile className="h-4 w-4" />
-            </button>
-            
-            <button 
-              className="p-2 rounded transition-all duration-200 hover:opacity-80"
-              style={{
-                backgroundColor: '#7c3aed',
-                color: 'white'
-              }}
-              data-testid="button-send"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          </div>
+          {/* Comment input field - full width, can wrap */}
+          <textarea
+            placeholder="Leave your comment..."
+            rows={2}
+            className="w-full bg-transparent border-0 outline-none text-sm placeholder:text-gray-500 resize-none"
+            style={{ color: 'hsl(var(--comments-text))' }}
+            data-testid="input-comment"
+          />
         </div>
       </div>
     </div>
