@@ -48,6 +48,16 @@
   --destructive-foreground: 0 0% 98%;
   --ring: 175 70% 41%;
   --radius: 0.5rem;
+  
+  /* Comments section specific colors for Frame.io style */
+  --comments-bg: 210 25% 8%; /* Very dark navy background */
+  --comments-card: 210 20% 12%; /* Slightly lighter navy for cards */
+  --comments-card-border: 210 15% 18%; /* Subtle card borders */
+  --comments-text: 210 5% 95%; /* High contrast text */
+  --comments-muted: 210 5% 65%; /* Muted text for timestamps/meta */
+  --comments-accent-blue: 217 91% 60%; /* Blue indicator dot */
+  --comments-timestamp-bg: 42 100% 15%; /* Yellow background for timestamp */
+  --comments-timestamp-fg: 42 96% 80%; /* Yellow text for timestamp */
 }
 
 @layer base {
