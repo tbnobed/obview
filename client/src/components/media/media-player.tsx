@@ -1025,9 +1025,9 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-      {/* Media Viewer - Takes 2/3 of the space on large screens */}
-      <div className="lg:col-span-2">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      {/* Media Viewer - Takes remaining space */}
+      <div className="flex-1">
         <div className="relative">
           <div className="h-[calc(100vh-300px)] min-h-[500px] bg-neutral-900 rounded-t-lg overflow-visible">
             {renderMediaContent()}
@@ -1302,9 +1302,9 @@ export default function MediaPlayer({
         </div>
       </div>
       
-      {/* Comments Section - Takes 1/3 of the space on large screens */}
+      {/* Comments Section - Fixed width for optimal button spacing */}
       {file && (
-        <div className="border border-neutral-200 dark:border-gray-800 rounded-lg h-[calc(100vh-200px)] min-h-[600px] flex flex-col dark:bg-[#0f1218]">
+        <div className="w-full lg:w-80 border border-neutral-200 dark:border-gray-800 rounded-lg h-[calc(100vh-200px)] min-h-[600px] flex flex-col dark:bg-[#0f1218]">
           <Tabs defaultValue="comments" className="h-full flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="dark:bg-gray-900">
