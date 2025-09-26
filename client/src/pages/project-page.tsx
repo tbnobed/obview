@@ -337,6 +337,33 @@ export default function ProjectPage() {
   
   // Status update is now handled in the MediaPlayer component
 
+  // Full-screen player mode
+  if (activeTab === "media" && viewMode === "player" && selectedFileId) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black">
+        {/* Back to Grid Button */}
+        <div className="absolute top-4 right-4 z-10">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
+          >
+            ← Back to Grid
+          </Button>
+        </div>
+        <MediaPlayer
+          file={files?.find(f => f.id === selectedFileId) || null}
+          projectId={projectId}
+          onSelectFile={setSelectedFileId}
+          files={files || []}
+          initialTime={initialTime}
+          project={project}
+        />
+      </div>
+    );
+  }
+
   return (
     <AppLayout>
       {/* Project Header */}
