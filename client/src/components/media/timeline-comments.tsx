@@ -367,7 +367,7 @@ export default function TimelineComments({
       {/* Comment Input - Frame.io Style Single Element */}
       <div className="mx-3 mb-3">
         <div 
-          className="rounded-lg p-3 min-h-[80px] max-w-full"
+          className="rounded-lg p-3 max-w-full"
           style={{
             backgroundColor: 'hsl(var(--comments-card))',
             border: '1px solid hsl(var(--comments-card-border))'
@@ -423,10 +423,18 @@ export default function TimelineComments({
           {/* Comment input field - full width, can wrap */}
           <textarea
             placeholder="Leave your comment..."
-            rows={2}
-            className="w-full bg-transparent border-0 outline-none text-sm placeholder:text-gray-500 resize-none"
-            style={{ color: 'hsl(var(--comments-text))' }}
+            rows={1}
+            className="w-full bg-transparent border-0 outline-none text-sm placeholder:text-gray-500 resize-none overflow-hidden"
+            style={{ 
+              color: 'hsl(var(--comments-text))',
+              minHeight: '24px'
+            }}
             data-testid="input-comment"
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = 'auto';
+              target.style.height = target.scrollHeight + 'px';
+            }}
           />
         </div>
       </div>
