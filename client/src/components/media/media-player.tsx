@@ -1318,8 +1318,8 @@ export default function MediaPlayer({
                 fileId={file.id} 
                 duration={duration} 
                 currentTime={currentTime}
-                activeCommentId={activeCommentId}
-                onCommentSelect={(commentId: number) => setActiveCommentId(commentId)}
+                activeCommentId={activeCommentId?.toString()}
+                onCommentSelect={(commentId: string) => setActiveCommentId(parseInt(commentId))}
                 onTimeClick={(time: number) => {
                   const mediaElement = videoRef.current || audioRef.current;
                   if (mediaElement) {

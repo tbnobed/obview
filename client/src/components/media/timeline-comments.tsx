@@ -401,7 +401,7 @@ export default function TimelineComments({
       </div>
 
       {/* Comment Input at Bottom */}
-      <div className="border-t border-gray-700 p-4">
+      <div className="border-t border-gray-700 px-4 pt-4 pb-0">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-amber-400 font-mono text-xs">
             {formatTime(currentTime)}
