@@ -603,7 +603,7 @@ export default function ProjectPage() {
                 )}
                 
                 {viewMode === 'player' && selectedFileId && (
-                  <div className="relative">
+                  <div className="relative h-[calc(100vh-200px)] min-h-0 overflow-hidden">
                     {/* Back to Grid Button */}
                     <div className="absolute top-4 right-4 z-10">
                       <Button 

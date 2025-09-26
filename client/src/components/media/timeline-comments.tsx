@@ -248,7 +248,7 @@ export default function TimelineComments({
   });
 
   return (
-    <div className="h-full flex flex-col bg-[#1e1e1e] text-white">
+    <div className="h-full flex flex-col bg-[#1e1e1e] text-white min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <div className="flex items-center gap-2">

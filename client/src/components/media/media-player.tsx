@@ -1313,7 +1313,7 @@ export default function MediaPlayer({
               </TabsList>
             </div>
             
-            <TabsContent value="comments" className="flex-grow overflow-auto p-0">
+            <TabsContent value="comments" className="flex-grow overflow-hidden p-0 h-full flex min-h-0">
               <TimelineComments 
                 fileId={file.id} 
                 duration={duration} 
