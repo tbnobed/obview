@@ -874,7 +874,7 @@ export default function PublicSharePage() {
           {/* Comments Section - Takes 1/4 of space on large screens, hidden in view-only mode */}
           {!isViewOnly && (
             <div className="lg:col-span-1 h-full">
-              <div className="h-full flex flex-col bg-[#1e1e1e] rounded-lg overflow-hidden">
+              <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(var(--comments-card))' }}>
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                   <div className="flex items-center gap-2">
@@ -895,19 +895,21 @@ export default function PublicSharePage() {
                 </div>
 
                 {/* Comments List */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   <CommentsList token={token!} onTimestampClick={seekToTimestamp} />
                 </div>
 
-                {/* Comment Input at Bottom */}
-                <div className="border-t border-gray-700 p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-amber-400 font-mono text-xs">
-                      {formatTime(currentTime)}
-                    </span>
-                    <span className="text-gray-400 text-xs">Leave your comment...</span>
+                {/* Comment Input - Frame.io Style Single Element */}
+                <div className="mx-3 mb-3 mt-6">
+                  <div 
+                    className="rounded-lg p-3 max-w-full"
+                    style={{
+                      backgroundColor: 'hsl(var(--comments-card))',
+                      border: '1px solid hsl(var(--border))'
+                    }}
+                  >
+                    <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
                   </div>
-                  <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
                 </div>
               </div>
             </div>
@@ -1272,6 +1274,13 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
     
     return (
       <div key={comment.id}>
+        <div 
+          className="rounded-lg p-3"
+          style={{
+            backgroundColor: 'hsl(var(--comments-card))',
+            border: '1px solid hsl(var(--border))'
+          }}
+        >
         <div className="flex gap-3">
           <Avatar className="h-6 w-6 flex-shrink-0">
             <AvatarImage src={undefined} />
@@ -1323,14 +1332,22 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
 
             {/* Reply Form */}
             {replyingToId === comment.id && (
-              <div className="mt-3 pl-4 border-l-2 border-gray-600">
-                <PublicCommentForm 
-                  token={token} 
-                  fileId={comment.fileId} 
-                  currentTime={comment.timestamp || 0}
-                  parentId={comment.id}
-                  onSuccess={() => setReplyingToId(null)}
-                />
+              <div className="mt-3">
+                <div 
+                  className="rounded-lg p-3"
+                  style={{
+                    backgroundColor: 'hsl(var(--comments-card))',
+                    border: '1px solid hsl(var(--border))'
+                  }}
+                >
+                  <PublicCommentForm 
+                    token={token} 
+                    fileId={comment.fileId} 
+                    currentTime={comment.timestamp || 0}
+                    parentId={comment.id}
+                    onSuccess={() => setReplyingToId(null)}
+                  />
+                </div>
               </div>
             )}
 
@@ -1349,6 +1366,7 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
             )}
           </div>
         </div>
+        </div>
       </div>
     );
   };
@@ -1357,7 +1375,7 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
   const topLevelComments = buildCommentThreads;
 
   return (
-    <div className="divide-y divide-gray-700" data-testid="comments-list">
+    <div className="space-y-3" data-testid="comments-list">
       {topLevelComments.map((comment: any, index: number) => (
         <div 
           key={comment.id} 
@@ -1368,7 +1386,11 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
               onTimestampClick?.(comment.timestamp!);
             }
           } : undefined}
-          className={`p-4 hover:bg-gray-800/50 transition-colors ${comment.timestamp !== null ? 'cursor-pointer' : ''}`}
+          className={`rounded-lg p-4 transition-colors ${comment.timestamp !== null ? 'cursor-pointer hover:opacity-80' : ''}`}
+          style={{
+            backgroundColor: 'hsl(var(--comments-card))',
+            border: '1px solid hsl(var(--border))'
+          }}
           title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp!)} in the video` : undefined}
           role={comment.timestamp !== null ? 'button' : undefined}
           tabIndex={comment.timestamp !== null ? 0 : undefined}
@@ -1453,14 +1475,22 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
 
               {/* Reply Form */}
               {replyingToId === comment.id && (
-                <div className="mt-3 pl-4 border-l-2 border-gray-600">
-                  <PublicCommentForm 
-                    token={token} 
-                    fileId={comment.fileId} 
-                    currentTime={comment.timestamp || 0}
-                    parentId={comment.id}
-                    onSuccess={() => setReplyingToId(null)}
-                  />
+                <div className="mt-3">
+                  <div 
+                    className="rounded-lg p-3"
+                    style={{
+                      backgroundColor: 'hsl(var(--comments-card))',
+                      border: '1px solid hsl(var(--border))'
+                    }}
+                  >
+                    <PublicCommentForm 
+                      token={token} 
+                      fileId={comment.fileId} 
+                      currentTime={comment.timestamp || 0}
+                      parentId={comment.id}
+                      onSuccess={() => setReplyingToId(null)}
+                    />
+                  </div>
                 </div>
               )}
 
