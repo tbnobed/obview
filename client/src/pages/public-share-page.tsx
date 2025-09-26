@@ -81,6 +81,13 @@ export default function PublicSharePage() {
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isRequestChangesOpen, setIsRequestChangesOpen] = useState(false);
   
+  // Mobile-specific state
+  const [isMobile, setIsMobile] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
+  const [commentsPanelHeight, setCommentsPanelHeight] = useState(120); // Start collapsed
+  const [isDraggingPanel, setIsDraggingPanel] = useState(false);
+  const [dragStartY, setDragStartY] = useState(0);
+  const [dragStartHeight, setDragStartHeight] = useState(0);
   
   // Sprite scrubbing state for shared links
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
@@ -158,6 +165,65 @@ export default function PublicSharePage() {
     }
   }, [file?.id, file?.fileType, videoProcessing?.status, token]);
 
+  // Mobile and orientation detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+      setIsLandscape(window.innerWidth > window.innerHeight && window.innerWidth < 1024); // landscape mobile/tablet
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    window.addEventListener('orientationchange', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('orientationchange', checkMobile);
+    };
+  }, []);
+  
+  // Touch/drag handlers for mobile comments panel
+  const handlePanelTouchStart = (e: React.TouchEvent) => {
+    if (!isMobile) return;
+    setIsDraggingPanel(true);
+    setDragStartY(e.touches[0].clientY);
+    setDragStartHeight(commentsPanelHeight);
+  };
+  
+  const handlePanelTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingPanel || !isMobile) return;
+    
+    const currentY = e.touches[0].clientY;
+    const diff = dragStartY - currentY; // Positive when dragging up
+    const newHeight = Math.max(120, Math.min(window.innerHeight * 0.8, dragStartHeight + diff));
+    
+    setCommentsPanelHeight(newHeight);
+  };
+  
+  const handlePanelTouchEnd = () => {
+    if (!isMobile) return;
+    setIsDraggingPanel(false);
+    
+    // Snap to positions based on current height
+    if (commentsPanelHeight < 200) {
+      setCommentsPanelHeight(120); // Collapsed to input only
+    } else if (commentsPanelHeight < 400) {
+      setCommentsPanelHeight(350); // Half screen
+    } else {
+      setCommentsPanelHeight(window.innerHeight * 0.8); // Full expanded
+    }
+  };
+  
+  // Auto-pause video when comment input is focused on mobile
+  const handleCommentInputFocus = () => {
+    if (isMobile && isPlaying) {
+      const mediaElement = videoRef.current || audioRef.current;
+      if (mediaElement) {
+        mediaElement.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
 
   // Request changes form
   const requestChangesForm = useForm<z.infer<typeof requestChangesSchema>>({
@@ -601,13 +667,27 @@ export default function PublicSharePage() {
       </div>
 
       {/* Main content area - fills remaining height */}
-      <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4">
+      <div className={cn(
+        "flex-1 min-h-0 overflow-hidden",
+        // Mobile layout (p-0 for full screen mobile video)
+        isMobile ? "p-0" : "p-2 sm:p-4"
+      )}>
+        {/* Layout: mobile vs desktop */}
         <div className={cn(
-          "h-full grid gap-2 sm:gap-4",
-          isViewOnly ? "grid-rows-[minmax(0,1fr)]" : "grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-none"
+          "h-full",
+          // Mobile layout
+          isMobile && !isLandscape ? "flex flex-col" :
+          // Desktop layout: single column when view-only, two columns when comments enabled  
+          isViewOnly ? "grid grid-rows-[minmax(0,1fr)]" : "grid grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-none",
+          // Add gaps for desktop only
+          !isMobile && "gap-2 sm:gap-4"
         )}>
           {/* Media Player - Full width when view-only, takes remaining space when comments shown */}
-          <div className="min-h-0 flex flex-col overflow-hidden">
+          <div className={cn(
+            "min-h-0 flex flex-col overflow-hidden",
+            // Mobile: fill remaining space above comments panel
+            isMobile ? "flex-1" : ""
+          )}>
             <Card className="h-full flex flex-col overflow-hidden border-0">
               <CardContent className="flex-1 min-h-0 flex flex-col p-2">
                 {/* Video container - fills available space */}
@@ -879,6 +959,69 @@ export default function PublicSharePage() {
             </Card>
           </div>
 
+          {/* Mobile Comments Panel - Swipeable from bottom */}
+          {isMobile && !isLandscape && !isViewOnly && (
+            <div 
+              className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#0f1218] border-t border-gray-200 dark:border-gray-700 transition-all duration-300"
+              style={{ 
+                height: commentsPanelHeight,
+                touchAction: 'none' // Prevent scroll conflicts
+              }}
+              data-testid="mobile-comments-panel"
+            >
+              {/* Drag handle */}
+              <div 
+                className="w-full py-3 flex justify-center cursor-grab active:cursor-grabbing"
+                onTouchStart={handlePanelTouchStart}
+                onTouchMove={handlePanelTouchMove}
+                onTouchEnd={handlePanelTouchEnd}
+                data-testid="mobile-comments-drag-handle"
+              >
+                <div className="w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+              </div>
+              
+              {/* Comments content */}
+              <div className="px-4 pb-4 h-full overflow-y-auto" style={{ height: 'calc(100% - 48px)' }}>
+                {commentsPanelHeight > 150 && (
+                  <div className="mb-4">
+                    <CommentsList 
+                      token={token!} 
+                      onTimestampClick={(time) => {
+                        const mediaElement = videoRef.current || audioRef.current;
+                        if (mediaElement) {
+                          mediaElement.currentTime = time;
+                          setCurrentTime(time);
+                        }
+                        // Auto-pause on mobile when jumping to timestamp
+                        if (isMobile && isPlaying) {
+                          mediaElement?.pause();
+                          setIsPlaying(false);
+                        }
+                      }} 
+                    />
+                  </div>
+                )}
+                
+                {/* Comment input always visible */}
+                <div className="mt-auto">
+                  <div 
+                    className="rounded-lg p-3 w-full"
+                    style={{
+                      backgroundColor: 'hsl(210, 20%, 12%)',
+                      border: '1px solid hsl(210, 15%, 18%)'
+                    }}
+                  >
+                    <PublicCommentForm 
+                      token={token!} 
+                      fileId={file.id} 
+                      currentTime={currentTime}
+                      onInputFocus={handleCommentInputFocus}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Desktop Comments Section - Only show on desktop and not view-only */}
           {!isMobile && !isViewOnly && (
