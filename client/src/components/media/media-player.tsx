@@ -1024,14 +1024,12 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-full min-h-0">
-      {/* Media Viewer - Takes remaining space */}
-      <div className="flex-1 min-h-0 min-h-[60vh] lg:min-h-0 flex flex-col">
-        {/* Media container - sized to content with 16:9 aspect ratio */}
-        <div className="flex-1 bg-black flex items-center justify-center p-4">
-          <div className="relative w-full max-w-6xl" style={{ aspectRatio: '16/9' }}>
-            {renderMediaContent()}
-          </div>
+    <div className="flex flex-col lg:flex-row min-h-0">
+      {/* Media Viewer - Natural sizing */}
+      <div className="relative mx-auto w-full max-w-[1280px] p-4">
+        {/* Media container - tight 16:9 aspect ratio box */}
+        <div className="relative w-full aspect-[16/9] bg-black rounded-md overflow-hidden">
+          {renderMediaContent()}
         </div>
         
         {/* Bottom controls area */}

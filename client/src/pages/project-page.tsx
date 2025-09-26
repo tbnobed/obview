@@ -585,15 +585,15 @@ export default function ProjectPage() {
       
       {/* Main Content */}
       <div className={cn(
-        "flex-1 min-h-0 bg-neutral-100 dark:bg-[#080b12] flex flex-col",
+        "bg-neutral-100 dark:bg-[#080b12]",
         activeTab === "media" && viewMode === "player" 
-          ? "overflow-hidden p-0" 
+          ? "min-h-0" 
           : "overflow-auto p-4 sm:p-6 lg:p-8"
       )}>
         {activeTab === "media" && (
           <div className={cn(
-            "bg-white dark:bg-[#0f1218] shadow dark:shadow-gray-900 flex-1 min-h-0 flex flex-col overflow-hidden",
-            viewMode === "player" ? "rounded-none" : "rounded-lg"
+            "bg-white dark:bg-[#0f1218] shadow dark:shadow-gray-900",
+            viewMode === "player" ? "rounded-none min-h-0" : "rounded-lg"
           )}>
             {filesLoading ? (
               <div className="flex items-center justify-center py-20">
@@ -613,7 +613,7 @@ export default function ProjectPage() {
                 )}
                 
                 {viewMode === 'player' && selectedFileId && (
-                  <div className="flex-1 min-h-0 overflow-hidden relative">
+                  <div className="relative">
                     {/* Back to Grid Button - Desktop only */}
                     <div className="absolute top-4 right-4 z-10 hidden lg:block">
                       <Button 
