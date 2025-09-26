@@ -30,5 +30,26 @@ export const config = {
   environment: process.env.NODE_ENV || 'development',
   isProduction: process.env.NODE_ENV === 'production',
   isDocker: process.env.IS_DOCKER === 'true',
-  databaseUrl: process.env.DATABASE_URL
+  databaseUrl: process.env.DATABASE_URL,
+
+  // Video encoding configuration
+  video: {
+    // Main quality H.264 encoding settings
+    main: {
+      crf: parseInt(process.env.VIDEO_MAIN_CRF || '22', 10),
+      preset: process.env.VIDEO_MAIN_PRESET || 'veryfast',
+      profile: process.env.VIDEO_MAIN_PROFILE || 'high',
+      level: process.env.VIDEO_MAIN_LEVEL || '3.1',
+      audioBitrate: process.env.VIDEO_MAIN_AUDIO_BITRATE || '128k',
+      audioSampleRate: parseInt(process.env.VIDEO_MAIN_AUDIO_RATE || '48000', 10)
+    },
+    // Scrub version H.264 encoding settings
+    scrub: {
+      crf: parseInt(process.env.VIDEO_SCRUB_CRF || '28', 10),
+      preset: process.env.VIDEO_SCRUB_PRESET || 'ultrafast',
+      fps: parseInt(process.env.VIDEO_SCRUB_FPS || '15', 10),
+      scale: process.env.VIDEO_SCRUB_SCALE || '-2:180',
+      disableAudio: process.env.VIDEO_SCRUB_AUDIO !== 'true' // Default to no audio
+    }
+  }
 };
