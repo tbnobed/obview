@@ -15,7 +15,7 @@ export default function NewProjectPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="p-6 max-w-none mx-auto w-full">
         <div className="mb-6">
           <Button 
             variant="ghost" 
@@ -31,13 +31,13 @@ export default function NewProjectPage() {
           </p>
         </div>
 
-        <Card className="w-full">
+        <Card className="w-full max-w-4xl mx-auto">
           <CardHeader>
             <CardTitle>Project Details</CardTitle>
           </CardHeader>
-          <CardContent className="px-4 py-6 md:px-6">
+          <CardContent className="px-8 py-6">
             <ProjectForm 
-              className="max-w-none"
+              className="max-w-none w-full"
               onSuccess={(projectId) => {
                 navigate(`/projects/${projectId}`);
               }}
