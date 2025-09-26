@@ -225,6 +225,50 @@ export default function PublicSharePage() {
     }
   };
 
+  // Auto-hide controls in landscape mode
+  const [showLandscapeControls, setShowLandscapeControls] = useState(true);
+  const landscapeControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showLandscapeControlsWithTimeout = () => {
+    setShowLandscapeControls(true);
+    
+    // Clear existing timeout
+    if (landscapeControlsTimeoutRef.current) {
+      clearTimeout(landscapeControlsTimeoutRef.current);
+    }
+    
+    // Hide controls after 3 seconds of inactivity
+    landscapeControlsTimeoutRef.current = setTimeout(() => {
+      setShowLandscapeControls(false);
+    }, 3000);
+  };
+
+  // Handle mouse/touch activity in landscape mode
+  useEffect(() => {
+    if (isMobile && isLandscape) {
+      const handleActivity = () => {
+        showLandscapeControlsWithTimeout();
+      };
+
+      document.addEventListener('mousemove', handleActivity);
+      document.addEventListener('touchstart', handleActivity);
+      document.addEventListener('click', handleActivity);
+
+      // Show controls initially
+      showLandscapeControlsWithTimeout();
+
+      return () => {
+        document.removeEventListener('mousemove', handleActivity);
+        document.removeEventListener('touchstart', handleActivity);
+        document.removeEventListener('click', handleActivity);
+        
+        if (landscapeControlsTimeoutRef.current) {
+          clearTimeout(landscapeControlsTimeoutRef.current);
+        }
+      };
+    }
+  }, [isMobile, isLandscape]);
+
   // Request changes form
   const requestChangesForm = useForm<z.infer<typeof requestChangesSchema>>({
     resolver: zodResolver(requestChangesSchema),
@@ -682,14 +726,87 @@ export default function PublicSharePage() {
           // Add gaps for desktop only
           !isMobile && "gap-2 sm:gap-4"
         )}>
-          {/* Media Player - Full width when view-only, takes remaining space when comments shown */}
-          <div className={cn(
-            "min-h-0 flex flex-col overflow-hidden",
-            // Mobile: fill remaining space above comments panel
-            isMobile ? "flex-1" : ""
-          )}>
-            <Card className="h-full flex flex-col overflow-hidden border-0">
-              <CardContent className="flex-1 min-h-0 flex flex-col p-2">
+          {/* Mobile Landscape - Full screen video */}
+          {isMobile && isLandscape ? (
+            <div className="relative h-full w-full bg-black">
+              {file.fileType === 'video' && (
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-contain"
+                  onTimeUpdate={handleTimeUpdate}
+                  onDurationChange={handleDurationChange}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onError={handleMediaError}
+                  preload="metadata"
+                  playsInline
+                  data-testid="shared-video-player-landscape"
+                >
+                  {videoProcessing?.status === 'completed' && 
+                   videoProcessing.qualities?.some((q: any) => q.resolution === '720p') && (
+                    <source src={`/api/share/${token}/qualities/720p`} type="video/mp4" />
+                  )}
+                  <source src={`/public/share/${token}`} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              )}
+              
+              {/* Minimal controls overlay - auto-hide */}
+              <div 
+                className={cn(
+                  "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300",
+                  showLandscapeControls ? "opacity-100" : "opacity-0"
+                )}
+                data-testid="landscape-controls-overlay"
+              >
+                <div className="flex items-center justify-between">
+                  <Button
+                    onClick={togglePlay}
+                    variant="ghost"
+                    size="sm"
+                    className="text-white hover:bg-white/20"
+                    data-testid="landscape-play-pause-button"
+                  >
+                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                  </Button>
+                  
+                  <div className="flex items-center gap-4">
+                    <span className="font-mono text-sm text-white/80">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+                    
+                    {/* Exit fullscreen button */}
+                    <Button
+                      onClick={() => {
+                        // Force portrait mode or normal view
+                        if (screen.orientation && screen.orientation.lock) {
+                          screen.orientation.lock('portrait').catch(() => {
+                            // Fallback: just refresh the layout
+                            window.dispatchEvent(new Event('resize'));
+                          });
+                        }
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      className="text-white hover:bg-white/20"
+                      data-testid="landscape-exit-button"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Media Player - Full width when view-only, takes remaining space when comments shown */}
+              <div className={cn(
+                "min-h-0 flex flex-col overflow-hidden",
+                // Mobile: fill remaining space above comments panel
+                isMobile ? "flex-1" : ""
+              )}>
+                <Card className="h-full flex flex-col overflow-hidden border-0">
+                  <CardContent className="flex-1 min-h-0 flex flex-col p-2">
                 {/* Video container - fills available space */}
                 <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full flex-1">
               {!mediaError ? (
@@ -1021,6 +1138,8 @@ export default function PublicSharePage() {
                 </div>
               </div>
             </div>
+          )}
+            </>
           )}
 
           {/* Desktop Comments Section - Only show on desktop and not view-only */}
