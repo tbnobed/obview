@@ -31,11 +31,11 @@ export default function NewProjectPage() {
           </p>
         </div>
 
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Project Details</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-8">
             <ProjectForm 
               onSuccess={(projectId) => {
                 navigate(`/projects/${projectId}`);
