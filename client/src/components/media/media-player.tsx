@@ -1302,73 +1302,6 @@ export default function MediaPlayer({
                 )}
               </div>
 
-              {/* Mobile: Dropdown with actions */}
-              <div className="lg:hidden">
-                {file && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-7 w-7 p-0"
-                        data-testid="mobile-actions-dropdown"
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      {/* Share Link Option - Renders ShareLinkButton inside dropdown */}
-                      <DropdownMenuItem asChild>
-                        <ShareLinkButton 
-                          fileId={file.id} 
-                          size="sm"
-                          variant="ghost"
-                          compact={false}
-                          className="w-full justify-start p-2 text-sm font-normal hover:bg-accent focus:bg-accent"
-                        />
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuSeparator />
-                      
-                      <DropdownMenuItem
-                        onClick={handleRequestChanges}
-                        disabled={approveMutation.isPending}
-                        className="text-orange-600 focus:text-orange-600"
-                        data-testid="mobile-request-changes"
-                      >
-                        <AlertCircle className="h-4 w-4 mr-2" />
-                        Request Changes
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem
-                        onClick={handleApprove}
-                        disabled={approveMutation.isPending}
-                        className="text-green-600 focus:text-green-600"
-                        data-testid="mobile-approve"
-                      >
-                        <Check className="h-4 w-4 mr-2" />
-                        Approve
-                      </DropdownMenuItem>
-                      
-                      {(user?.role === 'admin' || user?.role === 'editor') && project && (
-                        <DropdownMenuItem
-                          onClick={handleMarkAsInReview}
-                          disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
-                          className="text-blue-600 focus:text-blue-600"
-                          data-testid="mobile-mark-in-review"
-                        >
-                          {isUpdatingStatus ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <ClipboardCheck className="h-4 w-4 mr-2" />
-                          )}
-                          Mark as In Review
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
             </div>
         </div>
       </div>
@@ -1594,6 +1527,73 @@ export default function MediaPlayer({
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Portal: Mobile actions dropdown in top-left container */}
+      {file && typeof document !== 'undefined' && document.getElementById('mobile-actions-container') && createPortal(
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
+              data-testid="mobile-actions-dropdown"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-40">
+            {/* Share Link Option - Renders ShareLinkButton inside dropdown */}
+            <DropdownMenuItem asChild>
+              <ShareLinkButton 
+                fileId={file.id} 
+                size="sm"
+                variant="ghost"
+                compact={false}
+                className="w-full justify-start p-2 text-sm font-normal hover:bg-accent focus:bg-accent"
+              />
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem
+              onClick={handleRequestChanges}
+              disabled={approveMutation.isPending}
+              className="text-orange-600 focus:text-orange-600"
+              data-testid="mobile-request-changes"
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Request Changes
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem
+              onClick={handleApprove}
+              disabled={approveMutation.isPending}
+              className="text-green-600 focus:text-green-600"
+              data-testid="mobile-approve"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Approve
+            </DropdownMenuItem>
+            
+            {(user?.role === 'admin' || user?.role === 'editor') && project && (
+              <DropdownMenuItem
+                onClick={handleMarkAsInReview}
+                disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
+                className="text-blue-600 focus:text-blue-600"
+                data-testid="mobile-mark-in-review"
+              >
+                {isUpdatingStatus ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ClipboardCheck className="h-4 w-4 mr-2" />
+                )}
+                Mark as In Review
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>,
+        document.getElementById('mobile-actions-container')!
       )}
     </div>
   );

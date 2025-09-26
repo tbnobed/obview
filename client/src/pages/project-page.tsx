@@ -614,8 +614,8 @@ export default function ProjectPage() {
                 
                 {viewMode === 'player' && selectedFileId && (
                   <div className="flex-1 min-h-0 overflow-hidden relative">
-                    {/* Back to Grid Button */}
-                    <div className="absolute top-4 right-4 z-10">
+                    {/* Back to Grid Button - Desktop only */}
+                    <div className="absolute top-4 right-4 z-10 hidden lg:block">
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -624,6 +624,24 @@ export default function ProjectPage() {
                       >
                         ← Back to Grid
                       </Button>
+                    </div>
+                    
+                    {/* Mobile Actions - Top Left */}
+                    <div className="absolute top-4 left-4 z-10 lg:hidden">
+                      <div className="flex items-center gap-2">
+                        {/* Back to Grid Button - Mobile */}
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setViewMode('grid')}
+                          className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
+                        >
+                          ←
+                        </Button>
+                        
+                        {/* Mobile Actions Dropdown Container */}
+                        <div id="mobile-actions-container"></div>
+                      </div>
                     </div>
                     <MediaPlayer
                       file={files.find(f => f.id === selectedFileId) || null}
