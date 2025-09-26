@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,7 @@ import { ShareLinkButton } from "@/components/share-link-button";
 import { Comment, File as StorageFile, Project } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { uploadService } from "@/lib/upload-service";
 
 export default function MediaPlayer({
@@ -1251,7 +1252,8 @@ export default function MediaPlayer({
               "flex justify-end items-center",
               !mediaError ? "mt-2 pt-2" : "pt-1"
             )}>
-              <div className="flex space-x-1">
+              {/* Desktop: Show all buttons in a row */}
+              <div className="hidden lg:flex space-x-1">
                 {file && (
                   <>
                     <ShareLinkButton 
@@ -1297,6 +1299,74 @@ export default function MediaPlayer({
                       </Button>
                     )}
                   </>
+                )}
+              </div>
+
+              {/* Mobile: Dropdown with actions */}
+              <div className="lg:hidden">
+                {file && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 w-7 p-0"
+                        data-testid="mobile-actions-dropdown"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      {/* Share Link Option - Renders ShareLinkButton inside dropdown */}
+                      <div className="px-2 py-1.5">
+                        <ShareLinkButton 
+                          fileId={file.id} 
+                          size="sm"
+                          variant="ghost"
+                          compact={true}
+                          className="h-auto w-full justify-start p-0 text-sm font-normal hover:bg-transparent"
+                        />
+                      </div>
+                      
+                      <DropdownMenuSeparator />
+                      
+                      <DropdownMenuItem
+                        onClick={handleRequestChanges}
+                        disabled={approveMutation.isPending}
+                        className="text-orange-600 focus:text-orange-600"
+                        data-testid="mobile-request-changes"
+                      >
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Request Changes
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem
+                        onClick={handleApprove}
+                        disabled={approveMutation.isPending}
+                        className="text-green-600 focus:text-green-600"
+                        data-testid="mobile-approve"
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        Approve
+                      </DropdownMenuItem>
+                      
+                      {(user?.role === 'admin' || user?.role === 'editor') && project && (
+                        <DropdownMenuItem
+                          onClick={handleMarkAsInReview}
+                          disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
+                          className="text-blue-600 focus:text-blue-600"
+                          data-testid="mobile-mark-in-review"
+                        >
+                          {isUpdatingStatus ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <ClipboardCheck className="h-4 w-4 mr-2" />
+                          )}
+                          Mark as In Review
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             </div>
