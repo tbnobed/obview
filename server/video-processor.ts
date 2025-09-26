@@ -225,7 +225,7 @@ export class VideoProcessor {
         '-profile:v', config.video.main.profile,
         '-level', config.video.main.level,
         '-pix_fmt', 'yuv420p', // Ensures compatibility with all players
-        '-vf', `scale=-2:720`, // Scale to 720p height, maintain aspect ratio
+        '-vf', `scale=1280:720:force_original_aspect_ratio=decrease`, // Cap at 720p, maintain aspect ratio
         '-maxrate', quality.bitrate,
         '-bufsize', `${parseInt(quality.bitrate) * 2}k`,
         '-c:a', 'aac',
@@ -274,8 +274,8 @@ export class VideoProcessor {
         '-preset', config.video.scrub.preset,
         '-crf', config.video.scrub.crf.toString(),
         '-pix_fmt', 'yuv420p', // Ensure compatibility
-        '-profile:v', 'high', // Use high profile for better compression
-        '-level', '3.1',
+        '-profile:v', config.video.scrub.profile,
+        '-level', config.video.scrub.level,
         '-r', config.video.scrub.fps.toString(), // Lower frame rate for smaller files
         '-g', '1', // I-frame only (keyframe interval = 1)
         '-keyint_min', '1',

@@ -36,8 +36,8 @@ export const config = {
   video: {
     // Main quality H.264 encoding settings
     main: {
-      crf: parseInt(process.env.VIDEO_MAIN_CRF || '22', 10),
-      preset: process.env.VIDEO_MAIN_PRESET || 'veryfast',
+      crf: parseInt(process.env.VIDEO_MAIN_CRF || '24', 10),
+      preset: process.env.VIDEO_MAIN_PRESET || 'medium',
       profile: process.env.VIDEO_MAIN_PROFILE || 'high',
       level: process.env.VIDEO_MAIN_LEVEL || '3.1',
       audioBitrate: process.env.VIDEO_MAIN_AUDIO_BITRATE || '128k',
@@ -47,9 +47,11 @@ export const config = {
     scrub: {
       crf: parseInt(process.env.VIDEO_SCRUB_CRF || '28', 10),
       preset: process.env.VIDEO_SCRUB_PRESET || 'ultrafast',
+      profile: process.env.VIDEO_SCRUB_PROFILE || 'high',
+      level: process.env.VIDEO_SCRUB_LEVEL || '3.1',
       fps: parseInt(process.env.VIDEO_SCRUB_FPS || '15', 10),
       scale: process.env.VIDEO_SCRUB_SCALE || '-2:180',
-      disableAudio: process.env.VIDEO_SCRUB_AUDIO !== 'true' // Default to no audio
+      disableAudio: process.env.VIDEO_SCRUB_DISABLE_AUDIO !== 'false' // Default to disable audio
     }
   }
 };
