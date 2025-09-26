@@ -2574,6 +2574,30 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(commentReactions.userId, users.id))
       .where(eq(commentReactions.commentId, commentId));
     
+    // Get a map of creatorToken -> authorName for public users from comments
+    const publicTokens = reactions
+      .filter(r => r.creatorToken && !r.userId)
+      .map(r => r.creatorToken!)
+      .filter((token, index, arr) => arr.indexOf(token) === index); // unique
+    
+    const publicUserNames = new Map<string, string>();
+    if (publicTokens.length > 0) {
+      const publicComments = await db
+        .select({
+          creatorToken: commentsUnified.creatorToken,
+          authorName: commentsUnified.authorName
+        })
+        .from(commentsUnified)
+        .where(sql`${commentsUnified.creatorToken} IN (${sql.join(publicTokens.map(token => sql`${token}`), sql`, `)})`)
+        .groupBy(commentsUnified.creatorToken, commentsUnified.authorName);
+      
+      for (const comment of publicComments) {
+        if (comment.creatorToken) {
+          publicUserNames.set(comment.creatorToken, comment.authorName);
+        }
+      }
+    }
+    
     // Group by reaction type
     const reactionGroups = new Map<string, { count: number; userReacted: boolean; users: { name: string; isCurrentUser: boolean }[] }>();
     
@@ -2600,9 +2624,13 @@ export class DatabaseStorage implements IStorage {
       // Add user info
       let displayName: string;
       if (reaction.userName) {
+        // Authenticated user
         displayName = reaction.userName;
+      } else if (reaction.creatorToken && publicUserNames.has(reaction.creatorToken)) {
+        // Public user - get name from their comments
+        displayName = publicUserNames.get(reaction.creatorToken)!;
       } else {
-        // For anonymous users, show "Anonymous" 
+        // Fallback to Anonymous
         displayName = "Anonymous";
       }
       
