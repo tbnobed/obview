@@ -508,7 +508,7 @@ export default function PublicSharePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col w-full">
       {/* Compact Header */}
       <div className="flex-shrink-0 py-2 px-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
@@ -598,12 +598,12 @@ export default function PublicSharePage() {
       <div className="flex-1 p-2 sm:p-4 pb-20">
         {/* Side-by-side layout: Media Player on left, Comments on right (unless view-only) */}
         <div className={cn("h-full grid grid-cols-1 gap-2 sm:gap-4", !isViewOnly && "lg:grid-cols-4")}>
-          {/* Media Player - Takes 3/4 of space on large screens, full width in view-only mode with larger max-width */}
+          {/* Media Player - Takes 3/4 of space on large screens, full width in view-only mode */}
           <div className={cn("h-full", !isViewOnly ? "lg:col-span-3" : "lg:col-span-4")}>
-            <Card className={cn("h-full flex flex-col", isViewOnly && "max-w-7xl mx-auto w-full")}>
-              <CardContent className={cn("flex-1 flex flex-col pb-16", isViewOnly ? "p-1 sm:p-2 md:p-4" : "p-2 md:p-4")}>
+            <Card className="h-full flex flex-col w-full">
+              <CardContent className="flex-1 flex flex-col p-2 md:p-4">
                 {/* Video container - fills available space */}
-                <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-visible flex-1 w-full">
+                <div ref={mediaContainerRef} className="relative bg-black rounded-lg overflow-visible flex-1 w-full min-h-[400px] md:min-h-[500px] lg:min-h-[600px]">
               {!mediaError ? (
                 <>
                   {file.fileType === 'video' && (
