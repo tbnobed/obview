@@ -3080,8 +3080,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "File not found" });
         }
         
-        const hasAccess = await storage.hasProjectAccess(req.user.id, file.projectId);
-        if (!hasAccess && req.user.role !== "admin") {
+        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
+        if (!projectUser && req.user.role !== "admin") {
           return res.status(403).json({ message: "You don't have access to this project" });
         }
       } else {
