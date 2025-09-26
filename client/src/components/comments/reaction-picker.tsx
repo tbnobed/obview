@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Smile } from "lucide-react";
-import { useAddReaction, useRemoveReaction, useCommentReactions } from "@/hooks/use-reactions";
+import { useAddReaction, useRemoveReaction, useCommentReactionsWithUsers } from "@/hooks/use-reactions";
 
 interface ReactionPickerProps {
   commentId: string;
@@ -22,7 +22,7 @@ export default function ReactionPicker({
   const removeReaction = useRemoveReaction(commentId);
   
   // Always call the hook but use userReactions prop if provided
-  const { data: reactions = [] } = useCommentReactions(commentId);
+  const { data: reactions = [] } = useCommentReactionsWithUsers(commentId);
   const actualUserReactions = userReactions.length > 0 ? userReactions : reactions.filter(r => r.userReacted).map(r => r.reactionType);
 
   const handleReactionClick = async (reactionType: string) => {
