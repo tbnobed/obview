@@ -67,7 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login successful",
         description: `Welcome back, ${user.name}!`,
       });
-      setLocation("/");
+      
+      // Small delay to ensure session is fully established on server
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({
@@ -109,7 +113,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration successful",
         description: `Welcome to Obviu.io, ${user.name}!`,
       });
-      setLocation("/");
+      
+      // Small delay to ensure session is fully established on server
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({

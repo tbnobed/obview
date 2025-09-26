@@ -172,28 +172,24 @@ export function setupAuth(app: Express) {
         });
       }
       
-      // Regenerate session to prevent fixation attacks
-      req.session.regenerate((err) => {
+      // Login user without regenerating session to avoid timing issues
+      req.login(user, (err) => {
         if (err) return next(err);
         
-        req.login(user, (err) => {
+        // Explicitly save the session before responding
+        req.session.save((err) => {
           if (err) return next(err);
           
-          // Explicitly save the session before responding
-          req.session.save((err) => {
-            if (err) return next(err);
-            
-            // Remove sensitive data before returning
-            const userResponse = { ...user };
-            delete userResponse.password;
-            
-            // Ensure themePreference field exists
-            if (userResponse.themePreference === undefined) {
-              userResponse.themePreference = "system";
-            }
-            
-            res.status(200).json(userResponse);
-          });
+          // Remove sensitive data before returning
+          const userResponse = { ...user };
+          delete userResponse.password;
+          
+          // Ensure themePreference field exists
+          if (userResponse.themePreference === undefined) {
+            userResponse.themePreference = "system";
+          }
+          
+          res.status(200).json(userResponse);
         });
       });
     })(req, res, next);
