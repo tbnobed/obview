@@ -1030,13 +1030,17 @@ export default function MediaPlayer({
         {/* Header/toolbar area if needed */}
         <div></div>
         
-        {/* Media container - grows to fill space */}
-        <div className="relative min-h-0 bg-black overflow-hidden">
-          {renderMediaContent()}
+        {/* Media container - grows to fill space with 16:9 aspect ratio */}
+        <div className="relative min-h-0 bg-black overflow-hidden flex items-center justify-center">
+          <div className="relative w-full max-h-full" style={{ aspectRatio: '16/9' }}>
+            <div className="absolute inset-0">
+              {renderMediaContent()}
+            </div>
+          </div>
         </div>
         
         {/* Bottom controls area */}
-        <div className="bg-black p-3 sm:p-6 border-t border-gray-800">
+        <div className="sticky bottom-0 inset-x-0 z-30 bg-black/90 backdrop-blur p-3 sm:p-6 border-t border-gray-800" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
               <div className="flex items-center mb-2 space-x-2">
@@ -1064,6 +1068,40 @@ export default function MediaPlayer({
                   <div
                     className="relative py-4 cursor-pointer"
                     onClick={handleProgressClick}
+                    onTouchStart={(e) => {
+                      // Handle touch start for mobile scrubbing
+                      if (!progressRef.current) return;
+                      e.preventDefault();
+                      setIsDragging(true);
+                      
+                      const touch = e.touches[0];
+                      const rect = progressRef.current.getBoundingClientRect();
+                      const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+                      const newTime = duration * pos;
+                      
+                      performSeek(newTime);
+                      setCurrentTime(newTime);
+                    }}
+                    onTouchMove={(e) => {
+                      // Handle touch move for mobile scrubbing
+                      if (!progressRef.current || !isDragging) return;
+                      e.preventDefault();
+                      
+                      const touch = e.touches[0];
+                      const rect = progressRef.current.getBoundingClientRect();
+                      const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+                      const newTime = duration * pos;
+                      
+                      performSeek(newTime);
+                      setCurrentTime(newTime);
+                      setScrubPreviewTime(newTime);
+                      setShowScrubPreview(true);
+                    }}
+                    onTouchEnd={() => {
+                      // Handle touch end
+                      setIsDragging(false);
+                      setShowScrubPreview(false);
+                    }}
                     onMouseMove={(e) => {
                       if (e.buttons === 1 && progressRef.current) {
                         // Handle dragging (mouse down + move)
