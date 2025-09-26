@@ -1029,7 +1029,7 @@ export default function MediaPlayer({
       {/* Media Viewer - Takes remaining space */}
       <div className="flex-1">
         <div className="relative">
-          <div className="h-[calc(100vh-300px)] min-h-[500px] bg-neutral-900 rounded-t-lg overflow-visible">
+          <div className="h-[calc(100vh-380px)] min-h-[400px] bg-neutral-900 rounded-t-lg overflow-visible">
             {renderMediaContent()}
           </div>
           
