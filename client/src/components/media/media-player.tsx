@@ -1033,7 +1033,7 @@ export default function MediaPlayer({
         </div>
         
         {/* Bottom controls area */}
-        <div className="bg-black/90 backdrop-blur p-3 sm:p-6 border-t border-gray-800" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+        <div className="bg-black/90 backdrop-blur p-3 sm:p-6 pb-6 border-t border-gray-800" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))' }}>
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
               <div className="flex items-center mb-2 space-x-2">
@@ -1334,6 +1334,9 @@ export default function MediaPlayer({
               </div>
 
             </div>
+          
+          {/* Safe area spacer */}
+          <div className="h-[env(safe-area-inset-bottom,0px)]" aria-hidden />
         </div>
       </div>
       
