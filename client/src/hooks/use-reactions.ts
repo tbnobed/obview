@@ -64,7 +64,7 @@ export function useAddReaction(commentId: string) {
       return await apiRequest("POST", `/api/comments/${commentId}/reactions`, payload);
     },
     onSuccess: () => {
-      // Invalidate reactions for this comment
+      // Invalidate all reactions queries for this comment
       queryClient.invalidateQueries({ queryKey: ['/api/comments', commentId, 'reactions'] });
     },
     onError: (error: Error) => {
@@ -93,7 +93,7 @@ export function useRemoveReaction(commentId: string) {
       return await apiRequest("DELETE", `/api/comments/${commentId}/reactions`, payload);
     },
     onSuccess: () => {
-      // Invalidate reactions for this comment
+      // Invalidate all reactions queries for this comment
       queryClient.invalidateQueries({ queryKey: ['/api/comments', commentId, 'reactions'] });
     },
     onError: (error: Error) => {
