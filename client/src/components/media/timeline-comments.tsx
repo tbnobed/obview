@@ -415,17 +415,6 @@ export default function TimelineComments({
             <Smile className="h-4 w-4" />
           </button>
           
-          <div 
-            className="px-3 py-1 rounded text-xs font-medium cursor-pointer hover:bg-gray-700/30 transition-colors"
-            style={{
-              backgroundColor: 'hsl(var(--comments-card-border))', 
-              color: 'hsl(var(--comments-muted))'
-            }}
-            data-testid="toggle-privacy"
-          >
-            Public
-          </div>
-          
           <button 
             className="p-2 rounded transition-all duration-200 hover:opacity-80"
             style={{
