@@ -1025,7 +1025,7 @@ export default function MediaPlayer({
   return (
     <div className="flex flex-col lg:flex-row h-full min-h-0">
       {/* Media Viewer - Takes remaining space */}
-      <div className="flex-1 min-h-0 grid grid-rows-[auto,1fr,auto]">
+      <div className="flex-1 min-h-0 min-h-[60vh] lg:min-h-0 grid grid-rows-[auto,1fr,auto]">
         {/* Header/toolbar area if needed */}
         <div></div>
         
@@ -1305,7 +1305,7 @@ export default function MediaPlayer({
       
       {/* Comments Section - Fixed width for optimal button spacing */}
       {file && (
-        <div className="w-full lg:w-[387px] h-full min-h-0 flex flex-col dark:bg-[#0f1218]">
+        <div className="w-full lg:w-[387px] h-full max-h-[40vh] lg:max-h-none min-h-0 flex flex-col dark:bg-[#0f1218]">
           <Tabs defaultValue="comments" className="h-full flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="dark:bg-gray-900">
