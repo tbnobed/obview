@@ -874,7 +874,7 @@ export default function PublicSharePage() {
           {/* Comments Section - Takes 1/4 of space on large screens, hidden in view-only mode */}
           {!isViewOnly && (
             <div className="lg:col-span-1 h-full">
-              <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(var(--comments-card))' }}>
+              <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                   <div className="flex items-center gap-2">
@@ -904,8 +904,8 @@ export default function PublicSharePage() {
                   <div 
                     className="rounded-lg p-3 max-w-full"
                     style={{
-                      backgroundColor: 'hsl(var(--comments-card))',
-                      border: '1px solid hsl(var(--border))'
+                      backgroundColor: 'hsl(210, 20%, 12%)',
+                      border: '1px solid hsl(210, 15%, 18%)'
                     }}
                   >
                     <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
@@ -1036,69 +1036,116 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
     createCommentMutation.mutate(dataWithTime);
   };
 
+  const [content, setContent] = useState("");
+  const [authorName, setAuthorName] = useState(savedName);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow textarea function - same as main timeline comments
+  const autoGrowTextarea = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  };
+
+  // Auto-grow on content change
+  useEffect(() => {
+    autoGrowTextarea();
+  }, [content]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!content.trim() || !authorName.trim()) return;
+    
+    const data = {
+      authorName: authorName.trim(),
+      content: content.trim(),
+      fileId,
+      parentId: parentId || undefined,
+      timestamp: Math.floor(currentTime),
+      isPublic: true,
+    };
+    
+    // Save name to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('public-commenter-name', authorName.trim());
+    }
+    
+    createCommentMutation.mutate(data);
+  };
+
+  // Reset content after successful submission
+  useEffect(() => {
+    if (!createCommentMutation.isPending && content) {
+      setContent("");
+    }
+  }, [createCommentMutation.isPending]);
+
   return (
-    <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800" data-comment-form>
-      <h3 className="font-semibold mb-4">{parentId ? "Reply to comment" : "Leave a comment"}</h3>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="authorName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Your Name</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Enter your name" 
-                    {...field} 
-                    data-testid="input-name"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+    <form onSubmit={handleSubmit} className="w-full" data-comment-form>
+      {/* Name input for public users - compact design */}
+      {!parentId && (
+        <div className="mb-3">
+          <input
+            type="text"
+            value={authorName}
+            onChange={(e) => setAuthorName(e.target.value)}
+            placeholder="Your name"
+            className="w-full px-3 py-2 text-sm rounded border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            data-testid="input-name"
+            required
           />
-          
-          <FormField
-            control={form.control}
-            name="content"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Comment</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Share your thoughts..." 
-                    className="min-h-[100px]" 
-                    {...field}
-                    onKeyDownCapture={(e) => {
-                      // Defensive measure: prevent spacebar from bubbling to video controls
-                      if (e.key === ' ' || e.key === 'k') {
-                        e.stopPropagation();
-                      }
-                    }}
-                    data-testid="textarea-comment"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-            <Clock className="h-4 w-4" />
-            <span>Comment will be posted at {formatTime(currentTime)}</span>
-          </div>
-
-          <Button 
-            type="submit" 
-            disabled={createCommentMutation.isPending}
-            data-testid="button-submit-comment"
-          >
-            {createCommentMutation.isPending ? "Posting..." : "Post Comment"}
-          </Button>
-        </form>
-      </Form>
-    </div>
+        </div>
+      )}
+      
+      {/* Unified comment input container - Frame.io style */}
+      <div className="flex items-start gap-3 w-full">
+        {/* Auto-growing textarea */}
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => {
+            setContent(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              handleSubmit(e);
+            }
+            // Prevent spacebar from triggering video controls
+            if (e.key === ' ' || e.key === 'k') {
+              e.stopPropagation();
+            }
+          }}
+          placeholder={parentId ? "Write a reply..." : "Leave your comment..."}
+          className="flex-1 bg-transparent text-white placeholder-gray-400 text-sm resize-none border-none outline-none min-h-[2.5rem] leading-relaxed"
+          style={{ 
+            fontFamily: 'inherit',
+            overflow: 'hidden',
+            resize: 'none'
+          }}
+          rows={1}
+          data-testid="textarea-comment"
+          required
+        />
+        
+        {/* Submit button */}
+        <button
+          type="submit"
+          disabled={!content.trim() || !authorName.trim() || createCommentMutation.isPending}
+          className="flex-shrink-0 p-2 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+          data-testid="button-submit-comment"
+        >
+          <Send className="h-4 w-4 text-white" />
+        </button>
+      </div>
+      
+      {/* Timestamp indicator */}
+      <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+        <Clock className="h-3 w-3" />
+        <span>Will be posted at {formatTime(currentTime)}</span>
+      </div>
+    </form>
   );
 }
 
@@ -1277,8 +1324,8 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
         <div 
           className="rounded-lg p-3"
           style={{
-            backgroundColor: 'hsl(var(--comments-card))',
-            border: '1px solid hsl(var(--border))'
+            backgroundColor: 'hsl(210, 20%, 12%)',
+            border: '1px solid hsl(210, 15%, 18%)'
           }}
         >
         <div className="flex gap-3">
@@ -1336,8 +1383,8 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                 <div 
                   className="rounded-lg p-3"
                   style={{
-                    backgroundColor: 'hsl(var(--comments-card))',
-                    border: '1px solid hsl(var(--border))'
+                    backgroundColor: 'hsl(210, 20%, 12%)',
+                    border: '1px solid hsl(210, 15%, 18%)'
                   }}
                 >
                   <PublicCommentForm 
@@ -1388,8 +1435,8 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
           } : undefined}
           className={`rounded-lg p-4 transition-colors ${comment.timestamp !== null ? 'cursor-pointer hover:opacity-80' : ''}`}
           style={{
-            backgroundColor: 'hsl(var(--comments-card))',
-            border: '1px solid hsl(var(--border))'
+            backgroundColor: 'hsl(210, 20%, 12%)',
+            border: '1px solid hsl(210, 15%, 18%)'
           }}
           title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp!)} in the video` : undefined}
           role={comment.timestamp !== null ? 'button' : undefined}
@@ -1479,8 +1526,8 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                   <div 
                     className="rounded-lg p-3"
                     style={{
-                      backgroundColor: 'hsl(var(--comments-card))',
-                      border: '1px solid hsl(var(--border))'
+                      backgroundColor: 'hsl(210, 20%, 12%)',
+                      border: '1px solid hsl(210, 15%, 18%)'
                     }}
                   >
                     <PublicCommentForm 
