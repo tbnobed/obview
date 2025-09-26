@@ -197,8 +197,12 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
     }
   }, [file.id, file.fileType, (processing as any)?.status]);
   
-  // Load sprite for video files, fallback to regular thumbnail for others
-  const thumbnailSrc = file.fileType === 'video' ? `/api/files/${file.id}/sprite` : null;
+  // Load sprite for video files, direct content for image files
+  const thumbnailSrc = file.fileType === 'video' 
+    ? `/api/files/${file.id}/sprite` 
+    : file.fileType === 'image' 
+      ? `/api/files/${file.id}/content`
+      : null;
   
   // Get duration from processing data
   const duration = (processing as any)?.originalDuration || null;
@@ -318,87 +322,111 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
           }}
           data-testid={`video-preview-container-${file.id}`}
         >
-          {file.fileType === 'video' && thumbnailSrc && spriteMetadata ? (
+          {(file.fileType === 'video' && thumbnailSrc && spriteMetadata) || (file.fileType === 'image' && thumbnailSrc) ? (
             <>
-              {/* Hidden image to detect sprite loading */}
-              <img
-                src={thumbnailSrc}
-                className="hidden"
-                onLoad={() => {
-                  console.log(`🎬 [SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
-                  setSpriteLoaded(true);
-                  handleThumbnailLoad();
-                }}
-                onError={() => {
-                  console.error(`🎬 [SPRITE] ❌ Sprite error for file ${file.id}`);
-                  handleThumbnailError();
-                }}
-                alt=""
-              />
-              
-              {!thumbnailError && thumbnailLoaded ? (
-                <div
-                  className="w-full h-full bg-center bg-no-repeat bg-cover pointer-events-none"
-                  data-testid={`sprite-preview-${file.id}`}
-                  style={{
-                    backgroundImage: `url(${thumbnailSrc})`,
-                    backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
-                    backgroundPosition: (() => {
-                      if (!isScrubbing) {
-                        // Show first frame when not scrubbing
-                        return `0% 0%`;
-                      }
-                      
-                      // Calculate which thumbnail to show based on scrub position
-                      const thumbnailIndex = Math.floor(scrubPosition * (spriteMetadata.thumbnailCount - 1));
-                      const col = thumbnailIndex % spriteMetadata.cols;
-                      const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
-                      
-                      // Calculate background position (negative values to shift the sprite)
-                      const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
-                      const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
-                      
-                      return `${xPercent}% ${yPercent}%`;
-                    })()
-                  }}
-                />
-              ) : null}
-              
-              {/* Fallback for failed thumbnail or while loading */}
-              {(!thumbnailLoaded || thumbnailError) && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                  <FileIcon className="h-12 w-12 text-gray-500" />
-                </div>
-              )}
-              
-              {/* Play Button Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20">
-                <div className="bg-white/90 rounded-full p-3 shadow-lg">
-                  <Play className="h-6 w-6 text-gray-900 fill-gray-900" />
-                </div>
-              </div>
+              {file.fileType === 'image' ? (
+                /* Image file rendering */
+                <>
+                  <img
+                    src={thumbnailSrc}
+                    className="w-full h-full object-cover"
+                    onLoad={handleThumbnailLoad}
+                    onError={handleThumbnailError}
+                    alt={file.filename}
+                    data-testid={`image-preview-${file.id}`}
+                  />
+                  
+                  {/* Fallback for failed image loading */}
+                  {thumbnailError && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                      <FileIcon className="h-12 w-12 text-gray-500" />
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Video file rendering with sprite logic */
+                <>
+                  {/* Hidden image to detect sprite loading */}
+                  <img
+                    src={thumbnailSrc}
+                    className="hidden"
+                    onLoad={() => {
+                      console.log(`🎬 [SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
+                      setSpriteLoaded(true);
+                      handleThumbnailLoad();
+                    }}
+                    onError={() => {
+                      console.error(`🎬 [SPRITE] ❌ Sprite error for file ${file.id}`);
+                      handleThumbnailError();
+                    }}
+                    alt=""
+                  />
+                  
+                  {!thumbnailError && thumbnailLoaded ? (
+                    <div
+                      className="w-full h-full bg-center bg-no-repeat bg-cover pointer-events-none"
+                      data-testid={`sprite-preview-${file.id}`}
+                      style={{
+                        backgroundImage: `url(${thumbnailSrc})`,
+                        backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
+                        backgroundPosition: (() => {
+                          if (!isScrubbing) {
+                            // Show first frame when not scrubbing
+                            return `0% 0%`;
+                          }
+                          
+                          // Calculate which thumbnail to show based on scrub position
+                          const thumbnailIndex = Math.floor(scrubPosition * (spriteMetadata.thumbnailCount - 1));
+                          const col = thumbnailIndex % spriteMetadata.cols;
+                          const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
+                          
+                          // Calculate background position (negative values to shift the sprite)
+                          const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
+                          const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
+                          
+                          return `${xPercent}% ${yPercent}%`;
+                        })()
+                      }}
+                    />
+                  ) : null}
+                  
+                  {/* Fallback for failed thumbnail or while loading */}
+                  {(!thumbnailLoaded || thumbnailError) && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                      <FileIcon className="h-12 w-12 text-gray-500" />
+                    </div>
+                  )}
+                  
+                  {/* Play Button Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/20">
+                    <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                      <Play className="h-6 w-6 text-gray-900 fill-gray-900" />
+                    </div>
+                  </div>
 
-              {/* Duration Badge */}
-              {duration && (
-                <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-mono">
-                  {formatDuration(duration)}
-                </div>
+                  {/* Duration Badge */}
+                  {duration && (
+                    <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-mono">
+                      {formatDuration(duration)}
+                    </div>
+                  )}
+                  
+                  {/* Scrub Progress Bar */}
+                  {isScrubbing && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
+                      <div 
+                        className="h-full bg-blue-500 transition-all duration-75"
+                        style={{ width: `${scrubPosition * 100}%` }}
+                      />
+                      {/* Position indicator */}
+                      <div 
+                        className="absolute top-0 w-0.5 h-1 bg-white transform -translate-x-0.5"
+                        style={{ left: `${scrubPosition * 100}%` }}
+                      />
+                    </div>
+                  )}
+                </>
               )}
-              
-            {/* Scrub Progress Bar */}
-            {isScrubbing && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
-                <div 
-                  className="h-full bg-blue-500 transition-all duration-75"
-                  style={{ width: `${scrubPosition * 100}%` }}
-                />
-                {/* Position indicator */}
-                <div 
-                  className="absolute top-0 w-0.5 h-1 bg-white transform -translate-x-0.5"
-                  style={{ left: `${scrubPosition * 100}%` }}
-                />
-              </div>
-            )}
             </>
           ) : (
             /* Non-video files */
