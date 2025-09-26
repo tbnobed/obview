@@ -316,7 +316,7 @@ export default function TimelineComments({
                           {(comment as any).authorName || comment.user?.name || comment.user?.username || 'Unknown User'}
                         </span>
                         <span className="text-xs text-gray-400">
-                          #{(comment as any).isPublic ? `P${comment.id}` : `A${comment.id}`}
+                          #{(comment as any).isPublic ? `P${comment.id.slice(-6)}` : `A${comment.id.slice(-6)}`}
                         </span>
                         <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
                         <span className="text-xs text-gray-400">
