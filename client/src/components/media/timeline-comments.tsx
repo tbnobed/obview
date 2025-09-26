@@ -364,71 +364,75 @@ export default function TimelineComments({
         )}
       </div>
 
-      {/* Comment Input at Bottom - Unified Input Section */}
-      <div 
-        className="border-t"
-        style={{
-          borderColor: 'hsl(var(--comments-card-border))',
-          backgroundColor: 'hsl(var(--comments-bg))'
-        }}
-      >
-        <div className="px-3 py-3 flex items-center gap-2 rounded-lg border mx-3 my-3"
+      {/* Comment Input - Frame.io Style Single Element */}
+      <div className="p-3">
+        <div 
+          className="flex items-center gap-3 px-3 py-2 rounded-lg"
           style={{
             backgroundColor: 'hsl(var(--comments-card))',
-            borderColor: 'hsl(var(--comments-card-border))'
+            border: '1px solid hsl(var(--comments-card-border))'
           }}
         >
+          {/* Timestamp chip */}
           <span 
             className="text-xs font-mono px-2 py-1 rounded shrink-0"
             style={{
               backgroundColor: 'hsl(var(--comments-timestamp-bg))',
               color: 'hsl(var(--comments-timestamp-fg))'
             }}
+            data-testid="chip-timestamp"
           >
             {formatTime(currentTime)}
           </span>
           
-          <div className="flex-1">
-            <CommentForm 
-              fileId={fileId} 
-              currentTime={currentTime} 
-              className="bg-transparent border-0 p-0 w-full"
-            />
-          </div>
+          {/* Comment input field */}
+          <input
+            type="text"
+            placeholder="Leave your comment..."
+            className="flex-1 bg-transparent border-0 outline-none text-sm placeholder:text-gray-500"
+            style={{ color: 'hsl(var(--comments-text))' }}
+            data-testid="input-comment"
+          />
           
+          {/* Action buttons */}
           <button 
-            className="p-1.5 rounded hover:bg-gray-700/50 transition-colors"
+            className="p-1.5 rounded hover:bg-gray-700/30 transition-colors"
             style={{color: 'hsl(var(--comments-muted))'}}
             onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
             onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
+            data-testid="button-attach"
           >
             <Paperclip className="h-4 w-4" />
           </button>
+          
           <button 
-            className="p-1.5 rounded hover:bg-gray-700/50 transition-colors"
+            className="p-1.5 rounded hover:bg-gray-700/30 transition-colors"
             style={{color: 'hsl(var(--comments-muted))'}}
             onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
             onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
+            data-testid="button-emoji"
           >
             <Smile className="h-4 w-4" />
           </button>
+          
           <div 
-            className="px-3 py-1 rounded text-xs font-medium"
+            className="px-3 py-1 rounded text-xs font-medium cursor-pointer hover:bg-gray-700/30 transition-colors"
             style={{
               backgroundColor: 'hsl(var(--comments-card-border))', 
               color: 'hsl(var(--comments-muted))'
             }}
+            data-testid="toggle-privacy"
           >
             Public
           </div>
+          
           <button 
-            className="p-2 rounded-full transition-all duration-200 hover:shadow-lg"
+            className="p-2 rounded transition-all duration-200 hover:opacity-80"
             style={{
               backgroundColor: '#7c3aed',
               color: 'white'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6d28d9'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7c3aed'}
+            data-testid="button-send"
           >
             <Send className="h-4 w-4" />
           </button>
