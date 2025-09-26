@@ -21,6 +21,8 @@ import { insertCommentsUnifiedSchema, type UnifiedComment } from "@shared/schema
 import { z } from "zod";
 import ReactionPicker from "@/components/comments/reaction-picker";
 import ReactionsDisplay from "@/components/comments/reactions-display";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // Schema for request changes form
 const requestChangesSchema = z.object({
@@ -1339,7 +1341,43 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
               </span>
             </div>
             <div className="text-xs text-gray-200 mb-2">
-              {comment.content}
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  img: ({ node, ...props }) => (
+                    <img 
+                      {...props} 
+                      className="max-w-full h-auto rounded-md my-1 border border-gray-600"
+                      style={{ maxHeight: '200px' }}
+                      onClick={(e) => e.stopPropagation()} 
+                    />
+                  ),
+                  a: ({ node, href, ...props }) => {
+                    const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
+                    return (
+                      <a 
+                        href={href}
+                        {...props} 
+                        className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isFileDownload) {
+                            e.preventDefault();
+                            window.open(href, '_blank');
+                          }
+                        }}
+                      >
+                        {isFileDownload && <span className="mr-1">📎</span>}
+                        {props.children}
+                      </a>
+                    );
+                  }
+                }}
+              >
+                {comment.content}
+              </ReactMarkdown>
             </div>
             
             {/* Reactions Display */}
@@ -1483,20 +1521,44 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
               )}
 
               {/* Comment Text */}
-              <div className="text-sm text-gray-200 mb-3 whitespace-pre-wrap">
-                {comment.content.length > 100 ? (
-                  <>
-                    {comment.content.substring(0, 100)}...
-                    <button 
-                      className="text-blue-400 hover:text-blue-300 ml-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Read more
-                    </button>
-                  </>
-                ) : (
-                  comment.content
-                )}
+              <div className="text-sm text-gray-200 mb-3">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: ({ node, ...props }) => (
+                      <img 
+                        {...props} 
+                        className="max-w-full h-auto rounded-md my-1 border border-gray-600"
+                        style={{ maxHeight: '300px' }}
+                        onClick={(e) => e.stopPropagation()} 
+                      />
+                    ),
+                    a: ({ node, href, ...props }) => {
+                      const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
+                      return (
+                        <a 
+                          href={href}
+                          {...props} 
+                          className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isFileDownload) {
+                              e.preventDefault();
+                              window.open(href, '_blank');
+                            }
+                          }}
+                        >
+                          {isFileDownload && <span className="mr-1">📎</span>}
+                          {props.children}
+                        </a>
+                      );
+                    }
+                  }}
+                >
+                  {comment.content.length > 100 ? `${comment.content.substring(0, 100)}...` : comment.content}
+                </ReactMarkdown>
               </div>
 
               {/* Reactions Display */}
