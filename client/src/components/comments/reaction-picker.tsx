@@ -53,7 +53,7 @@ export default function ReactionPicker({
       </Button>
       
       {showPicker && (
-        <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 z-50">
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-2 z-[100]">
           <div className="flex gap-1">
             {REACTION_OPTIONS.map((reaction) => (
               <button
