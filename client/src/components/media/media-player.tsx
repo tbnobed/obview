@@ -221,7 +221,7 @@ export default function MediaPlayer({
     }
 
     // Video files
-    if (file.fileType.startsWith('video/')) {
+    if (file.fileType === 'video' || file.fileType.startsWith('video/')) {
       return (
         <div className="relative h-full w-full">
           <video
@@ -245,7 +245,7 @@ export default function MediaPlayer({
     }
     
     // Audio files
-    if (file.fileType.startsWith('audio/')) {
+    if (file.fileType === 'audio' || file.fileType.startsWith('audio/')) {
       return (
         <div className="flex items-center justify-center h-full bg-neutral-900 text-white">
           <div className="text-center p-8">
@@ -271,7 +271,7 @@ export default function MediaPlayer({
     }
     
     // Image files
-    if (file.fileType.startsWith('image/')) {
+    if (file.fileType === 'image' || file.fileType.startsWith('image/')) {
       return (
         <div className="flex items-center justify-center h-full bg-neutral-900">
           <img
