@@ -1026,13 +1026,10 @@ export default function MediaPlayer({
   return (
     <div className="flex flex-col lg:flex-row h-full min-h-0">
       {/* Media Viewer - Takes remaining space */}
-      <div className="flex-1 min-h-0 min-h-[60vh] lg:min-h-0 grid grid-rows-[auto,1fr,auto]">
-        {/* Header/toolbar area if needed */}
-        <div></div>
-        
+      <div className="flex-1 min-h-0 min-h-[60vh] lg:min-h-0 flex flex-col">
         {/* Media container - sized to content with 16:9 aspect ratio */}
-        <div className="relative min-h-0 bg-black overflow-hidden flex items-center justify-center p-4">
-          <div className="relative w-full max-w-full" style={{ aspectRatio: '16/9' }}>
+        <div className="flex-1 bg-black flex items-center justify-center p-4">
+          <div className="relative w-full max-w-6xl" style={{ aspectRatio: '16/9' }}>
             {renderMediaContent()}
           </div>
         </div>
