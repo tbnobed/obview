@@ -52,7 +52,7 @@ export const useToggleCommentResolution = (fileId: number) => {
   
   return useMutation({
     mutationFn: ({ commentId, isResolved }: { commentId: string, isResolved: boolean }) => {
-      return apiRequest('PATCH', `/api/comments/${commentId}`, { isResolved });
+      return apiRequest('PATCH', `/api/comments/${commentId}/resolve`, { isResolved });
     },
     onSuccess: () => {
       // Invalidate and refetch with the array format query key
