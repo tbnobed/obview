@@ -49,7 +49,7 @@ export default function ReactionPicker({
         onClick={() => setShowPicker(!showPicker)}
         disabled={addReaction.isPending || removeReaction.isPending}
       >
-        <Smile className="h-3 w-3" />
+        <Smile className="h-3 w-3 text-yellow-500" />
       </Button>
       
       {showPicker && (

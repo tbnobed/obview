@@ -435,9 +435,9 @@ export default function TimelineComments({
                       <div className="flex gap-3 mt-2">
                         <button
                           className="text-xs font-medium transition-colors"
-                          style={{color: 'hsl(var(--comments-muted))'}}
-                          onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
+                          style={{color: '#00ffff'}}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#00ccff'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#00ffff'}
                           onClick={(e) => {
                             e.stopPropagation();
                             setReplyingToId(replyingToId === comment.id ? null : comment.id);
