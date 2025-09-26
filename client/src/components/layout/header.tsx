@@ -160,7 +160,7 @@ export default function Header() {
         </Button>
         
         {/* Right side - User controls */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           <ThemeToggle />
           {user && <UserProfileDropdown />}
         </div>
