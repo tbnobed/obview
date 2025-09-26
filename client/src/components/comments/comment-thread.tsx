@@ -15,7 +15,7 @@ import remarkGfm from "remark-gfm";
 import { useDeleteComment } from "@/hooks/use-comments";
 import ReactionPicker from "./reaction-picker";
 import ReactionsDisplay from "./reactions-display";
-import { useCommentReactions } from "@/hooks/use-reactions";
+import { useCommentReactionsWithUsers } from "@/hooks/use-reactions";
 
 interface CommentThreadProps {
   comment: CommentUnified & { user?: any };
@@ -34,7 +34,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
   const deleteCommentMutation = useDeleteComment(comment.fileId);
   
   // Get reactions to derive userReactions for the picker
-  const { data: reactions = [] } = useCommentReactions(comment.id);
+  const { data: reactions = [] } = useCommentReactionsWithUsers(comment.id);
   const userReactions = reactions.filter(r => r.userReacted).map(r => r.reactionType);
   
   // Build safe comment replies with cycle detection - similar to public comment approach
