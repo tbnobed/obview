@@ -108,6 +108,77 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
       deleteMutation.mutate(file.id);
     }
   };
+
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Navigate to the file view page
+    onSelect(file.id);
+  };
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const response = await fetch(`/api/files/${file.id}/content`);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = file.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Download started",
+        description: `Downloading ${file.filename}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Download failed",
+        description: "Failed to download the file. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleShareLink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      // Generate a share link using the file's share token
+      const shareUrl = `${window.location.origin}/share/${file.shareToken}`;
+      
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "Share link copied",
+          description: "The share link has been copied to your clipboard.",
+        });
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        toast({
+          title: "Share link copied",
+          description: "The share link has been copied to your clipboard.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to copy link",
+        description: "Could not copy the share link. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   
   const processing = getProcessingStatus(file.id);
   
@@ -360,15 +431,15 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={handleViewDetails}>
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={handleDownload}>
                   <Download className="h-4 w-4 mr-2" />
                   Download
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={handleShareLink} disabled={!file.shareToken}>
                   <Share2 className="h-4 w-4 mr-2" />
                   Share Link
                 </DropdownMenuItem>
