@@ -31,6 +31,7 @@ import { ProjectMediaManager } from "@/components/project/project-media-manager"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 
 
@@ -582,9 +583,17 @@ export default function ProjectPage() {
       </header>
       
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-neutral-100 dark:bg-[#080b12] p-4 sm:p-6 lg:p-8">
+      <main className={cn(
+        "flex-1 overflow-y-auto bg-neutral-100 dark:bg-[#080b12]",
+        activeTab === "media" && viewMode === "player" 
+          ? "p-0 h-[calc(100vh-64px)] min-h-0 flex flex-col" 
+          : "p-4 sm:p-6 lg:p-8"
+      )}>
         {activeTab === "media" && (
-          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 h-full flex flex-col">
+          <div className={cn(
+            "bg-white dark:bg-[#0f1218] shadow dark:shadow-gray-900 h-full flex flex-col",
+            viewMode === "player" ? "rounded-none" : "rounded-lg"
+          )}>
             {filesLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
