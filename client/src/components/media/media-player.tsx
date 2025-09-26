@@ -55,7 +55,6 @@ export default function MediaPlayer({
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
-  
   // Sprite scrubbing state
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
@@ -130,7 +129,6 @@ export default function MediaPlayer({
       setSpriteLoaded(false);
     }
   }, [file?.id, file?.fileType, videoProcessing?.status]);
-  
   
   // Find user's approval (if any)
   const userApproval = approvals && approvals.length > 0 ? approvals[0] : null;
@@ -316,16 +314,17 @@ export default function MediaPlayer({
           {renderMediaContent()}
         </div>
         
-        {/* Desktop controls area - ALWAYS SHOW */}
+        {/* Controls area */}
         <div className="bg-black p-6 border-t border-gray-800">
-          {/* Media player controls - Only shown when no error */}
-          {!mediaError && (
+          {/* Media player controls - Only shown for video/audio and when no error */}
+          {!mediaError && (file?.fileType === 'video' || file?.fileType?.startsWith('video/') || file?.fileType === 'audio' || file?.fileType?.startsWith('audio/')) && (
             <div className="flex items-center mb-2 space-x-2">
               <Button
                 onClick={togglePlay}
                 variant="ghost"
                 size="icon"
                 className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                data-testid="button-play-pause"
               >
                 {isPlaying ? (
                   <Pause className="h-6 w-6" />
@@ -334,7 +333,7 @@ export default function MediaPlayer({
                 )}
               </Button>
               
-              <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
+              <span className="font-mono text-sm text-neutral-600 dark:text-gray-400" data-testid="text-time">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
               
@@ -370,6 +369,7 @@ export default function MediaPlayer({
                   variant="ghost"
                   size="icon"
                   className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                  data-testid="button-volume"
                 >
                   <Volume2 className="h-5 w-5" />
                 </Button>
@@ -378,6 +378,7 @@ export default function MediaPlayer({
                   variant="ghost"
                   size="icon"
                   className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                  data-testid="button-fullscreen"
                 >
                   <Maximize className="h-5 w-5" />
                 </Button>
@@ -387,7 +388,7 @@ export default function MediaPlayer({
         </div>
       </div>
 
-      {/* Desktop Comments Section */}
+      {/* Comments Section */}
       {file && (
         <div className="w-96 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f1218] flex flex-col min-h-0">
           <div className="p-4 border-b border-gray-200 dark:border-gray-800">
