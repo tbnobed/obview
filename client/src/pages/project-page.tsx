@@ -531,8 +531,8 @@ export default function ProjectPage() {
         </div>
       </header>
         
-        {/* Tabs */}
-        <div className="px-4 sm:px-6 lg:px-8">
+        {/* Tabs - Hidden on mobile */}
+        <div className="hidden lg:block px-4 sm:px-6 lg:px-8">
           <div className="border-b border-neutral-200 dark:border-gray-800">
             <nav className="-mb-px flex space-x-8">
               <a 
