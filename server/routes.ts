@@ -3120,6 +3120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/comments/:commentId/reactions", async (req, res, next) => {
     try {
       const commentId = req.params.commentId;
+      const includeUsers = req.query.includeUsers === 'true';
       
       // Check if the comment exists
       const comment = await storage.getUnifiedComment(commentId);
@@ -3140,8 +3141,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authToken = visitorToken;
       }
       
-      const reactions = await storage.getCommentReactionsWithUserStatus(commentId, userId, authToken);
-      res.json(reactions);
+      // Return detailed user information if requested
+      if (includeUsers) {
+        const reactions = await storage.getCommentReactionsWithUsers(commentId, userId, authToken);
+        res.json(reactions);
+      } else {
+        const reactions = await storage.getCommentReactionsWithUserStatus(commentId, userId, authToken);
+        res.json(reactions);
+      }
     } catch (error) {
       next(error);
     }

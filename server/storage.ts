@@ -158,6 +158,7 @@ export interface IStorage {
   removeCommentReaction(params: { commentId: string; userId?: number | null; creatorToken?: string; reactionType: string }): Promise<boolean>;
   getCommentReactions(commentId: string): Promise<{ reactionType: string; count: number; userReacted?: boolean }[]>;
   getCommentReactionsWithUserStatus(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean }[]>;
+  getCommentReactionsWithUsers(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean; users: { name: string; isCurrentUser: boolean }[] }[]>;
 
   // Session store
   sessionStore: any; // Using any to avoid type issues
@@ -1229,6 +1230,11 @@ export class MemStorage implements IStorage {
   }
 
   async getCommentReactionsWithUserStatus(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean }[]> {
+    // For MemStorage, return empty array
+    return [];
+  }
+
+  async getCommentReactionsWithUsers(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean; users: { name: string; isCurrentUser: boolean }[] }[]> {
     // For MemStorage, return empty array
     return [];
   }
@@ -2552,6 +2558,66 @@ export class DatabaseStorage implements IStorage {
       reactionType,
       count,
       userReacted: userReactedTypes.has(reactionType)
+    }));
+  }
+
+  async getCommentReactionsWithUsers(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean; users: { name: string; isCurrentUser: boolean }[] }[]> {
+    // Get all reactions for this comment with user information
+    const reactions = await db
+      .select({
+        reactionType: commentReactions.reactionType,
+        userId: commentReactions.userId,
+        creatorToken: commentReactions.creatorToken,
+        userName: users.username
+      })
+      .from(commentReactions)
+      .leftJoin(users, eq(commentReactions.userId, users.id))
+      .where(eq(commentReactions.commentId, commentId));
+    
+    // Group by reaction type
+    const reactionGroups = new Map<string, { count: number; userReacted: boolean; users: { name: string; isCurrentUser: boolean }[] }>();
+    
+    for (const reaction of reactions) {
+      if (!reactionGroups.has(reaction.reactionType)) {
+        reactionGroups.set(reaction.reactionType, {
+          count: 0,
+          userReacted: false,
+          users: []
+        });
+      }
+      
+      const group = reactionGroups.get(reaction.reactionType)!;
+      group.count++;
+      
+      // Check if this is from the current user/visitor
+      const isCurrentUser = (userId && reaction.userId === userId) || 
+                           (creatorToken && reaction.creatorToken === creatorToken);
+      
+      if (isCurrentUser) {
+        group.userReacted = true;
+      }
+      
+      // Add user info
+      let displayName: string;
+      if (reaction.userName) {
+        displayName = reaction.userName;
+      } else {
+        // For anonymous users, show "Anonymous" 
+        displayName = "Anonymous";
+      }
+      
+      group.users.push({
+        name: displayName,
+        isCurrentUser
+      });
+    }
+    
+    // Convert to array format
+    return Array.from(reactionGroups.entries()).map(([reactionType, group]) => ({
+      reactionType,
+      count: group.count,
+      userReacted: group.userReacted,
+      users: group.users
     }));
   }
 }
