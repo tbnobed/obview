@@ -1028,12 +1028,12 @@ export default function MediaPlayer({
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
       {/* Media Viewer - Takes remaining space */}
       <div className="flex-1">
-        <div className="relative">
-          <div className="h-[calc(100vh-380px)] min-h-[400px] bg-neutral-900 rounded-t-lg overflow-visible">
+        <div className="relative flex flex-col h-full">
+          <div className="flex-1 bg-neutral-900 rounded-t-lg overflow-visible">
             {renderMediaContent()}
           </div>
           
-          <div className="bg-white dark:bg-[#0a0d14] p-6 border-t border-neutral-100 dark:border-gray-800">
+          <div className="bg-white dark:bg-[#0a0d14] p-6 border-t border-neutral-100 dark:border-gray-800 mt-auto">
             {/* Media player controls - Only shown when no error */}
             {!mediaError && (
               <div className="flex items-center mb-2 space-x-2">
