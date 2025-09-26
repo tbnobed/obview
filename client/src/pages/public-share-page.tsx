@@ -878,8 +878,27 @@ export default function PublicSharePage() {
           {!isViewOnly && (
             <div className="min-h-0 flex flex-col overflow-hidden">
               <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
-                {/* Comments List with integrated header - Scrollable area */}
-                <div className="flex-1 min-h-0 overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm font-medium text-white">All comments</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+                      <Search className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Comments List - Scrollable area */}
+                <div className="flex-1 min-h-0 overflow-auto p-3 space-y-3">
                   <CommentsList token={token!} onTimestampClick={seekToTimestamp} />
                 </div>
 
@@ -1137,22 +1156,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
 // Comments List Component
 function CommentsList({ token, onTimestampClick }: { token: string; onTimestampClick?: (timestamp: number) => void }) {
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
-  const [filterType, setFilterType] = useState<'all' | 'timestamped' | 'general'>('all');
-  const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const { toast } = useToast();
-  
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowFilterMenu(false);
-      setShowMoreMenu(false);
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
   
   // Delete comment mutation for public comments
   const deleteCommentMutation = useMutation({
@@ -1264,34 +1268,6 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
     return topLevelComments;
   }, [comments]);
 
-  // Filter and search comments
-  const filteredComments = useMemo(() => {
-    let filtered = buildCommentThreads;
-    
-    // Apply filter type
-    if (filterType === 'timestamped') {
-      filtered = filtered.filter((comment: any) => comment.timestamp !== null);
-    } else if (filterType === 'general') {
-      filtered = filtered.filter((comment: any) => comment.timestamp === null);
-    }
-    
-    // Apply search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((comment: any) => {
-        const matchesContent = comment.content?.toLowerCase().includes(query);
-        const matchesAuthor = comment.authorName?.toLowerCase().includes(query);
-        const matchesReplies = comment.children?.some((child: any) => 
-          child.content?.toLowerCase().includes(query) || 
-          child.authorName?.toLowerCase().includes(query)
-        );
-        return matchesContent || matchesAuthor || matchesReplies;
-      });
-    }
-    
-    return filtered;
-  }, [buildCommentThreads, filterType, searchQuery]);
-
   // Get user initials for avatar
   const getUserInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -1319,27 +1295,6 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
         <MessageSquare className="h-12 w-12 text-gray-600 mb-3" />
         <p className="text-gray-400 text-sm">No comments yet</p>
         <p className="text-gray-500 text-xs">Be the first to comment!</p>
-      </div>
-    );
-  }
-
-  if (filteredComments.length === 0 && (searchQuery || filterType !== 'all')) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Search className="h-12 w-12 text-gray-600 mb-3" />
-        <p className="text-gray-400 text-sm">
-          {searchQuery ? `No comments found for "${searchQuery}"` : `No ${filterType} comments found`}
-        </p>
-        <button
-          onClick={() => {
-            setSearchQuery('');
-            setFilterType('all');
-            setShowSearch(false);
-          }}
-          className="text-blue-400 text-xs mt-2 hover:text-blue-300"
-        >
-          Clear filters
-        </button>
       </div>
     );
   }
@@ -1469,143 +1424,9 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
   // Filter for top-level comments only (no parent)
   const topLevelComments = buildCommentThreads;
 
-
   return (
-    <div className="h-full flex flex-col" data-testid="comments-list">
-      {/* Header with functional buttons */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-white">
-            {filterType === 'timestamped' ? 'Timeline comments' : 
-             filterType === 'general' ? 'General comments' : 'All comments'}
-          </span>
-        </div>
-        <div className="flex items-center gap-1 relative">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`h-7 w-7 p-0 transition-colors ${
-              showSearch ? 'text-blue-400 bg-gray-700' : 'text-gray-400 hover:text-white hover:bg-gray-700'
-            }`}
-            onClick={() => setShowSearch(!showSearch)}
-            title="Search comments"
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-          <div className="relative">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={`h-7 w-7 p-0 transition-colors ${
-                showFilterMenu || filterType !== 'all' ? 'text-blue-400 bg-gray-700' : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowFilterMenu(!showFilterMenu);
-              }}
-              title="Filter comments"
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
-            {showFilterMenu && (
-              <div className="absolute right-0 top-8 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-40">
-                <div className="p-2">
-                  <button
-                    className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 ${
-                      filterType === 'all' ? 'text-blue-400 bg-gray-700' : 'text-gray-300'
-                    }`}
-                    onClick={() => { setFilterType('all'); setShowFilterMenu(false); }}
-                  >
-                    All comments
-                  </button>
-                  <button
-                    className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 ${
-                      filterType === 'timestamped' ? 'text-blue-400 bg-gray-700' : 'text-gray-300'
-                    }`}
-                    onClick={() => { setFilterType('timestamped'); setShowFilterMenu(false); }}
-                  >
-                    Timeline comments
-                  </button>
-                  <button
-                    className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 ${
-                      filterType === 'general' ? 'text-blue-400 bg-gray-700' : 'text-gray-300'
-                    }`}
-                    onClick={() => { setFilterType('general'); setShowFilterMenu(false); }}
-                  >
-                    General comments
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="relative">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={`h-7 w-7 p-0 transition-colors ${
-                showMoreMenu ? 'text-blue-400 bg-gray-700' : 'text-gray-400 hover:text-white hover:bg-gray-700'
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMoreMenu(!showMoreMenu);
-              }}
-              title="More options"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-            {showMoreMenu && (
-              <div className="absolute right-0 top-8 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 min-w-40">
-                <div className="p-2">
-                  <button
-                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 text-gray-300"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setFilterType('all');
-                      setShowSearch(false);
-                      setShowMoreMenu(false);
-                      toast({ title: 'Filters cleared', description: 'All filters have been reset.' });
-                    }}
-                  >
-                    Clear all filters
-                  </button>
-                  <button
-                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 text-gray-300"
-                    onClick={() => {
-                      const commentCount = comments?.length || 0;
-                      setShowMoreMenu(false);
-                      toast({ 
-                        title: 'Comment statistics', 
-                        description: `Total comments: ${commentCount}` 
-                      });
-                    }}
-                  >
-                    Show statistics
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      {/* Search bar */}
-      {showSearch && (
-        <div className="px-4 py-3 border-b border-gray-700 flex-shrink-0">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search comments..."
-            className="w-full px-3 py-2 text-sm rounded border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-            autoFocus
-          />
-        </div>
-      )}
-      
-      {/* Comments area */}
-      <div className="flex-1 min-h-0 overflow-auto p-3 space-y-3">
-      {filteredComments.map((comment: any, index: number) => (
+    <div className="space-y-3 w-full max-w-none" data-testid="comments-list">
+      {topLevelComments.map((comment: any, index: number) => (
         <div 
           key={comment.id} 
           onClick={comment.timestamp !== null ? () => onTimestampClick?.(comment.timestamp!) : undefined}
