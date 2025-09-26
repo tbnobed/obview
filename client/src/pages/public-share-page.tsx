@@ -1344,19 +1344,33 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  img: ({ node, ...props }) => (
-                    <img 
-                      {...props} 
-                      className="max-w-full h-auto rounded-md my-1 border border-gray-600"
-                      style={{ maxHeight: '200px' }}
-                      onClick={(e) => e.stopPropagation()} 
-                    />
-                  ),
+                  img: ({ node, ...props }) => {
+                    // Rewrite image URLs to use share token for public access
+                    const src = props.src;
+                    const rewrittenSrc = src && src.startsWith('/api/files/') && src.includes('/content') 
+                      ? src.replace('/api/files/', `/api/share/${token}/files/`)
+                      : src;
+                    
+                    return (
+                      <img 
+                        {...props}
+                        src={rewrittenSrc}
+                        className="max-w-full h-auto rounded-md my-1 border border-gray-600"
+                        style={{ maxHeight: '200px' }}
+                        onClick={(e) => e.stopPropagation()} 
+                      />
+                    );
+                  },
                   a: ({ node, href, ...props }) => {
                     const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
+                    // Rewrite file download URLs to use share token
+                    const rewrittenHref = isFileDownload 
+                      ? href.replace('/api/files/', `/api/share/${token}/files/`)
+                      : href;
+                    
                     return (
                       <a 
-                        href={href}
+                        href={rewrittenHref}
                         {...props} 
                         className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
                         target="_blank" 
@@ -1365,7 +1379,7 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                           e.stopPropagation();
                           if (isFileDownload) {
                             e.preventDefault();
-                            window.open(href, '_blank');
+                            window.open(rewrittenHref, '_blank');
                           }
                         }}
                       >
@@ -1525,19 +1539,33 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
-                    img: ({ node, ...props }) => (
-                      <img 
-                        {...props} 
-                        className="max-w-full h-auto rounded-md my-1 border border-gray-600"
-                        style={{ maxHeight: '300px' }}
-                        onClick={(e) => e.stopPropagation()} 
-                      />
-                    ),
+                    img: ({ node, ...props }) => {
+                      // Rewrite image URLs to use share token for public access
+                      const src = props.src;
+                      const rewrittenSrc = src && src.startsWith('/api/files/') && src.includes('/content') 
+                        ? src.replace('/api/files/', `/api/share/${token}/files/`)
+                        : src;
+                      
+                      return (
+                        <img 
+                          {...props}
+                          src={rewrittenSrc}
+                          className="max-w-full h-auto rounded-md my-1 border border-gray-600"
+                          style={{ maxHeight: '300px' }}
+                          onClick={(e) => e.stopPropagation()} 
+                        />
+                      );
+                    },
                     a: ({ node, href, ...props }) => {
                       const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
+                      // Rewrite file download URLs to use share token
+                      const rewrittenHref = isFileDownload 
+                        ? href.replace('/api/files/', `/api/share/${token}/files/`)
+                        : href;
+                      
                       return (
                         <a 
-                          href={href}
+                          href={rewrittenHref}
                           {...props} 
                           className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
                           target="_blank" 
@@ -1546,7 +1574,7 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                             e.stopPropagation();
                             if (isFileDownload) {
                               e.preventDefault();
-                              window.open(href, '_blank');
+                              window.open(rewrittenHref, '_blank');
                             }
                           }}
                         >

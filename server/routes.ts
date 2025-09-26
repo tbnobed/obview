@@ -2530,6 +2530,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+
+  // Serve file content through share token (for attached images in comments)
+  app.get("/api/share/:token/files/:fileId/content", async (req, res, next) => {
+    try {
+      const token = req.params.token;
+      const fileId = parseInt(req.params.fileId);
+      
+      console.log(`[SHARE FILE] Request for file ${fileId} via token: ${token}`);
+      
+      // Find the main shared file by token to validate access
+      const files = await storage.getAllFiles();
+      const sharedFile = files.find((f: StorageFile) => f.shareToken === token);
+      
+      if (!sharedFile) {
+        console.error(`[SHARE FILE] Invalid share token: ${token}`);
+        return res.status(404).json({ message: "Share link not found" });
+      }
+      
+      // Get the requested file
+      const requestedFile = await storage.getFile(fileId);
+      if (!requestedFile) {
+        console.error(`[SHARE FILE] File not found: ${fileId}`);
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check if the requested file belongs to the same project as the shared file
+      if (requestedFile.projectId !== sharedFile.projectId) {
+        console.error(`[SHARE FILE] File ${fileId} not in same project as shared file`);
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Check if file is available
+      if (requestedFile.isAvailable === false) {
+        console.log(`[SHARE FILE] File marked as unavailable: ${fileId}`);
+        return res.status(404).json({ message: "File not available" });
+      }
+      
+      // Check if the file physically exists
+      const fileExists = await fileSystem.fileExists(requestedFile.filePath);
+      if (!fileExists) {
+        console.error(`[SHARE FILE] Physical file not found: ${requestedFile.filePath}`);
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Set appropriate content type
+      const fileExt = requestedFile.filename.split('.').pop()?.toLowerCase();
+      let contentType = 'application/octet-stream';
+      
+      if (fileExt === 'png') {
+        contentType = 'image/png';
+      } else if (fileExt === 'jpg' || fileExt === 'jpeg') {
+        contentType = 'image/jpeg';
+      } else if (fileExt === 'gif') {
+        contentType = 'image/gif';
+      } else if (fileExt === 'webp') {
+        contentType = 'image/webp';
+      } else if (fileExt === 'svg') {
+        contentType = 'image/svg+xml';
+      } else if (requestedFile.fileType === 'image') {
+        contentType = 'image/png'; // Default for images
+      }
+      
+      // Set headers
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      
+      console.log(`[SHARE FILE] Serving file ${fileId} (${requestedFile.filename}) - type: ${contentType}`);
+      
+      // Send the file
+      res.sendFile(requestedFile.filePath, { 
+        root: '/',
+        headers: {
+          'Content-Type': contentType,
+          'Accept-Ranges': 'bytes'
+        }
+      }, (err) => {
+        if (err) {
+          console.error(`[SHARE FILE] Error sending file: ${err.message}`);
+          if (!res.headersSent) {
+            res.status(500).json({ message: "Error serving file" });
+          }
+        } else {
+          console.log(`[SHARE FILE] File sent successfully`);
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
   
   // Create public share link
   app.post("/api/files/:fileId/share", isAuthenticated, async (req, res, next) => {
