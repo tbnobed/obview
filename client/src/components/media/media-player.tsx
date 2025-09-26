@@ -1030,12 +1030,10 @@ export default function MediaPlayer({
         {/* Header/toolbar area if needed */}
         <div></div>
         
-        {/* Media container - grows to fill space with 16:9 aspect ratio */}
-        <div className="relative min-h-0 bg-black overflow-hidden flex items-center justify-center">
-          <div className="relative w-full max-h-full" style={{ aspectRatio: '16/9' }}>
-            <div className="absolute inset-0">
-              {renderMediaContent()}
-            </div>
+        {/* Media container - sized to content with 16:9 aspect ratio */}
+        <div className="relative min-h-0 bg-black overflow-hidden flex items-center justify-center p-4">
+          <div className="relative w-full max-w-full" style={{ aspectRatio: '16/9' }}>
+            {renderMediaContent()}
           </div>
         </div>
         
