@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
+import { config } from './utils/config.js';
 
 export interface VideoProcessingOptions {
   inputPath: string;
@@ -215,17 +216,21 @@ export class VideoProcessor {
         return null;
       }
       
-      // FFmpeg arguments for high-quality encoding optimized for web
+      // FFmpeg arguments for H.264 720p encoding optimized for low bandwidth
       const args = [
         '-i', inputPath,
         '-c:v', 'libx264',
-        '-preset', 'medium', // Balance between speed and compression
-        '-crf', '23', // High quality
+        '-preset', config.video.main.preset,
+        '-crf', config.video.main.crf.toString(),
+        '-profile:v', config.video.main.profile,
+        '-level', config.video.main.level,
+        '-pix_fmt', 'yuv420p', // Ensures compatibility with all players
+        '-vf', `scale=-2:720`, // Scale to 720p height, maintain aspect ratio
         '-maxrate', quality.bitrate,
         '-bufsize', `${parseInt(quality.bitrate) * 2}k`,
-        '-vf', `scale=${quality.width}:${quality.height}:force_original_aspect_ratio=decrease,pad=${quality.width}:${quality.height}:(ow-iw)/2:(oh-ih)/2`,
         '-c:a', 'aac',
-        '-b:a', '128k',
+        '-b:a', config.video.main.audioBitrate,
+        '-ar', config.video.main.audioSampleRate.toString(),
         '-movflags', '+faststart', // Enable progressive download
         '-f', 'mp4',
         '-y', // Overwrite output
