@@ -175,14 +175,13 @@ export default function TimelineComments({
     );
   };
 
-  // Format time for Frame.io style (HH:MM:SS:FF - hours:minutes:seconds:frames)
+  // Format time (HH:MM:SS)
   const formatTime = (time: number) => {
     const hours = Math.floor(time / 3600);
     const minutes = Math.floor((time % 3600) / 60);
     const seconds = Math.floor(time % 60);
-    const frames = Math.floor((time % 1) * 24); // Assume 24fps for frame calculation
     
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')};${frames.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
 
