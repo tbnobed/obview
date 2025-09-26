@@ -125,7 +125,7 @@ export default function Header() {
       <div className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 flex items-center justify-between px-4 py-2 sm:px-6 md:hidden">
         <Logo size="sm" />
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-1">
           <ThemeToggle />
           {user && <UserProfileDropdown />}
           
@@ -144,7 +144,7 @@ export default function Header() {
       </div>
       
       {/* Desktop header - visible only on desktop */}
-      <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 items-center justify-between px-4 py-2 h-16">
+      <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 items-center justify-between px-4 py-1 h-12">
         {/* Left side - Toggle sidebar button */}
         <Button
           variant="ghost"
@@ -160,7 +160,7 @@ export default function Header() {
         </Button>
         
         {/* Right side - User controls */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1">
           <ThemeToggle />
           {user && <UserProfileDropdown />}
         </div>
