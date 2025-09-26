@@ -320,6 +320,7 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
             setIsScrubbing(false);
             setScrubPosition(0);
           }}
+          onClick={handleCardClick}
           data-testid={`video-preview-container-${file.id}`}
         >
           {(file.fileType === 'video' && thumbnailSrc && spriteMetadata) || (file.fileType === 'image' && thumbnailSrc) ? (
