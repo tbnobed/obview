@@ -169,21 +169,32 @@ export class VideoProcessor {
   }
 
   /**
-   * Execute FFmpeg command safely
+   * Execute FFmpeg command safely with timeout
    */
-  private static executeFFmpeg(args: string[]): Promise<void> {
+  private static executeFFmpeg(args: string[], timeoutMs: number = 300000): Promise<void> { // 5 minute default timeout
     return new Promise((resolve, reject) => {
       const ffmpeg = spawn('ffmpeg', args, {
         stdio: ['ignore', 'pipe', 'pipe']
       });
       
       let stderr = '';
+      let isTimeout = false;
+      
+      // Set up timeout
+      const timeout = setTimeout(() => {
+        isTimeout = true;
+        ffmpeg.kill('SIGKILL');
+        reject(new Error(`FFmpeg timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
       
       ffmpeg.stderr.on('data', (data) => {
         stderr += data.toString();
       });
       
       ffmpeg.on('close', (code) => {
+        clearTimeout(timeout);
+        if (isTimeout) return; // Already handled by timeout
+        
         if (code === 0) {
           resolve();
         } else {
@@ -192,6 +203,8 @@ export class VideoProcessor {
       });
       
       ffmpeg.on('error', (error) => {
+        clearTimeout(timeout);
+        if (isTimeout) return; // Already handled by timeout
         reject(new Error(`FFmpeg spawn error: ${error.message}`));
       });
     });
@@ -216,29 +229,30 @@ export class VideoProcessor {
         return null;
       }
       
-      // FFmpeg arguments for H.264 720p encoding optimized for low bandwidth
+      // FFmpeg arguments for H.264 720p encoding optimized for speed and low bandwidth
       const args = [
         '-i', inputPath,
         '-c:v', 'libx264',
-        '-preset', config.video.main.preset,
-        '-crf', config.video.main.crf.toString(),
-        '-profile:v', config.video.main.profile,
-        '-level', config.video.main.level,
+        '-preset', 'fast', // Use faster preset for quicker encoding
+        '-crf', '26', // Slightly higher CRF for faster encoding with acceptable quality
+        '-profile:v', 'main', // Use main profile for better compatibility and speed
+        '-level', '3.1',
         '-pix_fmt', 'yuv420p', // Ensures compatibility with all players
-        '-vf', `scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2`, // Cap at 720p, pad to exact dimensions
+        '-vf', `scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black`, // Cap at 720p, pad with black
         '-maxrate', quality.bitrate,
-        '-bufsize', `${parseInt(quality.bitrate) * 2}k`,
+        '-bufsize', `${parseInt(quality.bitrate) * 1.5}k`, // Reduce buffer size for faster encoding
         '-c:a', 'aac',
-        '-b:a', config.video.main.audioBitrate,
-        '-ar', config.video.main.audioSampleRate.toString(),
+        '-b:a', '96k', // Lower audio bitrate for speed
+        '-ar', '44100', // Standard sample rate
         '-movflags', '+faststart', // Enable progressive download
+        '-threads', '0', // Use all available CPU threads
         '-f', 'mp4',
         '-y', // Overwrite output
         outputPath
       ];
       
-      console.log(`[VideoProcessor] Generating ${quality.name}...`);
-      await this.executeFFmpeg(args);
+      console.log(`[VideoProcessor] Generating ${quality.name} with optimized settings...`);
+      await this.executeFFmpeg(args, 180000); // 3 minute timeout for 720p generation
       
       // Get file size
       const stats = await fs.stat(outputPath);
@@ -289,7 +303,7 @@ export class VideoProcessor {
       ];
       
       console.log(`[VideoProcessor] Generating scrub version...`);
-      await this.executeFFmpeg(args);
+      await this.executeFFmpeg(args, 120000); // 2 minute timeout for scrub version
       
       return outputPath;
     } catch (error) {
