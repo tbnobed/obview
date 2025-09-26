@@ -10,6 +10,13 @@ export interface CommentReaction {
   userReacted: boolean;
 }
 
+export interface CommentReactionWithUsers {
+  reactionType: string;
+  count: number;
+  userReacted: boolean;
+  users: { name: string; isCurrentUser: boolean }[];
+}
+
 export function useCommentReactions(commentId: string) {
   const { user } = useAuth();
   
@@ -95,6 +102,37 @@ export function useRemoveReaction(commentId: string) {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+}
+
+export function useCommentReactionsWithUsers(commentId: string) {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['/api/comments', commentId, 'reactions', 'with-users'],
+    queryFn: async (): Promise<CommentReactionWithUsers[]> => {
+      const headers: Record<string, string> = {};
+      
+      // Add visitor token for anonymous users
+      if (!user) {
+        headers['X-Visitor-Token'] = getVisitorToken();
+      }
+      
+      const response = await fetch(`/api/comments/${commentId}/reactions?includeUsers=true`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch reactions with users: ${response.statusText}`);
+      }
+      
+      return await response.json();
     },
   });
 }
