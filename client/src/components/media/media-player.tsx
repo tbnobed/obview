@@ -1033,10 +1033,10 @@ export default function MediaPlayer({
             {renderMediaContent()}
           </div>
           
-          <div className="bg-white dark:bg-[#0a0d14] p-4 border-t border-neutral-100 dark:border-gray-800">
+          <div className="bg-white dark:bg-[#0a0d14] p-4 border-t border-neutral-100 dark:border-gray-800 min-h-[120px]">
             {/* Media player controls - Only shown when no error */}
             {!mediaError && (
-              <div className="flex items-center mb-2 space-x-2">
+              <div className="flex items-center mb-3 space-x-3 flex-wrap gap-y-2">
                 <Button
                   onClick={togglePlay}
                   variant="ghost"
