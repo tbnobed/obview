@@ -11,10 +11,44 @@ echo "Waiting for database to be ready..."
   exit 1
 }
 
-# Sync database schema first (for unified comment system)
-echo "Syncing database schema..."
-npm run db:push --force || {
-  echo "Warning: Schema sync encountered issues. Attempting to continue..."
+# Create comments_unified table safely if it doesn't exist
+echo "Ensuring unified comment system table exists..."
+psql $DATABASE_URL -c "
+CREATE TABLE IF NOT EXISTS comments_unified (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+    file_id INTEGER NOT NULL,
+    user_id INTEGER,
+    is_public BOOLEAN NOT NULL DEFAULT false,
+    author_name TEXT NOT NULL,
+    author_email TEXT,
+    creator_token TEXT,
+    parent_id TEXT,
+    content TEXT NOT NULL,
+    timestamp INTEGER,
+    is_resolved BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+-- Add foreign key constraints if they don't exist
+DO \$\$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_comments_unified_file_id') THEN
+        ALTER TABLE comments_unified ADD CONSTRAINT fk_comments_unified_file_id FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_comments_unified_user_id') THEN
+        ALTER TABLE comments_unified ADD CONSTRAINT fk_comments_unified_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_comments_unified_parent_id') THEN
+        ALTER TABLE comments_unified ADD CONSTRAINT fk_comments_unified_parent_id FOREIGN KEY (parent_id) REFERENCES comments_unified(id) ON DELETE SET NULL;
+    END IF;
+END \$\$;
+
+-- Create indexes if they don't exist
+CREATE INDEX IF NOT EXISTS idx_comments_unified_file_id ON comments_unified(file_id);
+CREATE INDEX IF NOT EXISTS idx_comments_unified_user_id ON comments_unified(user_id);
+CREATE INDEX IF NOT EXISTS idx_comments_unified_parent_id ON comments_unified(parent_id);
+" || {
+  echo "Warning: Could not create comments_unified table. Attempting to continue..."
 }
 
 # Run migrations with error handling
