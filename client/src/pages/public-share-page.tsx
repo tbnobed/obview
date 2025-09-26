@@ -596,10 +596,10 @@ export default function PublicSharePage() {
 
       {/* Main content area - fills remaining height */}
       <div className="flex-1 p-2 sm:p-4 pb-20">
-        {/* Responsive layout: single column when view-only, two columns when comments enabled */}
-        <div className={cn("h-full grid gap-2 sm:gap-4", isViewOnly ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-3")}>
-          {/* Media Player - Full width when view-only, 2/3 when comments shown */}
-          <div className={cn("h-full", isViewOnly ? "col-span-1" : "col-span-1 lg:col-span-2")}>
+        {/* Flexbox layout: single column when view-only, two columns when comments enabled */}
+        <div className={cn("h-full flex gap-2 sm:gap-4", isViewOnly ? "flex-col" : "flex-col lg:flex-row")}>
+          {/* Media Player - Full width when view-only, 66% when comments shown */}
+          <div className={cn("flex-1", !isViewOnly && "lg:w-2/3")}>
             <Card className="h-full flex flex-col w-full">
               <CardContent className="flex-1 flex flex-col p-2">
                 {/* Video container - fills available space */}
@@ -871,10 +871,10 @@ export default function PublicSharePage() {
             </Card>
           </div>
 
-          {/* Comments Section - Takes 1/3 of space on large screens, hidden in view-only mode */}
+          {/* Comments Section - Takes 34% of space on large screens, hidden in view-only mode */}
           {!isViewOnly && (
-            <div className="col-span-1 h-full w-full min-w-0">
-              <div className="h-full flex flex-col rounded-lg overflow-hidden w-full max-w-none" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
+            <div className="flex-shrink-0 h-full lg:w-1/3 w-full">
+              <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                   <div className="flex items-center gap-2">
