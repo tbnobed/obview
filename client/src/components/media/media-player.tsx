@@ -1030,7 +1030,7 @@ export default function MediaPlayer({
       <div className="lg:col-span-2">
         <div className="relative">
           <div className="h-[calc(100vh-300px)] min-h-[500px] bg-neutral-900 rounded-t-lg overflow-visible">
-            {renderMediaContent()}
+            {/* Media content moved to new layout */}
           </div>
           
           <div className="bg-white dark:bg-[#0a0d14] p-4 border-t border-neutral-100 dark:border-gray-800">
@@ -1302,9 +1302,18 @@ export default function MediaPlayer({
         </div>
       </div>
       
-      {/* Comments Section - Takes 1/3 of the space on large screens */}
-      {file && (
-        <div className="border border-neutral-200 dark:border-gray-800 rounded-lg h-[calc(100vh-200px)] min-h-[600px] flex flex-col dark:bg-[#0f1218]">
+      {/* Main Content Area - Media Player and Comments Side by Side */}
+      <div className="flex-1 flex min-h-0">
+        {/* Media Player Section - Takes remaining space */}
+        <div className="flex-1 relative">
+          <div className="h-full bg-neutral-900 overflow-visible">
+            {renderMediaContent()}
+          </div>
+        </div>
+        
+        {/* Comments Section - Half width */}
+        {file && (
+          <div className="w-1/2 border-l border-neutral-200 dark:border-gray-800 flex flex-col dark:bg-[#0f1218] min-h-0">
           <Tabs defaultValue="comments" className="h-full flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="dark:bg-gray-900">
@@ -1401,6 +1410,7 @@ export default function MediaPlayer({
           </Tabs>
         </div>
       )}
+      </div>
       
       {/* File upload dialog */}
       <Dialog open={isVersionDialogOpen} onOpenChange={setIsVersionDialogOpen}>
