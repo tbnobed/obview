@@ -1097,12 +1097,13 @@ export default function PublicSharePage() {
 }
 
 // Public Comment Form Component
-function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: { 
+function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess, onInputFocus }: { 
   token: string; 
   fileId: number; 
   currentTime: number; 
   parentId?: string;
   onSuccess?: () => void;
+  onInputFocus?: () => void;
 }) {
   const { toast } = useToast();
   
@@ -1248,6 +1249,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
           onChange={(e) => {
             setContent(e.target.value);
           }}
+          onFocus={onInputFocus}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();

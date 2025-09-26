@@ -18,6 +18,7 @@ interface CommentFormProps {
   currentTime?: number;
   onSuccess?: () => void;
   className?: string;
+  onInputFocus?: () => void;
 }
 
 export default function CommentForm({ 
@@ -25,7 +26,8 @@ export default function CommentForm({
   parentId, 
   currentTime, 
   onSuccess,
-  className
+  className,
+  onInputFocus
 }: CommentFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -281,6 +283,7 @@ export default function CommentForm({
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
+          onFocus={onInputFocus}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
