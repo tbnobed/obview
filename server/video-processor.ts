@@ -225,7 +225,7 @@ export class VideoProcessor {
         '-profile:v', config.video.main.profile,
         '-level', config.video.main.level,
         '-pix_fmt', 'yuv420p', // Ensures compatibility with all players
-        '-vf', `scale=1280:720:force_original_aspect_ratio=decrease`, // Cap at 720p, maintain aspect ratio
+        '-vf', `scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2`, // Cap at 720p, pad to exact dimensions
         '-maxrate', quality.bitrate,
         '-bufsize', `${parseInt(quality.bitrate) * 2}k`,
         '-c:a', 'aac',
