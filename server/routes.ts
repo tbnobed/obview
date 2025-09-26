@@ -2938,6 +2938,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== COMMENT REACTIONS ROUTES =====
+  // Add reaction to a comment
+  app.post("/api/comments/:commentId/reactions", async (req, res, next) => {
+    try {
+      const commentId = req.params.commentId;
+      const { reactionType, creatorToken } = req.body;
+      
+      // Check if the comment exists
+      const comment = await storage.getUnifiedComment(commentId);
+      if (!comment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      let userId = null;
+      
+      // Handle authentication - either authenticated user or public user with token
+      if (req.user) {
+        userId = req.user.id;
+      } else if (!creatorToken) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Validate reaction type
+      const validReactions = ["👍", "❤️", "👏", "🎉", "😮", "😢", "😡"];
+      if (!validReactions.includes(reactionType)) {
+        return res.status(400).json({ message: "Invalid reaction type" });
+      }
+      
+      // Add or update reaction
+      const reaction = await storage.addCommentReaction({
+        commentId,
+        userId,
+        creatorToken,
+        reactionType
+      });
+      
+      res.status(201).json(reaction);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Remove reaction from a comment
+  app.delete("/api/comments/:commentId/reactions/:reactionType", async (req, res, next) => {
+    try {
+      const commentId = req.params.commentId;
+      const reactionType = req.params.reactionType;
+      const { creatorToken } = req.body;
+      
+      let userId = null;
+      
+      // Handle authentication
+      if (req.user) {
+        userId = req.user.id;
+      } else if (!creatorToken) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const success = await storage.removeCommentReaction({
+        commentId,
+        userId,
+        creatorToken,
+        reactionType
+      });
+      
+      if (!success) {
+        return res.status(404).json({ message: "Reaction not found" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Get reactions for a comment
+  app.get("/api/comments/:commentId/reactions", async (req, res, next) => {
+    try {
+      const commentId = req.params.commentId;
+      
+      // Check if the comment exists
+      const comment = await storage.getUnifiedComment(commentId);
+      if (!comment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      const reactions = await storage.getCommentReactions(commentId);
+      res.json(reactions);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Mark comment as resolved/unresolved
+  app.patch("/api/comments/:commentId/resolve", async (req, res, next) => {
+    try {
+      const commentId = req.params.commentId;
+      const { isResolved } = req.body;
+      
+      if (typeof isResolved !== 'boolean') {
+        return res.status(400).json({ message: "isResolved must be a boolean" });
+      }
+      
+      // Check if the comment exists
+      const comment = await storage.getUnifiedComment(commentId);
+      if (!comment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      // For authenticated users, check project access
+      if (req.user) {
+        const file = await storage.getFile(comment.fileId);
+        if (!file) {
+          return res.status(404).json({ message: "File not found" });
+        }
+        
+        const hasAccess = await storage.hasProjectAccess(req.user.id, file.projectId);
+        if (!hasAccess && req.user.role !== "admin") {
+          return res.status(403).json({ message: "You don't have access to this project" });
+        }
+      } else {
+        // For public comments, only allow if it's a public comment
+        if (!comment.isPublic) {
+          return res.status(403).json({ message: "Authentication required to resolve private comments" });
+        }
+      }
+      
+      const updatedComment = await storage.updateUnifiedComment(commentId, { isResolved });
+      
+      if (!updatedComment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      res.json(updatedComment);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // ===== APPROVAL ROUTES =====
   // Get approvals for a file
   app.get("/api/files/:fileId/approvals", isAuthenticated, async (req, res, next) => {

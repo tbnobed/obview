@@ -6,6 +6,7 @@ import {
   comments,
   publicComments,
   commentsUnified,
+  commentReactions,
   projectUsers,
   activityLogs,
   invitations,
@@ -27,6 +28,8 @@ import {
   type UnifiedComment,
   type CommentUnified,
   type InsertCommentUnified,
+  type CommentReaction,
+  type InsertCommentReaction,
   type ProjectUser,
   type InsertProjectUser,
   type ActivityLog,
@@ -149,6 +152,11 @@ export interface IStorage {
   getPasswordResetByToken(token: string): Promise<PasswordReset | undefined>;
   getPasswordResetsByUser(userId: number): Promise<PasswordReset[]>;
   updatePasswordReset(id: number, data: Partial<PasswordReset>): Promise<PasswordReset | undefined>;
+
+  // Comment Reactions
+  addCommentReaction(reaction: InsertCommentReaction): Promise<CommentReaction>;
+  removeCommentReaction(params: { commentId: string; userId?: number | null; creatorToken?: string; reactionType: string }): Promise<boolean>;
+  getCommentReactions(commentId: string): Promise<{ reactionType: string; count: number; userReacted?: boolean }[]>;
 
   // Session store
   sessionStore: any; // Using any to avoid type issues
@@ -1193,6 +1201,30 @@ export class MemStorage implements IStorage {
     }
     
     return false;
+  }
+
+  // Comment Reactions (MemStorage - in-memory implementation)
+  async addCommentReaction(reaction: InsertCommentReaction): Promise<CommentReaction> {
+    // For MemStorage, we don't have persistent reactions
+    // This is a placeholder implementation for testing
+    const id = Math.floor(Math.random() * 1000000);
+    const now = new Date();
+    const newReaction: CommentReaction = {
+      ...reaction,
+      id,
+      createdAt: now
+    };
+    return newReaction;
+  }
+
+  async removeCommentReaction(params: { commentId: string; userId?: number | null; creatorToken?: string; reactionType: string }): Promise<boolean> {
+    // For MemStorage, this is a placeholder
+    return true;
+  }
+
+  async getCommentReactions(commentId: string): Promise<{ reactionType: string; count: number; userReacted?: boolean }[]> {
+    // For MemStorage, return empty array
+    return [];
   }
 }
 
@@ -2389,6 +2421,102 @@ export class DatabaseStorage implements IStorage {
     }
     
     return false;
+  }
+
+  // Comment Reactions (Database implementation)
+  async addCommentReaction(reaction: InsertCommentReaction): Promise<CommentReaction> {
+    // First, check if this user/token already has a reaction of this type on this comment
+    let existing;
+    if (reaction.userId) {
+      [existing] = await db
+        .select()
+        .from(commentReactions)
+        .where(
+          and(
+            eq(commentReactions.commentId, reaction.commentId),
+            eq(commentReactions.userId, reaction.userId),
+            eq(commentReactions.reactionType, reaction.reactionType)
+          )
+        );
+    } else if (reaction.creatorToken) {
+      [existing] = await db
+        .select()
+        .from(commentReactions)
+        .where(
+          and(
+            eq(commentReactions.commentId, reaction.commentId),
+            eq(commentReactions.creatorToken, reaction.creatorToken),
+            eq(commentReactions.reactionType, reaction.reactionType)
+          )
+        );
+    }
+    
+    if (existing) {
+      // Return existing reaction instead of creating duplicate
+      return existing;
+    }
+    
+    // Create new reaction
+    const [newReaction] = await db
+      .insert(commentReactions)
+      .values(reaction)
+      .returning();
+      
+    return newReaction;
+  }
+
+  async removeCommentReaction(params: { commentId: string; userId?: number | null; creatorToken?: string; reactionType: string }): Promise<boolean> {
+    let result;
+    
+    if (params.userId) {
+      result = await db
+        .delete(commentReactions)
+        .where(
+          and(
+            eq(commentReactions.commentId, params.commentId),
+            eq(commentReactions.userId, params.userId),
+            eq(commentReactions.reactionType, params.reactionType)
+          )
+        )
+        .returning({ deletedId: commentReactions.id });
+    } else if (params.creatorToken) {
+      result = await db
+        .delete(commentReactions)
+        .where(
+          and(
+            eq(commentReactions.commentId, params.commentId),
+            eq(commentReactions.creatorToken, params.creatorToken),
+            eq(commentReactions.reactionType, params.reactionType)
+          )
+        )
+        .returning({ deletedId: commentReactions.id });
+    } else {
+      return false;
+    }
+    
+    return result.length > 0;
+  }
+
+  async getCommentReactions(commentId: string): Promise<{ reactionType: string; count: number; userReacted?: boolean }[]> {
+    // Get all reactions for this comment grouped by reaction type
+    const reactions = await db
+      .select()
+      .from(commentReactions)
+      .where(eq(commentReactions.commentId, commentId));
+    
+    // Group by reaction type and count
+    const reactionCounts = new Map<string, number>();
+    
+    for (const reaction of reactions) {
+      const current = reactionCounts.get(reaction.reactionType) || 0;
+      reactionCounts.set(reaction.reactionType, current + 1);
+    }
+    
+    // Convert to the expected format
+    return Array.from(reactionCounts.entries()).map(([reactionType, count]) => ({
+      reactionType,
+      count
+    }));
   }
 }
 
