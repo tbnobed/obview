@@ -858,7 +858,7 @@ export default function MediaPlayer({
           
           <video
             ref={videoRef}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain bg-black"
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onEnded={handleMediaEnded}
@@ -1024,17 +1024,21 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full min-h-0">
       {/* Media Viewer - Takes remaining space */}
-      <div className="flex-1">
-        <div className="relative flex flex-col h-full">
-          <div className="flex-1 bg-neutral-900 rounded-t-lg overflow-visible">
-            {renderMediaContent()}
-          </div>
-          
-          <div className="bg-black p-6 border-t border-gray-800 mt-auto">
-            {/* Media player controls - Only shown when no error */}
-            {!mediaError && (
+      <div className="flex-1 min-h-0 grid grid-rows-[auto,1fr,auto]">
+        {/* Header/toolbar area if needed */}
+        <div></div>
+        
+        {/* Media container - grows to fill space */}
+        <div className="relative min-h-0 bg-black overflow-hidden">
+          {renderMediaContent()}
+        </div>
+        
+        {/* Bottom controls area */}
+        <div className="bg-black p-6 border-t border-gray-800">
+          {/* Media player controls - Only shown when no error */}
+          {!mediaError && (
               <div className="flex items-center mb-2 space-x-2">
                 <Button
                   onClick={togglePlay}
@@ -1242,9 +1246,10 @@ export default function MediaPlayer({
                 </Button>
               </div>
             )}
+          )}
             
-            {/* File selector and actions - Always visible regardless of error state */}
-            <div className={cn(
+          {/* File selector and actions - Always visible regardless of error state */}
+          <div className={cn(
               "flex justify-end items-center",
               !mediaError ? "mt-2 pt-2" : "pt-1"
             )}>

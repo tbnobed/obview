@@ -337,32 +337,6 @@ export default function ProjectPage() {
   
   // Status update is now handled in the MediaPlayer component
 
-  // Full-screen player mode
-  if (activeTab === "media" && viewMode === "player" && selectedFileId) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black">
-        {/* Back to Grid Button */}
-        <div className="absolute top-4 right-4 z-10">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setViewMode('grid')}
-            className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
-          >
-            ← Back to Grid
-          </Button>
-        </div>
-        <MediaPlayer
-          file={files?.find(f => f.id === selectedFileId) || null}
-          projectId={projectId}
-          onSelectFile={setSelectedFileId}
-          files={files || []}
-          initialTime={initialTime}
-          project={project}
-        />
-      </div>
-    );
-  }
 
   return (
     <AppLayout>
@@ -610,15 +584,15 @@ export default function ProjectPage() {
       </header>
       
       {/* Main Content */}
-      <main className={cn(
-        "flex-1 overflow-y-auto bg-neutral-100 dark:bg-[#080b12]",
+      <div className={cn(
+        "flex-1 min-h-0 overflow-hidden bg-neutral-100 dark:bg-[#080b12] flex flex-col",
         activeTab === "media" && viewMode === "player" 
-          ? "p-0 h-[calc(100vh-140px)] min-h-0 flex flex-col" 
+          ? "p-0" 
           : "p-4 sm:p-6 lg:p-8"
       )}>
         {activeTab === "media" && (
           <div className={cn(
-            "bg-white dark:bg-[#0f1218] shadow dark:shadow-gray-900 h-full flex flex-col",
+            "bg-white dark:bg-[#0f1218] shadow dark:shadow-gray-900 flex-1 min-h-0 flex flex-col overflow-hidden",
             viewMode === "player" ? "rounded-none" : "rounded-lg"
           )}>
             {filesLoading ? (
@@ -639,7 +613,7 @@ export default function ProjectPage() {
                 )}
                 
                 {viewMode === 'player' && selectedFileId && (
-                  <div className="relative flex-1 min-h-0">
+                  <div className="flex-1 min-h-0 overflow-hidden relative">
                     {/* Back to Grid Button */}
                     <div className="absolute top-4 right-4 z-10">
                       <Button 
@@ -750,7 +724,7 @@ export default function ProjectPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
     </AppLayout>
   );
 }
