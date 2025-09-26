@@ -225,6 +225,22 @@ export const videoProcessing = pgTable("video_processing", {
 export const insertVideoProcessingSchema = createInsertSchema(videoProcessing)
   .omit({ id: true, createdAt: true });
 
+// COMMENT REACTIONS SCHEMA
+export const commentReactions = pgTable("comment_reactions", {
+  id: serial("id").primaryKey(),
+  commentId: text("comment_id").notNull().references(() => commentsUnified.id, { onDelete: "cascade" }),
+  userId: integer("user_id").references(() => users.id), // Nullable for public reactions
+  creatorToken: text("creator_token"), // For public user reactions
+  reactionType: text("reaction_type").notNull(), // "👍", "❤️", "👏", "🎉", "😮", "😢", "😡"
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertCommentReactionSchema = createInsertSchema(commentReactions)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    reactionType: z.enum(["👍", "❤️", "👏", "🎉", "😮", "😢", "😡"]),
+  });
+
 // Type definitions
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -299,3 +315,6 @@ export type InsertApproval = z.infer<typeof insertApprovalSchema>;
 
 export type VideoProcessing = typeof videoProcessing.$inferSelect;
 export type InsertVideoProcessing = z.infer<typeof insertVideoProcessingSchema>;
+
+export type CommentReaction = typeof commentReactions.$inferSelect;
+export type InsertCommentReaction = z.infer<typeof insertCommentReactionSchema>;
