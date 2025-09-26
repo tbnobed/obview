@@ -183,18 +183,13 @@ export default function TimelineComments({
                   commentId={reply.id}
                 />
                 
-                <div className="flex gap-2 mt-1">
-                  <div style={{scale: '0.8', transformOrigin: 'left'}}>
-                    <ReactionPicker 
-                      commentId={reply.id}
-                    />
-                  </div>
-                </div>
-                
-                {/* Action Buttons for nested replies */}
-                <div className="flex items-center gap-3">
+                {/* Action Buttons and Emoji Picker on same row for nested replies */}
+                <div className="flex items-center gap-3 mt-1">
                   <button 
-                    className="text-xs text-gray-400 hover:text-white transition-colors"
+                    className="text-xs font-medium transition-colors"
+                    style={{color: '#00ffff'}}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#00ccff'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#00ffff'}
                     onClick={(e) => {
                       e.stopPropagation();
                       setReplyingToId(replyingToId === reply.id ? null : reply.id);
@@ -205,7 +200,7 @@ export default function TimelineComments({
                   
                   {canDeleteComment(reply) && (
                     <button 
-                      className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1"
+                      className="text-xs text-red-500 hover:text-red-400 transition-colors flex items-center"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteComment(reply);
@@ -213,9 +208,14 @@ export default function TimelineComments({
                       disabled={deleteCommentMutation.isPending}
                     >
                       <Trash2 className="h-3 w-3" />
-                      Delete
                     </button>
                   )}
+                  
+                  <div style={{scale: '0.8', transformOrigin: 'left'}}>
+                    <ReactionPicker 
+                      commentId={reply.id}
+                    />
+                  </div>
                 </div>
 
                 {/* Reply Form for nested replies */}
