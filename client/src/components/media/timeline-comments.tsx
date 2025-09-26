@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useComments } from "@/hooks/use-comments";
 import CommentForm from "@/components/comments/comment-form";
 import CommentThread from "@/components/comments/comment-thread";
-import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send } from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/utils";
@@ -362,15 +362,20 @@ export default function TimelineComments({
                             {new Date(comment.createdAt).toLocaleDateString()}
                           </span>
                           {comment.timestamp !== null && (
-                            <span 
-                              className="text-xs font-mono px-2 py-1 rounded"
-                              style={{
-                                backgroundColor: 'hsl(var(--comments-timestamp-bg))',
-                                color: 'hsl(var(--comments-timestamp-fg))'
-                              }}
-                            >
-                              {formatTime(comment.timestamp)}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span 
+                                className="text-xs font-mono px-2 py-1 rounded"
+                                style={{
+                                  backgroundColor: 'hsl(var(--comments-timestamp-bg))',
+                                  color: 'hsl(var(--comments-timestamp-fg))'
+                                }}
+                              >
+                                {formatTime(comment.timestamp)}
+                              </span>
+                              {comment.isResolved && (
+                                <Check className="h-3 w-3 text-green-500" />
+                              )}
+                            </div>
                           )}
                         </div>
                         <span className="text-xs font-medium" style={{color: 'hsl(var(--comments-muted))'}}>
