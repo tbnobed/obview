@@ -1246,7 +1246,6 @@ export default function MediaPlayer({
                 </Button>
               </div>
             )}
-          )}
             
           {/* File selector and actions - Always visible regardless of error state */}
           <div className={cn(
@@ -1302,7 +1301,6 @@ export default function MediaPlayer({
                 )}
               </div>
             </div>
-          </div>
         </div>
       </div>
       
