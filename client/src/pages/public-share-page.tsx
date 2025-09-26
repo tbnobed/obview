@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertCommentsUnifiedSchema, type UnifiedComment } from "@shared/schema";
 import { z } from "zod";
+import ReactionPicker from "@/components/comments/reaction-picker";
+import ReactionsDisplay from "@/components/comments/reactions-display";
 
 // Schema for request changes form
 const requestChangesSchema = z.object({
@@ -1340,10 +1342,13 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
               {comment.content}
             </div>
             
+            {/* Reactions Display */}
+            <ReactionsDisplay commentId={comment.id} />
+            
             {/* Action Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mt-1">
               <button 
-                className="text-xs text-gray-400 hover:text-white transition-colors"
+                className="text-xs text-gray-300 hover:text-cyan-400 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   setReplyingToId(replyingToId === comment.id ? null : comment.id);
@@ -1354,7 +1359,7 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
               
               {canDeleteComment(comment) && (
                 <button
-                  className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                  className="text-xs text-gray-300 hover:text-red-500 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (window.confirm("Are you sure you want to delete this comment?")) {
@@ -1367,6 +1372,10 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                   Delete
                 </button>
               )}
+              
+              <div style={{scale: '0.8', transformOrigin: 'left'}}>
+                <ReactionPicker commentId={comment.id} />
+              </div>
             </div>
 
             {/* Reply Form */}
@@ -1485,10 +1494,13 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                 )}
               </div>
 
+              {/* Reactions Display */}
+              <ReactionsDisplay commentId={comment.id} />
+              
               {/* Action Buttons */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mt-2">
                 <button 
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                  className="text-xs text-gray-300 hover:text-cyan-400 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     setReplyingToId(replyingToId === comment.id ? null : comment.id);
@@ -1499,7 +1511,7 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                 
                 {canDeleteComment(comment.id) && (
                   <button 
-                    className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1"
+                    className="text-xs text-gray-300 hover:text-red-500 transition-colors flex items-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteComment(comment.id);
@@ -1510,6 +1522,10 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                     Delete
                   </button>
                 )}
+                
+                <div style={{scale: '0.9', transformOrigin: 'left'}}>
+                  <ReactionPicker commentId={comment.id} />
+                </div>
               </div>
 
               {/* Reply Form */}
