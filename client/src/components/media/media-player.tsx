@@ -1033,7 +1033,7 @@ export default function MediaPlayer({
             {renderMediaContent()}
           </div>
           
-          <div className="bg-white dark:bg-[#0a0d14] p-6 border-t border-neutral-100 dark:border-gray-800 mt-auto">
+          <div className="bg-black p-6 border-t border-gray-800 mt-auto">
             {/* Media player controls - Only shown when no error */}
             {!mediaError && (
               <div className="flex items-center mb-2 space-x-2">
