@@ -584,7 +584,7 @@ export default function ProjectPage() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-neutral-100 dark:bg-[#080b12] p-4 sm:p-6 lg:p-8">
         {activeTab === "media" && (
-          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900">
+          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 h-full flex flex-col">
             {filesLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -603,7 +603,7 @@ export default function ProjectPage() {
                 )}
                 
                 {viewMode === 'player' && selectedFileId && (
-                  <div className="relative h-[calc(100vh-180px)] min-h-0">
+                  <div className="relative flex-1 min-h-0">
                     {/* Back to Grid Button */}
                     <div className="absolute top-4 right-4 z-10">
                       <Button 
