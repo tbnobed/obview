@@ -1024,7 +1024,7 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full min-h-0">
+    <div className="flex flex-col lg:flex-row h-full min-h-0">
       {/* Media Viewer - Takes remaining space */}
       <div className="flex-1 min-h-0 grid grid-rows-[auto,1fr,auto]">
         {/* Header/toolbar area if needed */}
