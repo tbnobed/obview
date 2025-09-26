@@ -14,7 +14,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ReactionPicker from "@/components/comments/reaction-picker";
 import ReactionsDisplay from "@/components/comments/reactions-display";
-import { useCommentReactions } from "@/hooks/use-reactions";
+import { useToggleCommentResolution } from "@/hooks/use-comments";
+import { cn } from "@/lib/utils";
 
 
 interface TimelineCommentsProps {
@@ -50,11 +51,8 @@ export default function TimelineComments({
   } = useComments(fileId);
   
 
-  // Helper function to get user reactions for a comment
-  const getUserReactions = (commentId: string) => {
-    const { data: reactions = [] } = useCommentReactions(commentId);
-    return reactions.filter(r => r.userReacted).map(r => r.reactionType);
-  };
+  // Toggle comment resolution mutation
+  const toggleResolutionMutation = useToggleCommentResolution(fileId);
   
   // Delete comment mutation  
   const deleteCommentMutation = useMutation({
@@ -189,7 +187,6 @@ export default function TimelineComments({
                   <div style={{scale: '0.8', transformOrigin: 'left'}}>
                     <ReactionPicker 
                       commentId={reply.id}
-                      userReactions={getUserReactions(reply.id)}
                     />
                   </div>
                 </div>
@@ -449,10 +446,30 @@ export default function TimelineComments({
                           Reply
                         </button>
                         
+                        {/* Resolve button - only show for authenticated users */}
+                        {user && (
+                          <Button 
+                            variant="link" 
+                            className={cn(
+                              "text-xs p-0 h-auto font-medium",
+                              comment.isResolved ? "text-neutral-500" : "text-green-500"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleResolutionMutation.mutate({
+                                commentId: comment.id,
+                                isResolved: !comment.isResolved
+                              });
+                            }}
+                            disabled={toggleResolutionMutation.isPending}
+                          >
+                            {comment.isResolved ? "Unresolve" : "Resolve"}
+                          </Button>
+                        )}
+                        
                         <div style={{scale: '0.9', transformOrigin: 'left'}}>
                           <ReactionPicker 
                             commentId={comment.id}
-                            userReactions={getUserReactions(comment.id)}
                           />
                         </div>
                       </div>

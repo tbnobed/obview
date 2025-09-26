@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Smile } from "lucide-react";
-import { useAddReaction, useRemoveReaction } from "@/hooks/use-reactions";
+import { useAddReaction, useRemoveReaction, useCommentReactions } from "@/hooks/use-reactions";
 
 interface ReactionPickerProps {
   commentId: string;
@@ -20,10 +20,14 @@ export default function ReactionPicker({
   const [showPicker, setShowPicker] = useState(false);
   const addReaction = useAddReaction(commentId);
   const removeReaction = useRemoveReaction(commentId);
+  
+  // Always call the hook but use userReactions prop if provided
+  const { data: reactions = [] } = useCommentReactions(commentId);
+  const actualUserReactions = userReactions.length > 0 ? userReactions : reactions.filter(r => r.userReacted).map(r => r.reactionType);
 
   const handleReactionClick = async (reactionType: string) => {
     try {
-      if (userReactions.includes(reactionType)) {
+      if (actualUserReactions.includes(reactionType)) {
         // Remove reaction
         await removeReaction.mutateAsync({ reactionType });
       } else {
@@ -57,7 +61,7 @@ export default function ReactionPicker({
                 key={reaction}
                 className={cn(
                   "text-lg p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
-                  userReactions.includes(reaction) && "bg-blue-100 dark:bg-blue-900/30"
+                  actualUserReactions.includes(reaction) && "bg-blue-100 dark:bg-blue-900/30"
                 )}
                 onClick={() => handleReactionClick(reaction)}
                 disabled={addReaction.isPending || removeReaction.isPending}
