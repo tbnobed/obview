@@ -2506,14 +2506,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Explicitly set Cross-Origin headers to allow browser media playback
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       
+      // For video files, check if optimized H.264 720p version is available
+      let fileToServe = file.filePath;
+      let finalContentType = contentType;
+      
+      if (contentType.startsWith('video/')) {
+        console.log(`[PRODUCTION SHARE] Video file detected, checking for optimized versions...`);
+        
+        try {
+          const processing = await storage.getVideoProcessing(file.id);
+          if (processing && processing.status === 'completed' && processing.qualities) {
+            const quality720p = processing.qualities.find((q: any) => q.resolution === '720p');
+            
+            if (quality720p && typeof quality720p.path === 'string' && existsSync(quality720p.path)) {
+              fileToServe = quality720p.path;
+              finalContentType = 'video/mp4'; // H.264 files are always MP4
+              console.log(`[PRODUCTION SHARE] Using optimized 720p H.264 version: ${quality720p.path}`);
+            } else {
+              console.log(`[PRODUCTION SHARE] No 720p version available, using original file`);
+            }
+          } else {
+            console.log(`[PRODUCTION SHARE] No video processing data or not completed, using original file`);
+          }
+        } catch (processingError) {
+          console.error(`[PRODUCTION SHARE] Error checking video processing:`, processingError);
+          console.log(`[PRODUCTION SHARE] Falling back to original file`);
+        }
+      }
+      
+      // Update content type header if changed
+      if (finalContentType !== contentType) {
+        res.setHeader('Content-Type', finalContentType);
+      }
+      
       // Log that we're sending the file
-      console.log(`[PRODUCTION SHARE] Serving file ${file.id} (${file.filename}) - type: ${contentType}, path: ${file.filePath}`);
+      console.log(`[PRODUCTION SHARE] Serving file ${file.id} (${file.filename}) - type: ${finalContentType}, path: ${fileToServe}`);
       
       // Send the file content with proper options
-      res.sendFile(file.filePath, { 
+      res.sendFile(fileToServe, { 
         root: '/',
         headers: {
-          'Content-Type': contentType,
+          'Content-Type': finalContentType,
           'Accept-Ranges': 'bytes'
         }
       }, (err) => {
