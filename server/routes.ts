@@ -2518,29 +2518,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (processing && processing.status === 'completed' && processing.qualities) {
             const quality720p = processing.qualities.find((q: any) => q.resolution === '720p');
             
+            // For Docker environments, try multiple potential paths for 720p files
+            const potentialPaths = [];
+            
             if (quality720p && typeof quality720p.path === 'string') {
-              // Double-check file existence with better error handling
+              // Original path from database
+              potentialPaths.push(quality720p.path);
+              
+              // Convert dev path to Docker path
+              if (quality720p.path.includes('/home/runner/workspace/uploads')) {
+                potentialPaths.push(quality720p.path.replace('/home/runner/workspace/uploads', '/app/uploads'));
+              }
+              
+              // Standard Docker path structure
+              const fileName = `${path.parse(file.filename).name}_720p.mp4`;
+              potentialPaths.push(`/app/uploads/processed/${file.id}/qualities/${fileName}`);
+            }
+            
+            console.log(`[PRODUCTION SHARE] Checking ${potentialPaths.length} potential 720p paths for file ${file.id}`);
+            
+            // Try each potential path until we find a working one
+            let foundValidFile = false;
+            for (const testPath of potentialPaths) {
               try {
-                const fileExists = await fileSystem.fileExists(quality720p.path);
+                console.log(`[PRODUCTION SHARE] Testing path: ${testPath}`);
+                const fileExists = await fileSystem.fileExists(testPath);
                 if (fileExists) {
-                  // Additional check to ensure file is not empty/corrupted
-                  const stats = await fs.promises.stat(quality720p.path);
+                  const stats = await fs.promises.stat(testPath);
                   if (stats.size > 0) {
-                    fileToServe = quality720p.path;
-                    finalContentType = 'video/mp4'; // H.264 files are always MP4
-                    console.log(`[PRODUCTION SHARE] Using optimized 720p H.264 version: ${quality720p.path} (${stats.size} bytes)`);
+                    fileToServe = testPath;
+                    finalContentType = 'video/mp4';
+                    foundValidFile = true;
+                    console.log(`[PRODUCTION SHARE] ✅ Found valid 720p file: ${testPath} (${stats.size} bytes)`);
+                    break;
                   } else {
-                    console.log(`[PRODUCTION SHARE] 720p file exists but is empty (${stats.size} bytes), using original file`);
+                    console.log(`[PRODUCTION SHARE] ❌ File exists but empty: ${testPath}`);
                   }
                 } else {
-                  console.log(`[PRODUCTION SHARE] 720p file path in database but file missing on disk: ${quality720p.path}`);
+                  console.log(`[PRODUCTION SHARE] ❌ File not found: ${testPath}`);
                 }
-              } catch (fileCheckError) {
-                console.error(`[PRODUCTION SHARE] Error checking 720p file existence:`, fileCheckError);
-                console.log(`[PRODUCTION SHARE] Falling back to original file due to file check error`);
+              } catch (pathError) {
+                console.log(`[PRODUCTION SHARE] ❌ Error checking path ${testPath}:`, pathError.message);
               }
-            } else {
-              console.log(`[PRODUCTION SHARE] No valid 720p version available, using original file`);
+            }
+            
+            if (!foundValidFile) {
+              console.log(`[PRODUCTION SHARE] No valid 720p version found, using original file`);
             }
           } else {
             console.log(`[PRODUCTION SHARE] No video processing data or not completed, using original file`);
@@ -2559,6 +2582,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log that we're sending the file
       console.log(`[PRODUCTION SHARE] Serving file ${file.id} (${file.filename}) - type: ${finalContentType}, path: ${fileToServe}`);
       
+      // Verify final file exists before attempting to send
+      try {
+        console.log(`[PRODUCTION SHARE] Final verification - checking file: ${fileToServe}`);
+        const finalFileExists = await fileSystem.fileExists(fileToServe);
+        if (!finalFileExists) {
+          console.error(`[PRODUCTION SHARE] ❌ Final file missing: ${fileToServe}`);
+          return res.status(404).send('File not found');
+        }
+        
+        const finalStats = await fs.promises.stat(fileToServe);
+        console.log(`[PRODUCTION SHARE] Final file confirmed: ${fileToServe} (${finalStats.size} bytes)`);
+      } catch (finalCheckError) {
+        console.error(`[PRODUCTION SHARE] ❌ Final file check failed:`, finalCheckError);
+        return res.status(500).send('File system error');
+      }
+
       // Send the file content with proper options
       res.sendFile(fileToServe, { 
         root: '/',
@@ -2568,12 +2607,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }, (err) => {
         if (err) {
-          console.error(`[PRODUCTION SHARE] Error sending file: ${err.message}`);
+          console.error(`[PRODUCTION SHARE] ❌ Error sending file: ${err.message}`);
+          console.error(`[PRODUCTION SHARE] Error details:`, {
+            code: err.code,
+            path: fileToServe,
+            contentType: finalContentType
+          });
           if (!res.headersSent) {
             res.status(500).send('Error serving file');
           }
         } else {
-          console.log(`[PRODUCTION SHARE] File sent successfully`);
+          console.log(`[PRODUCTION SHARE] ✅ File sent successfully: ${fileToServe}`);
         }
       });
     } catch (error) {
