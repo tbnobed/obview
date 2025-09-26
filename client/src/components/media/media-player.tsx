@@ -55,14 +55,6 @@ export default function MediaPlayer({
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
-  // Mobile-specific state
-  const [isMobile, setIsMobile] = useState(false);
-  const [isLandscape, setIsLandscape] = useState(false);
-  const [commentsPanelHeight, setCommentsPanelHeight] = useState(120); // Start with input height
-  const [isDraggingPanel, setIsDraggingPanel] = useState(false);
-  const [dragStartY, setDragStartY] = useState(0);
-  const [dragStartHeight, setDragStartHeight] = useState(0);
-  
   // Sprite scrubbing state
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
@@ -137,66 +129,6 @@ export default function MediaPlayer({
       setSpriteLoaded(false);
     }
   }, [file?.id, file?.fileType, videoProcessing?.status]);
-  
-  // Mobile and orientation detection
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-      setIsLandscape(window.innerWidth > window.innerHeight && window.innerWidth < 1024); // landscape mobile/tablet
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    window.addEventListener('orientationchange', checkMobile);
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-      window.removeEventListener('orientationchange', checkMobile);
-    };
-  }, []);
-  
-  // Touch/drag handlers for mobile comments panel
-  const handlePanelTouchStart = (e: React.TouchEvent) => {
-    if (!isMobile) return;
-    setIsDraggingPanel(true);
-    setDragStartY(e.touches[0].clientY);
-    setDragStartHeight(commentsPanelHeight);
-  };
-  
-  const handlePanelTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingPanel || !isMobile) return;
-    
-    const currentY = e.touches[0].clientY;
-    const diff = dragStartY - currentY; // Positive when dragging up
-    const newHeight = Math.max(120, Math.min(window.innerHeight * 0.8, dragStartHeight + diff));
-    
-    setCommentsPanelHeight(newHeight);
-  };
-  
-  const handlePanelTouchEnd = () => {
-    if (!isMobile) return;
-    setIsDraggingPanel(false);
-    
-    // Snap to positions based on current height
-    if (commentsPanelHeight < 200) {
-      setCommentsPanelHeight(120); // Collapsed to input only
-    } else if (commentsPanelHeight < 400) {
-      setCommentsPanelHeight(350); // Half screen
-    } else {
-      setCommentsPanelHeight(window.innerHeight * 0.8); // Full expanded
-    }
-  };
-  
-  // Auto-pause video when comment input is focused on mobile
-  const handleCommentInputFocus = () => {
-    if (isMobile && isPlaying) {
-      const mediaElement = videoRef.current || audioRef.current;
-      if (mediaElement) {
-        mediaElement.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
   
   // Find user's approval (if any)
   const userApproval = approvals && approvals.length > 0 ? approvals[0] : null;
@@ -1091,54 +1023,19 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className={cn(
-      "h-full min-h-0",
-      // Mobile layout
-      isMobile && !isLandscape ? "flex flex-col" : 
-      // Desktop layout  
-      "flex flex-col lg:flex-row"
-    )}>
-      {/* Mobile Landscape - Full screen video */}
-      {isMobile && isLandscape ? (
-        <div className="relative h-full w-full bg-black">
+    <div className="flex flex-col lg:flex-row h-full min-h-0">
+      {/* Media Viewer - Takes remaining space */}
+      <div className="flex-1 min-h-0 grid grid-rows-[auto,1fr,auto]">
+        {/* Header/toolbar area if needed */}
+        <div></div>
+        
+        {/* Media container - grows to fill space */}
+        <div className="relative min-h-0 bg-black overflow-hidden">
           {renderMediaContent()}
-          {/* Minimal controls overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-            <div className="flex items-center justify-between">
-              <Button
-                onClick={togglePlay}
-                variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/20"
-              >
-                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-              </Button>
-              <span className="font-mono text-sm text-white/80">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </span>
-            </div>
-          </div>
         </div>
-      ) : (
-        <>
-          {/* Media Viewer - Takes remaining space */}
-          <div className={cn(
-            "flex-1 min-h-0",
-            isMobile ? "relative" : "grid grid-rows-[auto,1fr,auto]"
-          )}>
-            {!isMobile && <div></div>}
-            
-            {/* Media container - grows to fill space */}
-            <div className={cn(
-              "relative min-h-0 bg-black overflow-hidden",
-              isMobile ? "h-full" : ""
-            )}>
-              {renderMediaContent()}
-            </div>
-            
-            {/* Desktop controls area */}
-            {!isMobile && (
-              <div className="bg-black p-6 border-t border-gray-800">
+        
+        {/* Bottom controls area */}
+        <div className="bg-black p-6 border-t border-gray-800">
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
               <div className="flex items-center mb-2 space-x-2">
