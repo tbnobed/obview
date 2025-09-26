@@ -248,38 +248,19 @@ export default function TimelineComments({
   });
 
   return (
-    <div className="h-full flex flex-col bg-[#2c3e50] text-white min-h-0">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-600">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-gray-300" />
-          <span className="text-sm font-medium text-gray-200">All comments</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-300 hover:text-white hover:bg-gray-600">
-            <Search className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-300 hover:text-white hover:bg-gray-600">
-            <Filter className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-300 hover:text-white hover:bg-gray-600">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
+    <div className="h-full flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
       {/* Comments List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {isLoading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <Loader2 className="h-6 w-6 animate-spin" style={{color: 'hsl(var(--comments-muted))'}} />
           </div>
         ) : error ? (
-          <div className="p-4 bg-red-900/20 text-red-400 text-sm">
+          <div className="p-4 bg-red-900/20 text-red-400 text-sm rounded-lg">
             Error loading comments: {error.message}
           </div>
         ) : topLevelComments.length > 0 ? (
-          <div className="divide-y divide-gray-600">
+          <>
             {topLevelComments.map((comment: any, index: number) => {
               return (
                 <div 
@@ -292,21 +273,28 @@ export default function TimelineComments({
                       onTimeClick(comment.timestamp);
                     }
                   } : undefined}
-                  className={`p-4 hover:bg-gray-700/30 transition-colors ${
-                    activeCommentId === comment.id ? 'bg-gray-700/50' : ''
-                  } ${comment.timestamp !== null ? 'cursor-pointer' : ''}`}
+                  className={`relative rounded-lg border p-4 transition-all duration-200 ${
+                    activeCommentId === comment.id ? 'ring-2 ring-blue-500/50' : ''
+                  } ${comment.timestamp !== null ? 'cursor-pointer hover:shadow-lg' : ''}`}
+                  style={{
+                    backgroundColor: 'hsl(var(--comments-card))',
+                    borderColor: 'hsl(var(--comments-card-border))',
+                    color: 'hsl(var(--comments-text))'
+                  }}
                   title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : undefined}
                   role={comment.timestamp !== null ? 'button' : undefined}
                   tabIndex={comment.timestamp !== null ? 0 : undefined}
                 >
-                  <div className="flex gap-3">
-                    <div className="flex flex-col items-center mt-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    </div>
+                  {/* Blue indicator dot - positioned at left edge */}
+                  <div 
+                    className="absolute left-0 top-4 w-2 h-2 rounded-full -translate-x-1"
+                    style={{backgroundColor: 'hsl(var(--comments-accent-blue))'}}
+                  ></div>
 
+                  <div className="flex gap-3">
                     <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarImage src={comment.user?.avatar} />
-                      <AvatarFallback className="bg-gray-500 text-white text-xs">
+                      <AvatarFallback className="bg-gray-600 text-white text-xs">
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
@@ -314,32 +302,43 @@ export default function TimelineComments({
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-white">
+                          <span className="text-sm font-medium" style={{color: 'hsl(var(--comments-text))'}}>
                             {(comment as any).authorName || comment.user?.name || comment.user?.username || 'Unknown User'}
                           </span>
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>
                             {new Date(comment.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-400 font-medium">#{index + 1}</span>
+                        <span className="text-xs font-medium" style={{color: 'hsl(var(--comments-muted))'}}>
+                          #{index + 1}
+                        </span>
                       </div>
 
                       {comment.timestamp !== null && (
                         <div className="mb-2">
-                          <span className="text-yellow-400 font-mono text-xs bg-yellow-400/20 px-1.5 py-0.5 rounded">
+                          <span 
+                            className="inline-block text-xs font-mono px-2 py-1 rounded text-xs"
+                            style={{
+                              backgroundColor: 'hsl(var(--comments-timestamp-bg))',
+                              color: 'hsl(var(--comments-timestamp-fg))'
+                            }}
+                          >
                             {formatTime(comment.timestamp)}
                           </span>
                         </div>
                       )}
 
-                      <div className="text-sm text-gray-200 mb-3 whitespace-pre-wrap leading-relaxed">
+                      <div className="text-sm mb-3 leading-relaxed" style={{color: 'hsl(var(--comments-text))'}}>
                         {comment.content}
                       </div>
 
                       <button 
-                        className="text-xs text-gray-400 hover:text-white transition-colors font-medium"
+                        className="text-xs font-medium transition-colors"
+                        style={{color: 'hsl(var(--comments-muted))'}}
+                        onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
                         onClick={(e) => {
                           e.stopPropagation();
                           setReplyingToId(replyingToId === comment.id ? null : comment.id);
@@ -351,7 +350,7 @@ export default function TimelineComments({
                   </div>
 
                   {replyingToId === comment.id && (
-                    <div className="mt-3 pl-4 border-l-2 border-gray-600">
+                    <div className="mt-3 pl-11 border-l-2" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
                       <CommentForm
                         fileId={fileId}
                         parentId={comment.id}
@@ -361,16 +360,18 @@ export default function TimelineComments({
                     </div>
                   )}
 
-                  <RenderReplies comments={comments} parentId={comment.id} depth={0} />
+                  <div className="pl-11">
+                    <RenderReplies comments={comments} parentId={comment.id} depth={0} />
+                  </div>
                 </div>
               );
             })}
-          </div>
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <MessageSquare className="h-12 w-12 text-gray-600 mb-3" />
-            <p className="text-gray-400 text-sm">No comments yet</p>
-            <p className="text-gray-500 text-xs">Be the first to comment!</p>
+            <MessageSquare className="h-12 w-12 mb-3" style={{color: 'hsl(var(--comments-muted))'}} />
+            <p className="text-sm" style={{color: 'hsl(var(--comments-muted))'}}>No comments yet</p>
+            <p className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>Be the first to comment!</p>
           </div>
         )}
       </div>
