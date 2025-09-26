@@ -1247,19 +1247,19 @@ export default function MediaPlayer({
             {/* File selector and actions - Always visible regardless of error state */}
             <div className={cn(
               "flex justify-between items-center border-t border-neutral-100 dark:border-gray-800",
-              !mediaError ? "mt-3 pt-3" : "pt-2"
+              !mediaError ? "mt-2 pt-2" : "pt-1"
             )}>
-              <div className="flex space-x-2 items-center">
+              <div className="flex space-x-1 items-center">
                 <Select 
                   value={file?.id.toString()} 
                   onValueChange={(value) => onSelectFile(parseInt(value))}
                 >
-                  <SelectTrigger className="w-auto min-w-[180px]">
+                  <SelectTrigger className="w-auto min-w-[140px] h-7 text-xs">
                     <SelectValue placeholder="Select file" />
                   </SelectTrigger>
                   <SelectContent>
                     {files.map((f) => (
-                      <SelectItem key={f.id} value={f.id.toString()}>
+                      <SelectItem key={f.id} value={f.id.toString()} className="text-xs">
                         {f.filename} {f.isLatestVersion && "(Latest)"}
                       </SelectItem>
                     ))}
@@ -1268,25 +1268,27 @@ export default function MediaPlayer({
                 
                 {file && (
                   <div className="text-xs text-neutral-500 dark:text-gray-400">
-                    Version {file.version}
+                    v{file.version}
                   </div>
                 )}
               </div>
               
-              <div className="flex space-x-2">
+              <div className="flex space-x-1">
                 {file && (
                   <>
                     <DownloadButton 
                       fileId={file.id} 
                       filename={file.filename} 
                       size="sm" 
-                      variant="default"
+                      variant="ghost"
                       isAvailable={file.isAvailable}
+                      className="h-7 w-7 p-0"
                     />
                     <ShareLinkButton 
                       fileId={file.id} 
                       size="sm"
-                      variant="default"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
                     />
                   </>
                 )}
@@ -1295,64 +1297,64 @@ export default function MediaPlayer({
             
             {/* Approval actions - Only show when there's no media error */}
             {!mediaError && file && (
-              <div className="flex justify-between items-center mt-4 pt-4 border-t border-neutral-100 dark:border-gray-800">
-                <div className="flex items-center text-sm">
+              <div className="flex justify-between items-center mt-2 pt-2 border-t border-neutral-100 dark:border-gray-800">
+                <div className="flex items-center text-xs">
                   {userApproval && (
                     <div className={cn(
-                      "flex items-center px-2 py-1 rounded-full",
+                      "flex items-center px-2 py-0.5 rounded-full",
                       userApproval.status === "approved" 
                         ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
                         : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
                     )}>
                       {userApproval.status === "approved" ? (
                         <>
-                          <Check className="h-4 w-4 mr-1" />
-                          <span>You approved this file</span>
+                          <Check className="h-3 w-3 mr-1" />
+                          <span className="hidden sm:inline">Approved</span>
                         </>
                       ) : (
                         <>
-                          <AlertCircle className="h-4 w-4 mr-1" />
-                          <span>You requested changes</span>
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          <span className="hidden sm:inline">Changes requested</span>
                         </>
                       )}
                     </div>
                   )}
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex space-x-1">
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex items-center dark:bg-orange-900 dark:text-orange-200 dark:border-orange-900 dark:hover:bg-orange-950"
+                    className="flex items-center dark:bg-orange-900 dark:text-orange-200 dark:border-orange-900 dark:hover:bg-orange-950 h-7 px-2"
                     onClick={handleRequestChanges}
                     disabled={approveMutation.isPending}
                   >
-                    <AlertCircle className="h-4 w-4 mr-1.5" />
-                    Request Changes
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    <span className="hidden sm:inline">Changes</span>
                   </Button>
                   <Button 
                     size="sm" 
-                    className="flex items-center bg-green-600 hover:bg-green-700"
+                    className="flex items-center bg-green-600 hover:bg-green-700 h-7 px-2"
                     onClick={handleApprove}
                     disabled={approveMutation.isPending}
                   >
-                    <Check className="h-4 w-4 mr-1.5" />
-                    Approve
+                    <Check className="h-3 w-3 mr-1" />
+                    <span className="hidden sm:inline">Approve</span>
                   </Button>
                   {(user?.role === 'admin' || user?.role === 'editor') && project && (
                     <Button 
                       variant="outline"
                       size="sm"
-                      className="flex items-center dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
+                      className="flex items-center dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700 h-7 px-2"
                       onClick={handleMarkAsInReview}
                       disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
                       title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
                     >
                       {isUpdatingStatus ? (
-                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       ) : (
-                        <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                        <ClipboardCheck className="h-3 w-3 mr-1" />
                       )}
-                      Mark as In Review
+                      <span className="hidden sm:inline">Review</span>
                     </Button>
                   )}
                 </div>
