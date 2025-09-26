@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "wouter";
-import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo, Trash2 } from "lucide-react";
+import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo, Trash2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1469,12 +1469,17 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
 
               {/* Timestamp */}
               {comment.timestamp !== null && (
-                <span
-                  className="inline-block mb-2 text-amber-400 font-mono text-sm"
-                  data-testid={`timestamp-${comment.id}`}
-                >
-                  {formatTime(comment.timestamp)}
-                </span>
+                <div className="inline-flex items-center gap-1.5 mb-2">
+                  <span
+                    className="text-amber-400 font-mono text-sm"
+                    data-testid={`timestamp-${comment.id}`}
+                  >
+                    {formatTime(comment.timestamp)}
+                  </span>
+                  {comment.isResolved && (
+                    <Check className="h-3 w-3 text-green-500" />
+                  )}
+                </div>
               )}
 
               {/* Comment Text */}

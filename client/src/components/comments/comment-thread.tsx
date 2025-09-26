@@ -9,7 +9,7 @@ import CommentForm from "./comment-form";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
+import { Trash2, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useDeleteComment } from "@/hooks/use-comments";
@@ -200,10 +200,13 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
             <div className="flex flex-wrap items-center gap-1.5">
               {comment.timestamp !== null && (
                 <button 
-                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-gray-800 text-neutral-800 dark:text-gray-300 transition-colors duration-200"
+                  className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-gray-800 text-neutral-800 dark:text-gray-300 transition-colors duration-200"
                   onClick={() => onTimeClick && onTimeClick(comment.timestamp || 0)}
                 >
                   <span className="font-mono">{formatTime(comment.timestamp)}</span>
+                  {comment.isResolved && (
+                    <Check className="h-3 w-3 text-green-500" />
+                  )}
                 </button>
               )}
               <span className="text-[10px] text-neutral-500 dark:text-gray-400">
