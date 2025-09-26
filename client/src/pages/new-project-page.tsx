@@ -35,8 +35,9 @@ export default function NewProjectPage() {
           <CardHeader>
             <CardTitle>Project Details</CardTitle>
           </CardHeader>
-          <CardContent className="px-2">
+          <CardContent className="p-8">
             <ProjectForm 
+              className="max-w-none"
               onSuccess={(projectId) => {
                 navigate(`/projects/${projectId}`);
               }}
