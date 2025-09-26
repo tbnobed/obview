@@ -508,7 +508,7 @@ export default function PublicSharePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col w-full">
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col w-full overflow-hidden">
       {/* Compact Header */}
       <div className="flex-shrink-0 py-2 px-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
@@ -603,7 +603,7 @@ export default function PublicSharePage() {
             <Card className="h-full flex flex-col w-full">
               <CardContent className="flex-1 flex flex-col p-2">
                 {/* Video container - fills available space */}
-                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full aspect-video">
+                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full flex-1">
               {!mediaError ? (
                 <>
                   {file.fileType === 'video' && (
