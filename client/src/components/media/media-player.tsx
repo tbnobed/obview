@@ -1318,15 +1318,15 @@ export default function MediaPlayer({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-40">
                       {/* Share Link Option - Renders ShareLinkButton inside dropdown */}
-                      <div className="px-2 py-1.5">
+                      <DropdownMenuItem asChild>
                         <ShareLinkButton 
                           fileId={file.id} 
                           size="sm"
                           variant="ghost"
-                          compact={true}
-                          className="h-auto w-full justify-start p-0 text-sm font-normal hover:bg-transparent"
+                          compact={false}
+                          className="w-full justify-start p-2 text-sm font-normal hover:bg-accent focus:bg-accent"
                         />
-                      </div>
+                      </DropdownMenuItem>
                       
                       <DropdownMenuSeparator />
                       
