@@ -131,65 +131,6 @@ export default function MediaPlayer({
     }
   }, [file?.id, file?.fileType, videoProcessing?.status]);
   
-  // Mobile and orientation detection
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-      setIsLandscape(window.innerWidth > window.innerHeight && window.innerWidth < 1024); // landscape mobile/tablet
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    window.addEventListener('orientationchange', checkMobile);
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-      window.removeEventListener('orientationchange', checkMobile);
-    };
-  }, []);
-  
-  // Touch/drag handlers for mobile comments panel
-  const handlePanelTouchStart = (e: React.TouchEvent) => {
-    if (!isMobile) return;
-    setIsDraggingPanel(true);
-    setDragStartY(e.touches[0].clientY);
-    setDragStartHeight(commentsPanelHeight);
-  };
-  
-  const handlePanelTouchMove = (e: React.TouchEvent) => {
-    if (!isDraggingPanel || !isMobile) return;
-    
-    const currentY = e.touches[0].clientY;
-    const diff = dragStartY - currentY; // Positive when dragging up
-    const newHeight = Math.max(120, Math.min(window.innerHeight * 0.8, dragStartHeight + diff));
-    
-    setCommentsPanelHeight(newHeight);
-  };
-  
-  const handlePanelTouchEnd = () => {
-    if (!isMobile) return;
-    setIsDraggingPanel(false);
-    
-    // Snap to positions based on current height
-    if (commentsPanelHeight < 200) {
-      setCommentsPanelHeight(120); // Collapsed to input only
-    } else if (commentsPanelHeight < 400) {
-      setCommentsPanelHeight(350); // Half screen
-    } else {
-      setCommentsPanelHeight(window.innerHeight * 0.8); // Full expanded
-    }
-  };
-  
-  // Auto-pause video when comment input is focused on mobile
-  const handleCommentInputFocus = () => {
-    if (isMobile && isPlaying) {
-      const mediaElement = videoRef.current || audioRef.current;
-      if (mediaElement) {
-        mediaElement.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
   
   // Find user's approval (if any)
   const userApproval = approvals && approvals.length > 0 ? approvals[0] : null;
