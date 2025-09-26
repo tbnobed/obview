@@ -235,7 +235,7 @@ export default function MediaPlayer({
             playsInline
             preload="metadata"
           >
-            <source src={`/api/files/${file.id}/content`} type={file.fileType} />
+            <source src={`/api/files/${file.id}/content`} type="video/mp4" />
             Your browser does not support the video element.
           </video>
         </div>
@@ -261,7 +261,7 @@ export default function MediaPlayer({
             onError={handleMediaError}
             preload="metadata"
           >
-            <source src={`/api/files/${file.id}/content`} type={file.fileType} />
+            <source src={`/api/files/${file.id}/content`} type="audio/mpeg" />
             Your browser does not support the audio element.
           </audio>
         </div>
