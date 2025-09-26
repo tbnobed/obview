@@ -364,79 +364,12 @@ export default function TimelineComments({
         )}
       </div>
 
-      {/* Comment Input - Frame.io Style Single Element */}
+      {/* Comment Input - Using CommentForm component with full functionality */}
       <div className="mx-3 mb-3 mt-6">
-        <div 
-          className="rounded-lg p-3 max-w-full"
-          style={{
-            backgroundColor: 'hsl(var(--comments-card))',
-            border: '1px solid hsl(var(--comments-card-border))'
-          }}
-        >
-          {/* Top row with timestamp and buttons */}
-          <div className="flex items-center justify-between mb-2">
-            <span 
-              className="text-xs font-mono px-2 py-1 rounded shrink-0"
-              style={{
-                backgroundColor: 'hsl(var(--comments-timestamp-bg))',
-                color: 'hsl(var(--comments-timestamp-fg))'
-              }}
-              data-testid="chip-timestamp"
-            >
-              {formatTime(currentTime)}
-            </span>
-            
-            <div className="flex items-center gap-1">
-              <button 
-                className="p-1.5 rounded hover:bg-gray-700/30 transition-colors"
-                style={{color: 'hsl(var(--comments-muted))'}}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
-                data-testid="button-attach"
-              >
-                <Paperclip className="h-4 w-4" />
-              </button>
-              
-              <button 
-                className="p-1.5 rounded hover:bg-gray-700/30 transition-colors"
-                style={{color: 'hsl(var(--comments-muted))'}}
-                onMouseEnter={(e) => e.currentTarget.style.color = 'hsl(var(--comments-text))'}
-                onMouseLeave={(e) => e.currentTarget.style.color = 'hsl(var(--comments-muted))'}
-                data-testid="button-emoji"
-              >
-                <Smile className="h-4 w-4" />
-              </button>
-              
-              <button 
-                className="p-2 rounded transition-all duration-200 hover:opacity-80"
-                style={{
-                  backgroundColor: '#7c3aed',
-                  color: 'white'
-                }}
-                data-testid="button-send"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          
-          {/* Comment input field - full width, can wrap */}
-          <textarea
-            placeholder="Leave your comment..."
-            rows={1}
-            className="w-full bg-transparent border-0 outline-none text-sm placeholder:text-gray-500 resize-none overflow-hidden"
-            style={{ 
-              color: 'hsl(var(--comments-text))',
-              minHeight: '24px'
-            }}
-            data-testid="input-comment"
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = 'auto';
-              target.style.height = target.scrollHeight + 'px';
-            }}
-          />
-        </div>
+        <CommentForm
+          fileId={fileId}
+          currentTime={currentTime}
+        />
       </div>
     </div>
   );
