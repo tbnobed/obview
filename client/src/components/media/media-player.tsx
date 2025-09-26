@@ -1036,26 +1036,29 @@ export default function MediaPlayer({
         <div className="bg-black/90 backdrop-blur p-3 sm:p-6 pb-6 border-t border-gray-800" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))' }}>
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
-              <div className="flex items-center mb-2 space-x-2">
-                <Button
-                  onClick={togglePlay}
-                  variant="ghost"
-                  size="icon"
-                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
-                >
-                  {isPlaying ? (
-                    <Pause className="h-6 w-6" />
-                  ) : (
-                    <Play className="h-6 w-6" />
-                  )}
-                </Button>
+              <div className="flex flex-col space-y-2">
+                {/* Controls row */}
+                <div className="flex items-center justify-between">
+                  <Button
+                    onClick={togglePlay}
+                    variant="ghost"
+                    size="icon"
+                    className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0"
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-6 w-6" />
+                    ) : (
+                      <Play className="h-6 w-6" />
+                    )}
+                  </Button>
+                  
+                  <span className="font-mono text-sm text-neutral-600 dark:text-gray-400 flex-shrink-0">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                </div>
                 
-                <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
-                
-                {/* Progress bar and markers container */}
-                <div className="flex-grow flex flex-col gap-1 mx-4 relative">
+                {/* Progress bar and markers container - full width */}
+                <div className="w-full flex flex-col gap-1 relative">
                   
                   {/* Extended hover area around progress bar */}
                   <div
