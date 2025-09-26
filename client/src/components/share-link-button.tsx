@@ -18,9 +18,11 @@ interface ShareLinkButtonProps {
   fileId: number;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm";
+  compact?: boolean;
+  className?: string;
 }
 
-export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: ShareLinkButtonProps) {
+export function ShareLinkButton({ fileId, variant = "outline", size = "sm", compact = false, className }: ShareLinkButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
@@ -91,13 +93,14 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm" }: Sh
     <>
       <Button 
         variant={variant} 
-        size={size}
+        size={compact ? "sm" : size}
         onClick={handleOpenDialog}
-        className={`gap-1 ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/50 dark:hover:text-[#026d55] hover-smooth-light' : 'dark:bg-[#026d55] dark:hover:bg-[#025943]/90 dark:text-white hover-teal'}`}
+        className={`${compact ? 'gap-0 p-1' : 'gap-1'} ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/50 dark:hover:text-[#026d55] hover-smooth-light' : 'dark:bg-[#026d55] dark:hover:bg-[#025943]/90 dark:text-white hover-teal'} ${className || ''}`}
         data-variant-type={variant}
+        title={compact ? "Share this file" : undefined}
       >
-        <ShareIcon className="h-4 w-4" />
-        <span>Share</span>
+        <ShareIcon className={compact ? "h-3 w-3" : "h-4 w-4"} />
+        {!compact && <span>Share</span>}
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

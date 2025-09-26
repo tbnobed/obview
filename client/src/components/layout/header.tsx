@@ -122,7 +122,7 @@ export default function Header() {
       </AlertDialog>
 
       {/* Mobile header - hidden on desktop */}
-      <div className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 flex items-center justify-between px-4 py-2 sm:px-6 md:hidden">
+      <div className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 flex items-center justify-between px-2 py-1 sm:px-3 md:hidden">
         <Logo size="sm" />
         
         <div className="flex items-center space-x-1">
@@ -144,23 +144,23 @@ export default function Header() {
       </div>
       
       {/* Desktop header - visible only on desktop */}
-      <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 items-center justify-between px-4 py-1 h-12">
+      <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 items-center justify-between px-2 py-0.5 h-8">
         {/* Left side - Toggle sidebar button */}
         <Button
           variant="ghost"
-          size="icon"
-          className="text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-gray-800"
+          size="sm"
+          className="text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-gray-800 h-6 w-6 p-0"
           onClick={toggleSidebar}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <ChevronRight className={cn(
-            "h-5 w-5 transition-transform duration-200",
+            "h-3 w-3 transition-transform duration-200",
             isCollapsed ? "" : "rotate-180"
           )} />
         </Button>
         
         {/* Right side - User controls */}
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-0.5">
           <ThemeToggle />
           {user && <UserProfileDropdown />}
         </div>

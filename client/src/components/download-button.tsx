@@ -9,9 +9,11 @@ interface DownloadButtonProps {
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm";
   isAvailable?: boolean;
+  compact?: boolean;
+  className?: string;
 }
 
-export function DownloadButton({ fileId, filename, variant = "outline", size = "sm", isAvailable = true }: DownloadButtonProps) {
+export function DownloadButton({ fileId, filename, variant = "outline", size = "sm", isAvailable = true, compact = false, className }: DownloadButtonProps) {
   const { toast } = useToast();
 
   const handleDownload = async () => {
@@ -66,13 +68,14 @@ export function DownloadButton({ fileId, filename, variant = "outline", size = "
   return (
     <Button 
       variant={variant} 
-      size={size}
+      size={compact ? "sm" : size}
       onClick={handleDownload}
-      className={`gap-1 ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/50 dark:hover:text-[#026d55] hover-smooth-light' : 'dark:bg-[#026d55] dark:hover:bg-[#025943]/90 dark:text-white hover-teal'}`}
+      className={`${compact ? 'gap-0 p-1' : 'gap-1'} ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/50 dark:hover:text-[#026d55] hover-smooth-light' : 'dark:bg-[#026d55] dark:hover:bg-[#025943]/90 dark:text-white hover-teal'} ${className || ''}`}
       disabled={isAvailable === false}
+      title={compact ? `Download ${filename}` : undefined}
     >
-      <Download className="h-4 w-4" />
-      <span>Download</span>
+      <Download className={compact ? "h-3 w-3" : "h-4 w-4"} />
+      {!compact && <span>Download</span>}
     </Button>
   );
 }

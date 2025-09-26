@@ -1282,12 +1282,14 @@ export default function MediaPlayer({
                       size="sm" 
                       variant="ghost"
                       isAvailable={file.isAvailable}
+                      compact={true}
                       className="h-7 w-7 p-0"
                     />
                     <ShareLinkButton 
                       fileId={file.id} 
                       size="sm"
                       variant="ghost"
+                      compact={true}
                       className="h-7 w-7 p-0"
                     />
                   </>
