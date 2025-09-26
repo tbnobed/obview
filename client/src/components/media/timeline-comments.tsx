@@ -365,7 +365,7 @@ export default function TimelineComments({
       </div>
 
       {/* Comment Input - Frame.io Style Single Element */}
-      <div className="mx-3 mb-3">
+      <div className="mx-3 mb-3 mt-6">
         <div 
           className="rounded-lg p-3 max-w-full"
           style={{
