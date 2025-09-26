@@ -1196,8 +1196,24 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
       }
     });
     
-    // Step 3: Return only top-level comments (those without parents)
-    return Array.from(commentMap.values()).filter((comment: any) => !comment.parentId);
+    // Step 3: Get top-level comments and sort by timestamp (timeline order)
+    const topLevelComments = Array.from(commentMap.values()).filter((comment: any) => !comment.parentId);
+    
+    // Sort comments by timestamp - same logic as authenticated TimelineComments
+    topLevelComments.sort((a: any, b: any) => {
+      // If both have timestamps, sort by timestamp (timeline order)
+      if (a.timestamp !== null && b.timestamp !== null) {
+        return a.timestamp - b.timestamp;
+      }
+      // If only a has timestamp, a comes first
+      if (a.timestamp !== null) return -1;
+      // If only b has timestamp, b comes first  
+      if (b.timestamp !== null) return 1;
+      // If neither has timestamp, maintain original order
+      return 0;
+    });
+    
+    return topLevelComments;
   }, [comments]);
 
   // Get user initials for avatar
