@@ -267,17 +267,21 @@ export class VideoProcessor {
     try {
       const outputPath = path.join(outputDir, `${filename}_scrub.mp4`);
       
-      // Generate I-frame only version for instant seeking - balanced quality/size, no audio
+      // Generate I-frame only version with optimized H.264 for instant seeking
       const args = [
         '-i', inputPath,
         '-c:v', 'libx264',
-        '-preset', 'fast', // Slightly better quality than ultrafast
-        '-crf', '32', // Better quality while still compressed
+        '-preset', config.video.scrub.preset,
+        '-crf', config.video.scrub.crf.toString(),
+        '-pix_fmt', 'yuv420p', // Ensure compatibility
+        '-profile:v', 'high', // Use high profile for better compression
+        '-level', '3.1',
+        '-r', config.video.scrub.fps.toString(), // Lower frame rate for smaller files
         '-g', '1', // I-frame only (keyframe interval = 1)
         '-keyint_min', '1',
-        '-sc_threshold', '0',
-        '-vf', 'scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2', // 360p for better clarity
-        '-an', // No audio at all
+        '-sc_threshold', '0', // Disable scene change detection
+        '-vf', `scale=${config.video.scrub.scale}`, // Use configurable scale
+        ...(config.video.scrub.disableAudio ? ['-an'] : []), // Conditionally disable audio
         '-movflags', '+faststart',
         '-f', 'mp4',
         '-y',
