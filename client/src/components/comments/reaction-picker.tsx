@@ -45,11 +45,11 @@ export default function ReactionPicker({
     <div className="relative">
       <Button 
         variant="link" 
-        className="text-[10px] p-0 h-auto transition-colors"
+        className="text-[10px] p-0 h-auto text-gray-300 hover:text-yellow-500 transition-colors"
         onClick={() => setShowPicker(!showPicker)}
         disabled={addReaction.isPending || removeReaction.isPending}
       >
-        <Smile className="h-3 w-3 text-gray-300 hover:text-yellow-500 transition-colors" />
+        <Smile className="h-3 w-3" />
       </Button>
       
       {showPicker && (
