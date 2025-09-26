@@ -603,7 +603,7 @@ export default function PublicSharePage() {
         )}>
           {/* Media Player - Full width when view-only, takes remaining space when comments shown */}
           <div className="min-h-0 flex flex-col overflow-hidden">
-            <Card className="h-full flex flex-col overflow-hidden">
+            <Card className="h-full flex flex-col overflow-hidden border-0">
               <CardContent className="flex-1 min-h-0 flex flex-col p-2">
                 {/* Video container - fills available space */}
                 <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full flex-1">
