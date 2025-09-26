@@ -879,21 +879,10 @@ export default function PublicSharePage() {
             <div className="min-h-0 flex flex-col overflow-hidden">
               <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                <div className="flex items-center p-4 border-b border-gray-700">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-gray-400" />
                     <span className="text-sm font-medium text-white">All comments</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
-                      <Search className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
-                      <Filter className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
 
