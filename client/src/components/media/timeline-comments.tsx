@@ -301,25 +301,23 @@ export default function TimelineComments({
                           <span className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>
                             {new Date(comment.createdAt).toLocaleDateString()}
                           </span>
+                          {comment.timestamp !== null && (
+                            <span 
+                              className="text-xs font-mono px-2 py-1 rounded"
+                              style={{
+                                backgroundColor: 'hsl(var(--comments-timestamp-bg))',
+                                color: 'hsl(var(--comments-timestamp-fg))'
+                              }}
+                            >
+                              {formatTime(comment.timestamp)}
+                            </span>
+                          )}
                         </div>
                         <span className="text-xs font-medium" style={{color: 'hsl(var(--comments-muted))'}}>
                           #{index + 1}
                         </span>
                       </div>
 
-                      {comment.timestamp !== null && (
-                        <div className="mb-2">
-                          <span 
-                            className="inline-block text-xs font-mono px-2 py-1 rounded text-xs"
-                            style={{
-                              backgroundColor: 'hsl(var(--comments-timestamp-bg))',
-                              color: 'hsl(var(--comments-timestamp-fg))'
-                            }}
-                          >
-                            {formatTime(comment.timestamp)}
-                          </span>
-                        </div>
-                      )}
 
                       <div className="text-sm mb-3 leading-relaxed" style={{color: 'hsl(var(--comments-text))'}}>
                         {comment.content}
