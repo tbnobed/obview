@@ -1196,15 +1196,15 @@ export default function MediaPlayer({
           {renderMediaContent()}
         </div>
         
-        {/* Bottom controls area - Mobile: minimal padding, Desktop: spacious */}
-        <div className="bg-black/90 backdrop-blur p-3 pb-6 border-t border-gray-800 lg:p-6" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))' }}>
+        {/* Bottom controls area - Mobile: minimal padding, Desktop: compact */}
+        <div className="bg-black/90 backdrop-blur p-2 pb-4 border-t border-gray-800 lg:p-3 lg:pb-4" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-col space-y-1">
                 {/* Controls row */}
                 {/* Controls row - Mobile: compact, Desktop: spacious */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
                     <Button
                       onClick={togglePlay}
                       variant="ghost"
@@ -1233,8 +1233,8 @@ export default function MediaPlayer({
                     </div>
                   </div>
                   
-                  {/* Time and fullscreen controls - Mobile: tight spacing, Desktop: normal */}
-                  <div className="flex items-center space-x-2 flex-shrink-0 lg:space-x-3">
+                  {/* Time and fullscreen controls - Mobile: tight spacing, Desktop: compact */}
+                  <div className="flex items-center space-x-2 flex-shrink-0">
                     {/* Timestamp - Mobile: small, Desktop: normal */}
                     <span className="font-mono text-xs text-neutral-600 dark:text-gray-400 lg:text-sm">
                       {formatTime(currentTime)} / {formatTime(duration)}
@@ -1253,11 +1253,11 @@ export default function MediaPlayer({
                 </div>
                 
                 {/* Progress bar and markers container - full width */}
-                <div className="w-full flex flex-col gap-1 relative">
+                <div className="w-full flex flex-col gap-0 relative">
                   
                   {/* Extended hover area around progress bar */}
                   <div
-                    className="relative py-4 cursor-pointer"
+                    className="relative py-2 cursor-pointer"
                     style={{
                       touchAction: 'pan-x',
                       WebkitTouchCallout: 'none',
@@ -1429,7 +1429,7 @@ export default function MediaPlayer({
           {/* File selector and actions - Mobile: hidden, Desktop: visible */}
           <div className={cn(
               "flex justify-end items-center",
-              !mediaError ? "mt-2 pt-2" : "pt-1"
+              !mediaError ? "mt-1 pt-1" : "pt-1"
             )}>
               {/* Action buttons - Desktop only */}
               <div className="hidden lg:flex space-x-1">
