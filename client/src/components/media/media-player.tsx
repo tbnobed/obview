@@ -1367,9 +1367,9 @@ export default function MediaPlayer({
                     const comment = comments.find((c: Comment) => c.id === hoveredComment);
                     if (!comment) return null;
                     
-                    // Position tooltip directly at marker center
+                    // Position tooltip at marker center with transform centering
                     const left = tooltipPosition.x;
-                    const top = tooltipPosition.y - 80;
+                    const top = tooltipPosition.y;
                     
                     return createPortal(
                       <div
@@ -1377,7 +1377,7 @@ export default function MediaPlayer({
                         style={{
                           left: left,
                           top: top,
-                          transform: 'translate(-50%, -100%)',
+                          transform: 'translate(-50%, calc(-100% - 8px))',
                           zIndex: 2147483647,
                           maxWidth: '240px',
                         }}
