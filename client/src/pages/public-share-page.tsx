@@ -598,17 +598,19 @@ export default function PublicSharePage() {
         </div>
       </div>
 
-      {/* Main content area - fills remaining height */}
-      <div className="flex-1 min-h-0 overflow-hidden p-2 sm:p-4">
-        {/* Grid layout: single column when view-only, two columns when comments enabled */}
+      {/* Main content area - fills remaining height with bulletproof mobile/desktop patterns */}
+      <div className="flex-1 min-h-0 overflow-hidden p-1 lg:p-4">
+        {/* Mobile-first responsive grid: Mobile stacked, Desktop side-by-side */}
         <div className={cn(
-          "h-full grid gap-2 sm:gap-4",
-          isViewOnly ? "grid-rows-[minmax(0,1fr)]" : "grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-none"
+          "h-full grid gap-1 lg:gap-4",
+          isViewOnly 
+            ? "grid-rows-[minmax(0,1fr)]"
+            : "grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-none"
         )}>
-          {/* Media Player - Full width when view-only, takes remaining space when comments shown */}
+          {/* Media Player - Mobile: full height, Desktop: remaining space when comments shown */}
           <div className="min-h-0 flex flex-col overflow-hidden">
             <Card className="h-full flex flex-col overflow-hidden border-0">
-              <CardContent className="flex-1 min-h-0 flex flex-col p-2">
+              <CardContent className="flex-1 min-h-0 flex flex-col p-1 lg:p-2">
                 {/* Video container - fills available space */}
                 <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full flex-1">
               {!mediaError ? (
@@ -631,7 +633,7 @@ export default function PublicSharePage() {
                         <source src={`/api/share/${token}/qualities/720p`} type="video/mp4" />
                       )}
                       {/* Always include original shared file as fallback */}
-                      <source src={`/public/share/${token}`} type="video/mp4" />
+                      <source src={`/api/share/${token}`} type="video/mp4" />
                       Your browser does not support the video tag.
                     </video>
                   )}
@@ -640,7 +642,7 @@ export default function PublicSharePage() {
                     <div className="flex items-center justify-center w-full h-full bg-gray-800">
                       <audio
                         ref={audioRef}
-                        src={`/public/share/${token}`}
+                        src={`/api/share/${token}`}
                         onTimeUpdate={handleTimeUpdate}
                         onDurationChange={handleDurationChange}
                         onPlay={handlePlay}
@@ -667,11 +669,11 @@ export default function PublicSharePage() {
               )}
             </div>
 
-            {/* Media Controls - Always show for video/audio files */}
+            {/* Media Controls - Mobile: compact, Desktop: normal spacing */}
             {(file.fileType === 'video' || file.fileType === 'audio') && (
-              <div className="mt-4 p-4 bg-neutral-50 dark:bg-gray-800 rounded-lg">
+              <div className="mt-2 p-2 bg-neutral-50 dark:bg-gray-800 rounded-lg lg:mt-4 lg:p-4">
                 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 lg:space-x-4">
                   <Button
                     onClick={togglePlay}
                     variant="ghost"
@@ -686,12 +688,12 @@ export default function PublicSharePage() {
                     )}
                   </Button>
                   
-                  <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
+                  <span className="font-mono text-xs text-neutral-600 dark:text-gray-400 lg:text-sm">
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </span>
                   
-                  {/* Progress bar and markers container */}
-                  <div className="flex-grow flex flex-col gap-1 mx-4">
+                  {/* Progress bar and markers container - Mobile: compact margins, Desktop: normal */}
+                  <div className="flex-grow flex flex-col gap-1 mx-2 lg:mx-4">
                     {/* Extended hover area around progress bar */}
                     <div
                       className="relative py-4 cursor-pointer"
@@ -878,27 +880,27 @@ export default function PublicSharePage() {
             </Card>
           </div>
 
-          {/* Comments Section - Responsive width sidebar, hidden in view-only mode */}
+          {/* Comments Section - Mobile: bottom panel, Desktop: right sidebar, hidden in view-only mode */}
           {!isViewOnly && (
-            <div className="min-h-0 flex flex-col overflow-hidden">
-              <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
-                {/* Header */}
-                <div className="flex items-center p-4 border-b border-gray-700">
+            <div className="min-h-0 flex flex-col overflow-hidden lg:h-full">
+              <div className="h-80 flex flex-col rounded-lg overflow-hidden lg:h-full" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
+                {/* Header - Mobile: compact padding, Desktop: normal padding */}
+                <div className="flex items-center p-2 border-b border-gray-700 lg:p-4">
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-medium text-white">All comments</span>
+                    <MessageSquare className="h-3 w-3 text-gray-400 lg:h-4 lg:w-4" />
+                    <span className="text-xs font-medium text-white lg:text-sm">All comments</span>
                   </div>
                 </div>
 
-                {/* Comments List - Scrollable area */}
-                <div className="flex-1 min-h-0 overflow-auto p-3 space-y-3">
+                {/* Comments List - Mobile: compact spacing, Desktop: normal spacing */}
+                <div className="flex-1 min-h-0 overflow-auto p-2 space-y-2 lg:p-3 lg:space-y-3">
                   <CommentsList token={token!} onTimestampClick={seekToTimestamp} />
                 </div>
 
-                {/* Comment Input - Sticky bottom composer */}
-                <div className="flex-shrink-0 sticky bottom-0 mx-3 mb-3 mt-6" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
+                {/* Comment Input - Mobile: compact sticky composer, Desktop: normal */}
+                <div className="flex-shrink-0 sticky bottom-0 mx-2 mb-2 mt-3 lg:mx-3 lg:mb-3 lg:mt-6" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                   <div 
-                    className="rounded-lg p-3 w-full"
+                    className="rounded-lg p-2 w-full lg:p-3"
                     style={{
                       backgroundColor: 'hsl(210, 20%, 12%)',
                       border: '1px solid hsl(210, 15%, 18%)'
