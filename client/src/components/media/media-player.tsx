@@ -361,18 +361,58 @@ export default function MediaPlayer({
   
   // Handle fullscreen
   const toggleFullscreen = () => {
-    if (!mediaContainerRef.current) return;
+    console.log('[FULLSCREEN] toggleFullscreen called');
+    console.log('[FULLSCREEN] mediaContainerRef.current:', mediaContainerRef.current);
+    
+    if (!mediaContainerRef.current) {
+      console.log('[FULLSCREEN] No media container ref');
+      toast({
+        title: "Fullscreen error",
+        description: "Media container not found",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log('[FULLSCREEN] requestFullscreen available:', typeof mediaContainerRef.current.requestFullscreen);
     
     if (!document.fullscreenElement) {
-      mediaContainerRef.current.requestFullscreen().catch(err => {
+      // Check for browser compatibility
+      const element = mediaContainerRef.current as any;
+      const requestFullscreen = element.requestFullscreen || 
+                               element.webkitRequestFullscreen || 
+                               element.mozRequestFullscreen || 
+                               element.msRequestFullscreen;
+      
+      if (requestFullscreen) {
+        console.log('[FULLSCREEN] Requesting fullscreen...');
+        requestFullscreen.call(element).catch((err: Error) => {
+          console.error('[FULLSCREEN] Error:', err);
+          toast({
+            title: "Fullscreen error",
+            description: `Error attempting to enable fullscreen: ${err.message}`,
+            variant: "destructive",
+          });
+        });
+      } else {
+        console.log('[FULLSCREEN] Fullscreen API not supported');
         toast({
-          title: "Fullscreen error",
-          description: `Error attempting to enable fullscreen: ${err.message}`,
+          title: "Fullscreen not supported",
+          description: "Your browser doesn't support fullscreen mode",
           variant: "destructive",
         });
-      });
+      }
     } else {
-      document.exitFullscreen();
+      console.log('[FULLSCREEN] Exiting fullscreen...');
+      const doc = document as any;
+      const exitFullscreen = doc.exitFullscreen || 
+                            doc.webkitExitFullscreen || 
+                            doc.mozExitFullscreen || 
+                            doc.msExitFullscreen;
+      
+      if (exitFullscreen) {
+        exitFullscreen.call(document);
+      }
     }
   };
 
