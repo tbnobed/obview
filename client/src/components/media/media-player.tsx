@@ -1186,7 +1186,7 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full h-full lg:h-[calc(100vh-112px)] overflow-hidden lg:gap-0 gap-4 lg:px-0 lg:mx-0 lg:max-w-none">
+    <div className="flex flex-col lg:flex-row w-full h-full lg:h-[calc(100vh-112px)] overflow-hidden lg:gap-0 gap-0 lg:px-0 lg:mx-0 lg:max-w-none">
       {/* Media area wrapper - Mobile: stacked, Desktop: flex-1 to fill remaining space */}
       <div className="flex-1 min-w-0 lg:h-full overflow-hidden">
         {/* Media Viewer - Mobile-first with explicit desktop overrides */}
