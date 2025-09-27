@@ -270,8 +270,10 @@ export default function TimelineComments({
   // Scroll to active comment when it changes
   useEffect(() => {
     if (activeCommentId) {
-      // Find the comment element
-      const commentElement = document.getElementById(`comment-${activeCommentId}`);
+      // Try both possible ID formats (public and auth prefixes)
+      let commentElement = document.getElementById(`comment-public-${activeCommentId}`) || 
+                          document.getElementById(`comment-auth-${activeCommentId}`);
+      
       if (commentElement) {
         // Scroll the comment into view with smooth behavior
         commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
