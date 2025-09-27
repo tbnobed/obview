@@ -315,7 +315,7 @@ export default function TimelineComments({
   return (
     <div className="flex flex-col h-full min-h-0" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
       {/* Comment Input - Mobile: sticky at top, Desktop: hidden */}
-      <div className="sticky top-0 z-10 border-b px-3 pt-2 pb-3 lg:hidden shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))', backgroundColor: 'hsl(var(--comments-bg))'}}>
+      <div className="sticky top-0 z-10 border-b px-2 pt-0 pb-1 lg:hidden shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))', backgroundColor: 'hsl(var(--comments-bg))'}}>
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}
