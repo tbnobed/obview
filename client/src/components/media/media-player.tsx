@@ -43,7 +43,7 @@ export default function MediaPlayer({
   const [errorMessage, setErrorMessage] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommentsTab, setShowCommentsTab] = useState(true);
-  const [activeCommentId, setActiveCommentId] = useState<number | undefined>(undefined);
+  const [activeCommentId, setActiveCommentId] = useState<string | undefined>(undefined);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
   const [selectedVersionFile, setSelectedVersionFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -1685,7 +1685,7 @@ export default function MediaPlayer({
                 duration={duration} 
                 currentTime={currentTime}
                 activeCommentId={activeCommentId?.toString()}
-                onCommentSelect={(commentId: string) => setActiveCommentId(parseInt(commentId))}
+                onCommentSelect={(commentId: string) => setActiveCommentId(commentId)}
                 onTimeClick={(time: number) => {
                   const mediaElement = videoRef.current || audioRef.current;
                   if (mediaElement) {

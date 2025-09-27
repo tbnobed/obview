@@ -341,7 +341,6 @@ export default function TimelineComments({
                   key={`${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
                   id={`comment-${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
                   onClick={() => {
-                    console.log('Comment clicked:', { commentId: comment.id, commentIdType: typeof comment.id, activeCommentId, activeCommentIdType: typeof activeCommentId });
                     if (comment.timestamp !== null) {
                       onTimeClick(comment.timestamp);
                     }
@@ -359,7 +358,7 @@ export default function TimelineComments({
                     }
                   } : undefined}
                   className={`relative rounded-lg border p-3 transition-all duration-200 lg:p-4 cursor-pointer hover:shadow-lg ${
-                    (activeCommentId === comment.id || activeCommentId === comment.id.toString() || activeCommentId?.toString() === comment.id.toString()) ? 'ring-2 ring-blue-500/50 bg-blue-500/5' : ''
+                    activeCommentId === comment.id ? 'ring-2 ring-blue-500/50 bg-blue-500/5' : ''
                   }`}
                   style={{
                     backgroundColor: 'hsl(var(--comments-card))',
