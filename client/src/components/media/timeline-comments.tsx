@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useComments } from "@/hooks/use-comments";
 import CommentForm from "@/components/comments/comment-form";
 import CommentThread from "@/components/comments/comment-thread";
-import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check } from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/utils";
@@ -303,8 +303,23 @@ export default function TimelineComments({
     return 0;
   });
 
+  // Format time for timestamp display
+  const formatTimeShort = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="min-h-0 flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
+      {/* Mobile Timestamp Indicator - Show above comments on mobile only */}
+      <div className="lg:hidden px-3 py-2 border-b" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
+        <div className="flex items-center gap-2 text-xs" style={{color: 'hsl(var(--comments-muted))'}}>
+          <Clock className="h-3 w-3" />
+          <span>Will be posted at {formatTimeShort(currentTime)}</span>
+        </div>
+      </div>
+      
       {/* Comments List */}
       <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+88px)]">
         {isLoading ? (
