@@ -1329,7 +1329,6 @@ export default function MediaPlayer({
                             }
                             setHoveredComment(comment.id);
                             const rect = e.currentTarget.getBoundingClientRect();
-                            console.log('Marker rect:', rect, 'for comment:', comment.id);
                             setTooltipPosition({
                               x: rect.left + rect.width / 2,
                               y: rect.top
@@ -1374,19 +1373,11 @@ export default function MediaPlayer({
                     const padding = 8;
                     
                     let left = tooltipPosition.x - tooltipWidth / 2;
-                    let top = tooltipPosition.y - tooltipHeight - 10;
-                    
-                    console.log('Tooltip positioning:', {
-                      tooltipPosition,
-                      calculated: { left, top },
-                      viewport: { width: window.innerWidth, height: window.innerHeight }
-                    });
+                    let top = tooltipPosition.y - 40; // Just 40px above the marker
                     
                     // Clamp to viewport
                     left = Math.max(padding, Math.min(left, window.innerWidth - tooltipWidth - padding));
                     top = Math.max(padding, top);
-                    
-                    console.log('Final tooltip position:', { left, top });
                     
                     return createPortal(
                       <div
