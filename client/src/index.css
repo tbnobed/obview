@@ -49,6 +49,37 @@
   --ring: 175 70% 41%;
   --radius: 0.5rem;
   
+  /* Mobile/Desktop Isolation Properties */
+  --mobile-spacing-xs: 0.125rem; /* 2px - Tight mobile spacing */
+  --mobile-spacing-sm: 0.375rem; /* 6px - Small mobile spacing */
+  --mobile-spacing-md: 0.5rem;   /* 8px - Medium mobile spacing */
+  --mobile-spacing-lg: 0.75rem;  /* 12px - Large mobile spacing */
+  --desktop-spacing-xs: 0.25rem; /* 4px - Desktop tight spacing */
+  --desktop-spacing-sm: 0.5rem;  /* 8px - Desktop small spacing */
+  --desktop-spacing-md: 0.75rem; /* 12px - Desktop medium spacing */
+  --desktop-spacing-lg: 1rem;    /* 16px - Desktop large spacing */
+  
+  --mobile-text-xs: 0.75rem;     /* 12px - Compact mobile text */
+  --mobile-text-sm: 0.875rem;    /* 14px - Small mobile text */
+  --mobile-text-base: 1rem;      /* 16px - Base mobile text */
+  --desktop-text-xs: 0.75rem;    /* 12px - Desktop extra small */
+  --desktop-text-sm: 0.875rem;   /* 14px - Desktop small */
+  --desktop-text-base: 1rem;     /* 16px - Desktop base */
+  --desktop-text-lg: 1.125rem;   /* 18px - Desktop large */
+  
+  --mobile-icon-xs: 0.75rem;     /* 12px - Compact mobile icons */
+  --mobile-icon-sm: 1rem;        /* 16px - Small mobile icons */
+  --mobile-icon-md: 1.25rem;     /* 20px - Medium mobile icons */
+  --desktop-icon-xs: 0.875rem;   /* 14px - Desktop extra small icons */
+  --desktop-icon-sm: 1rem;       /* 16px - Desktop small icons */
+  --desktop-icon-md: 1.25rem;    /* 20px - Desktop medium icons */
+  --desktop-icon-lg: 1.5rem;     /* 24px - Desktop large icons */
+  
+  --mobile-button-height: 1.5rem;   /* 24px - Compact mobile buttons */
+  --mobile-button-padding: 0.375rem; /* 6px - Mobile button padding */
+  --desktop-button-height: 1.75rem;  /* 28px - Desktop button height */
+  --desktop-button-padding: 0.5rem;  /* 8px - Desktop button padding */
+  
   /* Comments section specific colors for Frame.io style */
   --comments-bg: 210 25% 8%; /* Very dark navy background */
   --comments-card: 210 20% 12%; /* Slightly lighter navy for cards */
@@ -124,6 +155,80 @@
                       radial-gradient(circle at 75% 75%, rgba(20, 184, 166, 0.01) 0%, transparent 50%);
   }
   
+  /* Mobile/Desktop Isolation Utility Classes */
+  .mobile-spacing-tight { gap: var(--mobile-spacing-xs); }
+  .mobile-spacing-compact { gap: var(--mobile-spacing-sm); }
+  .mobile-spacing-normal { gap: var(--mobile-spacing-md); }
+  .mobile-spacing-loose { gap: var(--mobile-spacing-lg); }
+  
+  .mobile-text-compact { font-size: var(--mobile-text-xs); }
+  .mobile-text-normal { font-size: var(--mobile-text-sm); }
+  .mobile-text-readable { font-size: var(--mobile-text-base); }
+  
+  .mobile-icon-small { width: var(--mobile-icon-xs); height: var(--mobile-icon-xs); }
+  .mobile-icon-normal { width: var(--mobile-icon-sm); height: var(--mobile-icon-sm); }
+  .mobile-icon-large { width: var(--mobile-icon-md); height: var(--mobile-icon-md); }
+  
+  .mobile-button-compact { 
+    height: var(--mobile-button-height); 
+    padding: var(--mobile-button-padding); 
+  }
+  
+  @media (min-width: 1024px) {
+    .desktop-spacing-tight { gap: var(--desktop-spacing-xs); }
+    .desktop-spacing-compact { gap: var(--desktop-spacing-sm); }
+    .desktop-spacing-normal { gap: var(--desktop-spacing-md); }
+    .desktop-spacing-loose { gap: var(--desktop-spacing-lg); }
+    
+    .desktop-text-compact { font-size: var(--desktop-text-xs); }
+    .desktop-text-normal { font-size: var(--desktop-text-sm); }
+    .desktop-text-readable { font-size: var(--desktop-text-base); }
+    .desktop-text-large { font-size: var(--desktop-text-lg); }
+    
+    .desktop-icon-small { width: var(--desktop-icon-xs); height: var(--desktop-icon-xs); }
+    .desktop-icon-normal { width: var(--desktop-icon-sm); height: var(--desktop-icon-sm); }
+    .desktop-icon-large { width: var(--desktop-icon-md); height: var(--desktop-icon-md); }
+    .desktop-icon-xl { width: var(--desktop-icon-lg); height: var(--desktop-icon-lg); }
+    
+    .desktop-button-normal { 
+      height: var(--desktop-button-height); 
+      padding: var(--desktop-button-padding); 
+    }
+  }
+  
+  /* Bulletproof responsive isolation classes */
+  .bulletproof-spacing {
+    gap: var(--mobile-spacing-sm);
+  }
+  
+  @media (min-width: 1024px) {
+    .bulletproof-spacing {
+      gap: var(--desktop-spacing-md);
+    }
+  }
+  
+  .bulletproof-text {
+    font-size: var(--mobile-text-sm);
+  }
+  
+  @media (min-width: 1024px) {
+    .bulletproof-text {
+      font-size: var(--desktop-text-base);
+    }
+  }
+  
+  .bulletproof-button {
+    height: var(--mobile-button-height);
+    padding: var(--mobile-button-padding);
+  }
+  
+  @media (min-width: 1024px) {
+    .bulletproof-button {
+      height: var(--desktop-button-height);
+      padding: var(--desktop-button-padding);
+    }
+  }
+
   /* Global smooth hover transitions */
   button, a, [role="button"], 
   .hover-transition, 
