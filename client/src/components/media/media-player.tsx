@@ -1312,6 +1312,7 @@ export default function MediaPlayer({
                             transform: 'translateX(-50%)'
                           }}
                           onMouseEnter={(e) => {
+                            console.log('Comment marker hover entered for:', comment.id);
                             setHoveredComment(comment.id);
                             const rect = e.currentTarget.getBoundingClientRect();
                             setTooltipPosition({
@@ -1320,6 +1321,7 @@ export default function MediaPlayer({
                             });
                           }}
                           onMouseLeave={() => {
+                            console.log('Comment marker hover left');
                             setHoveredComment(null);
                           }}
                           onClick={(e) => {
@@ -1346,7 +1348,9 @@ export default function MediaPlayer({
                 {/* Comment Marker Tooltip - Mobile: smaller, Desktop: full size */}
                 {hoveredComment && comments && (
                   (() => {
+                    console.log('Rendering tooltip for hoveredComment:', hoveredComment, 'from comments:', comments.length);
                     const comment = comments.find((c: Comment) => c.id === hoveredComment);
+                    console.log('Found comment for tooltip:', comment);
                     if (!comment) return null;
                     
                     // Position tooltip using viewport coordinates
@@ -1367,8 +1371,8 @@ export default function MediaPlayer({
                     
                     return (
                       <div
-                        className="pointer-events-none fixed z-50"
-                        style={positionStyle}
+                        className="pointer-events-none fixed z-[9999]"
+                        style={{...positionStyle, border: '2px solid red'}}
                       >
                         {/* Tooltip container - Mobile: compact, Desktop: spacious */}
                         <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg max-w-xs lg:text-sm lg:p-3">
