@@ -587,13 +587,13 @@ export default function ProjectPage() {
       <div className={cn(
         "bg-neutral-100 dark:bg-[#080b12] overflow-auto",
         activeTab === "media" && viewMode === "player" 
-          ? "min-h-0 h-full" 
+          ? "min-h-0" 
           : "p-4 sm:p-6 lg:p-8"
       )}>
         {activeTab === "media" && (
           <div className={cn(
             "bg-white dark:bg-[#0f1218] shadow dark:shadow-gray-900",
-            viewMode === "player" ? "rounded-none min-h-0 h-full" : "rounded-lg"
+            viewMode === "player" ? "rounded-none min-h-0" : "rounded-lg"
           )}>
             {filesLoading ? (
               <div className="flex items-center justify-center py-20">
