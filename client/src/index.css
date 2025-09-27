@@ -104,6 +104,7 @@
     height: 100dvh; /* Dynamic viewport height for mobile browsers */
     min-height: 100vh;
     min-height: 100dvh;
+    overflow: hidden;
   }
 
   body {
@@ -113,6 +114,7 @@
     /* Mobile optimizations for full screen */
     overscroll-behavior: none;
     touch-action: manipulation;
+    position: fixed;
     width: 100%;
   }
 
