@@ -561,6 +561,19 @@ export default function MediaPlayer({
     };
     
     // Touch event handlers for iOS Safari
+    const handleTouchStart = (e: TouchEvent) => {
+      // Check if the touch was on the progress bar
+      if (progressRef.current && progressRef.current.contains(e.target as Node)) {
+        setIsDragging(true);
+        // Set initial preview time
+        const rect = progressRef.current.getBoundingClientRect();
+        const touch = e.touches[0];
+        const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+        const newTime = duration * pos;
+        setPreviewTime(newTime);
+      }
+    };
+    
     const handleTouchEnd = () => {
       if (isDragging) {
         setIsDragging(false);
@@ -604,6 +617,7 @@ export default function MediaPlayer({
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('touchstart', handleTouchStart);
     document.addEventListener('touchend', handleTouchEnd);
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     
@@ -611,6 +625,7 @@ export default function MediaPlayer({
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('touchmove', handleTouchMove);
       
@@ -1222,40 +1237,6 @@ export default function MediaPlayer({
                       userSelect: 'none'
                     }}
                     onClick={handleProgressClick}
-                    onTouchStart={(e) => {
-                      // Handle touch start for mobile scrubbing
-                      if (!progressRef.current) return;
-                      e.preventDefault();
-                      setIsDragging(true);
-                      
-                      const touch = e.touches[0];
-                      const rect = progressRef.current.getBoundingClientRect();
-                      const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
-                      const newTime = duration * pos;
-                      
-                      performSeek(newTime);
-                      setCurrentTime(newTime);
-                    }}
-                    onTouchMove={(e) => {
-                      // Handle touch move for mobile scrubbing
-                      if (!progressRef.current || !isDragging) return;
-                      e.preventDefault();
-                      
-                      const touch = e.touches[0];
-                      const rect = progressRef.current.getBoundingClientRect();
-                      const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
-                      const newTime = duration * pos;
-                      
-                      performSeek(newTime);
-                      setCurrentTime(newTime);
-                      setScrubPreviewTime(newTime);
-                      setShowScrubPreview(true);
-                    }}
-                    onTouchEnd={() => {
-                      // Handle touch end
-                      setIsDragging(false);
-                      setShowScrubPreview(false);
-                    }}
                     onMouseMove={(e) => {
                       if (e.buttons === 1 && progressRef.current) {
                         // Handle dragging (mouse down + move)
