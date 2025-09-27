@@ -1029,7 +1029,7 @@ export default function MediaPlayer({
       {/* Media Viewer - Natural sizing */}
       <div className="relative mx-auto w-full max-w-[1280px] p-4">
         {/* Media container - tight 16:9 aspect ratio box */}
-        <div className="relative w-full aspect-[16/9] bg-black rounded-md overflow-hidden">
+        <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black rounded-md overflow-hidden">
           {renderMediaContent()}
         </div>
         
