@@ -605,14 +605,14 @@ export default function PublicSharePage() {
           "h-full grid gap-1 lg:gap-4",
           isViewOnly 
             ? "grid-rows-[minmax(0,1fr)]"
-            : "grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-none"
+            : "grid-rows-[auto_1fr] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-none"
         )}>
-          {/* Media Player - Mobile: full height, Desktop: remaining space when comments shown */}
-          <div className="min-h-0 flex flex-col overflow-hidden">
-            <Card className="h-full flex flex-col overflow-hidden border-0">
-              <CardContent className="flex-1 min-h-0 flex flex-col p-1 lg:p-2">
-                {/* Video container - fills available space */}
-                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full flex-1">
+          {/* Media Player - Mobile: compact height, Desktop: remaining space when comments shown */}
+          <div className="flex flex-col overflow-hidden">
+            <Card className="flex flex-col overflow-hidden border-0">
+              <CardContent className="flex flex-col p-1 lg:p-2">
+                {/* Video container - Mobile: compact aspect ratio, Desktop: fills available space */}
+                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full aspect-video lg:flex-1 lg:aspect-auto">
               {/* Render media player based on file type */}
               {file.fileType === 'video' && !mediaError && (
                 <video
