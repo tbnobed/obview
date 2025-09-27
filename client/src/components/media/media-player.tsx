@@ -1535,7 +1535,7 @@ export default function MediaPlayer({
       {showScrubPreview && duration > 0 && file?.fileType === 'video' && createPortal(
         <div
           ref={scrubPreviewRef}
-          className="pointer-events-none z-50"
+          className="pointer-events-none z-50 hidden lg:block"
           style={{
             position: 'fixed',
             left: `${scrubPreviewLeft}px`,
