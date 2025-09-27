@@ -311,7 +311,7 @@ export default function TimelineComments({
   };
 
   return (
-    <div className="h-full lg:min-h-0 flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
+    <div className="h-full min-h-0 flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
       {/* Comment Input - Mobile only at top */}
       <div className="lg:hidden border-b px-3 pt-2 pb-3 flex-shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
         <CommentForm
