@@ -509,7 +509,7 @@ export default function MediaPlayer({
     }
   };
   
-  // Handle global mouse events for optimized scrubbing
+  // Handle global mouse and touch events for optimized scrubbing
   useEffect(() => {
     const handleMouseUp = () => {
       if (isDragging) {
@@ -560,14 +560,59 @@ export default function MediaPlayer({
       }
     };
     
+    // Touch event handlers for iOS Safari
+    const handleTouchEnd = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        // Perform final seek on touch end
+        performSeek(previewTime);
+        setCurrentTime(previewTime);
+      }
+    };
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isDragging && progressRef.current && e.touches.length > 0) {
+        e.preventDefault(); // Prevent scrolling during scrub
+        
+        // Use RAF for smooth visual updates
+        if (rafIdRef.current) {
+          cancelAnimationFrame(rafIdRef.current);
+        }
+        
+        rafIdRef.current = requestAnimationFrame(() => {
+          if (!progressRef.current || !e.touches.length) return;
+          
+          const rect = progressRef.current.getBoundingClientRect();
+          const touch = e.touches[0];
+          // Get x position relative to progress bar (clamped between 0 and 1)
+          const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+          const newTime = duration * pos;
+          
+          // Update preview time immediately for visual feedback
+          setPreviewTime(newTime);
+          
+          // Only seek occasionally during drag for performance
+          const now = Date.now();
+          if (now - lastSeekTimeRef.current > 200) { // Seek every 200ms during drag
+            performSeek(newTime);
+            setCurrentTime(newTime);
+          }
+        });
+      }
+    };
+    
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
     
     return () => {
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
       
       // Cleanup RAF and timeouts
       if (rafIdRef.current) {
