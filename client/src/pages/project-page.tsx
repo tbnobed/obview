@@ -613,7 +613,7 @@ export default function ProjectPage() {
                 )}
                 
                 {viewMode === 'player' && selectedFileId && (
-                  <div className="relative lg:h-[calc(100dvh-3.5rem)] lg:min-h-0 lg:flex lg:flex-col">
+                  <div className="relative lg:flex lg:flex-col">
                     <div className="relative lg:flex-1 lg:min-h-0">
                       {/* Back to Grid Button - Desktop only with proper spacing */}
                       <div className="absolute top-2 right-2 z-10 hidden lg:top-4 lg:right-4 lg:block">
