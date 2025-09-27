@@ -696,7 +696,7 @@ export default function PublicSharePage() {
                   </div>
                   
                   <div className="flex items-center space-x-2 lg:space-x-4">
-                    <div className="flex items-center">
+                    <div className="hidden lg:flex items-center">
                       <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
                       <input
                         type="range"
