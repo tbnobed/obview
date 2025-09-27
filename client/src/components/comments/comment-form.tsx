@@ -269,7 +269,7 @@ export default function CommentForm({
 
   return (
     <div 
-      className={cn("rounded-lg p-2 w-full lg:p-3", className)} 
+      className={cn("rounded-lg p-2 w-full lg:p-3 flex flex-col h-full", className)} 
       style={{
         backgroundColor: 'hsl(210, 20%, 12%)',
         border: '1px solid hsl(210, 15%, 18%)'
