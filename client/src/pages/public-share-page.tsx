@@ -613,53 +613,53 @@ export default function PublicSharePage() {
               <CardContent className="flex-1 min-h-0 flex flex-col p-1 lg:p-2">
                 {/* Video container - fills available space */}
                 <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full flex-1">
-              {!mediaError ? (
-                <>
-                  {file.fileType === 'video' && (
-                    <video
-                      ref={videoRef}
-                      className="w-full h-full object-contain"
-                      onTimeUpdate={handleTimeUpdate}
-                      onDurationChange={handleDurationChange}
-                      onPlay={handlePlay}
-                      onPause={handlePause}
-                      onError={handleMediaError}
-                      preload="metadata"
-                      data-testid="shared-video-player"
-                    >
-                      {/* Use 720p proxy for shared files when available */}
-                      {videoProcessing?.status === 'completed' && 
-                       videoProcessing.qualities?.some((q: any) => q.resolution === '720p') && (
-                        <source src={`/api/share/${token}/qualities/720p`} type="video/mp4" />
-                      )}
-                      {/* Always include original shared file as fallback */}
-                      <source src={`/api/share/${token}`} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
+              {/* Render media player based on file type */}
+              {file.fileType === 'video' && !mediaError && (
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-contain"
+                  onTimeUpdate={handleTimeUpdate}
+                  onDurationChange={handleDurationChange}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onError={handleMediaError}
+                  preload="metadata"
+                  data-testid="shared-video-player"
+                >
+                  {/* Use 720p proxy for shared files when available */}
+                  {videoProcessing?.status === 'completed' && 
+                   videoProcessing.qualities?.some((q: any) => q.resolution === '720p') && (
+                    <source src={`/api/share/${token}/qualities/720p`} type="video/mp4" />
                   )}
-                  
-                  {file.fileType === 'audio' && (
-                    <div className="flex items-center justify-center w-full h-full bg-gray-800">
-                      <audio
-                        ref={audioRef}
-                        src={`/api/share/${token}`}
-                        onTimeUpdate={handleTimeUpdate}
-                        onDurationChange={handleDurationChange}
-                        onPlay={handlePlay}
-                        onPause={handlePause}
-                        onError={handleMediaError}
-                        preload="metadata"
-                        className="hidden"
-                        data-testid="shared-audio-player"
-                      />
-                      <div className="text-white text-center">
-                        <div className="text-4xl md:text-6xl mb-2">🎵</div>
-                        <div className="text-lg md:text-xl px-4">{file.filename}</div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
+                  {/* Always include original shared file as fallback */}
+                  <source src={`/api/share/${token}`} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              )}
+              
+              {file.fileType === 'audio' && !mediaError && (
+                <div className="flex items-center justify-center w-full h-full bg-gray-800">
+                  <audio
+                    ref={audioRef}
+                    src={`/api/share/${token}`}
+                    onTimeUpdate={handleTimeUpdate}
+                    onDurationChange={handleDurationChange}
+                    onPlay={handlePlay}
+                    onPause={handlePause}
+                    onError={handleMediaError}
+                    preload="metadata"
+                    className="hidden"
+                    data-testid="shared-audio-player"
+                  />
+                  <div className="text-white text-center">
+                    <div className="text-4xl md:text-6xl mb-2">🎵</div>
+                    <div className="text-lg md:text-xl px-4">{file.filename}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show error message only when media fails to load */}
+              {mediaError && (
                 <div className="flex items-center justify-center w-full h-full bg-gray-800">
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
