@@ -269,14 +269,15 @@ export default function CommentForm({
 
   return (
     <div 
-      className={cn("rounded-lg p-3 w-full", className)} 
+      className={cn("rounded-lg p-2 w-full lg:p-3", className)} 
       style={{
         backgroundColor: 'hsl(210, 20%, 12%)',
         border: '1px solid hsl(210, 15%, 18%)'
       }}
       data-comment-form
     >
-      <div className="flex items-start gap-3 w-full">
+      {/* Form content - Mobile: compact spacing, Desktop: normal spacing */}
+      <div className="flex items-start gap-2 w-full lg:gap-3">
         <textarea
           ref={textareaRef}
           value={content}
@@ -298,7 +299,7 @@ export default function CommentForm({
                 ? `Add a comment at ${formatTime(currentTime)}...`
                 : "Leave your comment..."
           }
-          className="flex-1 bg-transparent text-white placeholder-gray-400 text-sm resize-none border-none outline-none min-h-[2.5rem] leading-relaxed"
+          className="flex-1 bg-transparent text-white placeholder-gray-400 text-sm resize-none border-none outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
           style={{ 
             fontFamily: 'inherit',
             overflow: 'hidden',
@@ -309,45 +310,46 @@ export default function CommentForm({
           required
         />
         
+        {/* Submit button - Mobile: smaller padding, Desktop: normal padding */}
         <button
           type="submit"
           disabled={content.trim() === "" || createCommentMutation.isPending}
-          className="flex-shrink-0 p-2 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+          className="flex-shrink-0 p-1.5 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors lg:p-2"
           data-testid="button-submit-comment"
           onClick={handleSubmit}
         >
           {createCommentMutation.isPending ? (
-            <Loader2 className="h-4 w-4 text-white animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 text-white animate-spin lg:h-4 lg:w-4" />
           ) : (
-            <Send className="h-4 w-4 text-white" />
+            <Send className="h-3.5 w-3.5 text-white lg:h-4 lg:w-4" />
           )}
         </button>
       </div>
       
-      {/* Timestamp indicator and tools */}
+      {/* Timestamp indicator and tools - Mobile: compact spacing, Desktop: normal spacing */}
       {!parentId && currentTime !== undefined && (
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-600">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-600 lg:mt-3 lg:pt-3">
+          <div className="flex items-center gap-1.5 text-xs text-gray-400 lg:gap-2">
             <Clock className="h-3 w-3" />
             <span>Will be posted at {includeTimestamp ? formatTime(currentTime) : 'current time'}</span>
           </div>
           
-          <div className="flex items-center gap-1">
-            {/* Tools */}
-            <div className="flex space-x-1">
-              {/* Paperclip button */}
+          <div className="flex items-center gap-0.5 lg:gap-1">
+            {/* Tools - Mobile: tighter spacing, Desktop: normal spacing */}
+            <div className="flex space-x-0.5 lg:space-x-1">
+              {/* Paperclip button - Mobile: smaller, Desktop: normal */}
               <Button 
                 type="button" 
                 size="icon" 
                 variant="ghost" 
-                className="h-7 w-7 rounded text-gray-400 hover:text-white hover:bg-gray-700"
+                className="h-6 w-6 rounded text-gray-400 hover:text-white hover:bg-gray-700 lg:h-7 lg:w-7"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
               >
                 {isUploading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3 w-3 animate-spin lg:h-3.5 lg:w-3.5" />
                 ) : (
-                  <Paperclip className="h-3.5 w-3.5" />
+                  <Paperclip className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
                 )}
               </Button>
               
@@ -360,12 +362,12 @@ export default function CommentForm({
                 accept=".pdf,.doc,.docx,.txt"
               />
               
-              {/* Image button */}
+              {/* Image button - Mobile: smaller, Desktop: normal */}
               <Button 
                 type="button" 
                 size="icon" 
                 variant="ghost" 
-                className="h-7 w-7 rounded text-gray-400 hover:text-white hover:bg-gray-700"
+                className="h-6 w-6 rounded text-gray-400 hover:text-white hover:bg-gray-700 lg:h-7 lg:w-7"
                 onClick={() => {
                   if (isUploading) return;
                   const imageInput = document.createElement('input');
@@ -381,23 +383,23 @@ export default function CommentForm({
                 disabled={isUploading}
               >
                 {isUploading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3 w-3 animate-spin lg:h-3.5 lg:w-3.5" />
                 ) : (
-                  <Image className="h-3.5 w-3.5" />
+                  <Image className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
                 )}
               </Button>
               
-              {/* Emoji button */}
+              {/* Emoji button - Mobile: smaller, Desktop: normal */}
               <div className="relative">
                 <Button 
                   type="button" 
                   size="icon" 
                   variant="ghost" 
-                  className="h-7 w-7 rounded text-gray-400 hover:text-blue-400 hover:bg-gray-700"
+                  className="h-6 w-6 rounded text-gray-400 hover:text-blue-400 hover:bg-gray-700 lg:h-7 lg:w-7"
                   onClick={() => !isUploading && setShowEmojiPicker(!showEmojiPicker)}
                   disabled={isUploading}
                 >
-                  <Smile className="h-3.5 w-3.5" />
+                  <Smile className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
                 </Button>
                 
                 {/* Emoji picker popup */}
@@ -408,6 +410,7 @@ export default function CommentForm({
                       className="fixed inset-0 z-40"
                       onClick={() => setShowEmojiPicker(false)}
                     />
+                    {/* Emoji picker - Mobile: smaller width, Desktop: normal width */}
                     <div 
                       className="fixed z-50 rounded-md border shadow-lg" 
                       ref={emojiPickerRef}
@@ -418,19 +421,19 @@ export default function CommentForm({
                         left: '50%',
                         transform: 'translate(-50%, -50%)',
                         zIndex: 1000,
-                        width: '320px',
+                        width: window.innerWidth <= 1024 ? '280px' : '320px',
                         backgroundColor: 'hsl(210, 20%, 12%)',
                         borderColor: 'hsl(210, 15%, 18%)'
                       }}
                     >
                       <div className="emoji-picker-container">
-                        {/* Emoji Category Tabs */}
+                        {/* Emoji Category Tabs - Mobile: smaller padding, Desktop: normal */}
                         <div className="border-b border-gray-600 flex overflow-x-auto">
                           {Object.keys(emojiCategories).map((category) => (
                             <button
                               key={category}
                               type="button"
-                              className={`px-2 py-1 text-xs font-medium ${
+                              className={`px-1.5 py-1 text-xs font-medium lg:px-2 ${
                                 activeEmojiCategory === category
                                   ? "text-blue-400 border-b-2 border-blue-400"
                                   : "text-gray-400 hover:text-gray-300"
@@ -442,12 +445,12 @@ export default function CommentForm({
                           ))}
                         </div>
                         
-                        {/* Emoji Grid */}
-                        <div className="grid grid-cols-6 gap-1 emoji-grid p-2 max-h-[180px] overflow-y-auto">
+                        {/* Emoji Grid - Mobile: more compact, Desktop: normal */}
+                        <div className="grid grid-cols-6 gap-0.5 emoji-grid p-1.5 max-h-[160px] overflow-y-auto lg:gap-1 lg:p-2 lg:max-h-[180px]">
                           {emojiCategories[activeEmojiCategory as keyof typeof emojiCategories].map((emoji, index) => (
                             <div
                               key={index}
-                              className="p-1.5 rounded cursor-pointer flex items-center justify-center hover:bg-gray-700 text-xl"
+                              className="p-1 rounded cursor-pointer flex items-center justify-center hover:bg-gray-700 text-lg lg:p-1.5 lg:text-xl"
                               onClick={() => {
                                 // Get the textarea DOM element directly
                                 if (textareaRef.current) {
@@ -495,8 +498,8 @@ export default function CommentForm({
                           ))}
                         </div>
                         
-                        {/* Helper text */}
-                        <div className="px-3 pb-2 pt-1 border-t border-gray-600">
+                        {/* Helper text - Mobile: smaller padding, Desktop: normal */}
+                        <div className="px-2 pb-2 pt-1 border-t border-gray-600 lg:px-3">
                           <div className="text-xs text-gray-400 text-center">
                             Click an emoji to add it
                           </div>
@@ -508,12 +511,13 @@ export default function CommentForm({
               </div>
             </div>
             
+            {/* Timestamp toggle button - Mobile: smaller, Desktop: normal */}
             <Button
               type="button"
               variant="ghost"
               size="sm"
               className={cn(
-                "h-7 text-xs px-2",
+                "h-6 text-xs px-1.5 lg:h-7 lg:px-2",
                 includeTimestamp 
                   ? "text-blue-400" 
                   : "text-gray-400 hover:text-blue-400"
