@@ -1312,7 +1312,6 @@ export default function MediaPlayer({
                             transform: 'translateX(-50%)'
                           }}
                           onMouseEnter={(e) => {
-                            console.log('Comment marker hover entered for:', comment.id);
                             setHoveredComment(comment.id);
                             const rect = e.currentTarget.getBoundingClientRect();
                             setTooltipPosition({
@@ -1321,7 +1320,6 @@ export default function MediaPlayer({
                             });
                           }}
                           onMouseLeave={() => {
-                            console.log('Comment marker hover left');
                             setHoveredComment(null);
                           }}
                           onClick={(e) => {
@@ -1348,31 +1346,22 @@ export default function MediaPlayer({
                 {/* Comment Marker Tooltip - Mobile: smaller, Desktop: full size */}
                 {hoveredComment && comments && (
                   (() => {
-                    console.log('Rendering tooltip for hoveredComment:', hoveredComment, 'from comments:', comments.length);
                     const comment = comments.find((c: Comment) => c.id === hoveredComment);
-                    console.log('Found comment for tooltip:', comment);
                     if (!comment) return null;
                     
-                    // Position tooltip using viewport coordinates
-                    const hasActivePreview = showScrubPreview && duration > 0 && file?.fileType === 'video';
-                    const positionStyle = hasActivePreview ? {
-                      position: 'fixed' as const,
-                      left: tooltipPosition.x - 180, // Position to the left of preview
-                      top: tooltipPosition.y - 80,
-                      transform: 'translateY(-100%)',
-                      zIndex: 60
-                    } : {
+                    // Simplified positioning - always show above the marker
+                    const positionStyle = {
                       position: 'fixed' as const,
                       left: tooltipPosition.x,
-                      top: tooltipPosition.y,
+                      top: tooltipPosition.y - 10,
                       transform: 'translate(-50%, -100%)',
-                      zIndex: 60
+                      zIndex: 9999
                     };
                     
                     return (
                       <div
                         className="pointer-events-none fixed z-[9999]"
-                        style={{...positionStyle, border: '2px solid red'}}
+                        style={positionStyle}
                       >
                         {/* Tooltip container - Mobile: compact, Desktop: spacious */}
                         <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg max-w-xs lg:text-sm lg:p-3">
