@@ -361,23 +361,42 @@ export default function MediaPlayer({
   
   // Handle fullscreen
   const toggleFullscreen = () => {
-    console.log('[FULLSCREEN] toggleFullscreen called');
-    console.log('[FULLSCREEN] mediaContainerRef.current:', mediaContainerRef.current);
+    // Detect iOS (including iPad Pro on iOS 13+ that reports as macOS)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     
-    if (!mediaContainerRef.current) {
-      console.log('[FULLSCREEN] No media container ref');
-      toast({
-        title: "Fullscreen error",
-        description: "Media container not found",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    console.log('[FULLSCREEN] requestFullscreen available:', typeof mediaContainerRef.current.requestFullscreen);
-    
-    if (!document.fullscreenElement) {
-      // Check for browser compatibility
+    if (!isFullscreen) {
+      // Enter fullscreen
+      if (isIOS && videoRef.current) {
+        const video = videoRef.current as any;
+        
+        // Try webkitSetPresentationMode first (newer iOS)
+        if (typeof video.webkitSetPresentationMode === 'function') {
+          video.webkitSetPresentationMode('fullscreen');
+        } 
+        // Fallback to webkitEnterFullscreen (older iOS)
+        else if (typeof video.webkitEnterFullscreen === 'function') {
+          video.webkitEnterFullscreen();
+        } else {
+          toast({
+            title: "Fullscreen not available",
+            description: "Video fullscreen is not supported on this device",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+      
+      // Non-iOS: use container fullscreen
+      if (!mediaContainerRef.current) {
+        toast({
+          title: "Fullscreen error",
+          description: "Media container not found",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const element = mediaContainerRef.current as any;
       const requestFullscreen = element.requestFullscreen || 
                                element.webkitRequestFullscreen || 
@@ -385,9 +404,7 @@ export default function MediaPlayer({
                                element.msRequestFullscreen;
       
       if (requestFullscreen) {
-        console.log('[FULLSCREEN] Requesting fullscreen...');
         requestFullscreen.call(element).catch((err: Error) => {
-          console.error('[FULLSCREEN] Error:', err);
           toast({
             title: "Fullscreen error",
             description: `Error attempting to enable fullscreen: ${err.message}`,
@@ -395,7 +412,6 @@ export default function MediaPlayer({
           });
         });
       } else {
-        console.log('[FULLSCREEN] Fullscreen API not supported');
         toast({
           title: "Fullscreen not supported",
           description: "Your browser doesn't support fullscreen mode",
@@ -403,7 +419,18 @@ export default function MediaPlayer({
         });
       }
     } else {
-      console.log('[FULLSCREEN] Exiting fullscreen...');
+      // Exit fullscreen
+      if (isIOS && videoRef.current) {
+        const video = videoRef.current as any;
+        
+        if (typeof video.webkitSetPresentationMode === 'function') {
+          video.webkitSetPresentationMode('inline');
+        }
+        // Note: webkitEnterFullscreen doesn't have a direct exit method
+        return;
+      }
+      
+      // Non-iOS: exit container fullscreen
       const doc = document as any;
       const exitFullscreen = doc.exitFullscreen || 
                             doc.webkitExitFullscreen || 
@@ -421,11 +448,35 @@ export default function MediaPlayer({
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    // iOS video fullscreen event handlers
+    const handleIOSFullscreenEnter = () => {
+      setIsFullscreen(true);
     };
-  }, []);
+    
+    const handleIOSFullscreenExit = () => {
+      setIsFullscreen(false);
+    };
+
+    // Add document fullscreen listeners (for non-iOS)
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
+    // Add iOS video fullscreen listeners
+    if (videoRef.current) {
+      const video = videoRef.current;
+      video.addEventListener('webkitbeginfullscreen', handleIOSFullscreenEnter);
+      video.addEventListener('webkitendfullscreen', handleIOSFullscreenExit);
+      
+      return () => {
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        video.removeEventListener('webkitbeginfullscreen', handleIOSFullscreenEnter);
+        video.removeEventListener('webkitendfullscreen', handleIOSFullscreenExit);
+      };
+    } else {
+      return () => {
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      };
+    }
+  }, [videoRef.current]);
   
   // Optimized throttled seeking function
   const performSeek = (time: number) => {
