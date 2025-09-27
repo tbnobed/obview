@@ -243,10 +243,24 @@ export default function PublicSharePage() {
   const toggleFullscreen = () => {
     if (!mediaContainerRef.current) return;
     
+    // Check if we're dealing with a video element on iOS Safari
+    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const videoElement = videoRef.current;
+    
     if (!document.fullscreenElement) {
-      mediaContainerRef.current.requestFullscreen().catch(err => {
-        console.error('Fullscreen error:', err);
-      });
+      // For iOS Safari with video, use webkitEnterFullscreen
+      if (isIOSSafari && videoElement && file?.fileType === 'video') {
+        try {
+          (videoElement as any).webkitEnterFullscreen();
+        } catch (err) {
+          console.error('iOS fullscreen error:', err);
+        }
+      } else {
+        // Use standard fullscreen API for other browsers
+        mediaContainerRef.current.requestFullscreen().catch(err => {
+          console.error('Fullscreen error:', err);
+        });
+      }
     } else {
       document.exitFullscreen();
     }
