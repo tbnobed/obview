@@ -933,7 +933,7 @@ export default function MediaPlayer({
           <img
             src={`/api/files/${file.id}/content`}
             alt={file.filename}
-            className="max-h-full max-w-full object-contain"
+            className="w-full h-full object-cover"
             onError={handleMediaError}
           />
         </div>
@@ -1009,7 +1009,7 @@ export default function MediaPlayer({
           
           <video
             ref={videoRef}
-            className="absolute inset-0 w-full h-full object-contain bg-black"
+            className="absolute inset-0 w-full h-full object-cover bg-black"
             onTimeUpdate={handleTimeUpdate}
             onDurationChange={handleDurationChange}
             onEnded={handleMediaEnded}
@@ -1180,7 +1180,7 @@ export default function MediaPlayer({
       {/* Media area wrapper - Mobile: stacked, Desktop: flex-1 to fill remaining space */}
       <div className="flex-1 min-w-0 lg:h-full overflow-hidden">
         {/* Media Viewer - Mobile-first with explicit desktop overrides */}
-        <div className="relative mx-auto w-full p-0 lg:mx-0 lg:max-w-none lg:p-4 lg:h-full lg:flex lg:flex-col">
+        <div className="relative mx-auto w-full p-0 lg:mx-0 lg:max-w-none lg:p-0 lg:h-full lg:flex lg:flex-col">
         {/* Media container - Mobile: aspect ratio, Desktop: full height */}
         <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md lg:aspect-none lg:flex-1 lg:min-h-0">
           {renderMediaContent()}
