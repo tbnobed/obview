@@ -632,7 +632,7 @@ export default function PublicSharePage() {
                     <source src={`/api/share/${token}/qualities/720p`} type="video/mp4" />
                   )}
                   {/* Always include original shared file as fallback */}
-                  <source src={`/api/share/${token}`} type="video/mp4" />
+                  <source src={`/public/share/${token}`} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               )}
@@ -641,7 +641,7 @@ export default function PublicSharePage() {
                 <div className="flex items-center justify-center w-full h-full bg-gray-800">
                   <audio
                     ref={audioRef}
-                    src={`/api/share/${token}`}
+                    src={`/public/share/${token}`}
                     onTimeUpdate={handleTimeUpdate}
                     onDurationChange={handleDurationChange}
                     onPlay={handlePlay}
