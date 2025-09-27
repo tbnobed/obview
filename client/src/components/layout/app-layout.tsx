@@ -23,7 +23,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-[100dvh] overflow-x-hidden bg-white dark:bg-[#0a0d14]">
+    <div className="flex h-[100dvh] overflow-x-hidden bg-white dark:bg-[#0a0d14]">
       {/* Desktop Sidebar */}
       <div 
         className={cn(
@@ -43,7 +43,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <Header />
         
         {/* Page Content */}
-        <main className="flex-1 min-h-0 overflow-auto dark:text-gray-300">
+        <main className="flex-1 min-h-0 overflow-hidden dark:text-gray-300">
           {children}
         </main>
       </div>

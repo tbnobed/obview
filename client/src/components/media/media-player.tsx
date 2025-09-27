@@ -1116,9 +1116,9 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-0 h-[calc(100vh-4rem)] lg:h-full">
+    <div className="flex flex-col lg:flex-row h-full min-h-0 overflow-hidden">
       {/* Media Viewer - Natural sizing */}
-      <div className="relative mx-auto w-full max-w-[1280px] p-4 flex-1 lg:flex-initial">
+      <div className="relative mx-auto w-full max-w-[1280px] p-4 flex-1 lg:flex-initial min-w-0 min-h-0 overflow-hidden">
         {/* Media container - tight 16:9 aspect ratio box */}
         <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black rounded-md overflow-hidden">
           {renderMediaContent()}
@@ -1439,7 +1439,7 @@ export default function MediaPlayer({
       
       {/* Comments Section - Fixed width for optimal button spacing */}
       {file && (
-        <div className="w-full lg:w-[387px] h-full max-h-[40vh] lg:max-h-[calc(100vh-8rem)] min-h-0 flex flex-col dark:bg-[#0f1218]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="w-full lg:w-[420px] flex flex-col min-h-0 overflow-hidden dark:bg-[#0f1218]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
             <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="dark:bg-gray-900">
