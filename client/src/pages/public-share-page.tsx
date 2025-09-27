@@ -883,7 +883,7 @@ export default function PublicSharePage() {
           {/* Comments Section - Mobile: bottom panel, Desktop: right sidebar, hidden in view-only mode */}
           {!isViewOnly && (
             <div className="min-h-0 flex flex-col overflow-hidden lg:h-full">
-              <div className="h-80 flex flex-col rounded-lg overflow-hidden lg:h-full" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
+              <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                 {/* Header - Mobile: compact padding, Desktop: normal padding */}
                 <div className="flex items-center p-2 border-b border-gray-700 lg:p-4">
                   <div className="flex items-center gap-2">
