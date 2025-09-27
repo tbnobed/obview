@@ -866,6 +866,7 @@ export default function MediaPlayer({
             autoPlay={false}
             controls={false}
             preload="metadata"
+            playsInline
           >
             {/* Use 720p proxy when available for better performance, fallback to original */}
             {(() => {
