@@ -327,7 +327,7 @@ export default function CommentForm({
       {/* Timestamp indicator and tools */}
       {!parentId && currentTime !== undefined && (
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-600">
-          <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400">
+          <div className="flex items-center gap-2 text-xs text-gray-400">
             <Clock className="h-3 w-3" />
             <span>Will be posted at {includeTimestamp ? formatTime(currentTime) : 'current time'}</span>
           </div>
