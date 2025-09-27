@@ -1204,6 +1204,16 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
           onChange={(e) => {
             setContent(e.target.value);
           }}
+          onClick={() => {
+            // Pause video when clicking on textarea
+            const videoElement = document.querySelector('video');
+            const audioElement = document.querySelector('audio');
+            if (videoElement && !videoElement.paused) {
+              videoElement.pause();
+            } else if (audioElement && !audioElement.paused) {
+              audioElement.pause();
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
