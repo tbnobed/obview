@@ -1116,9 +1116,9 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-0 h-[calc(100vh-4rem)] lg:h-[calc(100vh-4rem)]">
+    <div className="flex flex-col lg:flex-row h-full min-h-0">
       {/* Media Viewer - Natural sizing */}
-      <div className="relative mx-auto w-full max-w-[1280px] p-4 flex-1 lg:flex-initial">
+      <div className="relative mx-auto w-full max-w-[1280px] p-4 flex-1 lg:flex-initial min-h-0">
         {/* Media container - tight 16:9 aspect ratio box */}
         <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black rounded-md overflow-hidden">
           {renderMediaContent()}
