@@ -673,27 +673,58 @@ export default function PublicSharePage() {
             {(file.fileType === 'video' || file.fileType === 'audio') && (
               <div className="mt-2 p-2 bg-neutral-50 dark:bg-gray-800 rounded-lg lg:mt-4 lg:p-4">
                 
-                <div className="flex items-center space-x-2 lg:space-x-4">
-                  <Button
-                    onClick={togglePlay}
-                    variant="ghost"
-                    size="icon"
-                    className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
-                    data-testid="play-pause-button"
-                  >
-                    {isPlaying ? (
-                      <Pause className="h-6 w-6" />
-                    ) : (
-                      <Play className="h-6 w-6" />
+                {/* Main controls row - no timeline here */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2 lg:space-x-4">
+                    <Button
+                      onClick={togglePlay}
+                      variant="ghost"
+                      size="icon"
+                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
+                      data-testid="play-pause-button"
+                    >
+                      {isPlaying ? (
+                        <Pause className="h-6 w-6" />
+                      ) : (
+                        <Play className="h-6 w-6" />
+                      )}
+                    </Button>
+                    
+                    <span className="font-mono text-xs text-neutral-600 dark:text-gray-400 lg:text-sm">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 lg:space-x-4">
+                    <div className="flex items-center">
+                      <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={volume}
+                        onChange={(e) => handleVolumeChange(e.target.value)}
+                        className="w-20"
+                      />
+                    </div>
+                    
+                    {file.fileType === 'video' && (
+                      <Button
+                        onClick={toggleFullscreen}
+                        variant="ghost"
+                        size="icon"
+                        className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
+                        title="Toggle fullscreen"
+                      >
+                        <Maximize className="h-5 w-5" />
+                      </Button>
                     )}
-                  </Button>
-                  
-                  <span className="font-mono text-xs text-neutral-600 dark:text-gray-400 lg:text-sm">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
-                  
-                  {/* Progress bar and markers container - Mobile: compact margins, Desktop: normal */}
-                  <div className="flex-grow flex flex-col gap-1 mx-2 lg:mx-4">
+                  </div>
+                </div>
+                
+                {/* Timeline row - full width */}
+                <div className="w-full flex flex-col gap-1">
                     {/* Extended hover area around progress bar */}
                     <div
                       className="relative py-4 cursor-pointer"
@@ -848,32 +879,6 @@ export default function PublicSharePage() {
                     );
                   })()
                 )}
-                
-                <div className="flex items-center">
-                  <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={volume}
-                    onChange={(e) => handleVolumeChange(e.target.value)}
-                    className="w-20"
-                  />
-                </div>
-                
-                {file.fileType === 'video' && (
-                  <Button
-                    onClick={toggleFullscreen}
-                    variant="ghost"
-                    size="icon"
-                    className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
-                    title="Toggle fullscreen"
-                  >
-                    <Maximize className="h-5 w-5" />
-                  </Button>
-                )}
-                </div>
               </div>
             )}
               </CardContent>
