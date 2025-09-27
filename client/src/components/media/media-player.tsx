@@ -1176,11 +1176,13 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-0">
-      {/* Media Viewer - Mobile-first with explicit desktop overrides */}
-      <div className="relative mx-auto w-full p-0 lg:max-w-[1280px] lg:p-4">
-        {/* Media container - Mobile: full width, Desktop: aspect ratio with rounded corners */}
-        <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md">
+    <div className="flex flex-col lg:flex-row w-full h-full lg:h-[calc(100vh-112px)] overflow-hidden lg:gap-0 gap-4 lg:px-0 lg:mx-0 lg:max-w-none">
+      {/* Media area wrapper - Mobile: stacked, Desktop: flex-1 to fill remaining space */}
+      <div className="flex-1 min-w-0 lg:h-full overflow-hidden">
+        {/* Media Viewer - Mobile-first with explicit desktop overrides */}
+        <div className="relative mx-auto w-full p-0 lg:mx-0 lg:max-w-none lg:p-4 lg:h-full lg:flex lg:flex-col">
+        {/* Media container - Mobile: aspect ratio, Desktop: full height */}
+        <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md lg:aspect-none lg:flex-1 lg:min-h-0">
           {renderMediaContent()}
         </div>
         
@@ -1471,6 +1473,7 @@ export default function MediaPlayer({
           
           {/* Safe area spacer */}
           <div className="h-[env(safe-area-inset-bottom,0px)]" aria-hidden />
+        </div>
         </div>
       </div>
       
@@ -1766,6 +1769,48 @@ export default function MediaPlayer({
           </DropdownMenuContent>
         </DropdownMenu>,
         document.getElementById('mobile-actions-container')!
+      )}
+      
+      {/* Comments Section - Mobile: full width with max height, Desktop: fixed width with viewport constraint */}
+      {file && (
+        <div className="w-full h-full max-h-[40vh] min-h-0 flex flex-col dark:bg-[#0f1218] lg:w-[387px] lg:h-[calc(100vh-160px)] lg:max-h-[calc(100vh-160px)] lg:overflow-hidden lg:shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
+            {/* Tab controls - Desktop only */}
+            <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
+              <TabsList className="dark:bg-gray-900">
+                <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
+                <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="comments" className="flex-1 min-h-0 p-0 overflow-auto">
+              <TimelineComments 
+                fileId={file.id} 
+                duration={duration} 
+                currentTime={currentTime}
+                activeCommentId={activeCommentId?.toString()}
+                onCommentSelect={(commentId: string) => setActiveCommentId(parseInt(commentId))}
+                onTimeClick={(time: number) => {
+                  const mediaElement = videoRef.current || audioRef.current;
+                  if (mediaElement) {
+                    mediaElement.currentTime = time;
+                    setCurrentTime(time);
+                  }
+                }}
+              />
+            </TabsContent>
+            
+            {/* Versions tab placeholder */}
+            <TabsContent value="versions" className="flex-grow overflow-auto px-2 py-2 lg:px-4 lg:py-3">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-base font-medium dark:text-white lg:text-lg">File Versions</h3>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Version management coming soon</p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       )}
     </div>
   );
