@@ -585,10 +585,10 @@ export default function ProjectPage() {
       
       {/* Main Content */}
       <div className={cn(
-        "bg-neutral-100 dark:bg-[#080b12]",
+        "bg-neutral-100 dark:bg-[#080b12] overflow-auto",
         activeTab === "media" && viewMode === "player" 
           ? "min-h-0" 
-          : "overflow-auto p-4 sm:p-6 lg:p-8"
+          : "p-4 sm:p-6 lg:p-8"
       )}>
         {activeTab === "media" && (
           <div className={cn(
