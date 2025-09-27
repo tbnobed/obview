@@ -311,9 +311,17 @@ export default function TimelineComments({
   };
 
   return (
-    <div className="flex flex-col min-h-0 h-full" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
+    <div className="min-h-0 flex flex-col h-full" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
+      {/* Comment Input - Mobile only at top */}
+      <div className="lg:hidden border-b px-3 pt-2 pb-3" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
+        <CommentForm
+          fileId={fileId}
+          currentTime={currentTime}
+        />
+      </div>
+      
       {/* Comments List */}
-      <div className="order-2 md:order-1 flex-1 min-h-0 overflow-y-auto space-y-3 px-3 py-3">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-3 py-3">
         {isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" style={{color: 'hsl(var(--comments-muted))'}} />
@@ -510,8 +518,8 @@ export default function TimelineComments({
         )}
       </div>
 
-      {/* Comment Input - Responsive ordering */}
-      <div className="order-1 md:order-2 flex-shrink-0 border-t px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]" style={{borderColor: 'hsl(var(--comments-card-border))', backgroundColor: 'hsl(var(--comments-bg))'}}>
+      {/* Comment Input - Desktop only at bottom */}
+      <div className="hidden lg:flex flex-shrink-0 border-t px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] bg-[hsl(var(--comments-bg))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--comments-bg))]/80" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}

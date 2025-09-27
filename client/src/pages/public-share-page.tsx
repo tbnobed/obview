@@ -109,6 +109,14 @@ export default function PublicSharePage() {
     retry: false
   });
 
+  // Reset media error when file data is loaded
+  useEffect(() => {
+    if (file && !error) {
+      setMediaError(false);
+      setErrorMessage("");
+    }
+  }, [file, error]);
+
   // Fetch comments for the markers
   const { data: comments } = useQuery<UnifiedComment[]>({
     queryKey: ['/api/share', token, 'comments'],
@@ -512,7 +520,7 @@ export default function PublicSharePage() {
   }
 
   return (
-    <div className="h-[100svh] bg-gray-50 dark:bg-gray-900 flex flex-col w-full overflow-hidden">
+    <div className="h-[100dvh] bg-gray-50 dark:bg-gray-900 flex flex-col w-full overflow-hidden">
       {/* Compact Header */}
       <div className="flex-shrink-0 py-2 px-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
@@ -624,14 +632,8 @@ export default function PublicSharePage() {
                       onError={handleMediaError}
                       preload="metadata"
                       data-testid="shared-video-player"
+                      src={`/api/share/${token}`}
                     >
-                      {/* Use 720p proxy for shared files when available */}
-                      {videoProcessing?.status === 'completed' && 
-                       videoProcessing.qualities?.some((q: any) => q.resolution === '720p') && (
-                        <source src={`/api/share/${token}/qualities/720p`} type="video/mp4" />
-                      )}
-                      {/* Always include original shared file as fallback */}
-                      <source src={`/public/share/${token}`} type="video/mp4" />
                       Your browser does not support the video tag.
                     </video>
                   )}
@@ -890,13 +892,26 @@ export default function PublicSharePage() {
                   </div>
                 </div>
 
+                {/* Mobile Comment Form - Appears at top on mobile, hidden on desktop */}
+                <div className="lg:hidden flex-shrink-0 mx-3 mt-3" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
+                  <div 
+                    className="rounded-lg p-3 w-full"
+                    style={{
+                      backgroundColor: 'hsl(210, 20%, 12%)',
+                      border: '1px solid hsl(210, 15%, 18%)'
+                    }}
+                  >
+                    <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
+                  </div>
+                </div>
+
                 {/* Comments List - Scrollable area */}
                 <div className="flex-1 min-h-0 overflow-auto p-3 space-y-3">
                   <CommentsList token={token!} onTimestampClick={seekToTimestamp} />
                 </div>
 
-                {/* Comment Input - Sticky bottom composer */}
-                <div className="flex-shrink-0 sticky bottom-0 mx-3 mb-3 mt-6" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
+                {/* Desktop Comment Input - Sticky bottom composer, hidden on mobile */}
+                <div className="hidden lg:block flex-shrink-0 sticky bottom-0 mx-3 mb-3 mt-6" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
                   <div 
                     className="rounded-lg p-3 w-full"
                     style={{
