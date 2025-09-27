@@ -1117,19 +1117,20 @@ export default function MediaPlayer({
 
   return (
     <div className="flex flex-col lg:flex-row min-h-0">
-      {/* Media Viewer - Natural sizing */}
-      <div className="relative mx-auto w-full max-w-[1280px] p-0 lg:p-4">
-        {/* Media container - tight 16:9 aspect ratio box */}
-        <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black rounded-md overflow-hidden">
+      {/* Media Viewer - Mobile-first with explicit desktop overrides */}
+      <div className="relative mx-auto w-full p-0 lg:max-w-[1280px] lg:p-4">
+        {/* Media container - Mobile: full width, Desktop: aspect ratio with rounded corners */}
+        <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md">
           {renderMediaContent()}
         </div>
         
-        {/* Bottom controls area */}
-        <div className="bg-black/90 backdrop-blur p-3 sm:p-6 pb-6 border-t border-gray-800" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))' }}>
+        {/* Bottom controls area - Mobile: minimal padding, Desktop: spacious */}
+        <div className="bg-black/90 backdrop-blur p-3 pb-6 border-t border-gray-800 lg:p-6" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))' }}>
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
               <div className="flex flex-col space-y-2">
                 {/* Controls row */}
+                {/* Controls row - Mobile: compact, Desktop: spacious */}
                 <div className="flex items-center justify-between">
                   <Button
                     onClick={togglePlay}
@@ -1144,8 +1145,10 @@ export default function MediaPlayer({
                     )}
                   </Button>
                   
-                  <div className="flex items-center space-x-3 flex-shrink-0">
-                    <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
+                  {/* Time and fullscreen controls - Mobile: tight spacing, Desktop: normal */}
+                  <div className="flex items-center space-x-2 flex-shrink-0 lg:space-x-3">
+                    {/* Timestamp - Mobile: small, Desktop: normal */}
+                    <span className="font-mono text-xs text-neutral-600 dark:text-gray-400 lg:text-sm">
                       {formatTime(currentTime)} / {formatTime(duration)}
                     </span>
                     
@@ -1306,7 +1309,7 @@ export default function MediaPlayer({
                   </div>
                 </div>
                 
-                {/* Comment Marker Tooltip */}
+                {/* Comment Marker Tooltip - Mobile: smaller, Desktop: full size */}
                 {hoveredComment && comments && (
                   (() => {
                     const comment = comments.find((c: Comment) => c.id === hoveredComment);
@@ -1333,7 +1336,8 @@ export default function MediaPlayer({
                         className="pointer-events-none fixed z-50"
                         style={positionStyle}
                       >
-                        <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
+                        {/* Tooltip container - Mobile: compact, Desktop: spacious */}
+                        <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg max-w-xs lg:text-sm lg:p-3">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium">
                               {(comment as any).authorName?.charAt(0) || (comment as any).user?.name?.charAt(0) || 'A'}
@@ -1360,6 +1364,7 @@ export default function MediaPlayer({
                   })()
                 )}
                 
+                {/* Volume control - Desktop only */}
                 <div className="hidden lg:flex items-center">
                   <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
                   <input
@@ -1375,12 +1380,12 @@ export default function MediaPlayer({
               </div>
             )}
             
-          {/* File selector and actions - Always visible regardless of error state */}
+          {/* File selector and actions - Mobile: hidden, Desktop: visible */}
           <div className={cn(
               "flex justify-end items-center",
               !mediaError ? "mt-2 pt-2" : "pt-1"
             )}>
-              {/* Desktop: Show all buttons in a row */}
+              {/* Action buttons - Desktop only */}
               <div className="hidden lg:flex space-x-1">
                 {file && (
                   <>
@@ -1437,10 +1442,11 @@ export default function MediaPlayer({
         </div>
       </div>
       
-      {/* Comments Section - Fixed width for optimal button spacing */}
+      {/* Comments Section - Mobile: full width with max height, Desktop: fixed width */}
       {file && (
-        <div className="w-full lg:w-[387px] h-full max-h-[40vh] lg:max-h-none min-h-0 flex flex-col dark:bg-[#0f1218]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="w-full h-full max-h-[40vh] min-h-0 flex flex-col dark:bg-[#0f1218] lg:w-[387px] lg:max-h-none" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
+            {/* Tab controls - Desktop only */}
             <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="dark:bg-gray-900">
                 <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
@@ -1465,10 +1471,13 @@ export default function MediaPlayer({
               />
             </TabsContent>
             
-            <TabsContent value="versions" className="flex-grow overflow-auto px-4 py-3">
+            {/* Versions tab - Mobile: reduced padding, Desktop: full padding */}
+            <TabsContent value="versions" className="flex-grow overflow-auto px-2 py-2 lg:px-4 lg:py-3">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium dark:text-white">File Versions</h3>
+                  {/* Versions header - Mobile: smaller, Desktop: normal */}
+                  <h3 className="text-base font-medium dark:text-white lg:text-lg">File Versions</h3>
+                  {/* Upload button - Mobile: extra small, Desktop: small */}
                   <Button 
                     className="flex items-center dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" 
                     size="sm"
