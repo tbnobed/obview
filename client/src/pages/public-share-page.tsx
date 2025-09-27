@@ -605,7 +605,7 @@ export default function PublicSharePage() {
           "h-full grid gap-1 lg:gap-4",
           isViewOnly 
             ? "grid-rows-[minmax(0,1fr)]"
-            : "grid-rows-[60vh_1fr] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-[minmax(0,1fr)_auto]"
+            : "grid-rows-[auto_1fr] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-[minmax(0,1fr)_auto]"
         )}>
           {/* Media Player - Mobile: fixed height, Desktop: remaining space when comments shown */}
           <div className="min-h-0 flex flex-col overflow-hidden">
