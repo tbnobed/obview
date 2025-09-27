@@ -58,6 +58,25 @@ export default function CommentForm({
     };
   }, []);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      // Reset height to auto to get accurate scrollHeight
+      textareaRef.current.style.height = 'auto';
+      // Set height to scrollHeight with some maximum limits
+      const scrollHeight = textareaRef.current.scrollHeight;
+      const maxHeight = window.innerWidth >= 1024 ? 200 : 120; // 200px desktop, 120px mobile
+      textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+      
+      // Enable scrolling if content exceeds max height
+      if (scrollHeight > maxHeight) {
+        textareaRef.current.style.overflowY = 'auto';
+      } else {
+        textareaRef.current.style.overflowY = 'hidden';
+      }
+    }
+  }, [content]);
+
   // Create comment mutation
   const createCommentMutation = useMutation({
     mutationFn: async (commentContent: string) => {
@@ -301,10 +320,8 @@ export default function CommentForm({
           className="flex-1 bg-transparent text-white placeholder-gray-400 text-sm resize-none border-none outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
           style={{ 
             fontFamily: 'inherit',
-            overflow: 'hidden',
             resize: 'none'
           }}
-          rows={1}
           data-testid="textarea-comment"
           required
         />
