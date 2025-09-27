@@ -1204,18 +1204,34 @@ export default function MediaPlayer({
                 {/* Controls row */}
                 {/* Controls row - Mobile: compact, Desktop: spacious */}
                 <div className="flex items-center justify-between">
-                  <Button
-                    onClick={togglePlay}
-                    variant="ghost"
-                    size="icon"
-                    className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0"
-                  >
-                    {isPlaying ? (
-                      <Pause className="h-6 w-6" />
-                    ) : (
-                      <Play className="h-6 w-6" />
-                    )}
-                  </Button>
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      onClick={togglePlay}
+                      variant="ghost"
+                      size="icon"
+                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0"
+                    >
+                      {isPlaying ? (
+                        <Pause className="h-6 w-6" />
+                      ) : (
+                        <Play className="h-6 w-6" />
+                      )}
+                    </Button>
+                    
+                    {/* Volume control - Desktop only */}
+                    <div className="hidden lg:flex items-center space-x-2">
+                      <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={volume}
+                        onChange={(e) => handleVolumeChange(e.target.value)}
+                        className="w-20"
+                      />
+                    </div>
+                  </div>
                   
                   {/* Time and fullscreen controls - Mobile: tight spacing, Desktop: normal */}
                   <div className="flex items-center space-x-2 flex-shrink-0 lg:space-x-3">
@@ -1407,19 +1423,6 @@ export default function MediaPlayer({
                   })()
                 )}
                 
-                {/* Volume control - Desktop only */}
-                <div className="hidden lg:flex items-center">
-                  <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={volume}
-                    onChange={(e) => handleVolumeChange(e.target.value)}
-                    className="w-20"
-                  />
-                </div>
               </div>
             )}
             
