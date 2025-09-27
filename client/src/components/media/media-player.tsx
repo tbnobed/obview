@@ -1116,7 +1116,7 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-0 h-[calc(100vh-4rem)] lg:h-[calc(100vh-4rem)]">
+    <div className="flex flex-col lg:flex-row min-h-0 h-[calc(100vh-4rem)] lg:h-full">
       {/* Media Viewer - Natural sizing */}
       <div className="relative mx-auto w-full max-w-[1280px] p-4 flex-1 lg:flex-initial">
         {/* Media container - tight 16:9 aspect ratio box */}
