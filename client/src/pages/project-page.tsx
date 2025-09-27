@@ -341,7 +341,7 @@ export default function ProjectPage() {
   return (
     <AppLayout>
       {/* Project Header */}
-      <header className="bg-white shadow-sm dark:bg-[#0f1218] dark:border-b dark:border-gray-800">
+      <header className="bg-white shadow-sm dark:bg-[#0f1218] dark:border-b dark:border-gray-800 flex-shrink-0">
         <div className="px-3 sm:px-4 lg:px-6 py-1 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <h1 className="text-sm sm:text-base font-medium text-neutral-900 dark:text-teal-300 min-w-0 break-words">{project.name}</h1>
@@ -532,7 +532,7 @@ export default function ProjectPage() {
       </header>
         
         {/* Tabs - Hidden on mobile */}
-        <div className="hidden lg:block px-4 sm:px-6 lg:px-8">
+        <div className="hidden lg:block px-4 sm:px-6 lg:px-8 flex-shrink-0">
           <div className="border-b border-neutral-200 dark:border-gray-800">
             <nav className="-mb-px flex space-x-8">
               <a 
@@ -585,15 +585,15 @@ export default function ProjectPage() {
       
       {/* Main Content */}
       <div className={cn(
-        "bg-neutral-100 dark:bg-[#080b12]",
+        "bg-neutral-100 dark:bg-[#080b12] flex-1 min-h-0",
         activeTab === "media" && viewMode === "player" 
-          ? "flex flex-1 min-h-0 overflow-hidden" 
+          ? "overflow-hidden" 
           : "p-4 sm:p-6 lg:p-8 overflow-auto"
       )}>
         {activeTab === "media" && (
           <div className={cn(
             "bg-white dark:bg-[#0f1218] shadow dark:shadow-gray-900",
-            viewMode === "player" ? "rounded-none flex flex-1 min-h-0 overflow-hidden" : "rounded-lg"
+            viewMode === "player" ? "rounded-none h-full" : "rounded-lg"
           )}>
             {filesLoading ? (
               <div className="flex items-center justify-center py-20">
@@ -613,7 +613,7 @@ export default function ProjectPage() {
                 )}
                 
                 {viewMode === 'player' && selectedFileId && (
-                  <div className="relative flex flex-1 min-h-0 overflow-hidden">
+                  <div className="relative flex-1 min-h-0 flex flex-col">
                     {/* Back to Grid Button - Desktop only */}
                     <div className="absolute top-4 right-4 z-10 hidden lg:block">
                       <Button 
@@ -643,14 +643,16 @@ export default function ProjectPage() {
                         <div id="mobile-actions-container"></div>
                       </div>
                     </div>
-                    <MediaPlayer
-                      file={files.find(f => f.id === selectedFileId) || null}
-                      projectId={projectId}
-                      onSelectFile={setSelectedFileId}
-                      files={files}
-                      initialTime={initialTime}
-                      project={project}
-                    />
+                    <div className="flex-1 min-h-0">
+                      <MediaPlayer
+                        file={files.find(f => f.id === selectedFileId) || null}
+                        projectId={projectId}
+                        onSelectFile={setSelectedFileId}
+                        files={files}
+                        initialTime={initialTime}
+                        project={project}
+                      />
+                    </div>
                   </div>
                 )}
               </>
