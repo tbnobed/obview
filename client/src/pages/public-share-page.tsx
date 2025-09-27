@@ -624,6 +624,7 @@ export default function PublicSharePage() {
                   onPause={handlePause}
                   onError={handleMediaError}
                   preload="metadata"
+                  playsInline
                   data-testid="shared-video-player"
                 >
                   {/* Use 720p proxy for shared files when available */}
@@ -920,8 +921,8 @@ export default function PublicSharePage() {
         </div>
       </div>
 
-      {/* Portal-based scrub preview that can extend beyond progress bar */}
-      {showScrubPreview && duration > 0 && file.fileType === 'video' && createPortal(
+      {/* Portal-based scrub preview that can extend beyond progress bar - Desktop only */}
+      {showScrubPreview && duration > 0 && file.fileType === 'video' && window.innerWidth >= 1024 && createPortal(
         <div
           ref={scrubPreviewRef}
           className="pointer-events-none z-50"
