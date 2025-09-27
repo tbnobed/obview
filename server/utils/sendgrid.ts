@@ -540,3 +540,79 @@ export async function sendSystemInvitationEmail(
     return false;
   }
 }
+
+/**
+ * Send a share link email
+ * @param to Recipient email
+ * @param fromName Name of the person sharing the link
+ * @param filename Name of the shared file or content
+ * @param shareUrl The share URL
+ * @param message Optional message from the sender
+ * @returns Promise<boolean> Success status
+ */
+export async function sendShareLinkEmail(
+  to: string,
+  fromName: string,
+  filename: string,
+  shareUrl: string,
+  message?: string
+): Promise<boolean> {
+  try {
+    logToFile(`Preparing share link email to ${to} from ${fromName} for "${filename}"`);
+    logToFile(`Share URL: ${shareUrl}`);
+    logToFile(`Message: ${message || 'No message provided'}`);
+    
+    const subject = `${fromName} shared "${filename}" with you`;
+    
+    // Use the verified sender identity
+    const sender = config.emailFrom;
+    logToFile(`Using sender email: ${sender}`);
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #0ea5e9; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">Content Shared With You</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+          <p>Hello,</p>
+          <p><strong>${fromName}</strong> has shared "${filename}" with you on <strong>Obviu.io</strong>.</p>
+          ${message ? `<div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #0ea5e9; margin: 20px 0;">
+            <p style="margin: 0; font-style: italic;">"${message}"</p>
+          </div>` : ''}
+          <p>Click the button below to view the content:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${shareUrl}" style="background-color: #0ea5e9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Content</a>
+          </div>
+          <p>Or copy and paste this URL into your browser:</p>
+          <p style="word-break: break-all; color: #0369a1;">${shareUrl}</p>
+          <p>Obviu.io is a collaborative media review platform that enables teams to efficiently review, comment, and approve media assets.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #64748b; font-size: 12px;">This is a shared link from the Obviu.io platform.</p>
+        </div>
+      </div>
+    `;
+    
+    const text = `
+      ${fromName} has shared "${filename}" with you on Obviu.io.
+      
+      ${message ? `Message: "${message}"` : ''}
+      
+      To view the content, visit: ${shareUrl}
+      
+      Obviu.io is a collaborative media review platform that enables teams to efficiently review, comment, and approve media assets.
+    `;
+    
+    return await sendEmail({
+      to,
+      from: sender,
+      subject,
+      html,
+      text
+    });
+  } catch (error) {
+    const errorMsg = `Error preparing share link email to ${to}: ${error instanceof Error ? error.message : String(error)}`;
+    console.error(errorMsg);
+    logToFile(errorMsg);
+    return false;
+  }
+}

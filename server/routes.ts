@@ -2748,6 +2748,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send share link via email
+  app.post("/api/files/:fileId/share/email", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      const { recipientEmail, message } = req.body;
+      
+      if (!recipientEmail) {
+        return res.status(400).json({ message: "Recipient email is required" });
+      }
+      
+      const file = await storage.getFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check if user has access to the project
+      if (req.user && req.user.role !== "admin") {
+        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
+        if (!projectUser) {
+          return res.status(403).json({ message: "You don't have access to this file" });
+        }
+      }
+      
+      // Generate a random token if one doesn't exist
+      if (!file.shareToken) {
+        const token = generateToken(32);
+        await storage.updateFile(fileId, { shareToken: token });
+        file.shareToken = token;
+      }
+      
+      // Generate share URL
+      const shareUrl = `${req.protocol}://${req.get('host')}/share/${file.shareToken}`;
+      
+      // Send email
+      const { sendShareLinkEmail } = await import('./utils/sendgrid');
+      const emailSent = await sendShareLinkEmail(
+        recipientEmail,
+        req.user.name || req.user.username,
+        file.filename,
+        shareUrl,
+        message
+      );
+      
+      if (emailSent) {
+        res.json({ 
+          message: "Share link sent successfully",
+          shareUrl 
+        });
+      } else {
+        res.status(500).json({ message: "Failed to send email" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Delete a file
   app.delete("/api/files/:fileId", isAuthenticated, async (req, res, next) => {
     try {
