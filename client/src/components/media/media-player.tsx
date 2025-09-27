@@ -1170,6 +1170,12 @@ export default function MediaPlayer({
                   {/* Extended hover area around progress bar */}
                   <div
                     className="relative py-4 cursor-pointer"
+                    style={{
+                      touchAction: 'pan-x',
+                      WebkitTouchCallout: 'none',
+                      WebkitUserSelect: 'none',
+                      userSelect: 'none'
+                    }}
                     onClick={handleProgressClick}
                     onTouchStart={(e) => {
                       // Handle touch start for mobile scrubbing
