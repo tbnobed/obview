@@ -312,27 +312,30 @@ export default function TimelineComments({
 
   return (
     <div className="min-h-0 flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
-      {/* Comment Input - Mobile only at top */}
-      <div className="lg:hidden border-b px-3 pt-2 pb-3" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
+      {/* Comment Input - Mobile: visible at top, Desktop: hidden */}
+      <div className="border-b px-3 pt-2 pb-3 lg:hidden" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}
         />
       </div>
       
-      {/* Comments List */}
+      {/* Comments List - Mobile: basic padding, Desktop: extended padding */}
       <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-3 pb-3 lg:pb-[calc(env(safe-area-inset-bottom,0px)+88px)]">
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" style={{color: 'hsl(var(--comments-muted))'}} />
+          // Loading state - Mobile: compact padding, Desktop: normal padding
+          <div className="flex justify-center py-4 lg:py-8">
+            <Loader2 className="h-5 w-5 animate-spin lg:h-6 lg:w-6" style={{color: 'hsl(var(--comments-muted))'}} />
           </div>
         ) : error ? (
-          <div className="p-4 bg-red-900/20 text-red-400 text-sm rounded-lg">
+          // Error state - Mobile: reduced padding, Desktop: full padding
+          <div className="p-3 bg-red-900/20 text-red-400 text-sm rounded-lg lg:p-4">
             Error loading comments: {error.message}
           </div>
         ) : topLevelComments.length > 0 ? (
           <>
             {topLevelComments.map((comment: any, index: number) => {
+              // Comment card - Mobile: compact padding, Desktop: spacious padding
               return (
                 <div 
                   key={`${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
@@ -344,7 +347,7 @@ export default function TimelineComments({
                       onTimeClick(comment.timestamp);
                     }
                   } : undefined}
-                  className={`relative rounded-lg border p-4 transition-all duration-200 ${
+                  className={`relative rounded-lg border p-3 transition-all duration-200 lg:p-4 ${
                     activeCommentId === comment.id ? 'ring-2 ring-blue-500/50' : ''
                   } ${comment.timestamp !== null ? 'cursor-pointer hover:shadow-lg' : ''}`}
                   style={{
@@ -358,7 +361,8 @@ export default function TimelineComments({
                 >
 
                   <div className="flex gap-3">
-                    <Avatar className="h-8 w-8 flex-shrink-0">
+                    {/* Avatar - Mobile: smaller, Desktop: normal */}
+                    <Avatar className="h-7 w-7 flex-shrink-0 lg:h-8 lg:w-8">
                       <AvatarImage src={comment.user?.avatar} />
                       <AvatarFallback className="bg-gray-600 text-white text-xs">
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -449,7 +453,8 @@ export default function TimelineComments({
                         commentId={comment.id}
                       />
 
-                      <div className="flex gap-3 mt-2">
+                      {/* Action buttons - Mobile: smaller spacing, Desktop: normal */}
+                      <div className="flex gap-2 mt-2 lg:gap-3">
                         <button
                           className="text-xs font-medium transition-colors text-gray-300 hover:text-cyan-400"
                           onClick={(e) => {
@@ -481,7 +486,8 @@ export default function TimelineComments({
                           </Button>
                         )}
                         
-                        <div style={{scale: '0.9', transformOrigin: 'left'}}>
+                        {/* Reaction picker - Mobile: smaller scale, Desktop: normal scale */}
+                        <div style={{scale: '0.8', transformOrigin: 'left'}} className="lg:scale-90">
                           <ReactionPicker 
                             commentId={comment.id}
                           />
@@ -491,8 +497,9 @@ export default function TimelineComments({
                     </div>
                   </div>
 
+                  {/* Reply form - Mobile: reduced padding, Desktop: full padding */}
                   {replyingToId === comment.id && (
-                    <div className="mt-3 pl-11 border-l-2" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
+                    <div className="mt-3 pl-8 border-l-2 lg:pl-11" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
                       <CommentForm
                         fileId={fileId}
                         parentId={comment.id}
@@ -502,7 +509,8 @@ export default function TimelineComments({
                     </div>
                   )}
 
-                  <div className="pl-11">
+                  {/* Replies section - Mobile: reduced padding, Desktop: full padding */}
+                  <div className="pl-8 lg:pl-11">
                     <RenderReplies comments={comments} parentId={comment.id} depth={0} />
                   </div>
                 </div>
@@ -510,15 +518,16 @@ export default function TimelineComments({
             })}
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <MessageSquare className="h-12 w-12 mb-3" style={{color: 'hsl(var(--comments-muted))'}} />
+          // Empty state - Mobile: compact padding, Desktop: spacious padding
+          <div className="flex flex-col items-center justify-center py-8 text-center lg:py-12">
+            <MessageSquare className="h-10 w-10 mb-3 lg:h-12 lg:w-12" style={{color: 'hsl(var(--comments-muted))'}} />
             <p className="text-sm" style={{color: 'hsl(var(--comments-muted))'}}>No comments yet</p>
             <p className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>Be the first to comment!</p>
           </div>
         )}
       </div>
 
-      {/* Comment Input - Desktop only at bottom */}
+      {/* Comment Input - Mobile: hidden, Desktop: visible sticky footer */}
       <div className="hidden lg:block sticky bottom-0 z-20 border-t px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] bg-[hsl(var(--comments-bg))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--comments-bg))]/80" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
         <CommentForm
           fileId={fileId}
