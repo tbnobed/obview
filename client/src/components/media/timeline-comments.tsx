@@ -321,7 +321,7 @@ export default function TimelineComments({
       </div>
       
       {/* Comments List */}
-      <div className="flex-1 lg:min-h-0 overflow-y-auto space-y-3 px-3 py-3">
+      <div className="flex-1 min-h-0 lg:overflow-y-auto space-y-3 px-3 py-3">
         {isLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin" style={{color: 'hsl(var(--comments-muted))'}} />
