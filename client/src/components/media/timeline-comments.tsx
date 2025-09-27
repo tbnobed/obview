@@ -528,11 +528,11 @@ export default function TimelineComments({
       </div>
 
       {/* Comment Input - Mobile: hidden, Desktop: visible flex footer */}
-      <div className="hidden lg:block shrink-0 mt-auto">
+      <div className="hidden lg:block shrink-0 border-t" style={{borderColor: 'hsl(210, 15%, 18%)'}}>
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}
-          className="rounded-none border-t-1 border-l-0 border-r-0 border-b-0 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]"
+          className="rounded-none border-0 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]"
         />
       </div>
     </div>

@@ -613,44 +613,46 @@ export default function ProjectPage() {
                 )}
                 
                 {viewMode === 'player' && selectedFileId && (
-                  <div className="relative">
-                    {/* Back to Grid Button - Desktop only with proper spacing */}
-                    <div className="absolute top-2 right-2 z-10 hidden lg:top-4 lg:right-4 lg:block">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setViewMode('grid')}
-                        className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
-                      >
-                        ← Back to Grid
-                      </Button>
-                    </div>
-                    
-                    {/* Mobile Actions - Top Left with mobile-optimized spacing */}
-                    <div className="absolute top-2 left-2 z-10 lg:hidden">
-                      <div className="flex items-center gap-1.5">
-                        {/* Back to Grid Button - Mobile */}
+                  <div className="relative lg:h-[calc(100dvh-3.5rem)] lg:min-h-0 lg:flex lg:flex-col">
+                    <div className="relative lg:flex-1 lg:min-h-0">
+                      {/* Back to Grid Button - Desktop only with proper spacing */}
+                      <div className="absolute top-2 right-2 z-10 hidden lg:top-4 lg:right-4 lg:block">
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => setViewMode('grid')}
                           className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
                         >
-                          ←
+                          ← Back to Grid
                         </Button>
-                        
-                        {/* Mobile Actions Dropdown Container */}
-                        <div id="mobile-actions-container"></div>
                       </div>
+                      
+                      {/* Mobile Actions - Top Left with mobile-optimized spacing */}
+                      <div className="absolute top-2 left-2 z-10 lg:hidden">
+                        <div className="flex items-center gap-1.5">
+                          {/* Back to Grid Button - Mobile */}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setViewMode('grid')}
+                            className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
+                          >
+                            ←
+                          </Button>
+                          
+                          {/* Mobile Actions Dropdown Container */}
+                          <div id="mobile-actions-container"></div>
+                        </div>
+                      </div>
+                      <MediaPlayer
+                        file={files.find(f => f.id === selectedFileId) || null}
+                        projectId={projectId}
+                        onSelectFile={setSelectedFileId}
+                        files={files}
+                        initialTime={initialTime}
+                        project={project}
+                      />
                     </div>
-                    <MediaPlayer
-                      file={files.find(f => f.id === selectedFileId) || null}
-                      projectId={projectId}
-                      onSelectFile={setSelectedFileId}
-                      files={files}
-                      initialTime={initialTime}
-                      project={project}
-                    />
                   </div>
                 )}
               </>

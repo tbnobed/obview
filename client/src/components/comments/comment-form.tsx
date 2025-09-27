@@ -269,11 +269,9 @@ export default function CommentForm({
 
   return (
     <div 
-      className={cn("w-full p-2 lg:p-3 rounded-lg lg:rounded-none lg:border-t lg:border-l-0 lg:border-r-0 lg:border-b-0", className)} 
+      className={cn("w-full p-2 lg:p-3", className)} 
       style={{
-        backgroundColor: 'hsl(210, 20%, 12%)',
-        border: '1px solid hsl(210, 15%, 18%)',
-        borderTop: '1px solid hsl(210, 15%, 18%)'
+        backgroundColor: 'hsl(210, 20%, 12%)'
       }}
       data-comment-form
     >
