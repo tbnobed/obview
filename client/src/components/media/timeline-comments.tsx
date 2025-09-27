@@ -340,24 +340,34 @@ export default function TimelineComments({
                 <div 
                   key={`${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
                   id={`comment-${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
-                  onClick={comment.timestamp !== null ? () => onTimeClick(comment.timestamp) : undefined}
+                  onClick={() => {
+                    if (comment.timestamp !== null) {
+                      onTimeClick(comment.timestamp);
+                    }
+                    if (onCommentSelect) {
+                      onCommentSelect(comment.id);
+                    }
+                  }}
                   onKeyDown={comment.timestamp !== null ? (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       onTimeClick(comment.timestamp);
+                      if (onCommentSelect) {
+                        onCommentSelect(comment.id);
+                      }
                     }
                   } : undefined}
-                  className={`relative rounded-lg border p-3 transition-all duration-200 lg:p-4 ${
-                    activeCommentId === comment.id ? 'ring-2 ring-blue-500/50' : ''
-                  } ${comment.timestamp !== null ? 'cursor-pointer hover:shadow-lg' : ''}`}
+                  className={`relative rounded-lg border p-3 transition-all duration-200 lg:p-4 cursor-pointer hover:shadow-lg ${
+                    activeCommentId === comment.id ? 'ring-2 ring-blue-500/50 bg-blue-500/5' : ''
+                  }`}
                   style={{
                     backgroundColor: 'hsl(var(--comments-card))',
                     borderColor: 'hsl(var(--comments-card-border))',
                     color: 'hsl(var(--comments-text))'
                   }}
-                  title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : undefined}
-                  role={comment.timestamp !== null ? 'button' : undefined}
-                  tabIndex={comment.timestamp !== null ? 0 : undefined}
+                  title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : "Select this comment"}
+                  role="button"
+                  tabIndex={0}
                 >
 
                   <div className="flex gap-3">
