@@ -671,11 +671,11 @@ export default function PublicSharePage() {
 
             {/* Media Controls - Mobile: compact, Desktop: normal spacing */}
             {(file.fileType === 'video' || file.fileType === 'audio') && (
-              <div className="mt-2 p-2 bg-neutral-50 dark:bg-gray-800 rounded-lg lg:mt-4 lg:p-4">
+              <div className="mt-1 p-1.5 bg-neutral-50 dark:bg-gray-800 rounded-lg lg:mt-2 lg:p-2">
                 
                 {/* Main controls row - no timeline here */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2 lg:space-x-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center space-x-1.5 lg:space-x-3">
                     <Button
                       onClick={togglePlay}
                       variant="ghost"
@@ -695,7 +695,7 @@ export default function PublicSharePage() {
                     </span>
                   </div>
                   
-                  <div className="flex items-center space-x-2 lg:space-x-4">
+                  <div className="flex items-center space-x-1.5 lg:space-x-3">
                     <div className="hidden lg:flex items-center">
                       <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
                       <input
@@ -727,7 +727,7 @@ export default function PublicSharePage() {
                 <div className="w-full flex flex-col gap-1">
                     {/* Extended hover area around progress bar */}
                     <div
-                      className="relative py-4 cursor-pointer"
+                      className="relative py-2 cursor-pointer"
                       onClick={handleProgressClick}
                       onMouseMove={(e) => {
                         if (!progressRef.current || isDragging) return;
