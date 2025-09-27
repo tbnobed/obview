@@ -1052,9 +1052,21 @@ export default function MediaPlayer({
                     )}
                   </Button>
                   
-                  <span className="font-mono text-sm text-neutral-600 dark:text-gray-400 flex-shrink-0">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
+                  <div className="flex items-center space-x-3 flex-shrink-0">
+                    <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+                    
+                    <Button
+                      onClick={toggleFullscreen}
+                      variant="ghost"
+                      size="icon"
+                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                      title="Toggle fullscreen"
+                    >
+                      <Maximize className="h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
                 
                 {/* Progress bar and markers container - full width */}
@@ -1268,16 +1280,6 @@ export default function MediaPlayer({
                     className="w-20"
                   />
                 </div>
-                
-                <Button
-                  onClick={toggleFullscreen}
-                  variant="ghost"
-                  size="icon"
-                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
-                  title="Toggle fullscreen"
-                >
-                  <Maximize className="h-5 w-5" />
-                </Button>
               </div>
             )}
             
