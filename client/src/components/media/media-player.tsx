@@ -1681,7 +1681,7 @@ export default function MediaPlayer({
       
       {/* Comments Section - Mobile: full width with max height, Desktop: fixed width with viewport constraint */}
       {file && (
-        <div className="w-full h-full max-h-[40vh] min-h-0 flex flex-col dark:bg-[#0f1218] overflow-hidden lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="w-full h-full min-h-0 flex flex-col dark:bg-[#0f1218] overflow-hidden lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
             {/* Tab controls - Desktop only */}
             <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
