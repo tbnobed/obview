@@ -311,7 +311,7 @@ export default function TimelineComments({
   };
 
   return (
-    <div className="h-full min-h-0 flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
+    <div className="flex flex-col h-full min-h-0" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
       {/* Comment Input - Mobile: visible at top, Desktop: hidden */}
       <div className="border-b px-3 pt-2 pb-3 lg:hidden shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
         <CommentForm
@@ -527,11 +527,12 @@ export default function TimelineComments({
         )}
       </div>
 
-      {/* Comment Input - Mobile: hidden, Desktop: visible sticky footer */}
-      <div className="hidden lg:block shrink-0 sticky bottom-0 z-20 border-t px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] bg-[hsl(var(--comments-bg))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--comments-bg))]/80" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
+      {/* Comment Input - Mobile: hidden, Desktop: visible flex footer */}
+      <div className="hidden lg:block shrink-0 mt-auto">
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}
+          className="rounded-none border-t-1 border-l-0 border-r-0 border-b-0 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]"
         />
       </div>
     </div>
