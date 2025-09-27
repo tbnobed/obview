@@ -55,6 +55,16 @@ export default function MediaPlayer({
   const [scrubPreviewTop, setScrubPreviewTop] = useState(0);
   const [hoveredComment, setHoveredComment] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const hideTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Clean up tooltip timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hideTooltipTimeoutRef.current) {
+        clearTimeout(hideTooltipTimeoutRef.current);
+      }
+    };
+  }, []);
   
   // Sprite scrubbing state
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
@@ -1312,6 +1322,11 @@ export default function MediaPlayer({
                             transform: 'translateX(-50%)'
                           }}
                           onMouseEnter={(e) => {
+                            // Clear any pending hide timeout
+                            if (hideTooltipTimeoutRef.current) {
+                              clearTimeout(hideTooltipTimeoutRef.current);
+                              hideTooltipTimeoutRef.current = null;
+                            }
                             setHoveredComment(comment.id);
                             const rect = e.currentTarget.getBoundingClientRect();
                             setTooltipPosition({
@@ -1320,7 +1335,10 @@ export default function MediaPlayer({
                             });
                           }}
                           onMouseLeave={() => {
-                            setHoveredComment(null);
+                            // Delay hiding to prevent flicker
+                            hideTooltipTimeoutRef.current = setTimeout(() => {
+                              setHoveredComment(null);
+                            }, 150);
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1343,28 +1361,36 @@ export default function MediaPlayer({
                   </div>
                 </div>
                 
-                {/* Comment Marker Tooltip - Mobile: smaller, Desktop: full size */}
+                {/* Comment Marker Tooltip via Portal */}
                 {hoveredComment && comments && (
                   (() => {
                     const comment = comments.find((c: Comment) => c.id === hoveredComment);
                     if (!comment) return null;
                     
-                    // Simplified positioning - always show above the marker
-                    const positionStyle = {
-                      position: 'fixed' as const,
-                      left: tooltipPosition.x,
-                      top: tooltipPosition.y - 10,
-                      transform: 'translate(-50%, -100%)',
-                      zIndex: 9999
-                    };
+                    // Calculate tooltip position with viewport clamping
+                    const tooltipWidth = 320; // Approximate width
+                    const tooltipHeight = 120; // Approximate height
+                    const padding = 8;
                     
-                    return (
+                    let left = tooltipPosition.x - tooltipWidth / 2;
+                    let top = tooltipPosition.y - tooltipHeight - 10;
+                    
+                    // Clamp to viewport
+                    left = Math.max(padding, Math.min(left, window.innerWidth - tooltipWidth - padding));
+                    top = Math.max(padding, top);
+                    
+                    return createPortal(
                       <div
-                        className="pointer-events-none fixed z-[9999]"
-                        style={positionStyle}
+                        className="pointer-events-none fixed"
+                        style={{
+                          left: left,
+                          top: top,
+                          zIndex: 2147483647,
+                          maxWidth: '320px',
+                        }}
                       >
-                        {/* Tooltip container - Mobile: compact, Desktop: spacious */}
-                        <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg max-w-xs lg:text-sm lg:p-3">
+                        {/* Tooltip container */}
+                        <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg p-3 shadow-xl border border-gray-600">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium">
                               {(comment as any).authorName?.charAt(0) || (comment as any).user?.name?.charAt(0) || 'A'}
@@ -1382,11 +1408,8 @@ export default function MediaPlayer({
                             {comment.content}
                           </p>
                         </div>
-                        {/* Arrow pointing down */}
-                        <div className="absolute left-1/2 transform -translate-x-1/2 top-full">
-                          <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
-                        </div>
-                      </div>
+                      </div>,
+                      document.body
                     );
                   })()
                 )}
