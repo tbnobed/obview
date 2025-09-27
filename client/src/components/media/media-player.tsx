@@ -1367,17 +1367,9 @@ export default function MediaPlayer({
                     const comment = comments.find((c: Comment) => c.id === hoveredComment);
                     if (!comment) return null;
                     
-                    // Calculate tooltip position with viewport clamping
-                    const tooltipWidth = 240; // Smaller estimate for better centering
-                    const tooltipHeight = 80; 
-                    const padding = 8;
-                    
-                    let left = tooltipPosition.x - tooltipWidth / 2;
-                    let top = tooltipPosition.y - 80; // More space above marker
-                    
-                    // Clamp to viewport
-                    left = Math.max(padding, Math.min(left, window.innerWidth - tooltipWidth - padding));
-                    top = Math.max(padding, top);
+                    // Position tooltip directly at marker center
+                    const left = tooltipPosition.x;
+                    const top = tooltipPosition.y - 80;
                     
                     return createPortal(
                       <div
@@ -1385,6 +1377,7 @@ export default function MediaPlayer({
                         style={{
                           left: left,
                           top: top,
+                          transform: 'translate(-50%, -100%)',
                           zIndex: 2147483647,
                           maxWidth: '240px',
                         }}
