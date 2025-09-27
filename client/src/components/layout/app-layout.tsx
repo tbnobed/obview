@@ -27,7 +27,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Desktop Sidebar */}
       <div 
         className={cn(
-          "hidden md:block transition-all duration-500 ease-in-out",
+          "hidden md:block transition-all duration-500 ease-in-out h-[100svh]",
           isCollapsed ? "w-0 opacity-0" : "w-64 opacity-100"
         )}
         style={{ 
