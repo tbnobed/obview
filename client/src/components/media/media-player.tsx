@@ -1368,12 +1368,12 @@ export default function MediaPlayer({
                     if (!comment) return null;
                     
                     // Calculate tooltip position with viewport clamping
-                    const tooltipWidth = 320; // Approximate width
-                    const tooltipHeight = 120; // Approximate height
+                    const tooltipWidth = 240; // Smaller estimate for better centering
+                    const tooltipHeight = 80; 
                     const padding = 8;
                     
                     let left = tooltipPosition.x - tooltipWidth / 2;
-                    let top = tooltipPosition.y - 40; // Just 40px above the marker
+                    let top = tooltipPosition.y - 80; // More space above marker
                     
                     // Clamp to viewport
                     left = Math.max(padding, Math.min(left, window.innerWidth - tooltipWidth - padding));
@@ -1386,7 +1386,7 @@ export default function MediaPlayer({
                           left: left,
                           top: top,
                           zIndex: 2147483647,
-                          maxWidth: '320px',
+                          maxWidth: '240px',
                         }}
                       >
                         {/* Tooltip container */}
