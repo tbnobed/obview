@@ -311,9 +311,9 @@ export default function TimelineComments({
   };
 
   return (
-    <div className="min-h-0 flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
+    <div className="h-full min-h-0 flex flex-col" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
       {/* Comment Input - Mobile: visible at top, Desktop: hidden */}
-      <div className="border-b px-3 pt-2 pb-3 lg:hidden" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
+      <div className="border-b px-3 pt-2 pb-3 lg:hidden shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}
@@ -321,7 +321,7 @@ export default function TimelineComments({
       </div>
       
       {/* Comments List - Mobile: basic padding, Desktop: extended padding */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-3 pb-3 lg:pb-[calc(env(safe-area-inset-bottom,0px)+88px)]">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-3 pb-3">
         {isLoading ? (
           // Loading state - Mobile: compact padding, Desktop: normal padding
           <div className="flex justify-center py-4 lg:py-8">
@@ -528,7 +528,7 @@ export default function TimelineComments({
       </div>
 
       {/* Comment Input - Mobile: hidden, Desktop: visible sticky footer */}
-      <div className="hidden lg:block sticky bottom-0 z-20 border-t px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] bg-[hsl(var(--comments-bg))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--comments-bg))]/80" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
+      <div className="hidden lg:block shrink-0 sticky bottom-0 z-20 border-t px-3 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] bg-[hsl(var(--comments-bg))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--comments-bg))]/80" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}

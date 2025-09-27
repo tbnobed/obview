@@ -1679,23 +1679,21 @@ export default function MediaPlayer({
               </TabsList>
             </div>
             
-            <TabsContent value="comments" className="flex-1 min-h-0 p-0 overflow-hidden relative">
-              <div className="absolute inset-0">
-                <TimelineComments 
-                  fileId={file.id} 
-                  duration={duration} 
-                  currentTime={currentTime}
-                  activeCommentId={activeCommentId?.toString()}
-                  onCommentSelect={(commentId: string) => setActiveCommentId(parseInt(commentId))}
-                  onTimeClick={(time: number) => {
-                    const mediaElement = videoRef.current || audioRef.current;
-                    if (mediaElement) {
-                      mediaElement.currentTime = time;
-                      setCurrentTime(time);
-                    }
-                  }}
-                />
-              </div>
+            <TabsContent value="comments" className="flex-1 min-h-0 p-0 overflow-hidden">
+              <TimelineComments 
+                fileId={file.id} 
+                duration={duration} 
+                currentTime={currentTime}
+                activeCommentId={activeCommentId?.toString()}
+                onCommentSelect={(commentId: string) => setActiveCommentId(parseInt(commentId))}
+                onTimeClick={(time: number) => {
+                  const mediaElement = videoRef.current || audioRef.current;
+                  if (mediaElement) {
+                    mediaElement.currentTime = time;
+                    setCurrentTime(time);
+                  }
+                }}
+              />
             </TabsContent>
             
             {/* Versions tab placeholder */}
