@@ -53,7 +53,7 @@ export default function MediaPlayer({
   const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
   const [scrubPreviewLeft, setScrubPreviewLeft] = useState(0);
   const [scrubPreviewTop, setScrubPreviewTop] = useState(0);
-  const [hoveredComment, setHoveredComment] = useState<number | null>(null);
+  const [hoveredComment, setHoveredComment] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
   // Sprite scrubbing state
