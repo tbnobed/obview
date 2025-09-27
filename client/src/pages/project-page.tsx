@@ -340,28 +340,28 @@ export default function ProjectPage() {
 
   return (
     <AppLayout>
-      {/* Project Header */}
+      {/* Project Header - Mobile: compact spacing, Desktop: normal spacing */}
       <header className="bg-white shadow-sm dark:bg-[#0f1218] dark:border-b dark:border-gray-800">
-        <div className="px-3 sm:px-4 lg:px-6 py-1 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <h1 className="text-sm sm:text-base font-medium text-neutral-900 dark:text-teal-300 min-w-0 break-words">{project.name}</h1>
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-neutral-500 dark:text-gray-400 shrink-0">
+        <div className="px-2 py-1 flex items-center justify-between gap-1 lg:px-6 lg:gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 lg:gap-3">
+            <h1 className="text-sm font-medium text-neutral-900 dark:text-teal-300 min-w-0 break-words lg:text-base">{project.name}</h1>
+            <div className="hidden items-center gap-1.5 text-xs text-neutral-500 dark:text-gray-400 shrink-0 lg:flex">
               <span>Updated {formatTimeAgo(new Date(project.updatedAt))}</span>
               <span className="text-neutral-300 dark:text-gray-700">•</span>
               {getStatusBadge(project.status)}
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-0.5 shrink-0 lg:gap-1">
               {/* Share Button */}
               <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                  className="h-6 w-6 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943] lg:h-7 lg:w-7"
                   title="Share project"
                 >
-                  <Share2 className="h-3 w-3" />
+                  <Share2 className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
@@ -399,10 +399,10 @@ export default function ProjectPage() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                  className="h-6 w-6 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943] lg:h-7 lg:w-7"
                   title="Download files"
                 >
-                  <Download className="h-3 w-3" />
+                  <Download className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -501,10 +501,10 @@ export default function ProjectPage() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                      className="h-6 w-6 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943] lg:h-7 lg:w-7"
                       title="Edit project"
                     >
-                      <Edit className="h-3 w-3" />
+                      <Edit className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -519,11 +519,11 @@ export default function ProjectPage() {
                 </Dialog>
                 <Button 
                   size="sm"
-                  className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:hover:bg-[#025943]" 
+                  className="h-6 w-6 p-0 dark:bg-[#026d55] dark:text-white dark:hover:bg-[#025943] lg:h-7 lg:w-7" 
                   onClick={() => navigate(`/projects/${projectId}/upload`)}
                   title="Upload media"
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
                 </Button>
               </>
             )}
@@ -531,8 +531,8 @@ export default function ProjectPage() {
         </div>
       </header>
         
-        {/* Tabs - Hidden on mobile */}
-        <div className="hidden lg:block px-4 sm:px-6 lg:px-8">
+        {/* Tabs - Hidden on mobile for clean mobile experience */}
+        <div className="hidden lg:block px-0 lg:px-8">
           <div className="border-b border-neutral-200 dark:border-gray-800">
             <nav className="-mb-px flex space-x-8">
               <a 
@@ -583,12 +583,12 @@ export default function ProjectPage() {
           </div>
         </div>
       
-      {/* Main Content */}
+      {/* Main Content - Mobile: no padding for full-width, Desktop: normal padding */}
       <div className={cn(
         "bg-neutral-100 dark:bg-[#080b12]",
         activeTab === "media" && viewMode === "player" 
-          ? "min-h-0" 
-          : "overflow-auto p-4 sm:p-6 lg:p-8"
+          ? "min-h-0 p-0" 
+          : "overflow-auto p-0 lg:p-8"
       )}>
         {activeTab === "media" && (
           <div className={cn(
@@ -614,8 +614,8 @@ export default function ProjectPage() {
                 
                 {viewMode === 'player' && selectedFileId && (
                   <div className="relative">
-                    {/* Back to Grid Button - Desktop only */}
-                    <div className="absolute top-4 right-4 z-10 hidden lg:block">
+                    {/* Back to Grid Button - Desktop only with proper spacing */}
+                    <div className="absolute top-2 right-2 z-10 hidden lg:top-4 lg:right-4 lg:block">
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -626,9 +626,9 @@ export default function ProjectPage() {
                       </Button>
                     </div>
                     
-                    {/* Mobile Actions - Top Left */}
-                    <div className="absolute top-4 left-4 z-10 lg:hidden">
-                      <div className="flex items-center gap-2">
+                    {/* Mobile Actions - Top Left with mobile-optimized spacing */}
+                    <div className="absolute top-2 left-2 z-10 lg:hidden">
+                      <div className="flex items-center gap-1.5">
                         {/* Back to Grid Button - Mobile */}
                         <Button 
                           variant="outline" 
@@ -655,12 +655,12 @@ export default function ProjectPage() {
                 )}
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center py-20">
-                <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
-                  <FileVideo className="h-8 w-8 text-primary-400" />
+              <div className="flex flex-col items-center justify-center py-12 lg:py-20">
+                <div className="h-12 w-12 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-3 lg:h-16 lg:w-16 lg:mb-4">
+                  <FileVideo className="h-6 w-6 text-primary-400 lg:h-8 lg:w-8" />
                 </div>
-                <h3 className="text-lg font-medium text-neutral-900 dark:text-teal-300 mb-2">No media files yet</h3>
-                <p className="text-neutral-500 dark:text-gray-400 text-center mb-6 max-w-md">
+                <h3 className="text-base font-medium text-neutral-900 dark:text-teal-300 mb-2 lg:text-lg">No media files yet</h3>
+                <p className="text-sm text-neutral-500 dark:text-gray-400 text-center mb-4 max-w-sm px-4 lg:text-base lg:mb-6 lg:max-w-md lg:px-0">
                   Upload your first media file to start the review process
                 </p>
                 {isEditor && (
@@ -674,9 +674,9 @@ export default function ProjectPage() {
         )}
 
         {activeTab === "comments" && (
-          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-4 sm:p-6">
-            <h2 className="text-lg font-medium mb-4 flex items-center dark:text-white">
-              <MessageSquare className="h-5 w-5 mr-2 text-primary dark:text-[#026d55]" />
+          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-3 lg:p-6">
+            <h2 className="text-base font-medium mb-3 flex items-center dark:text-white lg:text-lg lg:mb-4">
+              <MessageSquare className="h-4 w-4 mr-2 text-primary dark:text-[#026d55] lg:h-5 lg:w-5" />
               All Comments
             </h2>
             
