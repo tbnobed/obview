@@ -1176,11 +1176,11 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-0 lg:h-full">
+    <div className="flex flex-col lg:flex-row min-h-0 lg:flex-1">
       {/* Media Viewer - Mobile-first with explicit desktop overrides */}
-      <div className="relative mx-auto w-full p-0 lg:flex-1 lg:flex lg:flex-col lg:p-4">
+      <div className="relative mx-auto w-full p-0 lg:flex-1 lg:flex lg:flex-col lg:p-4 lg:min-h-0">
         {/* Media container - Mobile: fixed aspect ratio, Desktop: grows to fill available space */}
-        <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md lg:flex-1 lg:aspect-auto">
+        <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md lg:flex-1 lg:aspect-auto lg:min-h-0">
           {renderMediaContent()}
         </div>
         

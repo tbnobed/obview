@@ -583,17 +583,17 @@ export default function ProjectPage() {
           </div>
         </div>
       
-      {/* Main Content - Mobile: no padding for full-width, Desktop: full height with padding */}
+      {/* Main Content - Mobile: no padding for full-width, Desktop: flex to fill available space */}
       <div className={cn(
-        "bg-neutral-100 dark:bg-[#080b12]",
+        "bg-neutral-100 dark:bg-[#080b12] flex-1 min-h-0",
         activeTab === "media" && viewMode === "player" 
-          ? "min-h-0 p-0 lg:h-full lg:flex lg:flex-col" 
+          ? "p-0 lg:flex lg:flex-col" 
           : "overflow-auto p-0 lg:p-8"
       )}>
         {activeTab === "media" && (
           <div className={cn(
             "bg-white dark:bg-[#0f1218] shadow dark:shadow-gray-900",
-            viewMode === "player" ? "rounded-none min-h-0 lg:h-full lg:flex lg:flex-col" : "rounded-lg"
+            viewMode === "player" ? "rounded-none min-h-0 lg:flex-1 lg:flex lg:flex-col" : "rounded-lg"
           )}>
             {filesLoading ? (
               <div className="flex items-center justify-center py-20">
@@ -613,7 +613,7 @@ export default function ProjectPage() {
                 )}
                 
                 {viewMode === 'player' && selectedFileId && (
-                  <div className="relative lg:h-full lg:flex lg:flex-col">
+                  <div className="relative lg:flex-1 lg:flex lg:flex-col">
                     {/* Back to Grid Button - Desktop only with proper spacing */}
                     <div className="absolute top-2 right-2 z-10 hidden lg:top-4 lg:right-4 lg:block">
                       <Button 
