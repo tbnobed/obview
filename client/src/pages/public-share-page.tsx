@@ -376,14 +376,93 @@ export default function PublicSharePage() {
       }
     };
     
+    // Touch event handlers for iOS Safari
+    const handleTouchStart = (e: TouchEvent) => {
+      // Check if the touch was on the progress bar
+      if (progressRef.current && progressRef.current.contains(e.target as Node)) {
+        setIsDragging(true);
+        // Set initial preview time
+        const rect = progressRef.current.getBoundingClientRect();
+        const touch = e.touches[0];
+        const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+        const newTime = duration * pos;
+        setPreviewTime(newTime);
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        // Perform final seek on touch end
+        performSeek(previewTime);
+        setCurrentTime(previewTime);
+      }
+    };
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isDragging && progressRef.current && e.touches.length > 0) {
+        e.preventDefault(); // Prevent scrolling during scrub
+        
+        // Use RAF for smooth visual updates
+        if (rafIdRef.current) {
+          cancelAnimationFrame(rafIdRef.current);
+        }
+        
+        rafIdRef.current = requestAnimationFrame(() => {
+          if (!progressRef.current || !e.touches.length) return;
+          
+          const rect = progressRef.current.getBoundingClientRect();
+          const touch = e.touches[0];
+          // Get x position relative to progress bar (clamped between 0 and 1)
+          const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+          const newTime = duration * pos;
+          
+          // Update preview time immediately for visual feedback
+          setPreviewTime(newTime);
+          // CRITICAL FIX: Update scrub preview position to follow touch
+          setScrubPreviewTime(newTime);
+          
+          // Position preview using viewport coordinates
+          const progressRect = progressRef.current.getBoundingClientRect();
+          const previewWidth = 208;
+          const previewHeight = 150;
+          const desiredLeft = touch.clientX - previewWidth / 2;
+          const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
+          const top = progressRect.top - previewHeight - 12;
+          
+          setScrubPreviewLeft(left);
+          setScrubPreviewTop(top);
+          setShowScrubPreview(true);
+          
+          // Update preview video time if it exists
+          if (previewVideoRef.current && duration > 0) {
+            previewVideoRef.current.currentTime = newTime;
+          }
+          
+          // Only seek occasionally during drag for performance
+          const now = Date.now();
+          if (now - lastSeekTimeRef.current > 200) { // Seek every 200ms during drag
+            performSeek(newTime);
+            setCurrentTime(newTime);
+          }
+        });
+      }
+    };
+    
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
     
     return () => {
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
       
       // Cleanup RAF and timeouts
       if (rafIdRef.current) {
