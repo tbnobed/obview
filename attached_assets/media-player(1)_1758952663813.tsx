@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2 } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +15,6 @@ import { ShareLinkButton } from "@/components/share-link-button";
 import { Comment, File as StorageFile, Project } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { uploadService } from "@/lib/upload-service";
 
 export default function MediaPlayer({
@@ -361,85 +360,18 @@ export default function MediaPlayer({
   
   // Handle fullscreen
   const toggleFullscreen = () => {
-    // Detect iOS (including iPad Pro on iOS 13+ that reports as macOS)
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!mediaContainerRef.current) return;
     
-    if (!isFullscreen) {
-      // Enter fullscreen
-      if (isIOS && videoRef.current) {
-        const video = videoRef.current as any;
-        
-        // Try webkitSetPresentationMode first (newer iOS)
-        if (typeof video.webkitSetPresentationMode === 'function') {
-          video.webkitSetPresentationMode('fullscreen');
-        } 
-        // Fallback to webkitEnterFullscreen (older iOS)
-        else if (typeof video.webkitEnterFullscreen === 'function') {
-          video.webkitEnterFullscreen();
-        } else {
-          toast({
-            title: "Fullscreen not available",
-            description: "Video fullscreen is not supported on this device",
-            variant: "destructive",
-          });
-        }
-        return;
-      }
-      
-      // Non-iOS: use container fullscreen
-      if (!mediaContainerRef.current) {
+    if (!document.fullscreenElement) {
+      mediaContainerRef.current.requestFullscreen().catch(err => {
         toast({
           title: "Fullscreen error",
-          description: "Media container not found",
+          description: `Error attempting to enable fullscreen: ${err.message}`,
           variant: "destructive",
         });
-        return;
-      }
-      
-      const element = mediaContainerRef.current as any;
-      const requestFullscreen = element.requestFullscreen || 
-                               element.webkitRequestFullscreen || 
-                               element.mozRequestFullscreen || 
-                               element.msRequestFullscreen;
-      
-      if (requestFullscreen) {
-        requestFullscreen.call(element).catch((err: Error) => {
-          toast({
-            title: "Fullscreen error",
-            description: `Error attempting to enable fullscreen: ${err.message}`,
-            variant: "destructive",
-          });
-        });
-      } else {
-        toast({
-          title: "Fullscreen not supported",
-          description: "Your browser doesn't support fullscreen mode",
-          variant: "destructive",
-        });
-      }
+      });
     } else {
-      // Exit fullscreen
-      if (isIOS && videoRef.current) {
-        const video = videoRef.current as any;
-        
-        if (typeof video.webkitSetPresentationMode === 'function') {
-          video.webkitSetPresentationMode('inline');
-        }
-        // Note: webkitEnterFullscreen doesn't have a direct exit method
-        return;
-      }
-      
-      // Non-iOS: exit container fullscreen
-      const doc = document as any;
-      const exitFullscreen = doc.exitFullscreen || 
-                            doc.webkitExitFullscreen || 
-                            doc.mozExitFullscreen || 
-                            doc.msExitFullscreen;
-      
-      if (exitFullscreen) {
-        exitFullscreen.call(document);
-      }
+      document.exitFullscreen();
     }
   };
 
@@ -448,35 +380,11 @@ export default function MediaPlayer({
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    // iOS video fullscreen event handlers
-    const handleIOSFullscreenEnter = () => {
-      setIsFullscreen(true);
-    };
-    
-    const handleIOSFullscreenExit = () => {
-      setIsFullscreen(false);
-    };
-
-    // Add document fullscreen listeners (for non-iOS)
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    
-    // Add iOS video fullscreen listeners
-    if (videoRef.current) {
-      const video = videoRef.current;
-      video.addEventListener('webkitbeginfullscreen', handleIOSFullscreenEnter);
-      video.addEventListener('webkitendfullscreen', handleIOSFullscreenExit);
-      
-      return () => {
-        document.removeEventListener('fullscreenchange', handleFullscreenChange);
-        video.removeEventListener('webkitbeginfullscreen', handleIOSFullscreenEnter);
-        video.removeEventListener('webkitendfullscreen', handleIOSFullscreenExit);
-      };
-    } else {
-      return () => {
-        document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      };
-    }
-  }, [videoRef.current]);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
   
   // Optimized throttled seeking function
   const performSeek = (time: number) => {
@@ -509,7 +417,7 @@ export default function MediaPlayer({
     }
   };
   
-  // Handle global mouse and touch events for optimized scrubbing
+  // Handle global mouse events for optimized scrubbing
   useEffect(() => {
     const handleMouseUp = () => {
       if (isDragging) {
@@ -560,74 +468,14 @@ export default function MediaPlayer({
       }
     };
     
-    // Touch event handlers for iOS Safari
-    const handleTouchStart = (e: TouchEvent) => {
-      // Check if the touch was on the progress bar
-      if (progressRef.current && progressRef.current.contains(e.target as Node)) {
-        setIsDragging(true);
-        // Set initial preview time
-        const rect = progressRef.current.getBoundingClientRect();
-        const touch = e.touches[0];
-        const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
-        const newTime = duration * pos;
-        setPreviewTime(newTime);
-      }
-    };
-    
-    const handleTouchEnd = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        // Perform final seek on touch end
-        performSeek(previewTime);
-        setCurrentTime(previewTime);
-      }
-    };
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      if (isDragging && progressRef.current && e.touches.length > 0) {
-        e.preventDefault(); // Prevent scrolling during scrub
-        
-        // Use RAF for smooth visual updates
-        if (rafIdRef.current) {
-          cancelAnimationFrame(rafIdRef.current);
-        }
-        
-        rafIdRef.current = requestAnimationFrame(() => {
-          if (!progressRef.current || !e.touches.length) return;
-          
-          const rect = progressRef.current.getBoundingClientRect();
-          const touch = e.touches[0];
-          // Get x position relative to progress bar (clamped between 0 and 1)
-          const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
-          const newTime = duration * pos;
-          
-          // Update preview time immediately for visual feedback
-          setPreviewTime(newTime);
-          
-          // Only seek occasionally during drag for performance
-          const now = Date.now();
-          if (now - lastSeekTimeRef.current > 200) { // Seek every 200ms during drag
-            performSeek(newTime);
-            setCurrentTime(newTime);
-          }
-        });
-      }
-    };
-    
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('touchstart', handleTouchStart);
-    document.addEventListener('touchend', handleTouchEnd);
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
     
     return () => {
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('touchmove', handleTouchMove);
       
       // Cleanup RAF and timeouts
       if (rafIdRef.current) {
@@ -1017,7 +865,6 @@ export default function MediaPlayer({
             autoPlay={false}
             controls={false}
             preload="metadata"
-            playsInline
           >
             {/* Use 720p proxy when available for better performance, fallback to original */}
             {(() => {
@@ -1176,66 +1023,45 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-0">
-      {/* Media Viewer - Mobile-first with explicit desktop overrides */}
-      <div className="relative mx-auto w-full p-0 lg:max-w-[1280px] lg:p-4">
-        {/* Media container - Mobile: full width, Desktop: aspect ratio with rounded corners */}
-        <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md">
+    <div className="flex flex-col lg:flex-row h-full min-h-0">
+      {/* Media Viewer - Takes remaining space */}
+      <div className="flex-1 min-h-0 grid grid-rows-[auto,1fr,auto]">
+        {/* Header/toolbar area if needed */}
+        <div></div>
+        
+        {/* Media container - grows to fill space */}
+        <div className="relative min-h-0 bg-black overflow-hidden">
           {renderMediaContent()}
         </div>
         
-        {/* Bottom controls area - Mobile: minimal padding, Desktop: spacious */}
-        <div className="bg-black/90 backdrop-blur p-3 pb-6 border-t border-gray-800 lg:p-6" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))' }}>
+        {/* Bottom controls area */}
+        <div className="bg-black p-6 border-t border-gray-800">
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
-              <div className="flex flex-col space-y-2">
-                {/* Controls row */}
-                {/* Controls row - Mobile: compact, Desktop: spacious */}
-                <div className="flex items-center justify-between">
-                  <Button
-                    onClick={togglePlay}
-                    variant="ghost"
-                    size="icon"
-                    className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0"
-                  >
-                    {isPlaying ? (
-                      <Pause className="h-6 w-6" />
-                    ) : (
-                      <Play className="h-6 w-6" />
-                    )}
-                  </Button>
-                  
-                  {/* Time and fullscreen controls - Mobile: tight spacing, Desktop: normal */}
-                  <div className="flex items-center space-x-2 flex-shrink-0 lg:space-x-3">
-                    {/* Timestamp - Mobile: small, Desktop: normal */}
-                    <span className="font-mono text-xs text-neutral-600 dark:text-gray-400 lg:text-sm">
-                      {formatTime(currentTime)} / {formatTime(duration)}
-                    </span>
-                    
-                    <Button
-                      onClick={toggleFullscreen}
-                      variant="ghost"
-                      size="icon"
-                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
-                      title="Toggle fullscreen"
-                    >
-                      <Maximize className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </div>
+              <div className="flex items-center mb-2 space-x-2">
+                <Button
+                  onClick={togglePlay}
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6" />
+                  )}
+                </Button>
                 
-                {/* Progress bar and markers container - full width */}
-                <div className="w-full flex flex-col gap-1 relative">
+                <span className="font-mono text-sm text-neutral-600 dark:text-gray-400">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+                
+                {/* Progress bar and markers container */}
+                <div className="flex-grow flex flex-col gap-1 mx-4 relative">
                   
                   {/* Extended hover area around progress bar */}
                   <div
                     className="relative py-4 cursor-pointer"
-                    style={{
-                      touchAction: 'pan-x',
-                      WebkitTouchCallout: 'none',
-                      WebkitUserSelect: 'none',
-                      userSelect: 'none'
-                    }}
                     onClick={handleProgressClick}
                     onMouseMove={(e) => {
                       if (e.buttons === 1 && progressRef.current) {
@@ -1341,7 +1167,7 @@ export default function MediaPlayer({
                   </div>
                 </div>
                 
-                {/* Comment Marker Tooltip - Mobile: smaller, Desktop: full size */}
+                {/* Comment Marker Tooltip */}
                 {hoveredComment && comments && (
                   (() => {
                     const comment = comments.find((c: Comment) => c.id === hoveredComment);
@@ -1368,8 +1194,7 @@ export default function MediaPlayer({
                         className="pointer-events-none fixed z-50"
                         style={positionStyle}
                       >
-                        {/* Tooltip container - Mobile: compact, Desktop: spacious */}
-                        <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg max-w-xs lg:text-sm lg:p-3">
+                        <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium">
                               {(comment as any).authorName?.charAt(0) || (comment as any).user?.name?.charAt(0) || 'A'}
@@ -1396,8 +1221,7 @@ export default function MediaPlayer({
                   })()
                 )}
                 
-                {/* Volume control - Desktop only */}
-                <div className="hidden lg:flex items-center">
+                <div className="flex items-center">
                   <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
                   <input
                     type="range"
@@ -1409,16 +1233,25 @@ export default function MediaPlayer({
                     className="w-20"
                   />
                 </div>
+                
+                <Button
+                  onClick={toggleFullscreen}
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                  title="Toggle fullscreen"
+                >
+                  <Maximize className="h-5 w-5" />
+                </Button>
               </div>
             )}
             
-          {/* File selector and actions - Mobile: hidden, Desktop: visible */}
+          {/* File selector and actions - Always visible regardless of error state */}
           <div className={cn(
               "flex justify-end items-center",
               !mediaError ? "mt-2 pt-2" : "pt-1"
             )}>
-              {/* Action buttons - Desktop only */}
-              <div className="hidden lg:flex space-x-1">
+              <div className="flex space-x-1">
                 {file && (
                   <>
                     <ShareLinkButton 
@@ -1466,20 +1299,15 @@ export default function MediaPlayer({
                   </>
                 )}
               </div>
-
             </div>
-          
-          {/* Safe area spacer */}
-          <div className="h-[env(safe-area-inset-bottom,0px)]" aria-hidden />
         </div>
       </div>
       
-      {/* Comments Section - Mobile: full width with max height, Desktop: fixed width */}
+      {/* Comments Section - Fixed width for optimal button spacing */}
       {file && (
-        <div className="w-full h-full max-h-[40vh] min-h-0 flex flex-col dark:bg-[#0f1218] lg:w-[387px] lg:max-h-none" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
-            {/* Tab controls - Desktop only */}
-            <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
+        <div className="w-full lg:w-[387px] h-full min-h-0 flex flex-col dark:bg-[#0f1218]">
+          <Tabs defaultValue="comments" className="h-full flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="dark:bg-gray-900">
                 <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
                 <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
@@ -1503,13 +1331,10 @@ export default function MediaPlayer({
               />
             </TabsContent>
             
-            {/* Versions tab - Mobile: reduced padding, Desktop: full padding */}
-            <TabsContent value="versions" className="flex-grow overflow-auto px-2 py-2 lg:px-4 lg:py-3">
+            <TabsContent value="versions" className="flex-grow overflow-auto px-4 py-3">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  {/* Versions header - Mobile: smaller, Desktop: normal */}
-                  <h3 className="text-base font-medium dark:text-white lg:text-lg">File Versions</h3>
-                  {/* Upload button - Mobile: extra small, Desktop: small */}
+                  <h3 className="text-lg font-medium dark:text-white">File Versions</h3>
                   <Button 
                     className="flex items-center dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" 
                     size="sm"
@@ -1670,7 +1495,7 @@ export default function MediaPlayer({
       {showScrubPreview && duration > 0 && file?.fileType === 'video' && createPortal(
         <div
           ref={scrubPreviewRef}
-          className="pointer-events-none z-50 hidden lg:block"
+          className="pointer-events-none z-50"
           style={{
             position: 'fixed',
             left: `${scrubPreviewLeft}px`,
@@ -1699,73 +1524,6 @@ export default function MediaPlayer({
           </div>
         </div>,
         document.body
-      )}
-
-      {/* Portal: Mobile actions dropdown in top-left container */}
-      {file && typeof document !== 'undefined' && document.getElementById('mobile-actions-container') && createPortal(
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
-              data-testid="mobile-actions-dropdown"
-            >
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-40">
-            {/* Share Link Option - Renders ShareLinkButton inside dropdown */}
-            <DropdownMenuItem asChild>
-              <ShareLinkButton 
-                fileId={file.id} 
-                size="sm"
-                variant="ghost"
-                compact={false}
-                className="w-full justify-start p-2 text-sm font-normal hover:bg-accent focus:bg-accent"
-              />
-            </DropdownMenuItem>
-            
-            <DropdownMenuSeparator />
-            
-            <DropdownMenuItem
-              onClick={handleRequestChanges}
-              disabled={approveMutation.isPending}
-              className="text-orange-600 focus:text-orange-600"
-              data-testid="mobile-request-changes"
-            >
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Request Changes
-            </DropdownMenuItem>
-            
-            <DropdownMenuItem
-              onClick={handleApprove}
-              disabled={approveMutation.isPending}
-              className="text-green-600 focus:text-green-600"
-              data-testid="mobile-approve"
-            >
-              <Check className="h-4 w-4 mr-2" />
-              Approve
-            </DropdownMenuItem>
-            
-            {(user?.role === 'admin' || user?.role === 'editor') && project && (
-              <DropdownMenuItem
-                onClick={handleMarkAsInReview}
-                disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
-                className="text-blue-600 focus:text-blue-600"
-                data-testid="mobile-mark-in-review"
-              >
-                {isUpdatingStatus ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <ClipboardCheck className="h-4 w-4 mr-2" />
-                )}
-                Mark as In Review
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>,
-        document.getElementById('mobile-actions-container')!
       )}
     </div>
   );
