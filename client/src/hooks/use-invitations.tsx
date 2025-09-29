@@ -7,7 +7,7 @@ interface Invitation {
   id: number;
   email: string;
   role: string;
-  projectId: number;
+  projectId: number | null;
   token: string;
   expiresAt: string;
   isAccepted: boolean;
@@ -20,6 +20,11 @@ interface Invitation {
     email: string;
     username: string;
   };
+  project?: {
+    id: number;
+    name: string;
+  } | null;
+  isSystemInvite?: boolean;
 }
 
 export function useProjectInvitations(projectId?: number) {
@@ -51,6 +56,32 @@ export function useProjectInvitations(projectId?: number) {
   return query;
 }
 
+export function useAllInvitations() {
+  const { toast } = useToast();
+  
+  const query = useQuery<Invitation[]>({
+    queryKey: ["/api/invitations"],
+    retry: 1,
+    staleTime: 30000, // 30 seconds
+  });
+  
+  // Handle errors with a side effect
+  React.useEffect(() => {
+    if (query.error) {
+      console.error("Error fetching all invitations:", query.error);
+      toast({
+        title: "Error loading invitations",
+        description: query.error instanceof Error 
+          ? query.error.message 
+          : "Failed to load system invitations",
+        variant: "destructive",
+      });
+    }
+  }, [query.error, toast]);
+  
+  return query;
+}
+
 export function useDeleteInvitation() {
   const { toast } = useToast();
   
@@ -72,6 +103,7 @@ export function useDeleteInvitation() {
       
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
       // Invalidate all invitations queries
       queryClient.invalidateQueries({ 
         predicate: (query) => 
@@ -191,6 +223,7 @@ export function useResendInvitation() {
       
       // Force refresh all project data
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
       
       // Force refresh all invitations queries with a more specific pattern
       queryClient.invalidateQueries({ 
