@@ -13,7 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import UserForm from "@/components/admin/user-form";
-import { Plus, Users, FileText, Activity, Settings, ShieldAlert, Loader2, HardDrive, FolderOpen } from "lucide-react";
+import { PendingInvitations } from "@/components/admin/pending-invitations";
+import { Plus, Users, FileText, Activity, Settings, ShieldAlert, Loader2, HardDrive, FolderOpen, Mail } from "lucide-react";
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -158,6 +159,7 @@ export default function AdminPage() {
         <Tabs defaultValue="users">
           <TabsList className="mb-6">
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="invitations">Invitations</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>
@@ -176,6 +178,10 @@ export default function AdminPage() {
                 <UserList />
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="invitations">
+            <PendingInvitations />
           </TabsContent>
           
           <TabsContent value="files">
