@@ -313,8 +313,8 @@ export async function sendInvitationEmail(
     const baseUrl = appUrl || config.appDomain;
     logToFile(`Using base URL for invitation: ${baseUrl}`);
     
-    const inviteUrl = `${baseUrl}/invite/${token}`;
-    logToFile(`Generated invite URL: ${inviteUrl}`);
+    const signupUrl = `${baseUrl}/auth?signup=true&token=${token}`;
+    logToFile(`Generated signup URL: ${signupUrl}`);
     
     const subject = `${inviterName} invited you to collaborate on ${projectName}`;
     
@@ -326,14 +326,14 @@ export async function sendInvitationEmail(
         <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
           <p>Hello,</p>
           <p><strong>${inviterName}</strong> has invited you to collaborate on the project <strong>${projectName}</strong> as a <strong>${role}</strong>.</p>
-          <p>Click the button below to accept this invitation:</p>
+          <p>Click the button below to create your account and join the project:</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${inviteUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Accept Invitation</a>
+            <a href="${signupUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Create Account & Join</a>
           </div>
           <p>Or copy and paste this URL into your browser:</p>
-          <p style="word-break: break-all; color: #4f46e5;">${inviteUrl}</p>
+          <p style="word-break: break-all; color: #4f46e5;">${signupUrl}</p>
           <p>This invitation will expire in 7 days.</p>
-          <p>If you have any questions, please contact the project owner.</p>
+          <p>If you already have an account, you can sign in with the same email address to accept the invitation.</p>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
           <p style="color: #64748b; font-size: 12px;">If you didn't expect this invitation, you can safely ignore this email.</p>
         </div>
@@ -343,9 +343,11 @@ export async function sendInvitationEmail(
     const text = `
       ${inviterName} has invited you to collaborate on the project ${projectName} as a ${role}.
       
-      To accept this invitation, visit: ${inviteUrl}
+      To create your account and join the project, visit: ${signupUrl}
       
       This invitation will expire in 7 days.
+      
+      If you already have an account, you can sign in with the same email address to accept the invitation.
       
       If you didn't expect this invitation, you can safely ignore this email.
     `;
@@ -483,8 +485,8 @@ export async function sendSystemInvitationEmail(
     const baseUrl = appUrl || config.appDomain;
     logToFile(`Using base URL for invitation: ${baseUrl}`);
     
-    const inviteUrl = `${baseUrl}/invite/${token}`;
-    logToFile(`Generated invite URL: ${inviteUrl}`);
+    const signupUrl = `${baseUrl}/auth?signup=true&token=${token}`;
+    logToFile(`Generated signup URL: ${signupUrl}`);
     
     const subject = `${inviterName} invited you to join Obviu.io`;
     
@@ -496,12 +498,12 @@ export async function sendSystemInvitationEmail(
         <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
           <p>Hello,</p>
           <p><strong>${inviterName}</strong> has invited you to join the Obviu.io platform as a <strong>${role}</strong>.</p>
-          <p>Click the button below to accept this invitation and create your account:</p>
+          <p>Click the button below to create your account and join:</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${inviteUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Accept Invitation</a>
+            <a href="${signupUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Create Account & Join</a>
           </div>
           <p>Or copy and paste this URL into your browser:</p>
-          <p style="word-break: break-all; color: #4f46e5;">${inviteUrl}</p>
+          <p style="word-break: break-all; color: #4f46e5;">${signupUrl}</p>
           <p>This invitation will expire in 7 days.</p>
           <p>Obviu.io is a collaborative media review platform that enables teams to efficiently review, comment, and approve media assets.</p>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
@@ -513,7 +515,7 @@ export async function sendSystemInvitationEmail(
     const text = `
       ${inviterName} has invited you to join the Obviu.io platform as a ${role}.
       
-      To accept this invitation and create your account, visit: ${inviteUrl}
+      To create your account and join, visit: ${signupUrl}
       
       This invitation will expire in 7 days.
       
