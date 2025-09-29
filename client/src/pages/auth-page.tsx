@@ -56,6 +56,9 @@ export default function AuthPage() {
   const invitedRole = searchParams.get("role") || "viewer";
   const inviteToken = searchParams.get("token") || "";
   const isSignupMode = searchParams.get("signup") === "true";
+  
+  // Allow registration if user has a valid invite token, even when registration is disabled
+  const allowRegistration = !isRegistrationDisabled || (inviteToken && !invitationError);
 
   // Fetch invitation details if token is provided
   useEffect(() => {
@@ -295,7 +298,7 @@ export default function AuthPage() {
           </Card>
         ) : (
           <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-            {!isRegistrationDisabled && (
+            {allowRegistration && (
               <TabsList className="grid grid-cols-2 w-full mb-6 bg-white/10 backdrop-blur-sm border-white/20">
                 <TabsTrigger 
                   value="login"
@@ -372,7 +375,7 @@ export default function AuthPage() {
                     </form>
                   </Form>
                 </CardContent>
-                {!isRegistrationDisabled && (
+                {allowRegistration && (
                   <CardFooter className="flex justify-center">
                     <div className="text-sm text-center text-neutral-600 dark:text-neutral-400">
                       Don't have an account?{" "}
@@ -389,7 +392,7 @@ export default function AuthPage() {
               </Card>
             </TabsContent>
             
-            {!isRegistrationDisabled && (
+            {allowRegistration && (
               <TabsContent value="register">
                 <Card className="backdrop-blur-sm bg-white/95 dark:bg-gray-900/95 border-white/20">
                   <CardHeader>
