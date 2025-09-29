@@ -11,7 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import { insertUserSchema } from "@shared/schema";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import Logo from "@/components/ui/logo";
 import backgroundVideo from "@/assets/background-video.mp4";
 
@@ -39,6 +40,9 @@ type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const [showResetForm, setShowResetForm] = useState(false);
+  const [invitationDetails, setInvitationDetails] = useState<any>(null);
+  const [isLoadingInvitation, setIsLoadingInvitation] = useState(false);
+  const [invitationError, setInvitationError] = useState<string>("");
   const { user, loginMutation, registerMutation, resetPasswordRequestMutation } = useAuth();
   const [_, setLocation] = useLocation();
   
@@ -50,6 +54,48 @@ export default function AuthPage() {
   const invitedEmail = searchParams.get("email") || "";
   const invitedName = searchParams.get("name") || "";
   const invitedRole = searchParams.get("role") || "viewer";
+  const inviteToken = searchParams.get("token") || "";
+  const isSignupMode = searchParams.get("signup") === "true";
+
+  // Fetch invitation details if token is provided
+  useEffect(() => {
+    if (inviteToken) {
+      setIsLoadingInvitation(true);
+      setInvitationError("");
+      fetch(`/api/invite/${inviteToken}`, {
+        method: "GET",
+        credentials: "include"
+      })
+        .then(async response => {
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: "Invalid invitation link" }));
+            throw new Error(errorData.message || "Invalid invitation link");
+          }
+          return response.json();
+        })
+        .then(details => {
+          setInvitationDetails(details);
+          // Set default tab to register when coming from invite
+          if (isSignupMode) {
+            setActiveTab("register");
+          }
+        })
+        .catch(error => {
+          console.error("Error fetching invitation details:", error);
+          setInvitationError(error.message || "Failed to load invitation details");
+          // Still set tab to register so user can sign up manually
+          if (isSignupMode) {
+            setActiveTab("register");
+          }
+        })
+        .finally(() => {
+          setIsLoadingInvitation(false);
+        });
+    } else if (isSignupMode) {
+      // Set default tab to register even without token
+      setActiveTab("register");
+    }
+  }, [inviteToken, isSignupMode]);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -65,11 +111,23 @@ export default function AuthPage() {
       username: "",
       password: "",
       confirmPassword: "",
-      email: invitedEmail,
-      name: invitedName,
-      role: invitedRole,
+      email: invitedEmail || invitationDetails?.email || "",
+      name: invitedName || "", // Don't prefill with inviter's name
+      role: invitedRole || invitationDetails?.role || "viewer",
     },
   });
+
+  // Update form values when invitation details are loaded
+  useEffect(() => {
+    if (invitationDetails) {
+      registerForm.setValue("email", invitationDetails.email || "");
+      registerForm.setValue("role", invitationDetails.role || "viewer");
+      // Only set name if it was explicitly provided for the invitee
+      if (invitedName) {
+        registerForm.setValue("name", invitedName);
+      }
+    }
+  }, [invitationDetails, registerForm, invitedName]);
 
   const resetPasswordForm = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
@@ -123,10 +181,32 @@ export default function AuthPage() {
     });
   };
 
-  const onRegisterSubmit = (data: RegisterFormValues) => {
+  const onRegisterSubmit = async (data: RegisterFormValues) => {
     const { confirmPassword, ...registerData } = data;
     registerMutation.mutate(registerData, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        // If there's an invite token and no invitation error, accept the invitation after successful registration
+        if (inviteToken && !invitationError) {
+          try {
+            const acceptResponse = await fetch(`/api/invite/${inviteToken}/accept`, {
+              method: "POST",
+              credentials: "include"
+            });
+            
+            if (acceptResponse.ok) {
+              console.log("Invitation accepted successfully");
+              // If invitation has a project, redirect to it
+              if (invitationDetails?.project?.id) {
+                setLocation(`/projects/${invitationDetails.project.id}`);
+                return;
+              }
+            } else {
+              console.error("Failed to accept invitation");
+            }
+          } catch (error) {
+            console.error("Error accepting invitation:", error);
+          }
+        }
         setLocation(returnTo);
       }
     });
@@ -315,8 +395,28 @@ export default function AuthPage() {
                   <CardHeader>
                     <CardTitle className="text-center">Create Account</CardTitle>
                     <CardDescription className="text-center">
-                      Join the platform
+                      {invitationDetails ? 
+                        `Join ${invitationDetails.project?.name || "Obviu.io"} as ${invitationDetails.role}` : 
+                        "Join the platform"
+                      }
                     </CardDescription>
+                    {isLoadingInvitation && (
+                      <div className="flex items-center justify-center py-2">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span className="text-sm">Loading invitation details...</span>
+                      </div>
+                    )}
+                    {invitationDetails && (
+                      <div className="text-sm text-center text-gray-600 dark:text-gray-400 mt-2">
+                        Invited by {invitationDetails.creator?.name || "Administrator"}
+                      </div>
+                    )}
+                    {invitationError && (
+                      <Alert variant="destructive" className="mt-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>{invitationError}</AlertDescription>
+                      </Alert>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <Form {...registerForm}>
