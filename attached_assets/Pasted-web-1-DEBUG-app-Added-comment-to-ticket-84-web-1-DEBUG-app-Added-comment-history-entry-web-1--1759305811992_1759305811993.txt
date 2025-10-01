@@ -1,0 +1,50 @@
+web-1  | DEBUG:app:Added comment to ticket #84
+web-1  | DEBUG:app:Added comment history entry
+web-1  | DEBUG:app:Mobile Detection Debug - User-Agent: mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) chrome/140.0.0.0 safari/537.36
+web-1  | DEBUG:app:Mobile Detection Debug - Sec-CH-UA-Mobile header: ?0
+web-1  | DEBUG:app:Mobile Detection Debug - Force mobile parameter: False
+web-1  | DEBUG:app:Mobile Detection Debug - Pattern match: False, Header mobile: False, Force: False
+web-1  | DEBUG:app:Mobile Detection Debug - Final is_mobile_device result: False
+web-1  | DEBUG:app:Mobile Detection Debug - User-Agent: mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) chrome/140.0.0.0 safari/537.36
+web-1  | DEBUG:app:Mobile Detection Debug - Sec-CH-UA-Mobile header: ?0
+web-1  | DEBUG:app:Mobile Detection Debug - Force mobile parameter: False
+web-1  | DEBUG:app:Mobile Detection Debug - Pattern match: False, Header mobile: False, Force: False
+web-1  | DEBUG:app:Mobile Detection Debug - Final is_mobile_device result: False
+web-1  | DEBUG:app:Mobile context check - referrer: https://post.obedtv.com/tickets/84, path: /tickets/84/comment, mobile param: None, is_mobile_device: False, final decision: False
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "POST /tickets/84/comment HTTP/1.1" 302 209 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | DEBUG:app:Ticket #84 already viewed by user admin, no new history entry
+web-1  | DEBUG:app:Mobile Detection Debug - User-Agent: mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) chrome/140.0.0.0 safari/537.36
+web-1  | DEBUG:app:Mobile Detection Debug - Sec-CH-UA-Mobile header: ?0
+web-1  | DEBUG:app:Mobile Detection Debug - Force mobile parameter: False
+web-1  | DEBUG:app:Mobile Detection Debug - Pattern match: False, Header mobile: False, Force: False
+web-1  | DEBUG:app:Mobile Detection Debug - Final is_mobile_device result: False
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /tickets/84 HTTP/1.1" 200 415101 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /static/css/dark-theme.css?v=1759305766 HTTP/1.1" 200 0 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /static/css/style.css HTTP/1.1" 304 0 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /static/uploads/profile_pictures/20250730_202104_obtvblack.png HTTP/1.1" 304 0 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /static/js/calendar.js?v=1759305766&refresh=true&grid=2col HTTP/1.1" 200 0 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /static/tbn_logo_dark.png?v=2 HTTP/1.1" 304 0 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /static/manifest.json HTTP/1.1" 304 0 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /api/upcoming_time_off HTTP/1.1" 200 25 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /api/team-stats HTTP/1.1" 200 334 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /static/apple-touch-icon-152x152.png HTTP/1.1" 304 0 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | DEBUG:app:Current time (UTC): 2025-10-01 08:02:46.821834+00:00
+web-1  | DEBUG:app:Active users query SQL: SELECT "user".id AS user_id, "user".username AS user_username, "user".email AS user_email, "user".password_hash AS user_password_hash, "user".is_admin AS user_is_admin, "user".color AS user_color, "user".timezone AS user_timezone, "user".theme_preference AS user_theme_preference, "user".profile_picture AS user_profile_picture, schedule.id AS schedule_id, schedule.technician_id AS schedule_technician_id, schedule.start_time AS schedule_start_time, schedule.end_time AS schedule_end_time, schedule.description AS schedule_description, schedule.location_id AS schedule_location_id, schedule.created_at AS schedule_created_at, schedule.time_off AS schedule_time_off, schedule.all_day AS schedule_all_day, location.id AS location_id, location.name AS location_name, location.description AS location_description, location.active AS location_active, location.created_at AS location_created_at, location.updated_at AS location_updated_at
+web-1  | FROM "user" JOIN schedule ON "user".id = schedule.technician_id LEFT OUTER JOIN location ON schedule.location_id = location.id
+web-1  | WHERE schedule.start_time <= %(start_time_1)s AND schedule.end_time > %(end_time_1)s AND NOT schedule.time_off
+web-1  | DEBUG:app:Found 0 active schedules
+web-1  | DEBUG:app:Returning 0 active users
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:46 -0700] "GET /api/active_users HTTP/1.1" 200 20 "https://post.obedtv.com/tickets/84" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | DEBUG:app:Studio bookings API request: https://plex.bookstud.io/api/public/bookings?start=2025-10-01T07:00:00Z&end=2025-10-02T06:59:59.999000Z
+web-1  | DEBUG:app:Current time (UTC): 2025-10-01 08:02:51.280164+00:00
+web-1  | DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): plex.bookstud.io:443
+web-1  | DEBUG:app:Active users query SQL: SELECT "user".id AS user_id, "user".username AS user_username, "user".email AS user_email, "user".password_hash AS user_password_hash, "user".is_admin AS user_is_admin, "user".color AS user_color, "user".timezone AS user_timezone, "user".theme_preference AS user_theme_preference, "user".profile_picture AS user_profile_picture, schedule.id AS schedule_id, schedule.technician_id AS schedule_technician_id, schedule.start_time AS schedule_start_time, schedule.end_time AS schedule_end_time, schedule.description AS schedule_description, schedule.location_id AS schedule_location_id, schedule.created_at AS schedule_created_at, schedule.time_off AS schedule_time_off, schedule.all_day AS schedule_all_day, location.id AS location_id, location.name AS location_name, location.description AS location_description, location.active AS location_active, location.created_at AS location_created_at, location.updated_at AS location_updated_at
+web-1  | FROM "user" JOIN schedule ON "user".id = schedule.technician_id LEFT OUTER JOIN location ON schedule.location_id = location.id
+web-1  | WHERE schedule.start_time <= %(start_time_1)s AND schedule.end_time > %(end_time_1)s AND NOT schedule.time_off
+web-1  | DEBUG:app:Found 0 active schedules
+web-1  | DEBUG:app:Returning 0 active users
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:51 -0700] "GET /api/active_users HTTP/1.1" 200 20 "https://post.obedtv.com/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:51 -0700] "GET /api/upcoming_time_off HTTP/1.1" 200 25 "https://post.obedtv.com/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | DEBUG:urllib3.connectionpool:https://plex.bookstud.io:443 "GET /api/public/bookings?start=2025-10-01T07:00:00Z&end=2025-10-02T06:59:59.999000Z HTTP/1.1" 200 1157
+web-1  | 192.168.200.193 - - [01/Oct/2025:01:02:51 -0700] "GET /api/studio-bookings HTTP/1.1" 200 1329 "https://post.obedtv.com/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+web-1  | 127.0.0.1 - - [01/Oct/2025:01:03:07 -0700] "GET /health HTTP/1.1" 200 148 "-" "curl/8.14.1"
