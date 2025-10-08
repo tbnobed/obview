@@ -29,6 +29,17 @@ services:
       - IS_DOCKER=true
       # Upload directory for file operations
       - UPLOAD_DIR=/app/uploads
+      # Video processing timeout configuration (in milliseconds)
+      - VIDEO_TIMEOUT_QUALITY=${VIDEO_TIMEOUT_QUALITY:-3600000}
+      - VIDEO_TIMEOUT_SCRUB=${VIDEO_TIMEOUT_SCRUB:-1800000}
+      - VIDEO_TIMEOUT_SPRITE=${VIDEO_TIMEOUT_SPRITE:-600000}
+      - VIDEO_TIMEOUT_METADATA=${VIDEO_TIMEOUT_METADATA:-300000}
+      # Video encoding quality settings (optional)
+      - VIDEO_MAIN_CRF=${VIDEO_MAIN_CRF:-24}
+      - VIDEO_MAIN_PRESET=${VIDEO_MAIN_PRESET:-medium}
+      - VIDEO_SCRUB_CRF=${VIDEO_SCRUB_CRF:-28}
+      - VIDEO_SCRUB_FPS=${VIDEO_SCRUB_FPS:-15}
+      - VIDEO_SCRUB_SCALE=${VIDEO_SCRUB_SCALE:--2:180}
     volumes:
       - uploads:/app/uploads
     networks:

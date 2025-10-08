@@ -19,9 +19,10 @@ Preferred communication style: Simple, everyday language.
 - **Framework**: Express.js with TypeScript
 - **Session Management**: Express sessions with PostgreSQL session store using connect-pg-simple
 - **Authentication**: Passport.js with local strategy for username/password authentication
-- **File Upload**: Multer middleware for handling large file uploads (up to 5GB)
+- **File Upload**: Multer middleware for handling large file uploads (up to 20GB+)
 - **Database ORM**: Drizzle ORM for type-safe database operations
 - **Migration System**: SQL-based migrations with automated execution during container startup
+- **Video Processing**: FFmpeg-based video encoding with configurable timeouts for large file support (up to 2+ hour processing times)
 
 ### Data Storage Solutions
 - **Primary Database**: PostgreSQL with the following core tables:
@@ -45,9 +46,15 @@ Preferred communication style: Simple, everyday language.
 - **Media Timeline Comments**: Timestamped comments system allowing precise feedback on video content
 - **Approval Workflow**: Request changes or approve functionality with threaded comment support
 - **File Preview**: Browser-native HTML5 video/audio players with custom controls
-- **Large File Support**: Optimized for uploads up to 5GB with proper Nginx configuration
+- **Large File Support**: Optimized for uploads up to 20GB+ with configurable FFmpeg processing timeouts
 - **Adobe Premiere Integration**: Export functionality for comments and timeline markers
 - **Email Notifications**: SendGrid integration for user invitations and workflow notifications
+- **Video Processing Pipeline**: 
+  - 720p H.264 quality encoding for optimal playback
+  - 180p I-frame only scrub versions for smooth timeline seeking
+  - Thumbnail sprite generation for hover previews
+  - Configurable timeouts: Quality (60 min), Scrub (30 min), Sprite (10 min), Metadata (5 min)
+  - All timeouts adjustable via environment variables for large file handling
 
 ### Deployment Architecture
 - **Containerization**: Multi-stage Docker builds with separate builder and production stages
