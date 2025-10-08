@@ -52,6 +52,17 @@ export const config = {
       fps: parseInt(process.env.VIDEO_SCRUB_FPS || '15', 10),
       scale: process.env.VIDEO_SCRUB_SCALE || '-2:180',
       disableAudio: process.env.VIDEO_SCRUB_DISABLE_AUDIO !== 'false' // Default to disable audio
+    },
+    // FFmpeg processing timeout settings (in milliseconds)
+    timeouts: {
+      // Quality version generation timeout (default: 60 minutes for large files)
+      quality: parseInt(process.env.VIDEO_TIMEOUT_QUALITY || '3600000', 10),
+      // Scrub version generation timeout (default: 30 minutes)
+      scrub: parseInt(process.env.VIDEO_TIMEOUT_SCRUB || '1800000', 10),
+      // Thumbnail sprite generation timeout (default: 10 minutes)
+      sprite: parseInt(process.env.VIDEO_TIMEOUT_SPRITE || '600000', 10),
+      // Metadata extraction timeout (default: 5 minutes)
+      metadata: parseInt(process.env.VIDEO_TIMEOUT_METADATA || '300000', 10)
     }
   }
 };

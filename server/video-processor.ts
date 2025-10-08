@@ -135,7 +135,7 @@ export class VideoProcessor {
   }
 
   /**
-   * Execute FFprobe command safely
+   * Execute FFprobe command safely with timeout
    */
   private static executeFFprobe(args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -145,6 +145,14 @@ export class VideoProcessor {
       
       let stdout = '';
       let stderr = '';
+      let isTimeout = false;
+      
+      // Set up timeout for metadata extraction
+      const timeout = setTimeout(() => {
+        isTimeout = true;
+        ffprobe.kill('SIGKILL');
+        reject(new Error(`FFprobe timeout after ${config.video.timeouts.metadata}ms`));
+      }, config.video.timeouts.metadata);
       
       ffprobe.stdout.on('data', (data) => {
         stdout += data.toString();
@@ -155,6 +163,9 @@ export class VideoProcessor {
       });
       
       ffprobe.on('close', (code) => {
+        clearTimeout(timeout);
+        if (isTimeout) return; // Already handled by timeout
+        
         if (code === 0) {
           resolve(stdout);
         } else {
@@ -163,6 +174,8 @@ export class VideoProcessor {
       });
       
       ffprobe.on('error', (error) => {
+        clearTimeout(timeout);
+        if (isTimeout) return; // Already handled by timeout
         reject(new Error(`FFprobe spawn error: ${error.message}`));
       });
     });
@@ -171,7 +184,7 @@ export class VideoProcessor {
   /**
    * Execute FFmpeg command safely with timeout
    */
-  private static executeFFmpeg(args: string[], timeoutMs: number = 300000): Promise<void> { // 5 minute default timeout
+  private static executeFFmpeg(args: string[], timeoutMs: number = config.video.timeouts.quality): Promise<void> {
     return new Promise((resolve, reject) => {
       const ffmpeg = spawn('ffmpeg', args, {
         stdio: ['ignore', 'pipe', 'pipe']
@@ -252,7 +265,7 @@ export class VideoProcessor {
       ];
       
       console.log(`[VideoProcessor] Generating ${quality.name} with optimized settings...`);
-      await this.executeFFmpeg(args, 180000); // 3 minute timeout for 720p generation
+      await this.executeFFmpeg(args, config.video.timeouts.quality);
       
       // Get file size
       const stats = await fs.stat(outputPath);
@@ -303,7 +316,7 @@ export class VideoProcessor {
       ];
       
       console.log(`[VideoProcessor] Generating scrub version...`);
-      await this.executeFFmpeg(args, 120000); // 2 minute timeout for scrub version
+      await this.executeFFmpeg(args, config.video.timeouts.scrub);
       
       return outputPath;
     } catch (error) {
@@ -358,7 +371,7 @@ export class VideoProcessor {
       ];
       
       console.log(`[VideoProcessor] Generating thumbnail sprite...`);
-      await this.executeFFmpeg(args);
+      await this.executeFFmpeg(args, config.video.timeouts.sprite);
       
       // Create sprite metadata
       const spriteInfo = {
