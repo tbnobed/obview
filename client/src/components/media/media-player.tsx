@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2 } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1882,7 +1882,7 @@ export default function MediaPlayer({
                       onClick={() => setIsVersionDialogOpen(true)}
                       title="Upload new version"
                     >
-                      <Upload className="h-3 w-3" />
+                      <FilePlus2 className="h-3 w-3" />
                     </Button>
                     <ShareLinkButton 
                       fileId={file.id} 
