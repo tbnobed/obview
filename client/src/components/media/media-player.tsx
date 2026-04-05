@@ -519,12 +519,117 @@ export default function MediaPlayer({
             toggleFullscreen();
           }
           break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+            const idx = files.findIndex(f => f.id === file?.id);
+            if (idx > 0) onSelectFile(files[idx - 1].id);
+          } else if (mediaElement && !mediaError && file) {
+            stopJKLShuttle();
+            const framesBack = e.shiftKey ? 10 : 1;
+            const backTime = Math.max(0, mediaElement.currentTime - framesBack / frameRate);
+            performSeek(backTime);
+            setCurrentTime(backTime);
+          }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+            const idx = files.findIndex(f => f.id === file?.id);
+            if (idx < files.length - 1) onSelectFile(files[idx + 1].id);
+          } else if (mediaElement && !mediaError && file) {
+            stopJKLShuttle();
+            const framesForward = e.shiftKey ? 10 : 1;
+            const fwdTime = Math.min(duration, mediaElement.currentTime + framesForward / frameRate);
+            performSeek(fwdTime);
+            setCurrentTime(fwdTime);
+          }
+          break;
+        case 'KeyJ': {
+          e.preventDefault();
+          if (!mediaElement || mediaError || !file) break;
+          if (jklIntervalRef.current) {
+            clearInterval(jklIntervalRef.current);
+            jklIntervalRef.current = null;
+          }
+          if (jklDirectionRef.current === 'backward') {
+            jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
+          } else {
+            if (!mediaElement.paused) {
+              mediaElement.pause();
+              mediaElement.playbackRate = 1;
+              setIsPlaying(false);
+            }
+            jklSpeedRef.current = 1;
+            jklDirectionRef.current = 'backward';
+          }
+          jklIntervalRef.current = setInterval(() => {
+            const el = videoRef.current || audioRef.current;
+            if (el) {
+              const t = Math.max(0, el.currentTime - jklSpeedRef.current * 0.1);
+              el.currentTime = t;
+              setCurrentTime(t);
+              if (t === 0) stopJKLShuttle();
+            }
+          }, 100);
+          break;
+        }
+        case 'KeyL': {
+          e.preventDefault();
+          if (!mediaElement || mediaError || !file) break;
+          if (jklIntervalRef.current) {
+            clearInterval(jklIntervalRef.current);
+            jklIntervalRef.current = null;
+          }
+          if (jklDirectionRef.current === 'forward') {
+            jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
+          } else {
+            jklSpeedRef.current = 1;
+            jklDirectionRef.current = 'forward';
+          }
+          mediaElement.playbackRate = jklSpeedRef.current;
+          if (mediaElement.paused) {
+            const pp = mediaElement.play();
+            if (pp) pp.then(() => setIsPlaying(true)).catch(() => {});
+          }
+          break;
+        }
+        case 'KeyI':
+          e.preventDefault();
+          if (file && mediaElement) {
+            setInPoint(mediaElement.currentTime);
+            toast({ title: `In point: ${formatTime(mediaElement.currentTime)}`, description: "Press O to set the out point" });
+          }
+          break;
+        case 'KeyO':
+          e.preventDefault();
+          if (file && mediaElement) {
+            setOutPoint(mediaElement.currentTime);
+            toast({ title: `Out point: ${formatTime(mediaElement.currentTime)}`, description: inPoint !== null ? `Range: ${formatTime(inPoint)} → ${formatTime(mediaElement.currentTime)}` : "Set an in point with I first" });
+          }
+          break;
+        case 'Home':
+          e.preventDefault();
+          if (mediaElement && !mediaError && file) {
+            stopJKLShuttle();
+            performSeek(0);
+            setCurrentTime(0);
+          }
+          break;
+        case 'End':
+          e.preventDefault();
+          if (mediaElement && !mediaError && file) {
+            stopJKLShuttle();
+            performSeek(duration);
+            setCurrentTime(duration);
+          }
+          break;
       }
     };
 
     document.addEventListener('keydown', handleGlobalKeyDown);
     return () => document.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [file, mediaError, isPlaying, isFullscreen, isMuted]);
+  }, [file, files, mediaError, isPlaying, isFullscreen, isMuted, duration, frameRate, inPoint]);
 
   // Extract frame rate from video when it loads metadata
   useEffect(() => {
