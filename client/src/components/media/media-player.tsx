@@ -2160,17 +2160,26 @@ export default function MediaPlayer({
                   .sort((a, b) => a.version - b.version) : [];
                 return (
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center gap-2">
                       <h3 className="text-sm font-medium dark:text-white">File Versions</h3>
-                      {fileVersions.length >= 2 && (
+                      <div className="flex items-center gap-1.5">
+                        {fileVersions.length >= 2 && (
+                          <Button
+                            variant="outline" size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => setIsComparing(true)}
+                          >
+                            <Columns2 className="h-3 w-3 mr-1" /> Compare
+                          </Button>
+                        )}
                         <Button
                           variant="outline" size="sm"
                           className="h-7 text-xs"
-                          onClick={() => setIsComparing(true)}
+                          onClick={() => setIsVersionDialogOpen(true)}
                         >
-                          <Columns2 className="h-3 w-3 mr-1" /> Compare
+                          <Upload className="h-3 w-3 mr-1" /> Upload New Version
                         </Button>
-                      )}
+                      </div>
                     </div>
                     {fileVersions.length <= 1 ? (
                       <p className="text-xs text-gray-500 dark:text-gray-400">Only one version exists. Upload a new version to compare.</p>
