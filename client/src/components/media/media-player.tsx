@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2 } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,12 +56,22 @@ export default function MediaPlayer({
   const [hoveredComment, setHoveredComment] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const hideTooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [frameRate, setFrameRate] = useState(30);
+  const [inPoint, setInPoint] = useState<number | null>(null);
+  const [outPoint, setOutPoint] = useState<number | null>(null);
+  const jklIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const jklSpeedRef = useRef<number>(1);
+  const jklDirectionRef = useRef<'forward' | 'backward' | 'stopped'>('stopped');
   
-  // Clean up tooltip timeout on unmount
+  // Clean up tooltip timeout and JKL interval on unmount
   useEffect(() => {
     return () => {
       if (hideTooltipTimeoutRef.current) {
         clearTimeout(hideTooltipTimeoutRef.current);
+      }
+      if (jklIntervalRef.current) {
+        clearInterval(jklIntervalRef.current);
       }
     };
   }, []);
@@ -453,6 +463,81 @@ export default function MediaPlayer({
     }
   };
 
+  // Global keyboard shortcut listener — works anywhere on page unless typing in a form
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInTextInput = target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target.contentEditable === 'true';
+
+      // Tab in a textarea: move focus back to player
+      if (isInTextInput) {
+        if (e.code === 'Tab' && (target instanceof HTMLTextAreaElement || target.tagName === 'TEXTAREA')) {
+          e.preventDefault();
+          (target as HTMLElement).blur();
+          mediaContainerRef.current?.focus();
+        }
+        return;
+      }
+
+      // If the event came from inside the media container, handleMediaKeyPress handles it — skip
+      if (mediaContainerRef.current && mediaContainerRef.current.contains(target)) return;
+
+      const mediaElement = videoRef.current || audioRef.current;
+
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault();
+          if (!mediaElement || mediaError || !file) break;
+          stopJKLShuttle();
+          togglePlay();
+          break;
+        case 'KeyC':
+          e.preventDefault();
+          focusCommentTextarea();
+          break;
+        case 'KeyM':
+          e.preventDefault();
+          toggleMute();
+          break;
+        case 'KeyF':
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case 'KeyK':
+          e.preventDefault();
+          if (!mediaElement || mediaError || !file) break;
+          stopJKLShuttle();
+          mediaElement.pause();
+          setIsPlaying(false);
+          break;
+        case 'Escape':
+          if (isFullscreen) {
+            e.preventDefault();
+            toggleFullscreen();
+          }
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [file, mediaError, isPlaying, isFullscreen, isMuted]);
+
+  // Extract frame rate from video when it loads metadata
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const handleMetadata = () => {
+      // Try to detect frame rate from video playback quality or use 30 as safe default
+      setFrameRate(30);
+    };
+    video.addEventListener('loadedmetadata', handleMetadata);
+    return () => video.removeEventListener('loadedmetadata', handleMetadata);
+  }, [videoRef.current]);
+
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -718,83 +803,232 @@ export default function MediaPlayer({
     }
   };
   
-  // Enhanced keyboard controls - only when media container is focused
-  
+  // Toggle mute/unmute
+  const toggleMute = () => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (!mediaElement) return;
+    const newMuted = !isMuted;
+    mediaElement.muted = newMuted;
+    setIsMuted(newMuted);
+  };
+
+  // Stop JKL shuttle playback
+  const stopJKLShuttle = () => {
+    if (jklIntervalRef.current) {
+      clearInterval(jklIntervalRef.current);
+      jklIntervalRef.current = null;
+    }
+    jklDirectionRef.current = 'stopped';
+    jklSpeedRef.current = 1;
+    const mediaElement = videoRef.current || audioRef.current;
+    if (mediaElement) mediaElement.playbackRate = 1;
+  };
+
+  // Focus the comment textarea and pause playback
+  const focusCommentTextarea = () => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (mediaElement && !mediaElement.paused) {
+      mediaElement.pause();
+      setIsPlaying(false);
+    }
+    stopJKLShuttle();
+    setTimeout(() => {
+      const textarea = document.querySelector('[data-testid="textarea-comment"]') as HTMLTextAreaElement;
+      if (textarea) textarea.focus();
+    }, 50);
+  };
+
+  // Keyboard shortcuts - video player shortcuts
   const handleMediaKeyPress = (e: React.KeyboardEvent) => {
-    // Check if target is an editable element
     const target = e.target as HTMLElement;
-    if (target instanceof HTMLInputElement || 
-        target instanceof HTMLTextAreaElement || 
-        target instanceof HTMLSelectElement ||
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'INPUT' ||
-        target.contentEditable === 'true') {
+    const isInTextInput = target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'INPUT' ||
+      target.contentEditable === 'true';
+
+    // Tab key when in comment textarea: blur and return focus to player
+    if (isInTextInput) {
+      if (e.code === 'Tab') {
+        e.preventDefault();
+        (target as HTMLElement).blur();
+        mediaContainerRef.current?.focus();
+      }
       return;
     }
-    
+
     const mediaElement = videoRef.current || audioRef.current;
-    if (!mediaElement || mediaError || !file) return;
-    
+
     switch (e.code) {
+      // Spacebar: play/pause
       case 'Space':
         e.preventDefault();
+        if (!mediaElement || mediaError || !file) break;
+        stopJKLShuttle();
         togglePlay();
         break;
-      case 'ArrowLeft':
-        e.preventDefault();
-        const backwardSkip = e.shiftKey ? 1 : 5;
-        const newBackTime = Math.max(0, currentTime - backwardSkip);
-        performSeek(newBackTime);
-        setCurrentTime(newBackTime);
-        break;
-      case 'ArrowRight':
-        e.preventDefault();
-        const forwardSkip = e.shiftKey ? 1 : 5;
-        const newForwardTime = Math.min(duration, currentTime + forwardSkip);
-        performSeek(newForwardTime);
-        setCurrentTime(newForwardTime);
-        break;
-      case 'Home':
-        e.preventDefault();
-        performSeek(0);
-        setCurrentTime(0);
-        break;
-      case 'End':
-        e.preventDefault();
-        performSeek(duration);
-        setCurrentTime(duration);
-        break;
-      case 'Comma':
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          const frameBackTime = Math.max(0, currentTime - (1/30));
-          performSeek(frameBackTime);
-          setCurrentTime(frameBackTime);
-        }
-        break;
-      case 'Period':
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          const frameForwardTime = Math.min(duration, currentTime + (1/30));
-          performSeek(frameForwardTime);
-          setCurrentTime(frameForwardTime);
-        }
-        break;
-      case 'KeyJ':
-        e.preventDefault();
-        const rewindTime = Math.max(0, currentTime - 10);
-        performSeek(rewindTime);
-        setCurrentTime(rewindTime);
-        break;
-      case 'KeyL':
-        e.preventDefault();
-        const fastForwardTime = Math.min(duration, currentTime + 10);
-        performSeek(fastForwardTime);
-        setCurrentTime(fastForwardTime);
-        break;
+
+      // K: pause (NLE shuttle stop)
       case 'KeyK':
         e.preventDefault();
-        togglePlay();
+        if (!mediaElement || mediaError || !file) break;
+        stopJKLShuttle();
+        mediaElement.pause();
+        setIsPlaying(false);
+        break;
+
+      // J: rewind shuttle (each press doubles speed: 1x → 2x → 4x → 8x)
+      case 'KeyJ': {
+        e.preventDefault();
+        if (!mediaElement || mediaError || !file) break;
+        // Clear forward playback interval if running
+        if (jklIntervalRef.current) {
+          clearInterval(jklIntervalRef.current);
+          jklIntervalRef.current = null;
+        }
+        if (jklDirectionRef.current === 'backward') {
+          // Already rewinding — double speed (max 8x)
+          jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
+        } else {
+          // Stop forward playback and start rewinding at 1x
+          if (!mediaElement.paused) {
+            mediaElement.pause();
+            mediaElement.playbackRate = 1;
+            setIsPlaying(false);
+          }
+          jklSpeedRef.current = 1;
+          jklDirectionRef.current = 'backward';
+        }
+        // Drive backward seeking via interval (HTML5 video doesn't support negative rate)
+        jklIntervalRef.current = setInterval(() => {
+          const el = videoRef.current || audioRef.current;
+          if (el) {
+            const newTime = Math.max(0, el.currentTime - jklSpeedRef.current * 0.1);
+            el.currentTime = newTime;
+            setCurrentTime(newTime);
+            if (newTime === 0) stopJKLShuttle();
+          }
+        }, 100);
+        break;
+      }
+
+      // L: fast-forward shuttle (each press doubles speed: 1x → 2x → 4x → 8x)
+      case 'KeyL': {
+        e.preventDefault();
+        if (!mediaElement || mediaError || !file) break;
+        // Stop any backward interval
+        if (jklIntervalRef.current) {
+          clearInterval(jklIntervalRef.current);
+          jklIntervalRef.current = null;
+        }
+        if (jklDirectionRef.current === 'forward') {
+          // Already fast-forwarding — double speed (max 8x)
+          jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
+        } else {
+          jklSpeedRef.current = 1;
+          jklDirectionRef.current = 'forward';
+        }
+        mediaElement.playbackRate = jklSpeedRef.current;
+        if (mediaElement.paused) {
+          const pp = mediaElement.play();
+          if (pp) pp.then(() => setIsPlaying(true)).catch(() => {});
+        }
+        break;
+      }
+
+      // Left arrow: 1 frame back; Shift+Left: 10 frames back; Cmd+Shift+Left: previous asset
+      case 'ArrowLeft':
+        e.preventDefault();
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+          const idx = files.findIndex(f => f.id === file?.id);
+          if (idx > 0) onSelectFile(files[idx - 1].id);
+        } else if (mediaElement && !mediaError && file) {
+          stopJKLShuttle();
+          const frames = e.shiftKey ? 10 : 1;
+          const newTime = Math.max(0, currentTime - frames / frameRate);
+          performSeek(newTime);
+          setCurrentTime(newTime);
+        }
+        break;
+
+      // Right arrow: 1 frame forward; Shift+Right: 10 frames forward; Cmd+Shift+Right: next asset
+      case 'ArrowRight':
+        e.preventDefault();
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+          const idx = files.findIndex(f => f.id === file?.id);
+          if (idx < files.length - 1) onSelectFile(files[idx + 1].id);
+        } else if (mediaElement && !mediaError && file) {
+          stopJKLShuttle();
+          const frames = e.shiftKey ? 10 : 1;
+          const newTime = Math.min(duration, currentTime + frames / frameRate);
+          performSeek(newTime);
+          setCurrentTime(newTime);
+        }
+        break;
+
+      // C: focus comment textarea and pause
+      case 'KeyC':
+        e.preventDefault();
+        focusCommentTextarea();
+        break;
+
+      // M: mute/unmute
+      case 'KeyM':
+        e.preventDefault();
+        toggleMute();
+        break;
+
+      // F: toggle fullscreen
+      case 'KeyF':
+        e.preventDefault();
+        toggleFullscreen();
+        break;
+
+      // Escape: exit fullscreen
+      case 'Escape':
+        if (isFullscreen) {
+          e.preventDefault();
+          toggleFullscreen();
+        }
+        break;
+
+      // I: set in point for range comment
+      case 'KeyI':
+        e.preventDefault();
+        if (file) {
+          setInPoint(currentTime);
+          toast({ title: `In point: ${formatTime(currentTime)}`, description: "Press O to set the out point" });
+        }
+        break;
+
+      // O: set out point for range comment
+      case 'KeyO':
+        e.preventDefault();
+        if (file) {
+          setOutPoint(currentTime);
+          toast({ title: `Out point: ${formatTime(currentTime)}`, description: inPoint !== null ? `Range: ${formatTime(inPoint)} → ${formatTime(currentTime)}` : "Set an in point with I first" });
+        }
+        break;
+
+      // Home: go to start
+      case 'Home':
+        e.preventDefault();
+        if (mediaElement && !mediaError && file) {
+          stopJKLShuttle();
+          performSeek(0);
+          setCurrentTime(0);
+        }
+        break;
+
+      // End: go to end
+      case 'End':
+        e.preventDefault();
+        if (mediaElement && !mediaError && file) {
+          stopJKLShuttle();
+          performSeek(duration);
+          setCurrentTime(duration);
+        }
         break;
     }
   };
@@ -993,7 +1227,9 @@ export default function MediaPlayer({
               </div>
               
               <div className="flex items-center">
-                <Volume2 className="h-5 w-5 text-white mr-2" />
+                <button onClick={toggleMute} className="mr-2 text-white hover:text-[#026d55] transition-colors" title={isMuted ? "Unmute (M)" : "Mute (M)"}>
+                  {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                </button>
                 <input
                   type="range"
                   min="0"
@@ -1103,7 +1339,9 @@ export default function MediaPlayer({
               </div>
               
               <div className="flex items-center">
-                <Volume2 className="h-5 w-5 text-white mr-2" />
+                <button onClick={toggleMute} className="mr-2 text-white hover:text-[#026d55] transition-colors" title={isMuted ? "Unmute (M)" : "Mute (M)"}>
+                  {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                </button>
                 <input
                   type="range"
                   min="0"
@@ -1220,7 +1458,9 @@ export default function MediaPlayer({
                     
                     {/* Volume control - Desktop only */}
                     <div className="hidden lg:flex items-center space-x-2">
-                      <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400" />
+                      <button onClick={toggleMute} className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] transition-colors" title={isMuted ? "Unmute (M)" : "Mute (M)"}>
+                        {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                      </button>
                       <input
                         type="range"
                         min="0"
