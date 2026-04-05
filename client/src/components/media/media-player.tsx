@@ -1875,6 +1875,15 @@ export default function MediaPlayer({
               <div className="hidden lg:flex space-x-1">
                 {file && (
                   <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                      onClick={() => setIsVersionDialogOpen(true)}
+                      title="Upload new version"
+                    >
+                      <Upload className="h-3 w-3" />
+                    </Button>
                     <ShareLinkButton 
                       fileId={file.id} 
                       size="sm"
