@@ -12,6 +12,7 @@ import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import { existsSync } from 'fs';
 import * as crypto from 'crypto';
+import { generateFCPXML, generateEDL, generateCSV } from './utils/marker-export';
 
 // Extended Request type to handle file uploads
 // Using declaration merging with Express namespace
@@ -2864,6 +2865,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[FILE DELETE] ✅ Successfully deleted file ${fileId}: ${file.filename}`);
       res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ===== MARKER EXPORT ROUTES =====
+  app.get("/api/files/:fileId/export/:format", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const format = req.params.format;
+
+      if (!['xml', 'edl', 'csv'].includes(format)) {
+        return res.status(400).json({ message: "Unsupported format. Use xml, edl, or csv." });
+      }
+
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+
+      if (req.user.role !== "admin") {
+        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
+        if (!projectUser) return res.status(403).json({ message: "You don't have access to this file" });
+      }
+
+      const comments = await storage.getUnifiedCommentsByFileV2(fileId);
+      const topLevel = comments
+        .filter(c => !c.parentId)
+        .map(c => ({
+          content: c.content,
+          authorName: c.authorName,
+          timestamp: c.timestamp,
+          createdAt: c.createdAt,
+        }));
+
+      const rawDuration = parseFloat(req.query.duration as string);
+      const duration = isNaN(rawDuration) || rawDuration < 0 ? 60 : Math.min(rawDuration, 86400);
+      const rawFps = parseInt(req.query.fps as string);
+      const fps = isNaN(rawFps) || rawFps < 1 || rawFps > 120 ? 30 : rawFps;
+      const baseName = file.filename.replace(/\.[^.]+$/, '');
+
+      if (format === 'xml') {
+        const xml = generateFCPXML(file.filename, duration, topLevel, fps);
+        res.setHeader('Content-Type', 'application/xml');
+        res.setHeader('Content-Disposition', `attachment; filename="${baseName}_markers.xml"`);
+        return res.send(xml);
+      } else if (format === 'edl') {
+        const edl = generateEDL(file.filename, duration, topLevel, fps);
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Disposition', `attachment; filename="${baseName}_markers.edl"`);
+        return res.send(edl);
+      } else {
+        const csv = generateCSV(topLevel, fps);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${baseName}_markers.csv"`);
+        return res.send(csv);
+      }
     } catch (error) {
       next(error);
     }

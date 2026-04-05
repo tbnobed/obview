@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import TimelineComments from "@/components/media/timeline-comments";
 import { DownloadButton } from "@/components/download-button";
+import { ExportMarkersButton } from "@/components/export-markers-button";
 import { ShareLinkButton } from "@/components/share-link-button";
 import { Comment, File as StorageFile, Project } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -1585,6 +1586,16 @@ export default function MediaPlayer({
                       {formatTime(currentTime)} / {formatTime(duration)}
                     </span>
                     
+                    {file && (file.fileType === 'video' || file.fileType === 'audio') && (
+                      <ExportMarkersButton
+                        fileId={file.id}
+                        filename={file.filename}
+                        duration={duration}
+                        variant="ghost"
+                        size="icon"
+                        className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                      />
+                    )}
                     <Button
                       onClick={toggleFullscreen}
                       variant="ghost"
