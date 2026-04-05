@@ -25,9 +25,13 @@ CREATE TABLE IF NOT EXISTS comments_unified (
     parent_id TEXT,
     content TEXT NOT NULL,
     timestamp INTEGER,
+    annotations TEXT,
     is_resolved BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
+
+-- Add annotations column if missing (for existing deployments)
+ALTER TABLE comments_unified ADD COLUMN IF NOT EXISTS annotations TEXT;
 
 -- Add foreign key constraints if they don't exist
 DO \$\$ 
@@ -47,8 +51,58 @@ END \$\$;
 CREATE INDEX IF NOT EXISTS idx_comments_unified_file_id ON comments_unified(file_id);
 CREATE INDEX IF NOT EXISTS idx_comments_unified_user_id ON comments_unified(user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_unified_parent_id ON comments_unified(parent_id);
+CREATE INDEX IF NOT EXISTS idx_comments_unified_file_timestamp ON comments_unified(file_id, timestamp);
 " || {
   echo "Warning: Could not create comments_unified table. Attempting to continue..."
+}
+
+# Create comment_reactions table safely if it doesn't exist
+echo "Ensuring comment reactions table exists..."
+psql $DATABASE_URL -c "
+CREATE TABLE IF NOT EXISTS comment_reactions (
+    id SERIAL PRIMARY KEY,
+    comment_id TEXT NOT NULL,
+    user_id INTEGER,
+    creator_token TEXT,
+    reaction_type TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Add foreign key constraints if they don't exist
+DO \$\$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_comment_reactions_comment_id') THEN
+        ALTER TABLE comment_reactions ADD CONSTRAINT fk_comment_reactions_comment_id FOREIGN KEY (comment_id) REFERENCES comments_unified(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_comment_reactions_user_id') THEN
+        ALTER TABLE comment_reactions ADD CONSTRAINT fk_comment_reactions_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+END \$\$;
+
+-- Create indexes if they don't exist
+CREATE INDEX IF NOT EXISTS idx_comment_reactions_comment_id ON comment_reactions(comment_id);
+CREATE INDEX IF NOT EXISTS idx_comment_reactions_comment_reaction ON comment_reactions(comment_id, reaction_type);
+" || {
+  echo "Warning: Could not create comment_reactions table. Attempting to continue..."
+}
+
+# Create unique indexes for comment reactions (separate step to handle partial index syntax)
+psql $DATABASE_URL -c "
+DO \$\$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_comment_reactions_unique_user') THEN
+        CREATE UNIQUE INDEX idx_comment_reactions_unique_user 
+        ON comment_reactions(comment_id, reaction_type, user_id) 
+        WHERE creator_token IS NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_comment_reactions_unique_anonymous') THEN
+        CREATE UNIQUE INDEX idx_comment_reactions_unique_anonymous 
+        ON comment_reactions(comment_id, reaction_type, creator_token) 
+        WHERE user_id IS NULL;
+    END IF;
+END \$\$;
+" || {
+  echo "Warning: Could not create unique indexes for comment reactions. Continuing..."
 }
 
 # Run migrations with error handling
