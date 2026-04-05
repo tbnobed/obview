@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "wouter";
-import { AlertCircle, Maximize, Pause, Play, Volume2, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo, Trash2, Check } from "lucide-react";
+import { AlertCircle, Maximize, Pause, Play, Volume2, VolumeX, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo, Trash2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,6 +80,10 @@ export default function PublicSharePage() {
   const [hoveredComment, setHoveredComment] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isRequestChangesOpen, setIsRequestChangesOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [inPoint, setInPoint] = useState<number | null>(null);
+  const [outPoint, setOutPoint] = useState<number | null>(null);
+  const frameRate = 30;
   
   // Sprite scrubbing state for shared links
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
@@ -94,6 +98,9 @@ export default function PublicSharePage() {
   const lastSeekTimeRef = useRef<number>(0);
   const seekThrottleRef = useRef<NodeJS.Timeout | null>(null);
   const rafIdRef = useRef<number | null>(null);
+  const jklIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const jklSpeedRef = useRef<number>(1);
+  const jklDirectionRef = useRef<'forward' | 'backward' | null>(null);
 
   // Fetch shared file metadata
   const { data: file, isLoading, error } = useQuery<SharedFile>({
@@ -189,6 +196,17 @@ export default function PublicSharePage() {
   });
 
   // Handle play/pause
+  const stopJKLShuttle = () => {
+    if (jklIntervalRef.current) {
+      clearInterval(jklIntervalRef.current);
+      jklIntervalRef.current = null;
+    }
+    jklDirectionRef.current = null;
+    jklSpeedRef.current = 1;
+    const el = videoRef.current || audioRef.current;
+    if (el) el.playbackRate = 1;
+  };
+
   const togglePlay = () => {
     const mediaElement = videoRef.current || audioRef.current;
     if (!mediaElement) return;
@@ -199,6 +217,25 @@ export default function PublicSharePage() {
       mediaElement.play();
     }
     setIsPlaying(!isPlaying);
+  };
+
+  const toggleMute = () => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (!mediaElement) return;
+    const newMuted = !isMuted;
+    mediaElement.muted = newMuted;
+    setIsMuted(newMuted);
+  };
+
+  const focusCommentTextarea = () => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (mediaElement && !mediaElement.paused) {
+      mediaElement.pause();
+      setIsPlaying(false);
+    }
+    stopJKLShuttle();
+    const textarea = document.querySelector('[data-testid="textarea-comment"]') as HTMLTextAreaElement;
+    if (textarea) textarea.focus();
   };
 
   // Handle volume change
@@ -477,37 +514,153 @@ export default function PublicSharePage() {
   // Keyboard controls for play/pause (matching authenticated player)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Check if the active element is not an input field or textarea
-      const activeElement = document.activeElement;
-      const isInput = activeElement instanceof HTMLInputElement || 
-                      activeElement instanceof HTMLTextAreaElement || 
-                      activeElement instanceof HTMLSelectElement;
-      
-      if (isInput) return;
-      
+      const target = e.target as HTMLElement;
+      const isInTextInput = target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target.contentEditable === 'true';
+
+      if (isInTextInput) {
+        if (e.code === 'Tab' && (target instanceof HTMLTextAreaElement || target.tagName === 'TEXTAREA')) {
+          e.preventDefault();
+          (target as HTMLElement).blur();
+          mediaContainerRef.current?.focus();
+        }
+        return;
+      }
+
       const mediaElement = videoRef.current || audioRef.current;
-      if (!mediaElement || mediaError || !file) return;
-      
+
       switch (e.code) {
         case 'Space':
-          e.preventDefault(); // Prevent scrolling the page
+          e.preventDefault();
+          if (!mediaElement || mediaError || !file) break;
+          stopJKLShuttle();
           togglePlay();
+          break;
+        case 'KeyK':
+          e.preventDefault();
+          if (!mediaElement || mediaError || !file) break;
+          stopJKLShuttle();
+          mediaElement.pause();
+          setIsPlaying(false);
+          break;
+        case 'KeyC':
+          e.preventDefault();
+          if (!isViewOnly) focusCommentTextarea();
+          break;
+        case 'KeyM':
+          e.preventDefault();
+          toggleMute();
+          break;
+        case 'KeyF':
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case 'Escape':
+          if (isFullscreen) {
+            e.preventDefault();
+            toggleFullscreen();
+          }
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          // Skip back 5 seconds (or 1 second with Shift)
-          const backwardSkip = e.shiftKey ? 1 : 5;
-          const newBackTime = Math.max(0, currentTime - backwardSkip);
-          performSeek(newBackTime);
-          setCurrentTime(newBackTime);
+          if (mediaElement && !mediaError && file) {
+            stopJKLShuttle();
+            const framesBack = e.shiftKey ? 10 : 1;
+            const backTime = Math.max(0, mediaElement.currentTime - framesBack / frameRate);
+            performSeek(backTime);
+            setCurrentTime(backTime);
+          }
           break;
         case 'ArrowRight':
           e.preventDefault();
-          // Skip forward 5 seconds (or 1 second with Shift)
-          const forwardSkip = e.shiftKey ? 1 : 5;
-          const newForwardTime = Math.min(duration, currentTime + forwardSkip);
-          performSeek(newForwardTime);
-          setCurrentTime(newForwardTime);
+          if (mediaElement && !mediaError && file) {
+            stopJKLShuttle();
+            const framesForward = e.shiftKey ? 10 : 1;
+            const fwdTime = Math.min(duration, mediaElement.currentTime + framesForward / frameRate);
+            performSeek(fwdTime);
+            setCurrentTime(fwdTime);
+          }
+          break;
+        case 'KeyJ': {
+          e.preventDefault();
+          if (!mediaElement || mediaError || !file) break;
+          if (jklIntervalRef.current) {
+            clearInterval(jklIntervalRef.current);
+            jklIntervalRef.current = null;
+          }
+          if (jklDirectionRef.current === 'backward') {
+            jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
+          } else {
+            if (!mediaElement.paused) {
+              mediaElement.pause();
+              mediaElement.playbackRate = 1;
+              setIsPlaying(false);
+            }
+            jklSpeedRef.current = 1;
+            jklDirectionRef.current = 'backward';
+          }
+          jklIntervalRef.current = setInterval(() => {
+            const el = videoRef.current || audioRef.current;
+            if (el) {
+              const t = Math.max(0, el.currentTime - jklSpeedRef.current * 0.1);
+              el.currentTime = t;
+              setCurrentTime(t);
+              if (t === 0) stopJKLShuttle();
+            }
+          }, 100);
+          break;
+        }
+        case 'KeyL': {
+          e.preventDefault();
+          if (!mediaElement || mediaError || !file) break;
+          if (jklIntervalRef.current) {
+            clearInterval(jklIntervalRef.current);
+            jklIntervalRef.current = null;
+          }
+          if (jklDirectionRef.current === 'forward') {
+            jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
+          } else {
+            jklSpeedRef.current = 1;
+            jklDirectionRef.current = 'forward';
+          }
+          mediaElement.playbackRate = jklSpeedRef.current;
+          if (mediaElement.paused) {
+            const pp = mediaElement.play();
+            if (pp) pp.then(() => setIsPlaying(true)).catch(() => {});
+          }
+          break;
+        }
+        case 'KeyI':
+          e.preventDefault();
+          if (file && mediaElement) {
+            setInPoint(mediaElement.currentTime);
+            toast({ title: `In point: ${formatTime(mediaElement.currentTime)}`, description: "Press O to set the out point" });
+          }
+          break;
+        case 'KeyO':
+          e.preventDefault();
+          if (file && mediaElement) {
+            setOutPoint(mediaElement.currentTime);
+            toast({ title: `Out point: ${formatTime(mediaElement.currentTime)}`, description: inPoint !== null ? `Range: ${formatTime(inPoint)} → ${formatTime(mediaElement.currentTime)}` : "Set an in point with I first" });
+          }
+          break;
+        case 'Home':
+          e.preventDefault();
+          if (mediaElement && !mediaError && file) {
+            stopJKLShuttle();
+            performSeek(0);
+            setCurrentTime(0);
+          }
+          break;
+        case 'End':
+          e.preventDefault();
+          if (mediaElement && !mediaError && file) {
+            stopJKLShuttle();
+            performSeek(duration);
+            setCurrentTime(duration);
+          }
           break;
       }
     };
@@ -517,7 +670,7 @@ export default function PublicSharePage() {
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
     };
-  }, [isPlaying, mediaError, file, togglePlay, currentTime, duration]);
+  }, [isPlaying, mediaError, file, isViewOnly, isFullscreen, isMuted, duration, inPoint]);
   
   // Handle progress bar hover for scrub preview
   const handleProgressHover = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -791,7 +944,9 @@ export default function PublicSharePage() {
                   
                   <div className="flex items-center space-x-1.5 lg:space-x-3">
                     <div className="hidden lg:flex items-center">
-                      <Volume2 className="h-5 w-5 text-neutral-600 dark:text-gray-400 mr-2" />
+                      <button onClick={toggleMute} className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] transition-colors mr-2" title={isMuted ? "Unmute (M)" : "Mute (M)"}>
+                        {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                      </button>
                       <input
                         type="range"
                         min="0"
