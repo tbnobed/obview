@@ -13,6 +13,7 @@ import TimelineComments from "@/components/media/timeline-comments";
 import { DownloadButton } from "@/components/download-button";
 import { ExportMarkersButton } from "@/components/export-markers-button";
 import { AnnotationCanvas, AnnotationOverlay, type Annotation } from "@/components/media/annotation-canvas";
+import VersionCompare from "@/components/media/version-compare";
 import { ShareLinkButton } from "@/components/share-link-button";
 import { Comment, File as StorageFile, Project } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -62,6 +63,7 @@ export default function MediaPlayer({
   const [frameRate, setFrameRate] = useState(30);
   const [inPoint, setInPoint] = useState<number | null>(null);
   const [isAnnotating, setIsAnnotating] = useState(false);
+  const [isComparing, setIsComparing] = useState(false);
   const [pendingAnnotations, setPendingAnnotations] = useState<Annotation[] | null>(null);
   const [displayAnnotations, setDisplayAnnotations] = useState<Annotation[] | null>(null);
   const [mediaContainerSize, setMediaContainerSize] = useState({ width: 0, height: 0 });
@@ -2151,18 +2153,73 @@ export default function MediaPlayer({
               />
             </TabsContent>
             
-            {/* Versions tab placeholder */}
             <TabsContent value="versions" className="flex-grow overflow-auto px-2 py-2 lg:px-4 lg:py-3">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-base font-medium dark:text-white lg:text-lg">File Versions</h3>
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Version management coming soon</p>
-              </div>
+              {(() => {
+                const fileVersions = file ? files
+                  .filter(f => f.filename === file.filename)
+                  .sort((a, b) => a.version - b.version) : [];
+                return (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-sm font-medium dark:text-white">File Versions</h3>
+                      {fileVersions.length >= 2 && (
+                        <Button
+                          variant="outline" size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setIsComparing(true)}
+                        >
+                          <Columns2 className="h-3 w-3 mr-1" /> Compare
+                        </Button>
+                      )}
+                    </div>
+                    {fileVersions.length <= 1 ? (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Only one version exists. Upload a new version to compare.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {fileVersions.map(v => (
+                          <button
+                            key={v.id}
+                            onClick={() => onSelectFile(v.id)}
+                            className={`w-full text-left px-3 py-2 rounded-md text-xs transition-colors flex items-center justify-between ${
+                              v.id === file?.id
+                                ? 'bg-primary/15 text-primary border border-primary/30'
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {v.fileType === 'video' ? <FileVideo className="h-3.5 w-3.5 shrink-0" /> : <ImageIcon className="h-3.5 w-3.5 shrink-0" />}
+                              <span>Version {v.version}</span>
+                              {v.isLatestVersion && <Badge variant="secondary" className="text-[10px] h-4 px-1.5">Latest</Badge>}
+                            </div>
+                            <span className="text-[10px] text-gray-500">{new Date(v.createdAt).toLocaleDateString()}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </TabsContent>
           </Tabs>
         </div>
       )}
+
+      {isComparing && file && (() => {
+        const fileVersions = files
+          .filter(f => f.filename === file.filename)
+          .sort((a, b) => a.version - b.version);
+        return fileVersions.length >= 2 ? (
+          <Dialog open={isComparing} onOpenChange={setIsComparing}>
+            <DialogContent className="max-w-[95vw] w-[95vw] h-[85vh] p-0 gap-0 overflow-hidden dark:bg-[hsl(210,20%,10%)] dark:border-[hsl(210,15%,18%)]">
+              <VersionCompare
+                versions={fileVersions}
+                onClose={() => setIsComparing(false)}
+                projectId={projectId}
+              />
+            </DialogContent>
+          </Dialog>
+        ) : null;
+      })()}
     </div>
   );
 }

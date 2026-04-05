@@ -49,6 +49,7 @@ Preferred communication style: Simple, everyday language.
 - **Large File Support**: Optimized for uploads up to 20GB+ with configurable FFmpeg processing timeouts
 - **NLE Marker Export**: Export timestamped comments as FCP XML (Premiere Pro / DaVinci Resolve), EDL (CMX 3600), or CSV via `/api/files/:fileId/export/:format` endpoint and in-player export button
 - **Visual Frame Annotations**: Draw-on-frame annotation system with freehand, circle, rectangle, and arrow tools, 5-color picker, undo/clear/done controls. Annotations stored as normalized 0-1 JSON coordinates in the `annotations` column of `comments_unified`. Annotations display as overlays on hover over annotated comments. Available in both authenticated player and public share pages.
+- **Version Comparison**: Side-by-side and wipe (split-screen slider) comparison of file versions. The Versions tab in the media player lists all versions by filename, and a "Compare" button opens a full-screen dialog with synced video playback, draggable wipe divider with keyboard support, and version A/B pickers that prevent duplicate selection. Located in `client/src/components/media/version-compare.tsx`.
 - **Email Notifications**: SendGrid integration for user invitations and workflow notifications
 - **Video Processing Pipeline**: 
   - 720p H.264 quality encoding for optimal playback
