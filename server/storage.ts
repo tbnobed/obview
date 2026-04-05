@@ -1097,6 +1097,7 @@ export class MemStorage implements IStorage {
       parentId: insertComment.parentId ?? null,
       content: insertComment.content,
       timestamp: insertComment.timestamp ?? null,
+      annotations: insertComment.annotations ?? null,
       isResolved: insertComment.isResolved ?? false,
       createdAt: now
     };

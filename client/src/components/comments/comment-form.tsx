@@ -7,7 +7,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Paperclip, Image, Smile, Send, Clock } from "lucide-react";
+import { Loader2, Paperclip, Image, Smile, Send, Clock, PenTool } from "lucide-react";
+import type { Annotation } from "@/components/media/annotation-canvas";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,9 @@ interface CommentFormProps {
   currentTime?: number;
   onSuccess?: () => void;
   className?: string;
+  pendingAnnotations?: Annotation[] | null;
+  onStartAnnotation?: () => void;
+  onClearAnnotations?: () => void;
 }
 
 export default function CommentForm({ 
@@ -25,7 +29,10 @@ export default function CommentForm({
   parentId, 
   currentTime, 
   onSuccess,
-  className
+  className,
+  pendingAnnotations,
+  onStartAnnotation,
+  onClearAnnotations,
 }: CommentFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -80,12 +87,15 @@ export default function CommentForm({
   // Create comment mutation
   const createCommentMutation = useMutation({
     mutationFn: async (commentContent: string) => {
-      const commentData = {
+      const commentData: any = {
         content: commentContent,
         fileId,
         parentId: parentId || null,
         timestamp: includeTimestamp && currentTime !== undefined ? Math.floor(currentTime) : null,
       };
+      if (pendingAnnotations && pendingAnnotations.length > 0) {
+        commentData.annotations = JSON.stringify(pendingAnnotations);
+      }
       
       console.log("Submitting comment:", commentData);
       return apiRequest("POST", `/api/files/${fileId}/comments`, commentData);
@@ -95,6 +105,7 @@ export default function CommentForm({
       if (textareaRef.current) {
         textareaRef.current.value = "";
       }
+      if (onClearAnnotations) onClearAnnotations();
       
       toast({
         title: "Comment added",
@@ -414,6 +425,24 @@ export default function CommentForm({
                   <Image className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
                 )}
               </Button>
+              
+              {onStartAnnotation && !parentId && (
+                <Button 
+                  type="button" 
+                  size="icon" 
+                  variant="ghost" 
+                  className={cn(
+                    "h-6 w-6 rounded hover:bg-gray-700 lg:h-7 lg:w-7",
+                    pendingAnnotations && pendingAnnotations.length > 0 
+                      ? "text-[#026d55]" 
+                      : "text-gray-400 hover:text-yellow-400"
+                  )}
+                  onClick={onStartAnnotation}
+                  title="Draw on frame"
+                >
+                  <PenTool className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
+                </Button>
+              )}
               
               {/* Emoji button - Mobile: smaller, Desktop: normal */}
               <div className="relative">

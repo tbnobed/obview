@@ -12,6 +12,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import TimelineComments from "@/components/media/timeline-comments";
 import { DownloadButton } from "@/components/download-button";
 import { ExportMarkersButton } from "@/components/export-markers-button";
+import { AnnotationCanvas, AnnotationOverlay, type Annotation } from "@/components/media/annotation-canvas";
 import { ShareLinkButton } from "@/components/share-link-button";
 import { Comment, File as StorageFile, Project } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -60,6 +61,10 @@ export default function MediaPlayer({
   const [isMuted, setIsMuted] = useState(false);
   const [frameRate, setFrameRate] = useState(30);
   const [inPoint, setInPoint] = useState<number | null>(null);
+  const [isAnnotating, setIsAnnotating] = useState(false);
+  const [pendingAnnotations, setPendingAnnotations] = useState<Annotation[] | null>(null);
+  const [displayAnnotations, setDisplayAnnotations] = useState<Annotation[] | null>(null);
+  const [mediaContainerSize, setMediaContainerSize] = useState({ width: 0, height: 0 });
   const [outPoint, setOutPoint] = useState<number | null>(null);
   const jklIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const jklSpeedRef = useRef<number>(1);
@@ -1529,6 +1534,60 @@ export default function MediaPlayer({
     }
   };
 
+  useEffect(() => {
+    if (!mediaContainerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setMediaContainerSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+      }
+    });
+    observer.observe(mediaContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleStartAnnotation = () => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (mediaElement && !mediaElement.paused) {
+      mediaElement.pause();
+      setIsPlaying(false);
+    }
+    stopJKLShuttle();
+    setIsAnnotating(true);
+  };
+
+  const handleSaveAnnotation = (annotations: Annotation[]) => {
+    setPendingAnnotations(annotations);
+    setIsAnnotating(false);
+    const textarea = document.querySelector('[data-testid="textarea-comment"]') as HTMLTextAreaElement;
+    if (textarea) textarea.focus();
+  };
+
+  const handleCancelAnnotation = () => {
+    setIsAnnotating(false);
+  };
+
+  const handleClearAnnotations = () => {
+    setPendingAnnotations(null);
+    setDisplayAnnotations(null);
+  };
+
+  const handleCommentHover = (comment: any) => {
+    if (comment?.annotations) {
+      try {
+        const parsed = typeof comment.annotations === 'string' ? JSON.parse(comment.annotations) : comment.annotations;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setDisplayAnnotations(parsed);
+          return;
+        }
+      } catch {}
+    }
+    setDisplayAnnotations(null);
+  };
+
+  const handleCommentLeave = () => {
+    setDisplayAnnotations(null);
+  };
+
   return (
     <div className="flex flex-col lg:flex-row w-full h-full lg:h-[calc(100vh-112px)] overflow-hidden lg:gap-0 gap-0 lg:px-0 lg:mx-0 lg:max-w-none">
       {/* Media area wrapper - Mobile: stacked, Desktop: flex-1 to fill remaining space */}
@@ -1538,6 +1597,29 @@ export default function MediaPlayer({
         {/* Media container - Mobile: aspect ratio, Desktop: full height */}
         <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md lg:aspect-none lg:flex-1 lg:min-h-0">
           {renderMediaContent()}
+          {isAnnotating && mediaContainerSize.width > 0 && (
+            <AnnotationCanvas
+              onSave={handleSaveAnnotation}
+              onCancel={handleCancelAnnotation}
+              initialAnnotations={pendingAnnotations || []}
+              containerWidth={mediaContainerSize.width}
+              containerHeight={mediaContainerSize.height}
+            />
+          )}
+          {!isAnnotating && displayAnnotations && displayAnnotations.length > 0 && mediaContainerSize.width > 0 && (
+            <AnnotationOverlay
+              annotations={displayAnnotations}
+              containerWidth={mediaContainerSize.width}
+              containerHeight={mediaContainerSize.height}
+            />
+          )}
+          {!isAnnotating && pendingAnnotations && pendingAnnotations.length > 0 && !displayAnnotations && mediaContainerSize.width > 0 && (
+            <AnnotationOverlay
+              annotations={pendingAnnotations}
+              containerWidth={mediaContainerSize.width}
+              containerHeight={mediaContainerSize.height}
+            />
+          )}
         </div>
         
         {/* Bottom controls area - Mobile: minimal padding, Desktop: compact */}
@@ -2061,6 +2143,11 @@ export default function MediaPlayer({
                     setCurrentTime(time);
                   }
                 }}
+                pendingAnnotations={pendingAnnotations}
+                onStartAnnotation={handleStartAnnotation}
+                onClearAnnotations={handleClearAnnotations}
+                onCommentHover={handleCommentHover}
+                onCommentLeave={handleCommentLeave}
               />
             </TabsContent>
             

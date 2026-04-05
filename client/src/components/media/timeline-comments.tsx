@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useComments } from "@/hooks/use-comments";
 import CommentForm from "@/components/comments/comment-form";
 import CommentThread from "@/components/comments/comment-thread";
-import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock } from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/utils";
@@ -16,6 +16,7 @@ import ReactionPicker from "@/components/comments/reaction-picker";
 import ReactionsDisplay from "@/components/comments/reactions-display";
 import { useToggleCommentResolution } from "@/hooks/use-comments";
 import { cn } from "@/lib/utils";
+import type { Annotation } from "@/components/media/annotation-canvas";
 
 
 interface TimelineCommentsProps {
@@ -25,6 +26,11 @@ interface TimelineCommentsProps {
   onTimeClick: (time: number) => void;
   activeCommentId?: string;
   onCommentSelect?: (commentId: string) => void;
+  pendingAnnotations?: Annotation[] | null;
+  onStartAnnotation?: () => void;
+  onClearAnnotations?: () => void;
+  onCommentHover?: (comment: any) => void;
+  onCommentLeave?: () => void;
 }
 
 export default function TimelineComments({ 
@@ -33,7 +39,12 @@ export default function TimelineComments({
   currentTime,
   onTimeClick,
   activeCommentId,
-  onCommentSelect
+  onCommentSelect,
+  pendingAnnotations,
+  onStartAnnotation,
+  onClearAnnotations,
+  onCommentHover,
+  onCommentLeave,
 }: TimelineCommentsProps) {
   const timelineRef = useRef<HTMLDivElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
@@ -319,6 +330,9 @@ export default function TimelineComments({
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}
+          pendingAnnotations={pendingAnnotations}
+          onStartAnnotation={onStartAnnotation}
+          onClearAnnotations={onClearAnnotations}
         />
       </div>
       
@@ -370,6 +384,8 @@ export default function TimelineComments({
                   title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : "Select this comment"}
                   role="button"
                   tabIndex={0}
+                  onMouseEnter={() => onCommentHover?.(comment)}
+                  onMouseLeave={() => onCommentLeave?.()}
                 >
 
                   <div className="flex gap-3">
@@ -403,6 +419,9 @@ export default function TimelineComments({
                               >
                                 {formatTime(comment.timestamp)}
                               </span>
+                              {(comment as any).annotations && (
+                                <PenTool className="h-3 w-3 text-yellow-400" title="Has drawing annotation" />
+                              )}
                               {comment.isResolved && (
                                 <Check className="h-3 w-3 text-green-500" />
                               )}
@@ -545,6 +564,9 @@ export default function TimelineComments({
           fileId={fileId}
           currentTime={currentTime}
           className="rounded-none border-0 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]"
+          pendingAnnotations={pendingAnnotations}
+          onStartAnnotation={onStartAnnotation}
+          onClearAnnotations={onClearAnnotations}
         />
       </div>
     </div>

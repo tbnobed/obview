@@ -123,6 +123,7 @@ export const commentsUnified = pgTable("comments_unified", {
   parentId: text("parent_id").references((): any => commentsUnified.id), // Self-reference with UUID
   content: text("content").notNull(),
   timestamp: integer("timestamp"), // For timestamped video comments (seconds)
+  annotations: text("annotations"), // JSON string of drawing annotations on frame
   isResolved: boolean("is_resolved").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

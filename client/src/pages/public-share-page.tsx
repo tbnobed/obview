@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "wouter";
-import { AlertCircle, Maximize, Pause, Play, Volume2, VolumeX, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo, Trash2, Check } from "lucide-react";
+import { AlertCircle, Maximize, Pause, Play, Volume2, VolumeX, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo, Trash2, Check, PenTool } from "lucide-react";
+import { AnnotationCanvas, AnnotationOverlay, type Annotation } from "@/components/media/annotation-canvas";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,6 +102,10 @@ export default function PublicSharePage() {
   const jklIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const jklSpeedRef = useRef<number>(1);
   const jklDirectionRef = useRef<'forward' | 'backward' | null>(null);
+  const [isAnnotating, setIsAnnotating] = useState(false);
+  const [pendingAnnotations, setPendingAnnotations] = useState<Annotation[] | null>(null);
+  const [displayAnnotations, setDisplayAnnotations] = useState<Annotation[] | null>(null);
+  const [mediaContainerSize, setMediaContainerSize] = useState({ width: 0, height: 0 });
 
   // Fetch shared file metadata
   const { data: file, isLoading, error } = useQuery<SharedFile>({
@@ -225,6 +230,58 @@ export default function PublicSharePage() {
     const newMuted = !isMuted;
     mediaElement.muted = newMuted;
     setIsMuted(newMuted);
+  };
+
+  useEffect(() => {
+    if (!mediaContainerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setMediaContainerSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+      }
+    });
+    observer.observe(mediaContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleStartAnnotation = () => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (mediaElement && !mediaElement.paused) {
+      mediaElement.pause();
+      setIsPlaying(false);
+    }
+    stopJKLShuttle();
+    setIsAnnotating(true);
+  };
+
+  const handleSaveAnnotation = (annotations: Annotation[]) => {
+    setPendingAnnotations(annotations);
+    setIsAnnotating(false);
+  };
+
+  const handleCancelAnnotation = () => {
+    setIsAnnotating(false);
+  };
+
+  const handleClearAnnotations = () => {
+    setPendingAnnotations(null);
+    setDisplayAnnotations(null);
+  };
+
+  const handleCommentHover = (comment: any) => {
+    if (comment?.annotations) {
+      try {
+        const parsed = typeof comment.annotations === 'string' ? JSON.parse(comment.annotations) : comment.annotations;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setDisplayAnnotations(parsed);
+          return;
+        }
+      } catch {}
+    }
+    setDisplayAnnotations(null);
+  };
+
+  const handleCommentLeave = () => {
+    setDisplayAnnotations(null);
   };
 
   const focusCommentTextarea = () => {
@@ -914,6 +971,29 @@ export default function PublicSharePage() {
                   </Alert>
                 </div>
               )}
+              {isAnnotating && mediaContainerSize.width > 0 && (
+                <AnnotationCanvas
+                  onSave={handleSaveAnnotation}
+                  onCancel={handleCancelAnnotation}
+                  initialAnnotations={pendingAnnotations || []}
+                  containerWidth={mediaContainerSize.width}
+                  containerHeight={mediaContainerSize.height}
+                />
+              )}
+              {!isAnnotating && displayAnnotations && displayAnnotations.length > 0 && mediaContainerSize.width > 0 && (
+                <AnnotationOverlay
+                  annotations={displayAnnotations}
+                  containerWidth={mediaContainerSize.width}
+                  containerHeight={mediaContainerSize.height}
+                />
+              )}
+              {!isAnnotating && pendingAnnotations && pendingAnnotations.length > 0 && !displayAnnotations && mediaContainerSize.width > 0 && (
+                <AnnotationOverlay
+                  annotations={pendingAnnotations}
+                  containerWidth={mediaContainerSize.width}
+                  containerHeight={mediaContainerSize.height}
+                />
+              )}
             </div>
 
             {/* Media Controls - Mobile: compact, Desktop: normal spacing */}
@@ -1148,7 +1228,7 @@ export default function PublicSharePage() {
 
                 {/* Comments List - Mobile: compact spacing, Desktop: normal spacing */}
                 <div className="flex-1 min-h-0 overflow-auto p-2 space-y-2 lg:p-3 lg:space-y-3">
-                  <CommentsList token={token!} onTimestampClick={seekToTimestamp} />
+                  <CommentsList token={token!} onTimestampClick={seekToTimestamp} onCommentHover={handleCommentHover} onCommentLeave={handleCommentLeave} />
                 </div>
 
                 {/* Comment Input - Mobile: compact sticky composer, Desktop: normal */}
@@ -1160,7 +1240,7 @@ export default function PublicSharePage() {
                       border: '1px solid hsl(210, 15%, 18%)'
                     }}
                   >
-                    <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} />
+                    <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} pendingAnnotations={pendingAnnotations} onStartAnnotation={handleStartAnnotation} onClearAnnotations={handleClearAnnotations} />
                   </div>
                 </div>
               </div>
@@ -1208,12 +1288,15 @@ export default function PublicSharePage() {
 }
 
 // Public Comment Form Component
-function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: { 
+function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess, pendingAnnotations, onStartAnnotation, onClearAnnotations }: { 
   token: string; 
   fileId: number; 
   currentTime: number; 
   parentId?: string;
   onSuccess?: () => void;
+  pendingAnnotations?: Annotation[] | null;
+  onStartAnnotation?: () => void;
+  onClearAnnotations?: () => void;
 }) {
   const { toast } = useToast();
   
@@ -1309,7 +1392,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
     e.preventDefault();
     if (!content.trim() || !authorName.trim()) return;
     
-    const data = {
+    const data: any = {
       authorName: authorName.trim(),
       content: content.trim(),
       fileId,
@@ -1317,6 +1400,9 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
       timestamp: Math.floor(currentTime),
       isPublic: true,
     };
+    if (pendingAnnotations && pendingAnnotations.length > 0) {
+      data.annotations = JSON.stringify(pendingAnnotations);
+    }
     
     // Save name to localStorage
     if (typeof window !== 'undefined') {
@@ -1330,6 +1416,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
   useEffect(() => {
     if (!createCommentMutation.isPending && content) {
       setContent("");
+      if (onClearAnnotations) onClearAnnotations();
     }
   }, [createCommentMutation.isPending]);
 
@@ -1391,6 +1478,22 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
           required
         />
         
+        {onStartAnnotation && !parentId && (
+          <button
+            type="button"
+            onClick={onStartAnnotation}
+            className={cn(
+              "flex-shrink-0 p-2 rounded transition-colors",
+              pendingAnnotations && pendingAnnotations.length > 0 
+                ? "text-[#026d55]" 
+                : "text-gray-400 hover:text-yellow-400 hover:bg-gray-700"
+            )}
+            title="Draw on frame"
+          >
+            <PenTool className="h-4 w-4" />
+          </button>
+        )}
+        
         {/* Submit button */}
         <button
           type="submit"
@@ -1413,7 +1516,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess }: 
 
 
 // Comments List Component
-function CommentsList({ token, onTimestampClick }: { token: string; onTimestampClick?: (timestamp: number) => void }) {
+function CommentsList({ token, onTimestampClick, onCommentHover, onCommentLeave }: { token: string; onTimestampClick?: (timestamp: number) => void; onCommentHover?: (comment: any) => void; onCommentLeave?: () => void }) {
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const { toast } = useToast();
   
@@ -1761,6 +1864,8 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
           role={comment.timestamp !== null ? 'button' : undefined}
           tabIndex={comment.timestamp !== null ? 0 : undefined}
           data-testid={`comment-${comment.id}`}
+          onMouseEnter={() => onCommentHover?.(comment)}
+          onMouseLeave={() => onCommentLeave?.()}
         >
           <div className="flex gap-3">
             {/* Avatar */}
@@ -1794,6 +1899,9 @@ function CommentsList({ token, onTimestampClick }: { token: string; onTimestampC
                   >
                     {formatTime(comment.timestamp)}
                   </span>
+                  {(comment as any).annotations && (
+                    <PenTool className="h-3 w-3 text-yellow-400" title="Has drawing annotation" />
+                  )}
                   {comment.isResolved && (
                     <Check className="h-3 w-3 text-green-500" />
                   )}
