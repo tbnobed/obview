@@ -890,7 +890,8 @@ export default function MediaPlayer({
       mediaElement.pause();
       setIsPlaying(false);
     } else {
-      // Use the Promise returned by play() to catch any autoplay restrictions
+      setDisplayAnnotations(null);
+      setActiveCommentId(undefined);
       const playPromise = mediaElement.play();
       
       if (playPromise !== undefined) {
