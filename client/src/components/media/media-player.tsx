@@ -1573,21 +1573,28 @@ export default function MediaPlayer({
     setDisplayAnnotations(null);
   };
 
+  const parseAnnotations = (comment: any): Annotation[] | null => {
+    if (!comment?.annotations) return null;
+    try {
+      const parsed = typeof comment.annotations === 'string' ? JSON.parse(comment.annotations) : comment.annotations;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {}
+    return null;
+  };
+
+  const getActiveAnnotations = (): Annotation[] | null => {
+    if (!activeCommentId || !comments?.length) return null;
+    const active = comments.find((c: Comment) => c.id === activeCommentId);
+    return active ? parseAnnotations(active) : null;
+  };
+
   const handleCommentHover = (comment: any) => {
-    if (comment?.annotations) {
-      try {
-        const parsed = typeof comment.annotations === 'string' ? JSON.parse(comment.annotations) : comment.annotations;
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setDisplayAnnotations(parsed);
-          return;
-        }
-      } catch {}
-    }
-    setDisplayAnnotations(null);
+    const parsed = parseAnnotations(comment);
+    setDisplayAnnotations(parsed || getActiveAnnotations());
   };
 
   const handleCommentLeave = () => {
-    setDisplayAnnotations(null);
+    setDisplayAnnotations(getActiveAnnotations());
   };
 
   return (
@@ -1798,8 +1805,9 @@ export default function MediaPlayer({
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Set active comment and jump to timestamp
                             setActiveCommentId(comment.id);
+                            const parsed = parseAnnotations(comment);
+                            setDisplayAnnotations(parsed);
                             const mediaElement = videoRef.current || audioRef.current;
                             if (mediaElement && comment.timestamp !== null) {
                               mediaElement.currentTime = comment.timestamp;
@@ -2146,7 +2154,16 @@ export default function MediaPlayer({
                 duration={duration} 
                 currentTime={currentTime}
                 activeCommentId={activeCommentId?.toString()}
-                onCommentSelect={(commentId: string) => setActiveCommentId(commentId)}
+                onCommentSelect={(commentId: string) => {
+                  setActiveCommentId(commentId);
+                  const selected = comments.find((c: Comment) => c.id === commentId);
+                  if (selected) {
+                    const parsed = parseAnnotations(selected);
+                    setDisplayAnnotations(parsed);
+                  } else {
+                    setDisplayAnnotations(null);
+                  }
+                }}
                 onTimeClick={(time: number) => {
                   const mediaElement = videoRef.current || audioRef.current;
                   if (mediaElement) {
