@@ -1588,13 +1588,10 @@ export default function MediaPlayer({
     return active ? parseAnnotations(active) : null;
   };
 
-  const handleCommentHover = (comment: any) => {
-    const parsed = parseAnnotations(comment);
-    setDisplayAnnotations(parsed || getActiveAnnotations());
+  const handleCommentHover = (_comment: any) => {
   };
 
   const handleCommentLeave = () => {
-    setDisplayAnnotations(getActiveAnnotations());
   };
 
   return (
