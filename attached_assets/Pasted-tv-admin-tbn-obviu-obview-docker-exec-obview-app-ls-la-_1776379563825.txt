@@ -1,0 +1,80 @@
+tv-admin@tbn-obviu:~/obview$ docker exec obview_app ls -la /app/uploads/ | head -50
+docker exec obview_app find /app/uploads -maxdepth 2 -type f | wc -l
+docker exec obview_db psql -U postgres -d obview -c "SELECT COUNT(*) FROM files;"
+docker exec obview_db psql -U postgres -d obview -c "SELECT id, filename, project_id, file_path, created_at FROM files ORDER BY created_at DESC LIMIT 30;"
+total 490852
+drwxr-xr-x    3 root     root          4096 Apr 16 20:37 .
+drwxr-xr-x    1 root     root          4096 Apr 16 20:41 ..
+-rwxr-xr-x    1 root     root      12779348 Oct 10  2025 1760080197056-729409319.mp4
+-rw-r--r--    1 root     root     489831015 Apr 16 20:37 1776371853078-345664260.mp4
+drwxr-xr-x    6 root     root          4096 Apr 16 20:37 processed
+2
+ count
+-------
+    25
+(1 row)
+
+ id |                  filename                  | project_id |                file_path                 |         created_at  
+----+--------------------------------------------+------------+------------------------------------------+----------------------------
+ 53 | Sequence 01.mp4                            |         24 | /app/uploads/1776371853078-345664260.mp4 | 2026-04-16 20:37:42.411072
+ 52 | GodWithUs_Episode 102_Textless_AI TEST.mp4 |         17 | /app/uploads/1776370566195-542427746.mp4 | 2026-04-16 20:16:15.311485
+ 51 | GodWithUs_Episode 102_Textless_AI TEST.mp4 |         17 | /app/uploads/1775371270454-649119873.mp4 | 2026-04-05 06:41:24.524683
+ 49 | 20251015_144225.mp4                        |         21 | /app/uploads/1760564583030-236361742.mp4 | 2025-10-15 21:43:04.120907
+ 48 | 20251015_135554.mp4                        |         21 | /app/uploads/1760561865375-454337986.mp4 | 2025-10-15 20:57:52.941651
+ 47 | srt2.mp4                                   |         21 | /app/uploads/1760507304328-988797237.mp4 | 2025-10-15 05:48:37.283477
+ 46 | 4channel_srt.mp4                           |         21 | /app/uploads/1760396401114-146725839.mp4 | 2025-10-13 23:00:03.319862
+ 42 | Dobson Best Of Exprt.mp4                   |         18 | /app/uploads/1758916008174-485775507.mp4 | 2025-09-26 19:47:37.585495
+ 40 | old_SocalStudio_1758041495268.png          |         16 | /app/uploads/1758882396246-117151714.png | 2025-09-26 10:26:36.469763
+ 39 | ESCHATOLOGY.mp4                            |         17 | /app/uploads/1758878152223-476789661.mp4 | 2025-09-26 09:18:33.13818
+ 37 | TBN-2025-09-21-Brandon Lake.mp4            |         16 | /app/uploads/1758851430967-857876779.mp4 | 2025-09-26 01:50:34.838136
+ 24 | CBSDallas.mp4                              |         15 | /app/uploads/1758757592949-773955750.mp4 | 2025-09-24 23:47:10.049075
+ 21 | ESCHATOLOGY.mp4                            |         14 | /app/uploads/1758704415314-872542722.mp4 | 2025-09-24 09:02:30.197309
+ 20 | CBSDallas.mp4                              |         14 | /app/uploads/1758704323250-771961661.mp4 | 2025-09-24 08:59:41.942348
+ 17 | Dobson Best Of Exprt.mp4                   |         13 | /app/uploads/1758676640845-26022960.mp4  | 2025-09-24 01:17:50.241576
+ 16 | Dobson Best Of Exprt.mp4                   |         13 | /app/uploads/1758676555661-893603864.mp4 | 2025-09-24 01:16:25.878818
+ 10 | Dobson Best Of Exprt.mp4                   |          6 | /app/uploads/1758658790410-101544449.mp4 | 2025-09-23 20:20:19.866868
+  9 | bigbuck.mp4                                |          5 | /app/uploads/1758656971868-166992607.mp4 | 2025-09-23 19:49:36.695005
+  8 | bigbuck.mp4                                |          4 | /app/uploads/1758656719639-286362511.mp4 | 2025-09-23 19:45:24.293443
+  7 | bigbuck.mp4                                |          3 | /app/uploads/1758655133819-40665965.mp4  | 2025-09-23 19:18:58.570228
+  6 | bigbuck.mp4                                |          3 | /app/uploads/1758655118715-815456005.mp4 | 2025-09-23 19:18:43.412923
+  5 | bigbuck.mp4                                |          3 | /app/uploads/1758655104176-51311234.mp4  | 2025-09-23 19:18:28.828842
+  4 | bigbuck.mp4                                |          3 | /app/uploads/1758655088297-118001822.mp4 | 2025-09-23 19:18:12.931094
+  3 | OTTVDI.mp4                                 |          2 | /app/uploads/1758653303214-665429769.mp4 | 2025-09-23 18:48:24.83277
+  2 | bigbuck.mp4                                |          1 | /app/uploads/1758653022363-51822397.mp4  | 2025-09-23 18:43:47.058063
+(25 rows)
+
+obtv-admin@tbn-obviu:~/obview$ ls -la ~/obview/backups/ 2>/dev/null
+ls -la ~/obview/*.sql ~/obview/*.dump 2>/dev/null
+docker volume ls
+docker inspect obview_db | grep -i mount
+-rw-rw-r-- 1 obtv-admin obtv-admin 50160 Sep 24  2025  /home/obtv-admin/obview/complete_backup.sql
+-rw-rw-r-- 1 obtv-admin obtv-admin 47311 Sep 24  2025  /home/obtv-admin/obview/obview_data_backup.sql
+-rw-rw-r-- 1 obtv-admin obtv-admin   669 Sep 24  2025  /home/obtv-admin/obview/users_backup.sql
+DRIVER    VOLUME NAME
+local     obview_postgres_data
+local     obview_uploads
+        "MountLabel": "",
+        "Mounts": [
+obtv-admin@tbn-obviu:~/obview$ docker logs obview_app 2>&1 | grep -iE "PROJECT DELETE|DROP TABLE|projects" | tail -80
+docker logs obview_db 2>&1 | grep -iE "DROP|DELETE FROM projects|ERROR" | tail -80
+psql:/app/migrations/0000_smooth_whistler.sql:75: ERROR:  relation "projects" already exists
+psql:/app/migrations/0005_docker_schema_consolidation.sql:29: NOTICE:  relation "projects" already exists, skipping
+psql:/app/migrations/0007_add_folders_support.sql:29: NOTICE:  relation "idx_projects_folder_id" already exists, skipping
+POST /api/projects received {
+2026-04-16 20:36:39.597 UTC [45] ERROR:  relation "activity_logs" already exists
+2026-04-16 20:36:39.599 UTC [45] ERROR:  relation "approvals" already exists
+2026-04-16 20:36:39.600 UTC [45] ERROR:  relation "comments" already exists
+2026-04-16 20:36:39.601 UTC [45] ERROR:  relation "files" already exists
+2026-04-16 20:36:39.602 UTC [45] ERROR:  relation "invitations" already exists
+2026-04-16 20:36:39.603 UTC [45] ERROR:  relation "project_users" already exists
+2026-04-16 20:36:39.604 UTC [45] ERROR:  relation "projects" already exists
+2026-04-16 20:36:39.605 UTC [45] ERROR:  relation "users" already exists
+2026-04-16 20:36:39.650 UTC [46] ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+2026-04-16 20:36:39.877 UTC [50] ERROR:  column "accepted_by_id" referenced in foreign key constraint does not exist
+2026-04-16 20:36:40.170 UTC [54] ERROR:  insert or update on table "public_comments" violates foreign key constraint "public_comments_parent_id_fkey"
+2026-04-16 20:36:40.328 UTC [57] ERROR:  relation "comment_reactions" already exists
+2026-04-16 20:36:40.331 UTC [57] ERROR:  relation "idx_comment_reactions_comment_id" already exists
+2026-04-16 20:36:40.331 UTC [57] ERROR:  relation "idx_comment_reactions_comment_reaction" already exists
+2026-04-16 20:36:40.332 UTC [57] ERROR:  relation "idx_comment_reactions_unique_user" already exists
+2026-04-16 20:36:40.333 UTC [57] ERROR:  relation "idx_comment_reactions_unique_anonymous" already exists
+obtv-admin@tbn-obviu:~/obview$

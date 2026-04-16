@@ -105,48 +105,131 @@ END \$\$;
   echo "Warning: Could not create unique indexes for comment reactions. Continuing..."
 }
 
-# Run migrations with error handling
+# Use the full DATABASE_URL directly for all psql/pg_dump invocations.
+# Regex-parsing DATABASE_URL is brittle for passwords containing @, :, %, etc.
+# psql/pg_dump accept a libpq connection string as their first positional argument.
+
+# Safety net: take a pre-migration backup on every container start.
+# If anything goes wrong with a migration, the admin has an immediate
+# rollback point inside the /app/db-backups directory (mount as a volume
+# in docker-compose.yml for durability across container recreation).
+BACKUP_DIR="/app/db-backups"
+mkdir -p "$BACKUP_DIR"
+BACKUP_TS=$(date +%Y%m%d-%H%M%S)
+BACKUP_FILE="$BACKUP_DIR/pre-migration-$BACKUP_TS.sql"
+echo "Taking pre-migration database backup to $BACKUP_FILE ..."
+if pg_dump "$DATABASE_URL" > "$BACKUP_FILE" 2>/tmp/pgdump.err; then
+  echo "✅ Pre-migration backup saved: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
+  # Keep only the last 10 pre-migration backups to bound disk usage
+  ls -1t "$BACKUP_DIR"/pre-migration-*.sql 2>/dev/null | tail -n +11 | xargs -r rm -f
+else
+  echo "⚠️  Warning: pg_dump failed (continuing). Error:"
+  cat /tmp/pgdump.err 2>/dev/null || true
+  rm -f "$BACKUP_FILE"
+fi
+
+# Create migration tracking table so migrations do not silently re-run
+# destructive SQL on every container restart. Each applied migration is
+# recorded by filename + sha256 of its contents.
+echo "Ensuring migration tracking table exists..."
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    filename TEXT PRIMARY KEY,
+    checksum TEXT NOT NULL,
+    applied_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+" || {
+  echo "⚠️  Warning: could not ensure schema_migrations table; migrations will still run but may re-apply."
+}
+
+# Run migrations with STRICT error handling.
+# Migrations that fail are NOT recorded as applied, so they retry next boot.
 echo "Running database migrations..."
 run_migrations() {
-  local success=0
-  
   if [ -f "/app/server/db-migrate.cjs" ]; then
     echo "Found db-migrate.cjs, running migrations..."
-    node /app/server/db-migrate.cjs || success=1
+    node /app/server/db-migrate.cjs || echo "Warning: db-migrate.cjs reported issues."
   elif [ -f "/app/server/db-migrate.js" ]; then
     echo "Found db-migrate.js, running migrations..."
-    node /app/server/db-migrate.js || success=1
-  else
-    echo "Migration file not found. Checking for alternate locations..."
-    success=1
+    node /app/server/db-migrate.js || echo "Warning: db-migrate.js reported issues."
   fi
-  
-  # Apply any SQL migrations directly if they exist
+
+  # Apply any SQL migrations directly if they exist, skipping already-applied ones
   if [ -d "/app/migrations" ]; then
-    echo "Found SQL migrations directory, applying SQL migrations..."
+    echo "Scanning SQL migrations directory..."
     for migration in /app/migrations/*.sql; do
-      if [ -f "$migration" ]; then
-        echo "Applying SQL migration: $migration"
-        # Parse DATABASE_URL to extract credentials
-        DB_HOST=$(echo $DATABASE_URL | sed -E 's/.*@([^:]+)(:[0-9]+)?\/.*/\1/')
-        DB_PORT=$(echo $DATABASE_URL | sed -E 's/.*:([0-9]+)\/.*/\1/')
-        DB_NAME=$(echo $DATABASE_URL | sed -E 's/.*\/([^?]+).*/\1/')
-        DB_USER=$(echo $DATABASE_URL | sed -E 's/.*:\/\/([^:]+):.*/\1/')
-        DB_PASS=$(echo $DATABASE_URL | sed -E 's/.*:\/\/[^:]+:([^@]+).*/\1/')
-        
-        # Execute the SQL file using psql
-        PGPASSWORD=$DB_PASS psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f $migration || {
-          echo "Warning: SQL migration $migration encountered issues."
-          echo "This might be normal if the changes already exist. Continuing..."
-        }
+      [ -f "$migration" ] || continue
+      MIG_NAME=$(basename "$migration")
+      MIG_SUM=$(sha256sum "$migration" | cut -d' ' -f1)
+
+      # Checksum and filename are well-constrained (sha256 hex + basename), but
+      # we still use -v vars instead of string interpolation for safety.
+      ALREADY_APPLIED=$(psql "$DATABASE_URL" -tAc \
+        -v migname="$MIG_NAME" -v migsum="$MIG_SUM" \
+        "SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;" 2>/dev/null || echo "")
+
+      if [ "$ALREADY_APPLIED" = "1" ]; then
+        echo "⏭  Skipping $MIG_NAME (already applied with matching checksum)."
+        continue
+      fi
+
+      echo "▶ Applying SQL migration: $MIG_NAME"
+      # STRICT mode: ON_ERROR_STOP=1 + single transaction so partial failures abort cleanly.
+      # Some migrations use DO $$ blocks that catch their own exceptions internally,
+      # so only unhandled SQL errors outside those blocks will abort the transaction.
+      if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --single-transaction -f "$migration"; then
+        psql "$DATABASE_URL" -v migname="$MIG_NAME" -v migsum="$MIG_SUM" -c \
+          "INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+           ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();" > /dev/null 2>&1 || true
+        echo "✅ Applied $MIG_NAME"
+      else
+        echo "❌ ERROR: $MIG_NAME failed. NOT recorded as applied; will retry on next startup."
+        echo "   Investigate the error above before restarting, and consider restoring $BACKUP_FILE if data was affected."
       fi
     done
   fi
-  
+
   echo "Database migration process completed."
 }
 
 run_migrations
+
+# Post-migration verification: ensure critical foreign keys actually exist.
+# Without these FKs, deletes do NOT cascade — which is how production DBs
+# ended up with orphaned rows pointing at deleted parents. Loudly flag any
+# missing constraints so ops can intervene before users notice.
+echo "Verifying critical foreign keys are present..."
+REQUIRED_FKS="projects_created_by_id_fkey
+files_project_id_fkey
+files_uploaded_by_id_fkey
+project_users_project_id_fkey
+project_users_user_id_fkey
+comments_file_id_fkey
+comments_user_id_fkey
+approvals_file_id_fkey
+activity_logs_user_id_fkey
+invitations_created_by_id_fkey
+invitations_accepted_by_id_fkey
+password_resets_user_id_fkey"
+
+MISSING_FKS=""
+for fk in $REQUIRED_FKS; do
+  EXISTS=$(psql "$DATABASE_URL" -tAc "SELECT 1 FROM pg_constraint WHERE conname='$fk' LIMIT 1;" 2>/dev/null || echo "")
+  if [ "$EXISTS" != "1" ]; then
+    MISSING_FKS="$MISSING_FKS $fk"
+  fi
+done
+
+if [ -n "$MISSING_FKS" ]; then
+  echo "⚠️  ⚠️  ⚠️  CRITICAL: the following required foreign keys are MISSING:"
+  for fk in $MISSING_FKS; do echo "       - $fk"; done
+  echo "   Without these, deletes will not cascade and orphaned rows can accumulate."
+  echo "   This usually means existing data violates the FK (e.g. orphan rows from a prior broken migration)."
+  echo "   Inspect with:  psql \$DATABASE_URL -c 'SELECT * FROM files WHERE project_id NOT IN (SELECT id FROM projects);'"
+  echo "   Application will continue to start, but please address ASAP."
+else
+  echo "✅ All required foreign keys are in place."
+fi
 
 # Create admin user with error handling
 echo "Setting up admin user if needed..."

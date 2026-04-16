@@ -42,6 +42,7 @@ services:
       - VIDEO_SCRUB_SCALE=${VIDEO_SCRUB_SCALE:--2:180}
     volumes:
       - uploads:/app/uploads
+      - db_backups:/app/db-backups
     networks:
       - app_network
     healthcheck:
@@ -81,6 +82,7 @@ services:
 volumes:
   postgres_data:
   uploads:
+  db_backups:
 
 networks:
   app_network:
