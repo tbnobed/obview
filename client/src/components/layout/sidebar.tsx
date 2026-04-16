@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import Logo from "@/components/ui/logo";
 import { uploadService } from "@/lib/upload-service";
+import SidebarFolders from "@/components/folders/sidebar-folders";
 
 export default function Sidebar() {
   const { user, logoutMutation } = useAuth();
@@ -166,9 +167,12 @@ export default function Sidebar() {
           </Link>
         </nav>
         
-        {/* Project List */}
+        {/* Folders */}
+        <SidebarFolders />
+
+        {/* Recent Projects */}
         <div className="px-4 py-4 border-t border-neutral-200 dark:border-gray-900">
-          <h2 className="text-xs font-semibold text-neutral-500 dark:text-neutral-300 uppercase tracking-wider">Your Projects</h2>
+          <h2 className="text-xs font-semibold text-neutral-500 dark:text-neutral-300 uppercase tracking-wider">Recent</h2>
           {projectsLoading ? (
             <div className="flex justify-center py-4">
               <Loader2 className="h-4 w-4 animate-spin text-neutral-400 dark:text-neutral-500" />

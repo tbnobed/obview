@@ -17,7 +17,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import ProjectCard from "@/components/projects/project-card";
-import FoldersManagement from "@/components/folders/folders-management";
 import { cn } from "@/lib/utils";
 
 function getGreeting() {
@@ -226,17 +225,6 @@ export default function HomePage() {
               </CardContent>
             </Card>
           )}
-        </section>
-
-        {/* Folders */}
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Folders</h2>
-            <p className="text-xs text-muted-foreground">
-              Group related projects together
-            </p>
-          </div>
-          <FoldersManagement />
         </section>
       </div>
     </AppLayout>
