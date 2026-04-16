@@ -1,0 +1,87 @@
+obtv-admin@tbn-obviu:~/obview$ docker logs obview_app --tail 250 | grep -E "Pruned|Cleared|Applied|CRITICAL|foreign keys"
+NOTICE:  relation "comments_unified" already exists, skipping
+NOTICE:  column "annotations" of relation "comments_unified" already exists, skipping
+NOTICE:  relation "idx_comments_unified_file_id" already exists, skipping
+NOTICE:  relation "idx_comments_unified_user_id" already exists, skipping
+NOTICE:  relation "idx_comments_unified_parent_id" already exists, skipping
+NOTICE:  relation "idx_comments_unified_file_timestamp" already exists, skipping
+NOTICE:  relation "comment_reactions" already exists, skipping
+NOTICE:  relation "idx_comment_reactions_comment_id" already exists, skipping
+NOTICE:  relation "idx_comment_reactions_comment_reaction" already exists, skipping
+NOTICE:  relation "schema_migrations" already exists, skipping
+psql:/app/migrations/0000_smooth_whistler.sql:9: ERROR:  relation "activity_logs" already exists
+psql:/app/migrations/0001_add_password_resets.sql:10: NOTICE:  relation "password_resets" already exists, skipping
+psql:/app/migrations/0001_add_password_resets.sql:14: ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+psql:/app/migrations/0002_add_theme_preference.sql:2: NOTICE:  column "theme_preference" of relation "users" already exists, skipping
+psql:/app/migrations/0003_add_file_availability.sql:2: NOTICE:  column "is_available" of relation "files" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:15: NOTICE:  extension "pgcrypto" already exists, skipping
+✅ Applied 0002_add_theme_preference.sql
+✅ Applied 0003_add_file_availability.sql
+psql:/app/migrations/0005_docker_schema_consolidation.sql:27: NOTICE:  relation "users" already exists, skipping
+✅ Applied 0004_update_file_size_type.sql
+psql:/app/migrations/0005_docker_schema_consolidation.sql:38: NOTICE:  relation "projects" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:54: NOTICE:  relation "files" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:66: NOTICE:  relation "comments" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:78: NOTICE:  relation "public_comments" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:87: NOTICE:  relation "project_users" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:98: NOTICE:  relation "activity_logs" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:113: NOTICE:  relation "invitations" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:119: NOTICE:  column "accepted_by_id" of relation "invitations" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:129: NOTICE:  relation "approvals" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:139: NOTICE:  relation "password_resets" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:168: NOTICE:  Skipping files_project_id_fkey: insert or update on table "files" violates foreign key constraint "files_project_id_fkey"
+psql:/app/migrations/0005_docker_schema_consolidation.sql:190: NOTICE:  Skipping comments_file_id_fkey: insert or update on table "comments" violates foreign key constraint "comments_file_id_fkey"
+psql:/app/migrations/0005_docker_schema_consolidation.sql:223: NOTICE:  Skipping public_comments_file_id_fkey: insert or update on table "public_comments" violates foreign key constraint "public_comments_file_id_fkey"
+psql:/app/migrations/0005_docker_schema_consolidation.sql:299: NOTICE:  Pruned 26 orphan project_users (deleted projects)
+psql:/app/migrations/0005_docker_schema_consolidation.sql:299: NOTICE:  Pruned 1 orphan activity_logs (deleted users)
+psql:/app/migrations/0005_docker_schema_consolidation.sql:299: NOTICE:  Pruned 3 orphan invitations (deleted projects)
+psql:/app/migrations/0005_docker_schema_consolidation.sql:299: NOTICE:  Pruned 1 orphan approvals (deleted files)
+psql:/app/migrations/0005_docker_schema_consolidation.sql:412: NOTICE:  relation "idx_files_project_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:413: NOTICE:  relation "idx_files_share_token" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:414: NOTICE:  relation "idx_files_is_latest_version" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:415: NOTICE:  relation "idx_comments_file_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:416: NOTICE:  relation "idx_comments_user_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:417: NOTICE:  relation "idx_comments_timestamp" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:418: NOTICE:  relation "idx_public_comments_file_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:419: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:420: NOTICE:  relation "idx_public_comments_creator_token" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:421: NOTICE:  relation "idx_project_users_project_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:422: NOTICE:  relation "idx_project_users_user_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:423: NOTICE:  relation "idx_activity_logs_entity_type_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:424: NOTICE:  relation "idx_activity_logs_user_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:425: NOTICE:  relation "idx_invitations_token" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:426: NOTICE:  relation "idx_invitations_email" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:427: NOTICE:  relation "idx_approvals_file_id" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:428: NOTICE:  relation "idx_password_resets_token" already exists, skipping
+psql:/app/migrations/0005_docker_schema_consolidation.sql:429: NOTICE:  relation "idx_password_resets_user_id" already exists, skipping
+psql:/app/migrations/0006_add_video_processing.sql:15: NOTICE:  relation "video_processing" already exists, skipping
+✅ Applied 0005_docker_schema_consolidation.sql
+psql:/app/migrations/0006_add_video_processing.sql:18: NOTICE:  relation "idx_video_processing_file_id" already exists, skipping
+psql:/app/migrations/0006_add_video_processing.sql:20: NOTICE:  relation "idx_video_processing_status" already exists, skipping
+psql:/app/migrations/0007_add_folders_support.sql:13: NOTICE:  relation "folders" already exists, skipping
+✅ Applied 0006_add_video_processing.sql
+psql:/app/migrations/0007_add_folders_support.sql:27: NOTICE:  relation "idx_folders_created_by_id" already exists, skipping
+psql:/app/migrations/0007_add_folders_support.sql:28: NOTICE:  relation "idx_folders_name" already exists, skipping
+psql:/app/migrations/0007_add_folders_support.sql:29: NOTICE:  relation "idx_projects_folder_id" already exists, skipping
+psql:/app/migrations/0008_add_creator_token_to_public_comments.sql:16: NOTICE:  relation "idx_public_comments_creator_token" already exists, skipping
+✅ Applied 0007_add_folders_support.sql
+psql:/app/migrations/0009_add_parent_id_to_public_comments.sql:16: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+✅ Applied 0008_add_creator_token_to_public_comments.sql
+✅ Applied 0009_add_parent_id_to_public_comments.sql
+psql:/app/migrations/0010_fix_public_comments_constraint.sql:19: NOTICE:  Removed public_comments_parent_id_fkey constraint to allow cross-table replies
+psql:/app/migrations/0010_fix_public_comments_constraint.sql:23: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+✅ Applied 0010_fix_public_comments_constraint.sql
+psql:/app/migrations/0011_create_comments_unified.sql:16: NOTICE:  relation "comments_unified" already exists, skipping
+psql:/app/migrations/0011_create_comments_unified.sql:19: NOTICE:  relation "idx_comments_unified_file_id" already exists, skipping
+psql:/app/migrations/0011_create_comments_unified.sql:20: NOTICE:  relation "idx_comments_unified_user_id" already exists, skipping
+psql:/app/migrations/0011_create_comments_unified.sql:21: NOTICE:  relation "idx_comments_unified_parent_id" already exists, skipping
+psql:/app/migrations/0011_create_comments_unified.sql:22: NOTICE:  relation "idx_comments_unified_file_timestamp" already exists, skipping
+psql:/app/migrations/0012_create_comment_reactions.sql:9: NOTICE:  relation "comment_reactions" already exists, skipping
+✅ Applied 0011_create_comments_unified.sql
+psql:/app/migrations/0012_create_comment_reactions.sql:33: NOTICE:  relation "idx_comment_reactions_comment_id" already exists, skipping
+psql:/app/migrations/0012_create_comment_reactions.sql:34: NOTICE:  relation "idx_comment_reactions_comment_reaction" already exists, skipping
+psql:/app/migrations/0013_add_annotations_column.sql:5: NOTICE:  column "annotations" of relation "comments_unified" already exists, skipping
+✅ Applied 0012_create_comment_reactions.sql
+✅ Applied 0013_add_annotations_column.sql
+Verifying critical foreign keys are present...
+⚠️  ⚠️  ⚠️  CRITICAL: the following required foreign keys are MISSING:
