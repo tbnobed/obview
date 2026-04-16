@@ -138,10 +138,80 @@ CREATE TABLE IF NOT EXISTS password_resets (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- ----------------------------------------------------------------------
+-- Self-healing orphan cleanup MUST run before any FK additions, otherwise
+-- ADD CONSTRAINT silently no-ops on tables that have orphan rows.
+-- Restricted to junction/log/dependent rows; user content (files,
+-- comments, public_comments, projects, users) is never auto-deleted.
+-- ----------------------------------------------------------------------
+DO $$
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    DELETE FROM project_users
+    WHERE project_id IS NOT NULL AND project_id NOT IN (SELECT id FROM projects);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan project_users (deleted projects)', deleted_count; END IF;
+
+    DELETE FROM project_users
+    WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan project_users (deleted users)', deleted_count; END IF;
+
+    DELETE FROM activity_logs
+    WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan activity_logs (deleted users)', deleted_count; END IF;
+
+    DELETE FROM invitations
+    WHERE project_id IS NOT NULL AND project_id NOT IN (SELECT id FROM projects);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan invitations (deleted projects)', deleted_count; END IF;
+
+    DELETE FROM invitations
+    WHERE created_by_id IS NOT NULL AND created_by_id NOT IN (SELECT id FROM users);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan invitations (deleted creators)', deleted_count; END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='invitations' AND column_name='accepted_by_id') THEN
+        UPDATE invitations SET accepted_by_id = NULL
+        WHERE accepted_by_id IS NOT NULL AND accepted_by_id NOT IN (SELECT id FROM users);
+        GET DIAGNOSTICS deleted_count = ROW_COUNT;
+        IF deleted_count > 0 THEN RAISE NOTICE 'Cleared % invitations.accepted_by_id pointing at deleted users', deleted_count; END IF;
+    END IF;
+
+    DELETE FROM approvals
+    WHERE file_id IS NOT NULL AND file_id NOT IN (SELECT id FROM files);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan approvals (deleted files)', deleted_count; END IF;
+
+    DELETE FROM approvals
+    WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan approvals (deleted users)', deleted_count; END IF;
+
+    DELETE FROM password_resets
+    WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan password_resets (deleted users)', deleted_count; END IF;
+
+    UPDATE public_comments SET parent_id = NULL
+    WHERE parent_id IS NOT NULL AND parent_id NOT IN (SELECT id FROM public_comments);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    IF deleted_count > 0 THEN RAISE NOTICE 'Cleared % public_comments.parent_id pointing at deleted parents', deleted_count; END IF;
+EXCEPTION WHEN others THEN
+    RAISE NOTICE 'Orphan cleanup encountered an error (continuing): %', SQLERRM;
+END $$;
+
 -- Helper: add_fk_if_missing
 -- Each FK is added in its OWN DO block so that a failure in one does not
 -- cause Postgres to roll back the others. We also verify both the referencing
 -- column and the referenced table exist before attempting to add the FK.
+--
+-- NOTE: For files/comments/public_comments FKs, we deliberately do NOT
+-- auto-delete orphan rows here because they're real user content. If those
+-- FK adds fail, the verification step at startup will warn so an operator
+-- can review and clean up manually.
 
 -- projects.created_by_id -> users.id
 DO $$ BEGIN
@@ -220,82 +290,6 @@ DO $$ BEGIN
     END IF;
 EXCEPTION WHEN others THEN
     RAISE NOTICE 'Skipping public_comments_file_id_fkey: %', SQLERRM;
-END $$;
-
--- ----------------------------------------------------------------------
--- Self-healing orphan cleanup, restricted to junction/log/dependent rows.
--- These deletions are SAFE: they remove records that are meaningless
--- without their parent (e.g. an invitation to a deleted project, an
--- approval for a deleted file, a project membership for a deleted user).
---
--- We deliberately do NOT touch user-content tables (files, comments,
--- public_comments, projects, users) -- those require human review.
---
--- Why this lives here: without it, ADD CONSTRAINT silently no-ops
--- (caught by EXCEPTION below) and the DB stays without cascade
--- protection forever. This block makes the FK setup self-healing on
--- subsequent boots without touching real content.
--- ----------------------------------------------------------------------
-DO $$
-DECLARE
-    deleted_count INTEGER;
-BEGIN
-    DELETE FROM project_users
-    WHERE project_id IS NOT NULL AND project_id NOT IN (SELECT id FROM projects);
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan project_users (deleted projects)', deleted_count; END IF;
-
-    DELETE FROM project_users
-    WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users);
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan project_users (deleted users)', deleted_count; END IF;
-
-    DELETE FROM activity_logs
-    WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users);
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan activity_logs (deleted users)', deleted_count; END IF;
-
-    DELETE FROM invitations
-    WHERE project_id IS NOT NULL AND project_id NOT IN (SELECT id FROM projects);
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan invitations (deleted projects)', deleted_count; END IF;
-
-    DELETE FROM invitations
-    WHERE created_by_id IS NOT NULL AND created_by_id NOT IN (SELECT id FROM users);
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan invitations (deleted creators)', deleted_count; END IF;
-
-    -- accepted_by_id is nullable and has ON DELETE SET NULL semantics,
-    -- so just NULL it out instead of deleting the invitation record.
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='invitations' AND column_name='accepted_by_id') THEN
-        UPDATE invitations SET accepted_by_id = NULL
-        WHERE accepted_by_id IS NOT NULL AND accepted_by_id NOT IN (SELECT id FROM users);
-        GET DIAGNOSTICS deleted_count = ROW_COUNT;
-        IF deleted_count > 0 THEN RAISE NOTICE 'Cleared % invitations.accepted_by_id pointing at deleted users', deleted_count; END IF;
-    END IF;
-
-    DELETE FROM approvals
-    WHERE file_id IS NOT NULL AND file_id NOT IN (SELECT id FROM files);
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan approvals (deleted files)', deleted_count; END IF;
-
-    DELETE FROM approvals
-    WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users);
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan approvals (deleted users)', deleted_count; END IF;
-
-    DELETE FROM password_resets
-    WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users);
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    IF deleted_count > 0 THEN RAISE NOTICE 'Pruned % orphan password_resets (deleted users)', deleted_count; END IF;
-
-    -- Preserve user content: NULL the parent pointer rather than delete the comment.
-    UPDATE public_comments SET parent_id = NULL
-    WHERE parent_id IS NOT NULL AND parent_id NOT IN (SELECT id FROM public_comments);
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
-    IF deleted_count > 0 THEN RAISE NOTICE 'Cleared % public_comments.parent_id pointing at deleted parents', deleted_count; END IF;
-EXCEPTION WHEN others THEN
-    RAISE NOTICE 'Orphan cleanup encountered an error (continuing): %', SQLERRM;
 END $$;
 
 -- project_users.project_id -> projects.id
