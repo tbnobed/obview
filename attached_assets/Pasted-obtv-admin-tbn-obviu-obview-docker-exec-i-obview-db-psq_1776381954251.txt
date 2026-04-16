@@ -1,0 +1,69 @@
+obtv-admin@tbn-obviu:~/obview$ docker exec -i obview_db psql -U postgres -d obview -v ON_ERROR_STOP=1 -e <<'SQL'
+BEGIN;
+-- Delete dependent rows first
+DELETE FROM comments        WHERE file_id NOT IN (SELECT id FROM files);
+DELETE FROM public_comments WHERE file_id NOT IN (SELECT id FROM files);
+DELETE FROM approvals       WHERE file_id NOT IN (SELECT id FROM files);
+-- Now delete the orphan files themselves
+DELETE FROM files WHERE project_id NOT IN (SELECT id FROM projects);
+-- Re-clean comments that referenced the just-deleted files
+DELETE FROM comments        WHERE file_id NOT IN (SELECT id FROM files);
+DELETE FROM public_comments WHERE file_id NOT IN (SELECT id FROM files);
+DELETE FROM approvals       WHERE file_id NOT IN (SELECT id FROM files);
+-- Now both FKs will succeed
+ALTER TABLE files
+  ADD CONSTRAINT files_project_id_fkey
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+ALTER TABLE comments
+  ADD CONSTRAINT comments_file_id_fkey
+  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE;
+COMMIT;
+SQL
+BEGIN;
+BEGIN
+DELETE FROM comments        WHERE file_id NOT IN (SELECT id FROM files);
+DELETE 18
+DELETE FROM public_comments WHERE file_id NOT IN (SELECT id FROM files);
+DELETE 18
+DELETE FROM approvals       WHERE file_id NOT IN (SELECT id FROM files);
+DELETE 0
+DELETE FROM files WHERE project_id NOT IN (SELECT id FROM projects);
+DELETE 24
+DELETE FROM comments        WHERE file_id NOT IN (SELECT id FROM files);
+DELETE 2
+DELETE FROM public_comments WHERE file_id NOT IN (SELECT id FROM files);
+DELETE 0
+DELETE FROM approvals       WHERE file_id NOT IN (SELECT id FROM files);
+DELETE 0
+ALTER TABLE files
+  ADD CONSTRAINT files_project_id_fkey
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+ALTER TABLE
+ALTER TABLE comments
+  ADD CONSTRAINT comments_file_id_fkey
+  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE;
+ALTER TABLE
+COMMIT;
+COMMIT
+obtv-admin@tbn-obviu:~/obview$ docker exec obview_db psql -U postgres -d obview -c "
+SELECT conname FROM pg_constraint
+WHERE conname IN ('files_project_id_fkey','comments_file_id_fkey');"
+        conname
+-----------------------
+ comments_file_id_fkey
+ files_project_id_fkey
+(2 rows)
+
+obtv-admin@tbn-obviu:~/obview$ docker compose restart app
+docker logs obview_app --tail 200 2>&1 | sed -n '/Verifying critical foreign keys/,/Setting up admin/p'
+[+] Restarting 1/1
+ ✔ Container obview_app  Started                                                                                         10.7s
+Verifying critical foreign keys are present...
+⚠️  ⚠️  ⚠️  CRITICAL: the following required foreign keys are MISSING:
+       - files_project_id_fkey
+       - comments_file_id_fkey
+   Without these, deletes will not cascade and orphaned rows can accumulate.
+   This usually means existing data violates the FK (e.g. orphan rows from a prior broken migration).
+   Inspect with:  psql $DATABASE_URL -c 'SELECT * FROM files WHERE project_id NOT IN (SELECT id FROM projects);'
+   Application will continue to start, but please address ASAP.
+Setting up admin user if needed...
