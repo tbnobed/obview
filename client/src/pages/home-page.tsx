@@ -15,7 +15,6 @@ import {
   Eye,
   ArrowRight,
   Sparkles,
-  Upload,
 } from "lucide-react";
 import ProjectCard from "@/components/projects/project-card";
 import FoldersManagement from "@/components/folders/folders-management";
@@ -64,52 +63,6 @@ function StatCard({ label, value, icon, accent, subtle }: StatCardProps) {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-interface QuickActionProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  primary?: boolean;
-}
-
-function QuickAction({
-  title,
-  description,
-  icon,
-  onClick,
-  primary,
-}: QuickActionProps) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "group relative flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all duration-200",
-        primary
-          ? "border-primary/40 bg-primary/5 hover:border-primary hover:bg-primary/10"
-          : "border-border/60 bg-card/60 hover:border-primary/40 hover:bg-card"
-      )}
-    >
-      <div
-        className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
-          primary
-            ? "bg-primary/15 text-primary"
-            : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-        )}
-      >
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold">{title}</div>
-        <div className="text-xs text-muted-foreground line-clamp-1">
-          {description}
-        </div>
-      </div>
-      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-foreground" />
-    </button>
   );
 }
 
@@ -221,102 +174,58 @@ export default function HomePage() {
           />
         </section>
 
-        {/* Main grid: Recent Projects + Quick Actions */}
-        <section className="grid gap-6 lg:grid-cols-3">
-          {/* Recent projects */}
-          <div className="space-y-4 lg:col-span-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight">
-                  Recent projects
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Your most recently updated work
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/projects")}
-                className="text-primary hover:text-primary"
-              >
-                View all
-                <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Button>
-            </div>
-
-            {isLoading ? (
-              <div className="flex items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/40 py-16">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : recentProjects.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {recentProjects.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
-            ) : (
-              <Card className="border-2 border-dashed border-border/60 bg-card/40">
-                <CardContent className="flex flex-col items-center justify-center px-6 py-14 text-center">
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-                    <FileVideo className="h-7 w-7 text-primary" />
-                  </div>
-                  <h3 className="mb-1.5 text-base font-semibold">
-                    No projects yet
-                  </h3>
-                  <p className="mb-6 max-w-sm text-sm text-muted-foreground">
-                    Create your first project to start uploading media and
-                    collecting timestamped feedback from your team.
-                  </p>
-                  <Button onClick={() => navigate("/projects/new")}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create your first project
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Quick actions */}
-          <aside className="space-y-4">
+        {/* Recent projects */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold tracking-tight">
-                Quick actions
+                Recent projects
               </h2>
               <p className="text-xs text-muted-foreground">
-                Common tasks, one click away
+                Your most recently updated work
               </p>
             </div>
-            <div className="space-y-2.5">
-              <QuickAction
-                primary
-                title="New project"
-                description="Start a fresh review space"
-                icon={<Plus className="h-5 w-5" />}
-                onClick={() => navigate("/projects/new")}
-              />
-              <QuickAction
-                title="Browse projects"
-                description="Open the full project library"
-                icon={<FolderKanban className="h-5 w-5" />}
-                onClick={() => navigate("/projects")}
-              />
-              <QuickAction
-                title="Upload media"
-                description="Add a new file to a project"
-                icon={<Upload className="h-5 w-5" />}
-                onClick={() => navigate("/projects")}
-              />
-              {user?.role === "admin" && (
-                <QuickAction
-                  title="Admin console"
-                  description="Manage users, files & settings"
-                  icon={<Sparkles className="h-5 w-5" />}
-                  onClick={() => navigate("/admin")}
-                />
-              )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/projects")}
+              className="text-primary hover:text-primary"
+            >
+              View all
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/40 py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-          </aside>
+          ) : recentProjects.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {recentProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          ) : (
+            <Card className="border-2 border-dashed border-border/60 bg-card/40">
+              <CardContent className="flex flex-col items-center justify-center px-6 py-14 text-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                  <FileVideo className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="mb-1.5 text-base font-semibold">
+                  No projects yet
+                </h3>
+                <p className="mb-6 max-w-sm text-sm text-muted-foreground">
+                  Create your first project to start uploading media and
+                  collecting timestamped feedback from your team.
+                </p>
+                <Button onClick={() => navigate("/projects/new")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create your first project
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </section>
 
         {/* Folders */}
