@@ -1,0 +1,70 @@
+obtv-admin@tbn-obviu:~/obview$ # Are the projects actually still there?
+docker exec obview_db psql -U postgres -d obview -c "SELECT COUNT(*) AS project_count FROM projects;"
+docker exec obview_db psql -U postgres -d obview -c "SELECT id, name, created_by_id, created_at FROM projects ORDER BY id;"
+
+# Is your user still linked to them?
+docker exec obview_db psql -U postgres -d obview -c "SELECT * FROM project_users ORDER BY project_id;"
+docker exec obview_db psql -U postgres -d obview -c "SELECT id, username, role FROM users;"
+
+# Did any DELETE happen around upload time?
+docker logs obview_app --since 3h 2>&1 | grep -iE "delete|force|cleanup|drop|truncate" | tail -50
+ project_count
+---------------
+             1
+(1 row)
+
+ id |   name    | created_by_id |         created_at
+----+-----------+---------------+----------------------------
+ 24 | Obed Test |             1 | 2026-04-16 20:37:24.511392
+(1 row)
+
+ id | project_id | user_id |  role  |         created_at
+----+------------+---------+--------+----------------------------
+  1 |          1 |       2 | editor | 2025-09-23 18:42:46.280284
+  2 |          2 |       2 | editor | 2025-09-23 18:48:13.718598
+  3 |          3 |       2 | editor | 2025-09-23 19:17:51.577905
+  4 |          4 |       2 | editor | 2025-09-23 19:45:04.507342
+  5 |          5 |       2 | editor | 2025-09-23 19:49:16.891985
+  6 |          6 |       2 | editor | 2025-09-23 20:18:53.684528
+  7 |          7 |       2 | editor | 2025-09-23 20:42:42.077181
+  8 |          8 |       2 | editor | 2025-09-23 23:13:12.442583
+  9 |          9 |       2 | editor | 2025-09-23 23:38:37.554511
+ 10 |         10 |       2 | editor | 2025-09-24 00:56:39.524989
+ 11 |         11 |       2 | editor | 2025-09-24 01:03:49.29081
+ 12 |         12 |       2 | editor | 2025-09-24 01:05:58.296174
+ 13 |         13 |       2 | editor | 2025-09-24 01:14:59.252875
+ 14 |         14 |       2 | editor | 2025-09-24 06:44:53.499734
+ 15 |         15 |       2 | editor | 2025-09-24 21:05:48.068599
+ 16 |         16 |       2 | editor | 2025-09-25 00:04:33.528701
+ 17 |         17 |       2 | editor | 2025-09-26 09:15:43.622202
+ 18 |         18 |       2 | editor | 2025-09-26 09:16:27.925962
+ 19 |         18 |       3 | editor | 2025-09-26 21:14:48.705098
+ 20 |         19 |       6 | editor | 2025-09-29 18:03:51.347232
+ 21 |         20 |       2 | editor | 2025-10-08 07:25:12.980451
+ 22 |         20 |      10 | editor | 2025-10-08 17:06:42.228257
+ 23 |         20 |      11 | editor | 2025-10-08 18:16:59.090078
+ 24 |         21 |       2 | editor | 2025-10-13 22:59:51.237326
+ 25 |         22 |       7 | editor | 2025-10-27 15:39:31.849312
+ 26 |         23 |      12 | editor | 2025-10-28 14:24:30.304141
+ 27 |         24 |       1 | editor | 2026-04-16 20:37:24.515826
+(27 rows)
+
+ id |   username    |  role
+----+---------------+--------
+  1 | admin         | admin
+ 13 | Jtolliver     | editor
+  2 | osandoval     | admin
+  4 | Obedtbn       | editor
+  7 | bpena         | admin
+  8 | janderson     | admin
+  9 | dharvilla     | admin
+  6 | Ncasoria      | admin
+  5 | Morales       | admin
+ 10 | obedtest      | editor
+ 11 | cbrown@tbn.tv | editor
+ 12 | scottdrown    | editor
+(12 rows)
+
+        FOREIGN KEY (accepted_by_id) REFERENCES users(id) ON DELETE SET NULL"
+        FOREIGN KEY (parent_id) REFERENCES public_comments(id) ON DELETE CASCADE"
+Verifying filesystem utilities for admin cleanup operations...
