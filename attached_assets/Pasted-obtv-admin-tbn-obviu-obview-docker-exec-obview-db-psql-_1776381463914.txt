@@ -1,0 +1,52 @@
+obtv-admin@tbn-obviu:~/obview$ docker exec obview_db psql -U postgres -d obview -c "
+SELECT conname, cls.relname AS table_name
+FROM pg_constraint c
+JOIN pg_class cls ON cls.oid = c.conrelid
+JOIN pg_namespace nsp ON nsp.oid = cls.relnamespace
+WHERE c.contype = 'f' AND nsp.nspname = 'public'
+ORDER BY cls.relname, conname;"
+              conname              |    table_name
+-----------------------------------+-------------------
+ activity_logs_user_id_fkey        | activity_logs
+ approvals_file_id_fkey            | approvals
+ approvals_user_id_fkey            | approvals
+ comment_reactions_comment_id_fkey | comment_reactions
+ comment_reactions_user_id_fkey    | comment_reactions
+ fk_comment_reactions_comment_id   | comment_reactions
+ fk_comment_reactions_user_id      | comment_reactions
+ comments_parent_id_fkey           | comments
+ comments_user_id_fkey             | comments
+ fk_comments_unified_file_id       | comments_unified
+ fk_comments_unified_parent_id     | comments_unified
+ fk_comments_unified_user_id       | comments_unified
+ files_uploaded_by_id_fkey         | files
+ folders_created_by_id_fkey        | folders
+ invitations_accepted_by_id_fkey   | invitations
+ invitations_created_by_id_fkey    | invitations
+ invitations_project_id_fkey       | invitations
+ password_resets_user_id_fkey      | password_resets
+ project_users_project_id_fkey     | project_users
+ project_users_user_id_fkey        | project_users
+ projects_created_by_id_fkey       | projects
+ projects_folder_id_fkey           | projects
+ video_processing_file_id_fkey     | video_processing
+(23 rows)
+
+obtv-admin@tbn-obviu:~/obview$ docker logs obview_app --tail 300 2>&1 | sed -n '/Verifying critical foreign keys/,/Setting up admin/p'
+Verifying critical foreign keys are present...
+⚠️  ⚠️  ⚠️  CRITICAL: the following required foreign keys are MISSING:
+       - files_project_id_fkey
+       - comments_file_id_fkey
+   Without these, deletes will not cascade and orphaned rows can accumulate.
+   This usually means existing data violates the FK (e.g. orphan rows from a prior broken migration).
+   Inspect with:  psql $DATABASE_URL -c 'SELECT * FROM files WHERE project_id NOT IN (SELECT id FROM projects);'
+   Application will continue to start, but please address ASAP.
+Setting up admin user if needed...
+obtv-admin@tbn-obviu:~/obview$ docker exec obview_db psql -U postgres -d obview <<'SQL'
+ALTER TABLE files
+  ADD CONSTRAINT files_project_id_fkey
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+ALTER TABLE comments
+  ADD CONSTRAINT comments_file_id_fkey
+  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE;
+SQL
