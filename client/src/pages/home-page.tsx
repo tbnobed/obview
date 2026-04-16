@@ -97,7 +97,7 @@ export default function HomePage() {
 
   return (
     <AppLayout>
-      <div className="mx-auto w-full max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
+      <div className="w-full space-y-8 p-4 sm:p-6 lg:p-8">
         {/* Hero / Welcome */}
         <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-8">
           <div
