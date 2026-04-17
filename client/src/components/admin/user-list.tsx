@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +17,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Loader2, MoreHorizontal, Trash2, Edit, UserPlus } from "lucide-react";
+import { Loader2, MoreHorizontal, Trash2, Edit, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import UserForm from "./user-form";
 
 export default function UserList() {
@@ -26,6 +27,8 @@ export default function UserList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
   const { 
     data: users, 
@@ -57,15 +60,32 @@ export default function UserList() {
   });
 
   // Filter users by search term
-  const filteredUsers = users?.filter(user => {
-    if (searchTerm === "") return true;
-    
-    return (
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+  const filteredUsers = useMemo(() => {
+    return users?.filter(user => {
+      if (searchTerm === "") return true;
+      return (
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+  }, [users, searchTerm]);
+
+  const totalItems = filteredUsers?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+  // Reset to first page when search or page size changes
+  useEffect(() => { setPage(1); }, [searchTerm, pageSize]);
+  // Clamp page if data shrinks
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredUsers?.slice(start, start + pageSize);
+  }, [filteredUsers, page, pageSize]);
+
+  const startIdx = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIdx = Math.min(totalItems, page * pageSize);
 
   // Get role badge
   const getRoleBadge = (role: string) => {
@@ -139,8 +159,8 @@ export default function UserList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers?.length ? (
-              filteredUsers.map((user) => (
+            {paginatedUsers?.length ? (
+              paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.username}</TableCell>
@@ -217,6 +237,55 @@ export default function UserList() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 text-sm">
+        <div className="text-neutral-600 dark:text-gray-400">
+          {totalItems === 0
+            ? "No results"
+            : `Showing ${startIdx}–${endIdx} of ${totalItems}`}
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-neutral-600 dark:text-gray-400">Rows per page</span>
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="h-8 w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 25, 50, 100].map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="px-2 text-neutral-600 dark:text-gray-400">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Edit User Dialog */}

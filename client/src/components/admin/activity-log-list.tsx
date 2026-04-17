@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, Info, AlertCircle, Check, X, FileText, Users, Settings, ExternalLink } from 'lucide-react';
+import { Loader2, Info, AlertCircle, Check, X, FileText, Users, Settings, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -13,12 +13,31 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export function ActivityLogList() {
   const { data: activities, isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/activities'],
     staleTime: 1000 * 60 * 1, // 1 minute
   });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const totalItems = activities?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+  useEffect(() => { setPage(1); }, [pageSize]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+
+  const paginatedActivities = useMemo(() => {
+    if (!activities) return [];
+    const start = (page - 1) * pageSize;
+    return activities.slice(start, start + pageSize);
+  }, [activities, page, pageSize]);
+
+  const startIdx = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endIdx = Math.min(totalItems, page * pageSize);
 
   if (isLoading) {
     return (
@@ -121,7 +140,7 @@ export function ActivityLogList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {activities.map((activity: any) => (
+          {paginatedActivities.map((activity: any) => (
             <TableRow key={activity.id}>
               <TableCell>
                 <Avatar className="h-8 w-8">
@@ -156,6 +175,54 @@ export function ActivityLogList() {
           ))}
         </TableBody>
       </Table>
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 text-sm">
+        <div className="text-neutral-600 dark:text-gray-400">
+          {totalItems === 0
+            ? "No results"
+            : `Showing ${startIdx}–${endIdx} of ${totalItems}`}
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-neutral-600 dark:text-gray-400">Rows per page</span>
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="h-8 w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 25, 50, 100].map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="px-2 text-neutral-600 dark:text-gray-400">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
