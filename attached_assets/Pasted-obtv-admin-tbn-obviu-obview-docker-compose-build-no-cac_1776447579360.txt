@@ -1,0 +1,108 @@
+obtv-admin@tbn-obviu:~/obview$ docker compose build --no-cache
+[+] Building 30.8s (19/39)
+ => [internal] load local bake definitions                                                                                                                                               0.0s
+ => => reading from stdin 578B                                                                                                                                                           0.0s
+ => [internal] load build definition from Dockerfile                                                                                                                                     0.0s
+ => => transferring dockerfile: 4.11kB                                                                                                                                                   0.0s
+ => WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 1)                                                                                                           0.0s
+ => WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 34)                                                                                                          0.0s
+ => WARN: FromAsCasing: 'as' and 'FROM' keywords' casing do not match (line 45)                                                                                                          0.0s
+ => [internal] load metadata for docker.io/library/node:20-alpine                                                                                                                        0.3s
+ => [internal] load metadata for docker.io/library/alpine:3.19                                                                                                                           0.3s
+ => [internal] load .dockerignore                                                                                                                                                        0.0s
+ => => transferring context: 505B                                                                                                                                                        0.0s
+ => [internal] load build context                                                                                                                                                        0.1s
+ => => transferring context: 738.08kB                                                                                                                                                    0.0s
+ => CACHED [builder 1/8] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293                                                   0.0s
+ => CACHED [whisper-builder 1/6] FROM docker.io/library/alpine:3.19@sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1                                              0.0s
+ => [production  2/20] RUN apk add --no-cache postgresql-client curl ffmpeg libstdc++ libgcc                                                                                             3.4s
+ => [builder 2/8] RUN apk add --no-cache python3 make g++ libc6-compat                                                                                                                   3.6s
+ => [whisper-builder 2/6] RUN apk add --no-cache git make g++ cmake                                                                                                                      3.8s
+ => [production  3/20] WORKDIR /app                                                                                                                                                      0.0s
+ => [builder 3/8] WORKDIR /app                                                                                                                                                           0.1s
+ => [builder 4/8] COPY package*.json ./                                                                                                                                                  0.2s
+ => [whisper-builder 3/6] WORKDIR /src                                                                                                                                                   0.1s
+ => ERROR [builder 5/8] RUN npm ci                                                                                                                                                      26.2s
+ => [whisper-builder 4/6] RUN git clone --depth 1 --branch v1.5.4 https://github.com/ggerganov/whisper.cpp.git                                                                           1.2s
+ => [whisper-builder 5/6] WORKDIR /src/whisper.cpp                                                                                                                                       0.1s
+ => CANCELED [whisper-builder 6/6] RUN make -j$(nproc) &&     test -f ./main && cp ./main /usr/local/bin/whisper-cpp &&     chmod +x /usr/local/bin/whisper-cpp                         25.0s
+------
+ > [builder 5/8] RUN npm ci:
+7.882 npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+7.882 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+25.92 npm error code 1
+25.92 npm error path /app/node_modules/node-llama-cpp
+25.92 npm error command failed
+25.92 npm error command sh -c node ./dist/cli/cli.js postinstall
+25.92 npm error [node-llama-cpp] Cloning llama.cpp
+25.92 npm error ^[[?25l[node-llama-cpp] Cloning ggml-org/llama.cpp (local bundle)                    0%
+25.92 npm error ^[[2K^[[1A^[[2K^[[G[node-llama-cpp] ✖ Failed to clone ggml-org/llama.cpp (local bundle)
+25.92 npm error ^[[?25h
+25.92 npm error [node-llama-cpp] Git is not installed, please install it first to build llama.cpp
+25.92 npm error [node-llama-cpp] To install git, you can run "apk add git"
+25.92 npm error ^[[?25l[node-llama-cpp] Cloning ggml-org/llama.cpp (GitHub)                    0%
+25.92 npm error ^[[2K^[[1A^[[2K^[[G[node-llama-cpp] ✖ Failed to clone ggml-org/llama.cpp (GitHub)
+25.92 npm error ^[[?25h
+25.92 npm error [node-llama-cpp] Git is not installed, please install it first to build llama.cpp
+25.92 npm error [node-llama-cpp] To install git, you can run "apk add git"
+25.92 npm error [node-llama-cpp] To disable node-llama-cpp's postinstall for this 'npm install', use the '--node-llama-cpp-postinstall=skip' flag when running 'npm install' command
+25.92 npm error [node-llama-cpp] To customize node-llama-cpp's postinstall behavior, see the troubleshooting guide: https://node-llama-cpp.withcat.ai/guide/troubleshooting#postinstall-behavior
+25.92 npm error [node-llama-cpp] The prebuilt binary for platform "linux" "x64" is not compatible with the current system, falling back to building from source
+25.92 npm error ^[[?25l^[[?25h[node-llama-cpp] Failed to clone git bundle, cloning from GitHub instead GitError: Error: spawn git ENOENT
+25.92 npm error     at ChildProcess._handle.onexit (node:internal/child_process:285:19)
+25.92 npm error     at onErrorNT (node:internal/child_process:483:16)
+25.92 npm error     at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+25.92 npm error     at Object.action (file:///app/node_modules/simple-git/dist/esm/index.js:4399:25)
+25.92 npm error     at PluginStore.exec (file:///app/node_modules/simple-git/dist/esm/index.js:4438:25)
+25.92 npm error     at file:///app/node_modules/simple-git/dist/esm/index.js:1323:43
+25.92 npm error     at new Promise (<anonymous>)
+25.92 npm error     at GitExecutorChain.handleTaskData (file:///app/node_modules/simple-git/dist/esm/index.js:1321:16)
+25.92 npm error     at GitExecutorChain.attemptRemoteTask (file:///app/node_modules/simple-git/dist/esm/index.js:1308:42)
+25.92 npm error     at async GitExecutorChain.attemptTask (file:///app/node_modules/simple-git/dist/esm/index.js:1281:18) {
+25.92 npm error   task: {
+25.92 npm error     commands: [
+25.92 npm error       'clone',
+25.92 npm error       '--quiet',
+25.92 npm error       [String: '/app/node_modules/node-llama-cpp/llama/gitRelease.bundle'],
+25.92 npm error       [String: '/app/node_modules/node-llama-cpp/llama/llama.cpp']
+25.92 npm error     ],
+25.92 npm error     format: 'utf-8',
+25.92 npm error     parser: [Function: parser]
+25.92 npm error   }
+25.92 npm error }
+25.92 npm error ^[[?25l^[[?25h[node-llama-cpp] Failed to build llama.cpp with no GPU support. Error: Error: cmake not found
+25.92 npm error     at getCmakePath (file:///app/node_modules/node-llama-cpp/dist/utils/cmake.js:55:11)
+25.92 npm error     at async compileLlamaCpp (file:///app/node_modules/node-llama-cpp/dist/bindings/utils/compileLLamaCpp.js:169:66)
+25.92 npm error     at async buildAndLoadLlamaBinary (file:///app/node_modules/node-llama-cpp/dist/bindings/getLlama.js:473:5)
+25.92 npm error     at async getLlamaForOptions (file:///app/node_modules/node-llama-cpp/dist/bindings/getLlama.js:314:21)
+25.92 npm error     at async Object.handler (file:///app/node_modules/node-llama-cpp/dist/cli/commands/OnPostInstallCommand.js:40:13)
+25.92 npm error Error: cmake not found
+25.92 npm error     at getCmakePath (file:///app/node_modules/node-llama-cpp/dist/utils/cmake.js:55:11)
+25.92 npm error     at async compileLlamaCpp (file:///app/node_modules/node-llama-cpp/dist/bindings/utils/compileLLamaCpp.js:169:66)
+25.92 npm error     at async buildAndLoadLlamaBinary (file:///app/node_modules/node-llama-cpp/dist/bindings/getLlama.js:473:5)
+25.92 npm error     at async getLlamaForOptions (file:///app/node_modules/node-llama-cpp/dist/bindings/getLlama.js:314:21)
+25.92 npm error     at async Object.handler (file:///app/node_modules/node-llama-cpp/dist/cli/commands/OnPostInstallCommand.js:40:13)
+25.92 npm notice
+25.92 npm notice New major version of npm available! 10.8.2 -> 11.12.1
+25.92 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.1
+25.92 npm notice To update run: npm install -g npm@11.12.1
+25.92 npm notice
+25.92 npm error A complete log of this run can be found in: /root/.npm/_logs/2026-04-17T17_38_42_146Z-debug-0.log
+------
+Dockerfile:11
+
+--------------------
+
+   9 |     # Copy package files and install dependencies
+
+  10 |     COPY package*.json ./
+
+  11 | >>> RUN npm ci
+
+  12 |
+
+  13 |     # Copy source code including assets
+
+--------------------
+
+failed to solve: process "/bin/sh -c npm ci" did not complete successfully: exit code: 1
