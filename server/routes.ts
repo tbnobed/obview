@@ -1806,6 +1806,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!transcript || transcript.status !== "completed") {
         return res.status(400).json({ message: "Transcript must be completed before summarizing" });
       }
+      // Flip status to pending synchronously so the client's next refetch
+      // immediately sees the in-flight state (avoids a polling race).
+      await storage.updateTranscript(transcript.id, {
+        summaryStatus: "pending",
+        summaryError: null,
+      } as any);
       const { summarizeForFile } = await import("./summarization");
       summarizeForFile(fileId).catch((err) =>
         console.error(`[Summarization] Regenerate failed for file ${fileId}:`, err)
