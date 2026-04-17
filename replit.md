@@ -66,6 +66,19 @@ Preferred communication style: Simple, everyday language.
 - **Health Checks**: Database connectivity verification before application startup
 - **Volume Management**: Persistent volumes for database data and uploaded files
 
+## Future / Tabled Roadmap
+
+### GPU-accelerated transcription & translation (deferred)
+Currently transcription runs on CPU via `whisper.cpp` (`base.en` model by default). When ready to upgrade for higher throughput and to add translation:
+
+- **Recommended hardware**: NVIDIA RTX PRO 4500 Blackwell (32 GB GDDR7 ECC, blower cooler, ~350 W, FP4/FP8 Tensor Cores). Sweet spot for 24/7 server use; has headroom for Whisper large-v3 + a translation model resident at the same time. Alternative budget: RTX 4090 (24 GB) for on-prem, NVIDIA L4 (24 GB) for cloud/colo.
+- **Software swap**:
+  - Replace `whisper.cpp` with `faster-whisper` (CTranslate2) for ~50–80× real-time on Whisper large-v3, or `whisperX` for word-level timestamps + speaker diarization.
+  - Add a translation worker: NLLB-200, Madlad-400, or SeamlessM4T v2 (speech↔speech).
+- **Containerization**: Switch the Docker image to a CUDA base (e.g., `nvidia/cuda:12.6-runtime-ubuntu22.04`) and add `nvidia-container-toolkit` requirement to deployment docs.
+- **Backwards compatibility**: Gate the new backend behind a `WHISPER_BACKEND=whisper-cpp|faster-whisper` env var so CPU-only deployments keep working unchanged. `TRANSCRIPTION_ENABLED` and the existing transcript schema/API remain the same.
+- **Status**: tabled for a later release per user decision.
+
 ## External Dependencies
 
 ### Core Dependencies
