@@ -5,7 +5,9 @@ import { useProject } from "@/hooks/use-projects";
 import { useMediaFiles } from "@/hooks/use-media";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileVideo, Edit, Plus, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ChevronLeft, Activity, MoreHorizontal } from "lucide-react";
+import { Loader2, FileVideo, Edit, Plus, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ChevronLeft, Activity, MoreHorizontal, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { useSidebar } from "@/hooks/use-sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +47,7 @@ export default function ProjectPage() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isCollapsed, toggleSidebar } = useSidebar();
   
   // Fetch all users for the invite dropdown
   const { data: allUsers } = useQuery<any[]>({
@@ -360,11 +363,20 @@ export default function ProjectPage() {
 
 
   return (
-    <AppLayout>
-      {/* Project Header — clean, breathable, focused */}
+    <AppLayout hideHeader>
+      {/* Project Header — combined global + project bar, single row */}
       <header className="bg-white dark:bg-[#0a0d14] border-b border-neutral-200 dark:border-gray-800/80">
-        <div className="px-3 py-3 flex items-center justify-between gap-3 lg:px-6 lg:py-4">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="px-3 py-2 flex items-center justify-between gap-3 lg:px-4 lg:py-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden md:inline-flex h-8 w-8 shrink-0 text-neutral-500 dark:text-neutral-400 hover:text-foreground"
+              onClick={toggleSidebar}
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -376,17 +388,17 @@ export default function ProjectPage() {
             </Button>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2.5 min-w-0">
-                <h1 className="text-base font-semibold text-neutral-900 dark:text-white truncate lg:text-lg" title={project.name}>
+                <h1 className="text-sm font-semibold text-neutral-900 dark:text-white truncate lg:text-base" title={project.name}>
                   {project.name}
                 </h1>
                 <div className="hidden sm:block shrink-0">{getStatusBadge(project.status)}</div>
+                <span className="hidden md:inline text-xs text-neutral-400 dark:text-gray-500 truncate">
+                  · Updated {formatTimeAgo(new Date(project.updatedAt))}
+                </span>
               </div>
-              <p className="hidden sm:block text-xs text-neutral-500 dark:text-gray-500 mt-0.5">
-                Updated {formatTimeAgo(new Date(project.updatedAt))}
-              </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
               {/* Overflow menu — collapses Share, Download, Invite, Edit */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -569,6 +581,10 @@ export default function ProjectPage() {
                 </Button>
               </>
             )}
+            <div className="hidden md:block mx-1 h-5 w-px bg-neutral-200 dark:bg-gray-800" aria-hidden />
+            <div className="hidden md:block">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
 

@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 
 interface AppLayoutProps {
   children: ReactNode;
+  hideHeader?: boolean;
 }
 
-export default function AppLayout({ children }: AppLayoutProps) {
+export default function AppLayout({ children, hideHeader = false }: AppLayoutProps) {
   const { isLoading } = useAuth();
   const { isCollapsed } = useSidebar();
 
@@ -40,7 +41,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Main Content */}
       <div className="flex flex-col flex-1 min-h-0">
         {/* Header with mobile menu and desktop controls */}
-        <Header />
+        {!hideHeader && <Header />}
         
         {/* Page Content */}
         <main className="flex-1 min-h-0 overflow-auto dark:text-gray-300">
