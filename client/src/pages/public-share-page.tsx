@@ -233,15 +233,20 @@ export default function PublicSharePage() {
   };
 
   useEffect(() => {
-    if (!mediaContainerRef.current) return;
+    const el = mediaContainerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setMediaContainerSize({ width: rect.width, height: rect.height });
+    }
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         setMediaContainerSize({ width: entry.contentRect.width, height: entry.contentRect.height });
       }
     });
-    observer.observe(mediaContainerRef.current);
+    observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [file?.id, file?.fileType]);
 
   const handleStartAnnotation = () => {
     const mediaElement = videoRef.current || audioRef.current;
