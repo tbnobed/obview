@@ -239,6 +239,11 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
     console.log(
       `[Transcription] Completed file ${fileId}: ${segments.length} segments, ${fullText.length} chars`
     );
+
+    // Auto-trigger summarization (fire-and-forget)
+    import("./summarization")
+      .then((m) => m.summarizeForFile(fileId))
+      .catch((e) => console.error(`[Summarization] Auto-trigger failed for ${fileId}:`, e));
   } catch (err: any) {
     console.error(`[Transcription] Failed for file ${fileId}:`, err);
     await storage

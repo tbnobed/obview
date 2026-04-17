@@ -237,6 +237,11 @@ export const transcripts = pgTable("transcripts", {
   text: text("text"),
   errorMessage: text("error_message"),
   processedAt: timestamp("processed_at"),
+  summary: text("summary"),
+  summaryStatus: text("summary_status").default("pending"), // "pending", "processing", "completed", "failed"
+  summaryError: text("summary_error"),
+  summaryModel: text("summary_model"),
+  summaryProcessedAt: timestamp("summary_processed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

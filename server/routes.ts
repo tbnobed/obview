@@ -1798,6 +1798,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/files/:id/summary/regenerate", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const transcript = await storage.getTranscript(fileId);
+      if (!transcript || transcript.status !== "completed") {
+        return res.status(400).json({ message: "Transcript must be completed before summarizing" });
+      }
+      const { summarizeForFile } = await import("./summarization");
+      summarizeForFile(fileId).catch((err) =>
+        console.error(`[Summarization] Regenerate failed for file ${fileId}:`, err)
+      );
+      res.json({ message: "Summarization started", fileId });
+    } catch (err) {
+      console.error("[Summary API] Regenerate error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get("/api/files/:id/transcript.vtt", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);

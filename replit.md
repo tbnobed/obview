@@ -42,6 +42,14 @@ Preferred communication style: Simple, everyday language.
 - **Password Reset**: Email-based password reset workflow with temporary tokens
 - **Registration Control**: Configurable registration disable via VITE_DISABLE_REGISTRATION environment variable for Docker deployments
 
+### AI Synopsis (Local Summarization)
+- **Engine**: `node-llama-cpp` running a small instruct model entirely on the host (no cloud / external APIs)
+- **Default model**: `llama-3.2-1b-instruct.Q4_K_M.gguf` (~770MB, downloaded on first use to `models/llama/`)
+- **Pipeline**: After whisper transcription completes, `summarizeForFile` is auto-triggered to produce a headline + 2-4 sentence overview + key-moments bullet list from the transcript text
+- **API**: `POST /api/files/:id/summary/regenerate` triggers (re)generation; the synopsis is stored in the same `transcripts` row (`summary`, `summary_status`, `summary_error`, `summary_model`, `summary_processed_at`)
+- **UI**: Synopsis card at the top of the Transcript tab with regenerate button and live status (pending/processing/completed/failed)
+- **Configuration**: `SUMMARIZATION_ENABLED`, `LLAMA_MODEL`, `LLAMA_THREADS`, `LLAMA_MODELS_DIR` env vars; Docker volume `llama_models` persists the downloaded GGUF model
+
 ### Key Features Implementation
 - **Media Timeline Comments**: Timestamped comments system allowing precise feedback on video content
 - **Approval Workflow**: Request changes or approve functionality with threaded comment support

@@ -45,10 +45,16 @@ services:
       - WHISPER_MODEL=${WHISPER_MODEL:-base.en}
       - WHISPER_THREADS=${WHISPER_THREADS:-4}
       - WHISPER_MODELS_DIR=/app/models
+      # Local AI summarization (llama.cpp via node-llama-cpp) configuration
+      - SUMMARIZATION_ENABLED=${SUMMARIZATION_ENABLED:-true}
+      - LLAMA_MODEL=${LLAMA_MODEL:-llama-3.2-1b-instruct.Q4_K_M.gguf}
+      - LLAMA_THREADS=${LLAMA_THREADS:-4}
+      - LLAMA_MODELS_DIR=/app/models/llama
     volumes:
       - uploads:/app/uploads
       - db_backups:/app/db-backups
       - whisper_models:/app/models
+      - llama_models:/app/models/llama
     networks:
       - app_network
     healthcheck:
@@ -90,6 +96,7 @@ volumes:
   uploads:
   db_backups:
   whisper_models:
+  llama_models:
 
 networks:
   app_network:
