@@ -4,14 +4,8 @@ import AppLayout from "@/components/layout/app-layout";
 import { useProject } from "@/hooks/use-projects";
 import { useMediaFiles } from "@/hooks/use-media";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ClipboardCheck, ChevronLeft, Activity, Film, MoreHorizontal } from "lucide-react";
+import { Loader2, FileVideo, Edit, Plus, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ChevronLeft, Activity, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +13,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import MediaPlayer from "@/components/media/media-player";
 import MediaCardGrid from "@/components/media/media-card-grid";
 import { formatTimeAgo } from "@/lib/utils/formatters";
@@ -26,10 +27,6 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import ProjectForm from "@/components/projects/project-form";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProjectCommentsTab } from "@/components/project/project-comments-tab";
 import { ProjectActivityTab } from "@/components/project/project-activity-tab";
 import InviteForm from "@/components/project/invite-form";
 import { ProjectInvitations } from "@/components/project/project-invitations";
@@ -74,6 +71,8 @@ export default function ProjectPage() {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [activitySheetOpen, setActivitySheetOpen] = useState(false);
+  const [settingsSheetOpen, setSettingsSheetOpen] = useState(false);
   const [showUsersDropdown, setShowUsersDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -414,12 +413,20 @@ export default function ProjectPage() {
                     <UserPlus className="mr-2 h-4 w-4" />
                     Invite members
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => setActivitySheetOpen(true)} data-testid="menu-activity">
+                    <Activity className="mr-2 h-4 w-4" />
+                    Activity
+                  </DropdownMenuItem>
                   {isEditor && (
                     <>
-                      <DropdownMenuSeparator />
                       <DropdownMenuItem onSelect={() => setEditDialogOpen(true)} data-testid="menu-edit">
                         <Edit className="mr-2 h-4 w-4" />
                         Edit project
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setSettingsSheetOpen(true)} data-testid="menu-settings">
+                        <SettingsIcon className="mr-2 h-4 w-4" />
+                        Settings
                       </DropdownMenuItem>
                     </>
                   )}
@@ -565,203 +572,145 @@ export default function ProjectPage() {
           </div>
         </div>
 
-        {/* Tabs — segmented control style, integrated under header */}
-        <div className="hidden lg:block px-6">
-          <nav className="flex gap-1 -mb-px">
-            {[
-              { id: "media", label: "Media", icon: Film },
-              { id: "comments", label: "Comments", icon: MessageSquare },
-              { id: "activity", label: "Activity", icon: Activity },
-              { id: "settings", label: "Settings", icon: SettingsIcon },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors",
-                    active
-                      ? "text-primary-600 dark:text-[#10a37f]"
-                      : "text-neutral-500 dark:text-gray-400 hover:text-neutral-800 dark:hover:text-gray-200"
-                  )}
-                  data-testid={`tab-${tab.id}`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                  {active && (
-                    <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary-600 dark:bg-[#10a37f]" />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
       </header>
       
-      {/* Main Content */}
+      {/* Main Content — always media */}
       <div className={cn(
         "bg-neutral-50 dark:bg-[#080b12]",
-        activeTab === "media" && viewMode === "player"
-          ? "min-h-0 p-0"
-          : "overflow-auto p-0 lg:p-6"
+        viewMode === "player" ? "min-h-0 p-0" : "overflow-auto p-0 lg:p-6"
       )}>
-        {activeTab === "media" && (
-          <div className={cn(
-            viewMode === "player"
-              ? "bg-black min-h-0"
-              : "bg-card border border-border/50 rounded-xl"
-          )}>
-            {filesLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : files && files.length > 0 ? (
-              <>
-                {viewMode === 'grid' && (
-                  <MediaCardGrid 
-                    files={files}
-                    projectId={projectId}
-                    onSelectFile={(fileId) => {
-                      setSelectedFileId(fileId);
-                      setViewMode('player');
-                    }}
-                  />
-                )}
-                
-                {viewMode === 'player' && selectedFileId && (
-                  <div className="relative h-full flex flex-col lg:flex lg:flex-col">
-                    <div className="relative flex-1 min-h-0 lg:flex-1 lg:min-h-0">
-                      {/* Back to Grid Button - Desktop only with proper spacing */}
-                      <div className="absolute top-2 right-2 z-10 hidden lg:top-4 lg:right-4 lg:block">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setViewMode('grid')}
-                          className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
-                        >
-                          ← Back to Grid
-                        </Button>
-                      </div>
-                      
-                      {/* Mobile Actions - Top Left with mobile-optimized spacing */}
-                      <div className="absolute top-2 left-2 z-10 lg:hidden">
-                        <div className="flex items-center gap-1.5">
-                          {/* Back to Grid Button - Mobile */}
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setViewMode('grid')}
-                            className="bg-white/90 backdrop-blur-sm border-gray-300 dark:bg-gray-800/90 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700/90"
-                          >
-                            ←
-                          </Button>
-                          
-                          {/* Mobile Actions Dropdown Container */}
-                          <div id="mobile-actions-container"></div>
-                        </div>
-                      </div>
-                      <MediaPlayer
-                        file={files.find(f => f.id === selectedFileId) || null}
-                        projectId={projectId}
-                        onSelectFile={setSelectedFileId}
-                        files={files}
-                        initialTime={initialTime}
-                        project={project}
-                      />
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 lg:py-20">
-                <div className="h-12 w-12 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-3 lg:h-16 lg:w-16 lg:mb-4">
-                  <FileVideo className="h-6 w-6 text-primary-400 lg:h-8 lg:w-8" />
-                </div>
-                <h3 className="text-base font-medium text-neutral-900 dark:text-teal-300 mb-2 lg:text-lg">No media files yet</h3>
-                <p className="text-sm text-neutral-500 dark:text-gray-400 text-center mb-4 max-w-sm px-4 lg:text-base lg:mb-6 lg:max-w-md lg:px-0">
-                  Upload your first media file to start the review process
-                </p>
-                {isEditor && (
-                  <Button onClick={() => navigate(`/projects/${projectId}/upload`)}>
-                    Upload Media
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === "comments" && (
-          <div className="bg-card border border-border/50 rounded-xl p-4 lg:p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <MessageSquare className="h-5 w-5 text-primary dark:text-[#10a37f]" />
-              <h2 className="text-lg font-semibold dark:text-white">All Comments</h2>
+        <div className={cn(
+          viewMode === "player"
+            ? "bg-black min-h-0"
+            : "bg-card border border-border/50 rounded-xl"
+        )}>
+          {filesLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <ProjectCommentsTab projectId={projectId} />
-          </div>
-        )}
-
-        {activeTab === "activity" && (
-          <div className="bg-card border border-border/50 rounded-xl p-4 lg:p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <Clock className="h-5 w-5 text-primary dark:text-[#10a37f]" />
-              <h2 className="text-lg font-semibold dark:text-white">Activity Log</h2>
-            </div>
-            <ProjectActivityTab projectId={projectId} />
-          </div>
-        )}
-
-        {activeTab === "settings" && (
-          <div className="bg-card border border-border/50 rounded-xl p-4 sm:p-6">
-            <h2 className="text-lg font-medium mb-4 text-teal-700 dark:text-teal-300">Project Settings</h2>
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-base font-medium mb-2 dark:text-gray-200">Project Details</h3>
-                <ProjectForm 
-                  projectId={projectId} 
-                  className="max-w-lg"
+          ) : files && files.length > 0 ? (
+            <>
+              {viewMode === 'grid' && (
+                <MediaCardGrid
+                  files={files}
+                  projectId={projectId}
+                  onSelectFile={(fileId) => {
+                    setSelectedFileId(fileId);
+                    setViewMode('player');
+                  }}
                 />
-              </div>
-              
-              {/* Project Media Manager - Only visible for admins */}
-              {user?.role === "admin" && (
-                <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                  <ProjectMediaManager projectId={projectId} />
+              )}
+
+              {viewMode === 'player' && selectedFileId && (
+                <div className="relative h-full flex flex-col lg:flex lg:flex-col">
+                  <div className="relative flex-1 min-h-0 lg:flex-1 lg:min-h-0">
+                    {/* Back to Grid Button */}
+                    <div className="absolute top-2 left-2 z-10 lg:top-4 lg:left-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewMode('grid')}
+                        className="bg-black/60 backdrop-blur-sm border-white/20 text-white hover:bg-black/80 hover:text-white gap-1.5"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="hidden sm:inline">All media</span>
+                      </Button>
+                    </div>
+                    {/* Mobile actions container kept for compatibility */}
+                    <div className="absolute top-2 right-2 z-10 lg:hidden">
+                      <div id="mobile-actions-container"></div>
+                    </div>
+                    <MediaPlayer
+                      file={files.find(f => f.id === selectedFileId) || null}
+                      projectId={projectId}
+                      onSelectFile={setSelectedFileId}
+                      files={files}
+                      initialTime={initialTime}
+                      project={project}
+                    />
+                  </div>
                 </div>
               )}
-              
-              <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                <h3 className="text-base font-medium mb-2 dark:text-gray-200">Team Members</h3>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-neutral-500 dark:text-gray-400">
-                    Manage who has access to this project
-                  </p>
-                </div>
-                
-                {/* Team Members List */}
-                <ProjectTeamMembers 
-                  projectId={projectId}
-                  onInviteClick={() => setInviteDialogOpen(true)}
-                />
-
-                {/* Pending Invitations */}
-                {pendingInvitations && pendingInvitations.length > 0 && (
-                  <div className="mt-6">
-                    <h4 className="text-sm font-medium mb-3 flex items-center">
-                      <Mail className="h-4 w-4 mr-1.5 text-gray-500 dark:text-[#026d55]" />
-                      Pending Invitations
-                    </h4>
-                    <ProjectInvitations projectId={projectId} />
-                  </div>
-                )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 lg:py-20">
+              <div className="h-12 w-12 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-3 lg:h-16 lg:w-16 lg:mb-4">
+                <FileVideo className="h-6 w-6 text-primary-400 lg:h-8 lg:w-8" />
               </div>
+              <h3 className="text-base font-medium text-neutral-900 dark:text-teal-300 mb-2 lg:text-lg">No media files yet</h3>
+              <p className="text-sm text-neutral-500 dark:text-gray-400 text-center mb-4 max-w-sm px-4 lg:text-base lg:mb-6 lg:max-w-md lg:px-0">
+                Upload your first media file to start the review process
+              </p>
+              {isEditor && (
+                <Button onClick={() => navigate(`/projects/${projectId}/upload`)}>
+                  Upload Media
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Activity Sheet */}
+      <Sheet open={activitySheetOpen} onOpenChange={setActivitySheetOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary dark:text-[#10a37f]" />
+              Activity Log
+            </SheetTitle>
+            <SheetDescription>Recent changes and events on this project</SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            <ProjectActivityTab projectId={projectId} />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Settings Sheet */}
+      <Sheet open={settingsSheetOpen} onOpenChange={setSettingsSheetOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <SettingsIcon className="h-5 w-5 text-primary dark:text-[#10a37f]" />
+              Project Settings
+            </SheetTitle>
+            <SheetDescription>Manage project details, media, and team members</SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-8">
+            <div>
+              <h3 className="text-base font-medium mb-3 dark:text-gray-200">Project Details</h3>
+              <ProjectForm projectId={projectId} className="max-w-lg" />
+            </div>
+
+            {user?.role === "admin" && (
+              <div className="border-t border-border/60 pt-6">
+                <ProjectMediaManager projectId={projectId} />
+              </div>
+            )}
+
+            <div className="border-t border-border/60 pt-6">
+              <h3 className="text-base font-medium mb-3 dark:text-gray-200">Team Members</h3>
+              <p className="text-sm text-neutral-500 dark:text-gray-400 mb-4">
+                Manage who has access to this project
+              </p>
+              <ProjectTeamMembers
+                projectId={projectId}
+                onInviteClick={() => setInviteDialogOpen(true)}
+              />
+              {pendingInvitations && pendingInvitations.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium mb-3 flex items-center">
+                    <Mail className="h-4 w-4 mr-1.5 text-gray-500 dark:text-[#10a37f]" />
+                    Pending Invitations
+                  </h4>
+                  <ProjectInvitations projectId={projectId} />
+                </div>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </SheetContent>
+      </Sheet>
     </AppLayout>
   );
 }
