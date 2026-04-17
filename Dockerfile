@@ -30,13 +30,28 @@ RUN echo "=== BUILDING APPLICATION ===" && \
     npx esbuild server/production.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/production.js && \
     test -f dist/production.js && echo "✅ Production server built: dist/production.js" || (echo "❌ Production server build failed" && exit 1)
 
+# ----- whisper.cpp build stage -----
+FROM alpine:3.19 as whisper-builder
+ARG WHISPER_VERSION=v1.5.4
+RUN apk add --no-cache git make g++ cmake
+WORKDIR /src
+RUN git clone --depth 1 --branch ${WHISPER_VERSION} https://github.com/ggerganov/whisper.cpp.git
+WORKDIR /src/whisper.cpp
+RUN make -j$(nproc) && \
+    test -f ./main && cp ./main /usr/local/bin/whisper-cpp && \
+    chmod +x /usr/local/bin/whisper-cpp
+
 # Production stage
 FROM node:20-alpine as production
 
 # Install PostgreSQL client for health checks and utilities, plus FFmpeg for video processing
-RUN apk add --no-cache postgresql-client curl ffmpeg
+# libstdc++ is required by the whisper-cpp binary
+RUN apk add --no-cache postgresql-client curl ffmpeg libstdc++ libgcc
 
 WORKDIR /app
+
+# Copy the prebuilt whisper.cpp binary
+COPY --from=whisper-builder /usr/local/bin/whisper-cpp /usr/local/bin/whisper-cpp
 
 # Copy all server source files first (needed for proper operation)
 COPY --from=builder /app/server ./server
@@ -79,14 +94,20 @@ ENV NODE_ENV=production
 ENV PORT=5000
 ENV IS_DOCKER=true
 ENV UPLOAD_DIR=/app/uploads
+# Local transcription (whisper.cpp) defaults — can be overridden via compose / env
+ENV TRANSCRIPTION_ENABLED=true
+ENV WHISPER_MODEL=base.en
+ENV WHISPER_BIN=whisper-cpp
+ENV WHISPER_MODELS_DIR=/app/models
 
-# Create upload directories including processed video directories with proper permissions
-RUN mkdir -p /app/uploads/processed && \
-    chmod -R 755 /app/uploads && \
-    chown -R node:node /app/uploads
+# Create upload + model directories with proper permissions
+RUN mkdir -p /app/uploads/processed /app/models && \
+    chmod -R 755 /app/uploads /app/models && \
+    chown -R node:node /app/uploads /app/models
 
-# Create a volume for uploads
+# Create volumes for uploads and downloaded whisper models
 VOLUME /app/uploads
+VOLUME /app/models
 
 # Set entrypoint to our initialization script
 ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]

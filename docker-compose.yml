@@ -40,9 +40,15 @@ services:
       - VIDEO_SCRUB_CRF=${VIDEO_SCRUB_CRF:-28}
       - VIDEO_SCRUB_FPS=${VIDEO_SCRUB_FPS:-15}
       - VIDEO_SCRUB_SCALE=${VIDEO_SCRUB_SCALE:--2:180}
+      # Local transcription (whisper.cpp) configuration
+      - TRANSCRIPTION_ENABLED=${TRANSCRIPTION_ENABLED:-true}
+      - WHISPER_MODEL=${WHISPER_MODEL:-base.en}
+      - WHISPER_THREADS=${WHISPER_THREADS:-4}
+      - WHISPER_MODELS_DIR=/app/models
     volumes:
       - uploads:/app/uploads
       - db_backups:/app/db-backups
+      - whisper_models:/app/models
     networks:
       - app_network
     healthcheck:
@@ -83,6 +89,7 @@ volumes:
   postgres_data:
   uploads:
   db_backups:
+  whisper_models:
 
 networks:
   app_network:
