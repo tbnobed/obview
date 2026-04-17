@@ -2136,11 +2136,11 @@ export default function MediaPlayer({
       
       {/* Comments Section - Mobile: full width with max height, Desktop: fixed width with viewport constraint */}
       {file && (
-        <div className="w-full h-full max-h-[50vh] min-h-0 flex flex-col dark:bg-[#0f1218] overflow-hidden lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="w-full h-full max-h-[50vh] min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t border-neutral-200 dark:border-gray-800 lg:border-t-0 lg:border-l overflow-hidden lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
             {/* Tab controls - Desktop only */}
             <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
-              <TabsList className="dark:bg-gray-900">
+              <TabsList className="bg-neutral-100 dark:bg-gray-900">
                 <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
                 <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
               </TabsList>
@@ -2185,7 +2185,7 @@ export default function MediaPlayer({
                 return (
                   <div className="space-y-3">
                     <div className="flex justify-between items-center gap-2">
-                      <h3 className="text-sm font-medium dark:text-white">File Versions</h3>
+                      <h3 className="text-sm font-medium text-neutral-900 dark:text-white">File Versions</h3>
                       <div className="flex items-center gap-1.5">
                         {fileVersions.length >= 2 && (
                           <Button
