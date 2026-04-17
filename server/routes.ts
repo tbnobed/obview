@@ -3164,16 +3164,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Log activity before deletion
-      await storage.logActivity({
-        action: "delete_comment",
-        entityType: "comment",
-        entityId: commentId,
-        userId: req.user.id,
-        metadata: { 
-          fileId: comment.fileId,
-        },
-      });
+      // Log activity before deletion (entity_id is integer; use fileId, keep UUID in metadata)
+      try {
+        await storage.logActivity({
+          action: "delete_comment",
+          entityType: "comment",
+          entityId: comment.fileId,
+          userId: req.user.id,
+          metadata: { 
+            fileId: comment.fileId,
+            commentId,
+          },
+        });
+      } catch (logErr) {
+        console.error("Failed to log delete_comment activity:", logErr);
+      }
       
       // Delete the unified comment
       const success = await storage.deleteUnifiedComment({
