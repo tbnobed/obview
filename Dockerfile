@@ -3,7 +3,7 @@ FROM node:20-alpine as builder
 # Install dependencies
 # git + cmake are required for node-llama-cpp's postinstall, which builds
 # llama.cpp from source on Alpine (musl is incompatible with the prebuilt linux-x64 binary).
-RUN apk add --no-cache python3 make g++ libc6-compat git cmake
+RUN apk add --no-cache python3 make g++ libc6-compat git cmake linux-headers
 
 # Create app directory
 WORKDIR /app
