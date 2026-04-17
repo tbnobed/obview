@@ -516,6 +516,21 @@ export default function TimelineComments({
                             {comment.isResolved ? "Unresolve" : "Resolve"}
                           </Button>
                         )}
+
+                        {canDeleteComment(comment) && (
+                          <Button
+                            variant="link"
+                            className="text-xs p-0 h-auto font-medium text-gray-300 hover:text-red-500 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteComment(comment);
+                            }}
+                            disabled={deleteCommentMutation.isPending}
+                            data-testid={`button-delete-comment-${comment.id}`}
+                          >
+                            Delete
+                          </Button>
+                        )}
                         
                         {/* Reaction picker - Mobile: smaller scale, Desktop: normal scale */}
                         <div style={{scale: '0.8', transformOrigin: 'left'}} className="lg:scale-90">
