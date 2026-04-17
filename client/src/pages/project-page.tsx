@@ -11,7 +11,14 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ClipboardCheck, ChevronLeft, Activity, Film } from "lucide-react";
+import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ClipboardCheck, ChevronLeft, Activity, Film, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import MediaPlayer from "@/components/media/media-player";
 import MediaCardGrid from "@/components/media/media-card-grid";
 import { formatTimeAgo } from "@/lib/utils/formatters";
@@ -381,18 +388,46 @@ export default function ProjectPage() {
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-              {/* Share Button */}
+              {/* Overflow menu — collapses Share, Download, Invite, Edit */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-neutral-600 dark:text-gray-400 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-gray-800/60"
+                    title="More actions"
+                    data-testid="button-project-actions"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem onSelect={() => setShareDialogOpen(true)} data-testid="menu-share">
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share project
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setDownloadDialogOpen(true)} data-testid="menu-download">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download files
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setInviteDialogOpen(true)} data-testid="menu-invite">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Invite members
+                  </DropdownMenuItem>
+                  {isEditor && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={() => setEditDialogOpen(true)} data-testid="menu-edit">
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit project
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Share Dialog */}
               <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-neutral-600 dark:text-gray-400 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-gray-800/60"
-                  title="Share project"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Share Project</DialogTitle>
@@ -422,18 +457,8 @@ export default function ProjectPage() {
               </DialogContent>
             </Dialog>
 
-            {/* Download Button */}
+            {/* Download Dialog */}
             <Dialog open={downloadDialogOpen} onOpenChange={setDownloadDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-neutral-600 dark:text-gray-400 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-gray-800/60"
-                  title="Download files"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Download Files</DialogTitle>
@@ -484,18 +509,8 @@ export default function ProjectPage() {
               </DialogContent>
             </Dialog>
 
-            {/* Invite Members Button */}
+            {/* Invite Members Dialog */}
             <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-neutral-600 dark:text-gray-400 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-gray-800/60"
-                  title="Invite members"
-                >
-                  <UserPlus className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Invite Team Members</DialogTitle>
@@ -526,16 +541,6 @@ export default function ProjectPage() {
             {isEditor && (
               <>
                 <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 text-neutral-600 dark:text-gray-400 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-gray-800/60"
-                      title="Edit project"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Edit Project</DialogTitle>
@@ -546,10 +551,9 @@ export default function ProjectPage() {
                     />
                   </DialogContent>
                 </Dialog>
-                <Separator orientation="vertical" className="h-6 mx-1 bg-neutral-200 dark:bg-gray-800" />
                 <Button
                   size="sm"
-                  className="h-9 px-3 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
+                  className="h-9 px-3.5 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 shadow-sm"
                   onClick={() => navigate(`/projects/${projectId}/upload`)}
                   title="Upload media"
                 >
