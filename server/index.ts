@@ -73,5 +73,11 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    // Resume any summarization jobs interrupted by the previous shutdown.
+    import("./summarization")
+      .then(({ resumePendingSummarizations }) => resumePendingSummarizations())
+      .catch((err) =>
+        console.error("[Startup] Could not resume summarizations:", err)
+      );
   });
 })();

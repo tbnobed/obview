@@ -217,9 +217,51 @@ async function runSummarizationJob(fileId: number): Promise<void> {
 }
 
 export function summarizeForFile(fileId: number): Promise<void> {
-  if (!SUMMARIZATION_ENABLED) return Promise.resolve();
+  if (!SUMMARIZATION_ENABLED) {
+    console.log(`[Summarization] Disabled — skipping file ${fileId}`);
+    return Promise.resolve();
+  }
+  console.log(`[Summarization] Enqueuing job for file ${fileId}`);
   // Chain onto the global job queue so concurrent calls don't share a session.
   const next = jobChain.then(() => runSummarizationJob(fileId));
   jobChain = next.catch(() => {});
   return next;
+}
+
+/**
+ * Re-queue any transcripts whose summarization was interrupted by a server
+ * restart (status stuck at pending/processing). Without this, the client
+ * polls forever because nothing in the new process owns the job.
+ */
+export async function resumePendingSummarizations(): Promise<void> {
+  if (!SUMMARIZATION_ENABLED) return;
+  try {
+    const { db } = await import("./db");
+    const { transcripts } = await import("@shared/schema");
+    const { or, eq, and, isNotNull } = await import("drizzle-orm");
+    const stuck = await db
+      .select()
+      .from(transcripts)
+      .where(
+        and(
+          eq(transcripts.status, "completed"),
+          isNotNull(transcripts.text),
+          or(
+            eq(transcripts.summaryStatus, "pending"),
+            eq(transcripts.summaryStatus, "processing")
+          )
+        )
+      );
+    if (stuck.length === 0) return;
+    console.log(
+      `[Summarization] Resuming ${stuck.length} interrupted summarization job(s)`
+    );
+    for (const t of stuck) {
+      summarizeForFile(t.fileId).catch((err) =>
+        console.error(`[Summarization] Resume failed for file ${t.fileId}:`, err)
+      );
+    }
+  } catch (err) {
+    console.error("[Summarization] Failed to query stuck jobs on startup:", err);
+  }
 }
