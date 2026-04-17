@@ -1630,7 +1630,7 @@ export default function MediaPlayer({
         </div>
         
         {/* Bottom controls area - Mobile: minimal padding, Desktop: compact */}
-        <div className="bg-black/90 backdrop-blur p-2 pb-4 border-t border-gray-800 lg:p-3 lg:pb-4" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
+        <div className="bg-white dark:bg-black/90 backdrop-blur p-2 pb-4 border-t border-neutral-200 dark:border-gray-800 lg:p-3 lg:pb-4" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
               <div className="flex flex-col space-y-1">
