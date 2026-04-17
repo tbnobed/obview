@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, ChevronRight, AlertTriangle } from "lucide-react";
+import { Menu, X, LogOut, ChevronRight, AlertTriangle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { Button } from "@/components/ui/button";
@@ -144,19 +144,17 @@ export default function Header() {
       </div>
       
       {/* Desktop header - visible only on desktop */}
-      <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 items-center justify-between px-2 py-0.5 h-8">
+      <div className="hidden md:flex bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800 items-center justify-between px-2 py-1.5">
         {/* Left side - Toggle sidebar button */}
         <Button
           variant="ghost"
-          size="sm"
-          className="text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-gray-800 h-6 w-6 p-0"
+          size="icon"
+          className="h-8 w-8 shrink-0 text-neutral-500 dark:text-neutral-400 hover:text-foreground"
           onClick={toggleSidebar}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          <ChevronRight className={cn(
-            "h-3 w-3 transition-transform duration-200",
-            isCollapsed ? "" : "rotate-180"
-          )} />
+          {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </Button>
         
         {/* Right side - User controls */}
