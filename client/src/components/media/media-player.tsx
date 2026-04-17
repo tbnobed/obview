@@ -1878,59 +1878,68 @@ export default function MediaPlayer({
               !mediaError ? "mt-1 pt-1" : "pt-1"
             )}>
               {/* Action buttons - Desktop only */}
-              <div className="hidden lg:flex space-x-1">
+              <div className="hidden lg:flex items-center gap-1">
                 {file && (
                   <>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                      className="h-8 w-8 p-0 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800"
                       onClick={() => setIsVersionDialogOpen(true)}
                       title="Upload new version"
                     >
-                      <FilePlus2 className="h-3 w-3" />
+                      <FilePlus2 className="h-4 w-4" />
                     </Button>
                     <ShareLinkButton 
                       fileId={file.id} 
                       size="sm"
                       variant="ghost"
                       compact={true}
-                      className="h-7 w-7 p-0"
+                      className="h-8 w-8 p-0 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800"
                     />
+
+                    <div className="mx-1 h-5 w-px bg-neutral-200 dark:bg-gray-700" aria-hidden />
+
                     <Button 
-                      variant="outline" 
+                      variant="ghost"
                       size="sm" 
-                      className="h-7 w-7 p-0 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-900 dark:hover:bg-orange-950"
+                      className="h-8 px-2.5 gap-1.5 text-amber-700 hover:text-amber-800 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10"
                       onClick={handleRequestChanges}
                       disabled={approveMutation.isPending}
                       title="Request changes"
                     >
-                      <AlertCircle className="h-3 w-3" />
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-xs font-medium">Request changes</span>
                     </Button>
                     <Button 
                       size="sm" 
-                      className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700"
+                      className="h-8 px-3 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                       onClick={handleApprove}
                       disabled={approveMutation.isPending}
                       title="Approve"
                     >
-                      <Check className="h-3 w-3" />
+                      <Check className="h-4 w-4" />
+                      <span className="text-xs font-medium">Approve</span>
                     </Button>
+
                     {(user?.role === 'admin' || user?.role === 'editor') && project && (
-                      <Button 
-                        variant="outline"
-                        size="sm"
-                        className="h-7 w-7 p-0 dark:bg-blue-600 dark:text-white dark:border-blue-600 dark:hover:bg-blue-700 dark:hover:border-blue-700"
-                        onClick={handleMarkAsInReview}
-                        disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
-                        title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
-                      >
-                        {isUpdatingStatus ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <ClipboardCheck className="h-3 w-3" />
-                        )}
-                      </Button>
+                      <>
+                        <div className="mx-1 h-5 w-px bg-neutral-200 dark:bg-gray-700" aria-hidden />
+                        <Button 
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800 disabled:opacity-40"
+                          onClick={handleMarkAsInReview}
+                          disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
+                          title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
+                        >
+                          {isUpdatingStatus ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <ClipboardCheck className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </>
                     )}
                   </>
                 )}
