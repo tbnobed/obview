@@ -105,6 +105,8 @@ export default function MediaPlayer({
     queryKey: ['/api/files', file?.id, 'comments'],
     queryFn: () => file ? apiRequest('GET', `/api/files/${file.id}/comments`) : Promise.resolve([]),
     enabled: !!user && !!file,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch video processing data for proxy versions (optional optimization)

@@ -132,6 +132,8 @@ export default function PublicSharePage() {
       return response.json();
     },
     enabled: !!token && !!file,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
     retry: false
   });
 
@@ -1589,6 +1591,8 @@ function CommentsList({ token, onTimestampClick, onCommentHover, onCommentLeave,
       }
       return response.json();
     },
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   // Build comment threads safely with cycle detection
