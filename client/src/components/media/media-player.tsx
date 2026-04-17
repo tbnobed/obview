@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import TimelineComments from "@/components/media/timeline-comments";
+import TranscriptView from "@/components/media/transcript-view";
 import { DownloadButton } from "@/components/download-button";
 import { ExportMarkersButton } from "@/components/export-markers-button";
 import { AnnotationCanvas, AnnotationOverlay, type Annotation } from "@/components/media/annotation-canvas";
@@ -2152,6 +2153,9 @@ export default function MediaPlayer({
               <TabsList className="bg-neutral-100 dark:bg-gray-900">
                 <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
                 <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
+                {(file.fileType === "video" || file.fileType === "audio") && (
+                  <TabsTrigger value="transcript" onClick={() => setShowCommentsTab(false)}>Transcript</TabsTrigger>
+                )}
               </TabsList>
             </div>
             
@@ -2186,6 +2190,22 @@ export default function MediaPlayer({
               />
             </TabsContent>
             
+            {(file.fileType === "video" || file.fileType === "audio") && (
+              <TabsContent value="transcript" className="flex-1 min-h-0 p-0 overflow-hidden">
+                <TranscriptView
+                  fileId={file.id}
+                  currentTime={currentTime}
+                  onSeek={(time: number) => {
+                    const mediaElement = videoRef.current || audioRef.current;
+                    if (mediaElement) {
+                      mediaElement.currentTime = time;
+                      setCurrentTime(time);
+                    }
+                  }}
+                />
+              </TabsContent>
+            )}
+
             <TabsContent value="versions" className="flex-grow overflow-auto px-2 py-2 lg:px-4 lg:py-3">
               {(() => {
                 const fileVersions = file ? files

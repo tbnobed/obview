@@ -48,6 +48,12 @@ import {
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import { VideoProcessor } from "./video-processor";
+import {
+  transcribeFile,
+  segmentsToVtt,
+  segmentsToSrt,
+  isTranscriptionAvailable,
+} from "./transcription";
 
 // Background video processing function
 async function processVideoInBackground(file: any, processingId: number) {
@@ -1364,6 +1370,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`[Video Processing] Started background processing for: ${file.filename}`);
         }
+
+        // Auto-transcribe audio/video files in the background
+        if (fileType === "video" || fileType === "audio") {
+          transcribeFile({ fileId: file.id, inputPath: file.filePath, fileType }).catch(
+            (err) => console.error(`[Transcription] Background failed for file ${file.id}:`, err)
+          );
+        }
       } catch (error) {
         console.error(`[Upload] Background operations failed for file ${file.id}:`, error);
         // Don't re-throw since response already sent
@@ -1740,6 +1753,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[Video Processing API] Error fetching processing status:", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // ===== Transcript routes =====
+  app.get("/api/transcription/status", isAuthenticated, async (_req, res) => {
+    const available = await isTranscriptionAvailable();
+    res.json({
+      available,
+      enabled: (process.env.TRANSCRIPTION_ENABLED || "true").toLowerCase() !== "false",
+      model: process.env.WHISPER_MODEL || "base.en",
+    });
+  });
+
+  app.get("/api/files/:id/transcript", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const transcript = await storage.getTranscript(fileId);
+      if (!transcript) return res.status(404).json({ message: "No transcript yet" });
+      res.json(transcript);
+    } catch (err) {
+      console.error("[Transcript API] Get error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/files/:id/transcript/regenerate", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+      if (file.fileType !== "video" && file.fileType !== "audio") {
+        return res.status(400).json({ message: "File type does not support transcription" });
+      }
+      transcribeFile({ fileId: file.id, inputPath: file.filePath, fileType: file.fileType }).catch(
+        (err) => console.error(`[Transcription] Regenerate failed for file ${file.id}:`, err)
+      );
+      res.json({ message: "Transcription started", fileId });
+    } catch (err) {
+      console.error("[Transcript API] Regenerate error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/files/:id/transcript.vtt", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      const transcript = await storage.getTranscript(fileId);
+      if (!transcript || !transcript.segments?.length) {
+        return res.status(404).send("No transcript available");
+      }
+      res.setHeader("Content-Type", "text/vtt; charset=utf-8");
+      res.send(segmentsToVtt(transcript.segments));
+    } catch (err) {
+      console.error("[Transcript API] VTT error:", err);
+      res.status(500).send("Internal server error");
+    }
+  });
+
+  app.get("/api/files/:id/transcript.srt", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      const transcript = await storage.getTranscript(fileId);
+      if (!transcript || !transcript.segments?.length) {
+        return res.status(404).send("No transcript available");
+      }
+      res.setHeader("Content-Type", "application/x-subrip; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="transcript-${fileId}.srt"`);
+      res.send(segmentsToSrt(transcript.segments));
+    } catch (err) {
+      console.error("[Transcript API] SRT error:", err);
+      res.status(500).send("Internal server error");
+    }
+  });
+
+  app.get("/api/files/:id/transcript.txt", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      const transcript = await storage.getTranscript(fileId);
+      if (!transcript) return res.status(404).send("No transcript available");
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="transcript-${fileId}.txt"`);
+      res.send(transcript.text || (transcript.segments || []).map((s) => s.text).join("\n"));
+    } catch (err) {
+      console.error("[Transcript API] TXT error:", err);
+      res.status(500).send("Internal server error");
     }
   });
 

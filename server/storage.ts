@@ -13,6 +13,7 @@ import {
   approvals,
   passwordResets,
   videoProcessing,
+  transcripts,
   type User,
   type InsertUser,
   type Folder,
@@ -41,7 +42,9 @@ import {
   type PasswordReset,
   type InsertPasswordReset,
   type VideoProcessing,
-  type InsertVideoProcessing
+  type InsertVideoProcessing,
+  type Transcript,
+  type InsertTranscript
 } from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
@@ -93,6 +96,12 @@ export interface IStorage {
   createVideoProcessing(processing: InsertVideoProcessing): Promise<VideoProcessing>;
   getVideoProcessing(fileId: number): Promise<VideoProcessing | undefined>;
   updateVideoProcessing(id: number, data: Partial<InsertVideoProcessing>): Promise<VideoProcessing | undefined>;
+
+  // Transcript management
+  createTranscript(transcript: InsertTranscript): Promise<Transcript>;
+  getTranscript(fileId: number): Promise<Transcript | undefined>;
+  updateTranscript(id: number, data: Partial<InsertTranscript>): Promise<Transcript | undefined>;
+  deleteTranscript(fileId: number): Promise<boolean>;
 
   // New Unified Comment management (UUID-based) 
   getUnifiedComment(id: string): Promise<CommentUnified | undefined>;
@@ -178,6 +187,7 @@ export class MemStorage implements IStorage {
   private approvals: Map<number, Approval>;
   private passwordResets: Map<number, PasswordReset>;
   private videoProcessing: Map<number, VideoProcessing>;
+  private transcripts: Map<number, Transcript>;
   sessionStore: any; // Using any to avoid type issues
 
   currentUserId: number;
@@ -192,6 +202,7 @@ export class MemStorage implements IStorage {
   currentApprovalId: number;
   currentPasswordResetId: number;
   currentVideoProcessingId: number;
+  currentTranscriptId: number;
 
   constructor() {
     this.users = new Map();
@@ -207,6 +218,7 @@ export class MemStorage implements IStorage {
     this.approvals = new Map();
     this.passwordResets = new Map();
     this.videoProcessing = new Map();
+    this.transcripts = new Map();
     
     this.currentUserId = 1;
     this.currentFolderId = 1;
@@ -220,6 +232,7 @@ export class MemStorage implements IStorage {
     this.currentApprovalId = 1;
     this.currentPasswordResetId = 1;
     this.currentVideoProcessingId = 1;
+    this.currentTranscriptId = 1;
 
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // prune expired entries every 24h
@@ -1046,6 +1059,38 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
+  // Transcript methods
+  async createTranscript(transcript: InsertTranscript): Promise<Transcript> {
+    const id = this.currentTranscriptId++;
+    const now = new Date();
+    const created: Transcript = {
+      ...(transcript as any),
+      id,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.transcripts.set(id, created);
+    return created;
+  }
+
+  async getTranscript(fileId: number): Promise<Transcript | undefined> {
+    return Array.from(this.transcripts.values()).find(t => t.fileId === fileId);
+  }
+
+  async updateTranscript(id: number, data: Partial<InsertTranscript>): Promise<Transcript | undefined> {
+    const existing = this.transcripts.get(id);
+    if (!existing) return undefined;
+    const updated: Transcript = { ...existing, ...(data as any), updatedAt: new Date() };
+    this.transcripts.set(id, updated);
+    return updated;
+  }
+
+  async deleteTranscript(fileId: number): Promise<boolean> {
+    const existing = await this.getTranscript(fileId);
+    if (!existing) return false;
+    return this.transcripts.delete(existing.id);
+  }
+
   // New Unified Comment methods (UUID-based)
   async getUnifiedComment(id: string): Promise<CommentUnified | undefined> {
     return this.unifiedComments.get(id);
@@ -1492,6 +1537,34 @@ export class DatabaseStorage implements IStorage {
       .where(eq(videoProcessing.id, id))
       .returning();
     return updated;
+  }
+
+  // Transcript methods
+  async createTranscript(transcript: InsertTranscript): Promise<Transcript> {
+    const [created] = await db.insert(transcripts).values(transcript as any).returning();
+    return created;
+  }
+
+  async getTranscript(fileId: number): Promise<Transcript | undefined> {
+    const [t] = await db.select().from(transcripts).where(eq(transcripts.fileId, fileId));
+    return t;
+  }
+
+  async updateTranscript(id: number, data: Partial<InsertTranscript>): Promise<Transcript | undefined> {
+    const [updated] = await db
+      .update(transcripts)
+      .set({ ...(data as any), updatedAt: new Date() })
+      .where(eq(transcripts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteTranscript(fileId: number): Promise<boolean> {
+    const result = await db
+      .delete(transcripts)
+      .where(eq(transcripts.fileId, fileId))
+      .returning({ deletedId: transcripts.id });
+    return result.length > 0;
   }
 
   // Comment methods

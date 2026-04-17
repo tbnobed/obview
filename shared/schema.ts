@@ -226,6 +226,24 @@ export const videoProcessing = pgTable("video_processing", {
 export const insertVideoProcessingSchema = createInsertSchema(videoProcessing)
   .omit({ id: true, createdAt: true });
 
+// TRANSCRIPTS SCHEMA
+export const transcripts = pgTable("transcripts", {
+  id: serial("id").primaryKey(),
+  fileId: integer("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("pending"), // "pending", "processing", "completed", "failed"
+  language: text("language"),
+  modelName: text("model_name"),
+  segments: json("segments").$type<Array<{ start: number; end: number; text: string }>>(),
+  text: text("text"),
+  errorMessage: text("error_message"),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTranscriptSchema = createInsertSchema(transcripts)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
 // COMMENT REACTIONS SCHEMA
 export const commentReactions = pgTable("comment_reactions", {
   id: serial("id").primaryKey(),
