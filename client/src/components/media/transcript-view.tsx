@@ -18,7 +18,6 @@ import {
   AlertCircle,
   Search,
   ChevronDown,
-  Sparkles,
 } from "lucide-react";
 
 interface TranscriptSegment {
@@ -95,25 +94,6 @@ export default function TranscriptView({ fileId, currentTime, onSeek }: Props) {
     onError: (err: Error) =>
       toast({
         title: "Failed to start transcription",
-        description: err.message,
-        variant: "destructive",
-      }),
-  });
-
-  const regenerateSummary = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", `/api/files/${fileId}/summary/regenerate`);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Generating synopsis",
-        description: "The first run downloads the local model and may take a few minutes.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/files", fileId, "transcript"] });
-    },
-    onError: (err: Error) =>
-      toast({
-        title: "Failed to generate synopsis",
         description: err.message,
         variant: "destructive",
       }),
@@ -277,12 +257,6 @@ export default function TranscriptView({ fileId, currentTime, onSeek }: Props) {
         </Button>
       </div>
 
-      <SummarySection
-        transcript={transcript}
-        onRegenerate={() => regenerateSummary.mutate()}
-        isPending={regenerateSummary.isPending}
-      />
-
       <div ref={containerRef} className="flex-1 min-h-0 overflow-auto px-2 py-2">
         {filteredSegments.length === 0 ? (
           <div className="text-center text-sm text-neutral-500 dark:text-gray-400 py-6">
@@ -345,67 +319,3 @@ export default function TranscriptView({ fileId, currentTime, onSeek }: Props) {
   );
 }
 
-function SummarySection({
-  transcript,
-  onRegenerate,
-  isPending,
-}: {
-  transcript: Transcript;
-  onRegenerate: () => void;
-  isPending: boolean;
-}) {
-  const status = transcript.summaryStatus || "pending";
-  const inProgress = status === "pending" || status === "processing" || isPending;
-
-  return (
-    <div className="px-4 py-3 border-b border-neutral-200 dark:border-gray-800 bg-gradient-to-b from-amber-50/40 to-transparent dark:from-amber-500/5">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-gray-400">
-          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-          Synopsis
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-xs"
-          onClick={onRegenerate}
-          disabled={inProgress}
-          title="Regenerate synopsis"
-        >
-          {inProgress ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <RefreshCcw className="h-3 w-3" />
-          )}
-        </Button>
-      </div>
-
-      {status === "completed" && transcript.summary ? (
-        <div className="text-sm text-neutral-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-          {transcript.summary}
-        </div>
-      ) : status === "processing" || status === "pending" ? (
-        <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-gray-400 py-1">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          {status === "pending"
-            ? "Synopsis queued — will run once the local model is loaded."
-            : "Generating synopsis with local model…"}
-        </div>
-      ) : status === "failed" ? (
-        <div className="text-sm text-red-600 dark:text-red-400">
-          <div className="flex items-center gap-1.5 mb-1">
-            <AlertCircle className="h-3.5 w-3.5" />
-            Synopsis failed
-          </div>
-          {transcript.summaryError && (
-            <div className="text-xs opacity-80 break-words">{transcript.summaryError}</div>
-          )}
-        </div>
-      ) : (
-        <div className="text-sm text-neutral-500 dark:text-gray-400 italic">
-          No synopsis yet.
-        </div>
-      )}
-    </div>
-  );
-}

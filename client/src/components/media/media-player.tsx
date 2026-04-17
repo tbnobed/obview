@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import TimelineComments from "@/components/media/timeline-comments";
 import TranscriptView from "@/components/media/transcript-view";
+import SynopsisView from "@/components/media/synopsis-view";
 import { DownloadButton } from "@/components/download-button";
 import { ExportMarkersButton } from "@/components/export-markers-button";
 import { AnnotationCanvas, AnnotationOverlay, type Annotation } from "@/components/media/annotation-canvas";
@@ -2157,6 +2158,9 @@ export default function MediaPlayer({
                 {(file.fileType === "video" || file.fileType === "audio") && (
                   <TabsTrigger value="transcript" onClick={() => setShowCommentsTab(false)}>Transcript</TabsTrigger>
                 )}
+                {(file.fileType === "video" || file.fileType === "audio") && (
+                  <TabsTrigger value="synopsis" onClick={() => setShowCommentsTab(false)}>Synopsis</TabsTrigger>
+                )}
                 <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
               </TabsList>
             </div>
@@ -2192,6 +2196,12 @@ export default function MediaPlayer({
               />
             </TabsContent>
             
+            {(file.fileType === "video" || file.fileType === "audio") && (
+              <TabsContent value="synopsis" className="flex-1 min-h-0 p-0 overflow-hidden">
+                <SynopsisView fileId={file.id} />
+              </TabsContent>
+            )}
+
             {(file.fileType === "video" || file.fileType === "audio") && (
               <TabsContent value="transcript" className="flex-1 min-h-0 p-0 overflow-hidden">
                 <TranscriptView
