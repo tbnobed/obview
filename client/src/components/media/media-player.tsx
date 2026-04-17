@@ -2152,10 +2152,10 @@ export default function MediaPlayer({
             <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="bg-neutral-100 dark:bg-gray-900">
                 <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
-                <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
                 {(file.fileType === "video" || file.fileType === "audio") && (
                   <TabsTrigger value="transcript" onClick={() => setShowCommentsTab(false)}>Transcript</TabsTrigger>
                 )}
+                <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
               </TabsList>
             </div>
             
