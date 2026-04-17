@@ -364,6 +364,10 @@ export default function ProjectPage() {
 
   return (
     <AppLayout hideHeader>
+     <div className={cn(
+       "flex flex-col",
+       viewMode === "player" ? "h-full min-h-0" : "min-h-full"
+     )}>
       {/* Project Header — combined global + project bar, single row */}
       <header className="bg-white dark:bg-[#0a0d14] border-b border-neutral-200 dark:border-gray-800/80">
         <div className="px-3 py-2 flex items-center justify-between gap-3 lg:px-4 lg:py-2">
@@ -727,6 +731,7 @@ export default function ProjectPage() {
           </div>
         </SheetContent>
       </Sheet>
+     </div>
     </AppLayout>
   );
 }

@@ -44,7 +44,7 @@ export default function AppLayout({ children, hideHeader = false }: AppLayoutPro
         {!hideHeader && <Header />}
         
         {/* Page Content */}
-        <main className="flex-1 min-h-0 overflow-auto dark:text-gray-300 flex flex-col">
+        <main className="flex-1 min-h-0 overflow-auto dark:text-gray-300">
           {children}
         </main>
       </div>
