@@ -2151,7 +2151,7 @@ export default function MediaPlayer({
       {file && (
         <div className="w-full h-full max-h-[50vh] min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t border-neutral-200 dark:border-gray-800 lg:border-t-0 lg:border-l overflow-hidden lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
-            {/* Tab controls - Desktop only */}
+            {/* Tab controls - Desktop */}
             <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="bg-neutral-100 dark:bg-gray-900">
                 <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
@@ -2162,6 +2162,28 @@ export default function MediaPlayer({
                   <TabsTrigger value="synopsis" onClick={() => setShowCommentsTab(false)}>Synopsis</TabsTrigger>
                 )}
                 <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Tab controls - Mobile (horizontally scrollable) */}
+            <div className="flex lg:hidden items-center px-2 py-2 border-b border-neutral-200 dark:border-gray-800 overflow-x-auto">
+              <TabsList className="bg-neutral-100 dark:bg-gray-900 inline-flex w-max">
+                <TabsTrigger value="comments" className="text-xs px-3" onClick={() => setShowCommentsTab(true)}>
+                  Comments
+                </TabsTrigger>
+                {(file.fileType === "video" || file.fileType === "audio") && (
+                  <TabsTrigger value="transcript" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
+                    Transcript
+                  </TabsTrigger>
+                )}
+                {(file.fileType === "video" || file.fileType === "audio") && (
+                  <TabsTrigger value="synopsis" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
+                    Synopsis
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="versions" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
+                  Versions
+                </TabsTrigger>
               </TabsList>
             </div>
             
