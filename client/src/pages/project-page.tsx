@@ -11,7 +11,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ClipboardCheck } from "lucide-react";
+import { Loader2, FileVideo, Edit, Users, Plus, MessageSquare, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ClipboardCheck, ChevronLeft, Activity, Film } from "lucide-react";
 import MediaPlayer from "@/components/media/media-player";
 import MediaCardGrid from "@/components/media/media-card-grid";
 import { formatTimeAgo } from "@/lib/utils/formatters";
@@ -300,12 +300,27 @@ export default function ProjectPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge className="bg-green-600">Approved</Badge>;
+        return (
+          <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+            <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Approved
+          </Badge>
+        );
       case 'in_review':
-        return <Badge className="bg-blue-600">In Review</Badge>;
+        return (
+          <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">
+            <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-blue-500" />
+            In Review
+          </Badge>
+        );
       case 'in_progress':
       default:
-        return <Badge className="bg-yellow-600">In Progress</Badge>;
+        return (
+          <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">
+            <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
+            In Progress
+          </Badge>
+        );
     }
   };
 
@@ -340,28 +355,42 @@ export default function ProjectPage() {
 
   return (
     <AppLayout>
-      {/* Project Header - Mobile: compact spacing, Desktop: normal spacing */}
-      <header className="bg-white shadow-sm dark:bg-[#0f1218] dark:border-b dark:border-gray-800">
-        <div className="px-2 py-1 flex items-center justify-between gap-1 lg:px-6 lg:gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1 lg:gap-3">
-            <h1 className="text-sm font-medium text-neutral-900 dark:text-teal-300 min-w-0 break-words lg:text-base">{project.name}</h1>
-            <div className="hidden items-center gap-1.5 text-xs text-neutral-500 dark:text-gray-400 shrink-0 lg:flex">
-              <span>Updated {formatTimeAgo(new Date(project.updatedAt))}</span>
-              <span className="text-neutral-300 dark:text-gray-700">•</span>
-              {getStatusBadge(project.status)}
+      {/* Project Header — clean, breathable, focused */}
+      <header className="bg-white dark:bg-[#0a0d14] border-b border-neutral-200 dark:border-gray-800/80">
+        <div className="px-3 py-3 flex items-center justify-between gap-3 lg:px-6 lg:py-4">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 text-neutral-500 hover:text-foreground"
+              onClick={() => navigate("/projects")}
+              title="Back to projects"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <h1 className="text-base font-semibold text-neutral-900 dark:text-white truncate lg:text-lg" title={project.name}>
+                  {project.name}
+                </h1>
+                <div className="hidden sm:block shrink-0">{getStatusBadge(project.status)}</div>
+              </div>
+              <p className="hidden sm:block text-xs text-neutral-500 dark:text-gray-500 mt-0.5">
+                Updated {formatTimeAgo(new Date(project.updatedAt))}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-0.5 shrink-0 lg:gap-1">
+          <div className="flex items-center gap-1.5 shrink-0">
               {/* Share Button */}
               <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-6 w-6 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943] lg:h-7 lg:w-7"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-neutral-600 dark:text-gray-400 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-gray-800/60"
                   title="Share project"
                 >
-                  <Share2 className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
+                  <Share2 className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
@@ -396,13 +425,13 @@ export default function ProjectPage() {
             {/* Download Button */}
             <Dialog open={downloadDialogOpen} onOpenChange={setDownloadDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-6 w-6 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943] lg:h-7 lg:w-7"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-neutral-600 dark:text-gray-400 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-gray-800/60"
                   title="Download files"
                 >
-                  <Download className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
+                  <Download className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -458,13 +487,13 @@ export default function ProjectPage() {
             {/* Invite Members Button */}
             <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-7 w-7 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-neutral-600 dark:text-gray-400 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-gray-800/60"
                   title="Invite members"
                 >
-                  <UserPlus className="h-3 w-3" />
+                  <UserPlus className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -498,102 +527,88 @@ export default function ProjectPage() {
               <>
                 <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="h-6 w-6 p-0 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943] lg:h-7 lg:w-7"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-neutral-600 dark:text-gray-400 hover:text-foreground hover:bg-neutral-100 dark:hover:bg-gray-800/60"
                       title="Edit project"
                     >
-                      <Edit className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
+                      <Edit className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Edit Project</DialogTitle>
                     </DialogHeader>
-                    <ProjectForm 
-                      projectId={projectId} 
-                      onSuccess={() => setEditDialogOpen(false)} 
+                    <ProjectForm
+                      projectId={projectId}
+                      onSuccess={() => setEditDialogOpen(false)}
                     />
                   </DialogContent>
                 </Dialog>
-                <Button 
+                <Separator orientation="vertical" className="h-6 mx-1 bg-neutral-200 dark:bg-gray-800" />
+                <Button
                   size="sm"
-                  className="h-6 w-6 p-0 dark:bg-[#026d55] dark:text-white dark:hover:bg-[#025943] lg:h-7 lg:w-7" 
+                  className="h-9 px-3 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
                   onClick={() => navigate(`/projects/${projectId}/upload`)}
                   title="Upload media"
                 >
-                  <Plus className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline text-sm font-medium">Upload</span>
                 </Button>
               </>
             )}
           </div>
         </div>
-      </header>
-        
-        {/* Tabs - Hidden on mobile for clean mobile experience */}
-        <div className="hidden lg:block px-0 lg:px-8">
-          <div className="border-b border-neutral-200 dark:border-gray-800">
-            <nav className="-mb-px flex space-x-8">
-              <a 
-                href="#" 
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "media" 
-                    ? "border-primary-400 text-primary-500 dark:border-[#026d55] dark:text-[#026d55]" 
-                    : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
-                }`}
-                onClick={(e) => { e.preventDefault(); setActiveTab("media"); }}
-              >
-                Media
-              </a>
-              <a 
-                href="#" 
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "comments" 
-                    ? "border-primary-400 text-primary-500 dark:border-[#026d55] dark:text-[#026d55]" 
-                    : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
-                }`}
-                onClick={(e) => { e.preventDefault(); setActiveTab("comments"); }}
-              >
-                Comments
-              </a>
-              <a 
-                href="#" 
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "activity" 
-                    ? "border-primary-400 text-primary-500 dark:border-[#026d55] dark:text-[#026d55]" 
-                    : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
-                }`}
-                onClick={(e) => { e.preventDefault(); setActiveTab("activity"); }}
-              >
-                Activity
-              </a>
-              <a 
-                href="#" 
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "settings" 
-                    ? "border-primary-400 text-primary-500 dark:border-[#026d55] dark:text-[#026d55]" 
-                    : "border-transparent text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-300 hover:border-neutral-300 dark:hover:border-gray-700"
-                }`}
-                onClick={(e) => { e.preventDefault(); setActiveTab("settings"); }}
-              >
-                Settings
-              </a>
-            </nav>
-          </div>
+
+        {/* Tabs — segmented control style, integrated under header */}
+        <div className="hidden lg:block px-6">
+          <nav className="flex gap-1 -mb-px">
+            {[
+              { id: "media", label: "Media", icon: Film },
+              { id: "comments", label: "Comments", icon: MessageSquare },
+              { id: "activity", label: "Activity", icon: Activity },
+              { id: "settings", label: "Settings", icon: SettingsIcon },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors",
+                    active
+                      ? "text-primary-600 dark:text-[#10a37f]"
+                      : "text-neutral-500 dark:text-gray-400 hover:text-neutral-800 dark:hover:text-gray-200"
+                  )}
+                  data-testid={`tab-${tab.id}`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                  {active && (
+                    <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary-600 dark:bg-[#10a37f]" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
         </div>
+      </header>
       
-      {/* Main Content - Mobile: no padding for full-width, Desktop: normal padding */}
+      {/* Main Content */}
       <div className={cn(
-        "bg-neutral-100 dark:bg-[#080b12]",
-        activeTab === "media" && viewMode === "player" 
-          ? "min-h-0 p-0" 
-          : "overflow-auto p-0 lg:p-8"
+        "bg-neutral-50 dark:bg-[#080b12]",
+        activeTab === "media" && viewMode === "player"
+          ? "min-h-0 p-0"
+          : "overflow-auto p-0 lg:p-6"
       )}>
         {activeTab === "media" && (
           <div className={cn(
-            "bg-white dark:bg-[#0f1218] shadow dark:shadow-gray-900",
-            viewMode === "player" ? "rounded-none min-h-0" : "rounded-lg"
+            viewMode === "player"
+              ? "bg-black min-h-0"
+              : "bg-card border border-border/50 rounded-xl"
           )}>
             {filesLoading ? (
               <div className="flex items-center justify-center py-20">
@@ -676,29 +691,27 @@ export default function ProjectPage() {
         )}
 
         {activeTab === "comments" && (
-          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-3 lg:p-6">
-            <h2 className="text-base font-medium mb-3 flex items-center dark:text-white lg:text-lg lg:mb-4">
-              <MessageSquare className="h-4 w-4 mr-2 text-primary dark:text-[#026d55] lg:h-5 lg:w-5" />
-              All Comments
-            </h2>
-            
+          <div className="bg-card border border-border/50 rounded-xl p-4 lg:p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <MessageSquare className="h-5 w-5 text-primary dark:text-[#10a37f]" />
+              <h2 className="text-lg font-semibold dark:text-white">All Comments</h2>
+            </div>
             <ProjectCommentsTab projectId={projectId} />
           </div>
         )}
 
         {activeTab === "activity" && (
-          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-4 sm:p-6">
-            <h2 className="text-lg font-medium mb-4 flex items-center dark:text-white">
-              <Clock className="h-5 w-5 mr-2 text-primary dark:text-[#026d55]" />
-              Activity Log
-            </h2>
-            
+          <div className="bg-card border border-border/50 rounded-xl p-4 lg:p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <Clock className="h-5 w-5 text-primary dark:text-[#10a37f]" />
+              <h2 className="text-lg font-semibold dark:text-white">Activity Log</h2>
+            </div>
             <ProjectActivityTab projectId={projectId} />
           </div>
         )}
 
         {activeTab === "settings" && (
-          <div className="bg-white dark:bg-[#0f1218] rounded-lg shadow dark:shadow-gray-900 p-4 sm:p-6">
+          <div className="bg-card border border-border/50 rounded-xl p-4 sm:p-6">
             <h2 className="text-lg font-medium mb-4 text-teal-700 dark:text-teal-300">Project Settings</h2>
             <div className="space-y-8">
               <div>
