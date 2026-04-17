@@ -1228,7 +1228,28 @@ export default function PublicSharePage() {
 
                 {/* Comments List - Mobile: compact spacing, Desktop: normal spacing */}
                 <div className="flex-1 min-h-0 overflow-auto p-2 space-y-2 lg:p-3 lg:space-y-3">
-                  <CommentsList token={token!} onTimestampClick={seekToTimestamp} onCommentHover={handleCommentHover} onCommentLeave={handleCommentLeave} />
+                  <CommentsList
+                    token={token!}
+                    onTimestampClick={seekToTimestamp}
+                    onCommentHover={handleCommentHover}
+                    onCommentLeave={handleCommentLeave}
+                    onCommentSelect={(comment: any) => {
+                      if (comment?.annotations) {
+                        try {
+                          const parsed = typeof comment.annotations === 'string'
+                            ? JSON.parse(comment.annotations)
+                            : comment.annotations;
+                          if (Array.isArray(parsed) && parsed.length > 0) {
+                            setDisplayAnnotations(parsed);
+                            return;
+                          }
+                        } catch (e) {
+                          console.error('Failed to parse annotations', e);
+                        }
+                      }
+                      setDisplayAnnotations(null);
+                    }}
+                  />
                 </div>
 
                 {/* Comment Input - Mobile: compact sticky composer, Desktop: normal */}
@@ -1516,7 +1537,7 @@ function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess, pe
 
 
 // Comments List Component
-function CommentsList({ token, onTimestampClick, onCommentHover, onCommentLeave }: { token: string; onTimestampClick?: (timestamp: number) => void; onCommentHover?: (comment: any) => void; onCommentLeave?: () => void }) {
+function CommentsList({ token, onTimestampClick, onCommentHover, onCommentLeave, onCommentSelect }: { token: string; onTimestampClick?: (timestamp: number) => void; onCommentHover?: (comment: any) => void; onCommentLeave?: () => void; onCommentSelect?: (comment: any) => void }) {
   const [replyingToId, setReplyingToId] = useState<number | null>(null);
   const { toast } = useToast();
   
@@ -1848,14 +1869,18 @@ function CommentsList({ token, onTimestampClick, onCommentHover, onCommentLeave 
       {topLevelComments.map((comment: any, index: number) => (
         <div 
           key={comment.id} 
-          onClick={comment.timestamp !== null ? () => onTimestampClick?.(comment.timestamp!) : undefined}
-          onKeyDown={comment.timestamp !== null ? (e) => {
+          onClick={() => {
+            onCommentSelect?.(comment);
+            if (comment.timestamp !== null) onTimestampClick?.(comment.timestamp!);
+          }}
+          onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              onTimestampClick?.(comment.timestamp!);
+              onCommentSelect?.(comment);
+              if (comment.timestamp !== null) onTimestampClick?.(comment.timestamp!);
             }
-          } : undefined}
-          className={`rounded-lg p-4 transition-colors ${comment.timestamp !== null ? 'cursor-pointer hover:opacity-80' : ''}`}
+          }}
+          className={`rounded-lg p-4 transition-colors cursor-pointer hover:opacity-80`}
           style={{
             backgroundColor: 'hsl(210, 20%, 12%)',
             border: '1px solid hsl(210, 15%, 18%)'
