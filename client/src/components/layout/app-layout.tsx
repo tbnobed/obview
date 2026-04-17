@@ -24,7 +24,7 @@ export default function AppLayout({ children, hideHeader = false }: AppLayoutPro
   }
 
   return (
-    <div className="flex min-h-[100svh] bg-white dark:bg-[#0a0d14]">
+    <div className="flex h-[100svh] bg-white dark:bg-[#0a0d14]">
       {/* Desktop Sidebar */}
       <div 
         className={cn(
