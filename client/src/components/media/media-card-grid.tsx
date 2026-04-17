@@ -71,6 +71,7 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
   const [scrubPosition, setScrubPosition] = useState(0);
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
+  const scrubRafRef = useRef<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -299,24 +300,26 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
           }}
           onMouseMove={(e) => {
             if (!spriteMetadata || file.fileType !== 'video') return;
-            
             const rect = e.currentTarget.getBoundingClientRect();
             if (rect.width === 0) return;
-            
-            const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-            setScrubPosition(pos);
-            
-            console.log(`🎬 [SPRITE-SCRUB] Position: ${(pos * 100).toFixed(1)}%`);
+            const clientX = e.clientX;
+            if (scrubRafRef.current != null) return;
+            scrubRafRef.current = requestAnimationFrame(() => {
+              scrubRafRef.current = null;
+              const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+              setScrubPosition((prev) => (Math.abs(prev - pos) < 0.005 ? prev : pos));
+            });
           }}
           onMouseEnter={() => {
             if (!spriteMetadata || file.fileType !== 'video') return;
-            
-            console.log('🎬 [SPRITE-SCRUB] Mouse entered - activating sprite scrub mode');
             setIsScrubbing(true);
             setScrubPosition(0);
           }}
           onMouseLeave={() => {
-            console.log('🎬 [SPRITE-SCRUB] Mouse left - deactivating sprite scrub mode');
+            if (scrubRafRef.current != null) {
+              cancelAnimationFrame(scrubRafRef.current);
+              scrubRafRef.current = null;
+            }
             setIsScrubbing(false);
             setScrubPosition(0);
           }}

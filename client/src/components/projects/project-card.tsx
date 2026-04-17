@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Trash2, PlayCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +25,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   const deleteProjectMutation = useDeleteProject();
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubPosition, setScrubPosition] = useState(0);
+  const scrubRafRef = useRef<number | null>(null);
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   
@@ -114,22 +115,26 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               cursor: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M8 5v10l8-5-8-5z' fill='%23ffffff'/%3e%3c/svg%3e") 10 10, pointer`
             }}
             onMouseMove={(e) => {
+              if (!spriteMetadata || !project.latestVideoFile) return;
               const rect = e.currentTarget.getBoundingClientRect();
               if (rect.width === 0) return;
-              
-              const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-              setScrubPosition(pos);
-              
-              if (!spriteMetadata || !project.latestVideoFile) return;
-              console.log(`🎬 [PROJECT-SPRITE-SCRUB] Position: ${(pos * 100).toFixed(1)}%`);
+              const clientX = e.clientX;
+              if (scrubRafRef.current != null) return;
+              scrubRafRef.current = requestAnimationFrame(() => {
+                scrubRafRef.current = null;
+                const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                setScrubPosition((prev) => (Math.abs(prev - pos) < 0.005 ? prev : pos));
+              });
             }}
             onMouseEnter={() => {
-              console.log('🎬 [PROJECT-SPRITE-SCRUB] Mouse entered - activating sprite scrub mode');
               setIsScrubbing(true);
               setScrubPosition(0);
             }}
             onMouseLeave={() => {
-              console.log('🎬 [PROJECT-SPRITE-SCRUB] Mouse left - deactivating sprite scrub mode');
+              if (scrubRafRef.current != null) {
+                cancelAnimationFrame(scrubRafRef.current);
+                scrubRafRef.current = null;
+              }
               setIsScrubbing(false);
               setScrubPosition(0);
             }}
