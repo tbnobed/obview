@@ -593,11 +593,11 @@ export default function ProjectPage() {
       {/* Main Content — always media */}
       <div className={cn(
         "bg-neutral-50 dark:bg-[#080b12]",
-        viewMode === "player" ? "min-h-0 p-0" : "overflow-auto p-0 lg:p-6"
+        viewMode === "player" ? "flex-1 min-h-0 flex flex-col p-0" : "overflow-auto p-0 lg:p-6"
       )}>
         <div className={cn(
           viewMode === "player"
-            ? "bg-black min-h-0"
+            ? "bg-black flex-1 min-h-0 flex flex-col"
             : "bg-card border border-border/50 rounded-xl"
         )}>
           {filesLoading ? (
