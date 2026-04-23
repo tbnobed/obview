@@ -55,8 +55,7 @@ export function useCreateShareLink(arg: ScopeArg) {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (input: CreateShareLinkInput) => {
-      const res = await apiRequest("POST", listUrl(arg), input);
-      return (await res.json()) as ShareLinkDTO;
+      return (await apiRequest("POST", listUrl(arg), input)) as ShareLinkDTO;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: listKey(arg) });
@@ -70,8 +69,7 @@ export function useUpdateShareLink(arg: ScopeArg) {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ id, ...input }: { id: string } & Partial<CreateShareLinkInput> & { clearPassword?: boolean }) => {
-      const res = await apiRequest("PATCH", `/api/share-links/${id}`, input);
-      return (await res.json()) as ShareLinkDTO;
+      return (await apiRequest("PATCH", `/api/share-links/${id}`, input)) as ShareLinkDTO;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: listKey(arg) }),
     onError: (e: Error) =>
