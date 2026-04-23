@@ -13,6 +13,7 @@ import * as fsPromises from 'fs/promises';
 import { existsSync } from 'fs';
 import * as crypto from 'crypto';
 import { generateFCPXML, generateEDL, generateCSV } from './utils/marker-export';
+import { registerShareLinkRoutes } from "./share-links";
 
 // Extended Request type to handle file uploads
 // Using declaration merging with Express namespace
@@ -401,6 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // Set up authentication
   setupAuth(app);
+  registerShareLinkRoutes(app, isAuthenticated);
   
   // Test authentication endpoint
   app.get('/api/test-auth', (req, res) => {

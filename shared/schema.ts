@@ -271,6 +271,45 @@ export const insertCommentReactionSchema = createInsertSchema(commentReactions)
     reactionType: z.enum(["👍", "❤️", "👏", "🎉", "😮", "😢", "😡"]),
   });
 
+// SHARE LINKS SCHEMA - project/folder/file share links with per-link settings
+export const shareLinks = pgTable("share_links", {
+  id: text("id").primaryKey(), // UUID
+  token: text("token").notNull().unique(),
+  scopeType: text("scope_type").notNull(), // "project" | "folder" | "file"
+  scopeId: integer("scope_id").notNull(),
+  name: text("name"),
+  passwordHash: text("password_hash"),
+  expiresAt: timestamp("expires_at"),
+  allowDownloads: boolean("allow_downloads").notNull().default(false),
+  allowComments: boolean("allow_comments").notNull().default(true),
+  requireEmail: boolean("require_email").notNull().default(false),
+  revokedAt: timestamp("revoked_at"),
+  createdById: integer("created_by_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertShareLinkSchema = createInsertSchema(shareLinks)
+  .omit({ id: true, token: true, passwordHash: true, createdAt: true, revokedAt: true })
+  .extend({
+    scopeType: z.enum(["project", "folder", "file"]),
+    name: z.string().max(80).optional().nullable(),
+    password: z.string().min(1).max(200).optional().nullable(),
+    expiresAt: z.union([z.string(), z.date()]).optional().nullable(),
+    allowDownloads: z.boolean().optional(),
+    allowComments: z.boolean().optional(),
+    requireEmail: z.boolean().optional(),
+  });
+
+export const updateShareLinkSchema = z.object({
+  name: z.string().max(80).optional().nullable(),
+  password: z.string().min(1).max(200).optional().nullable(), // empty string = clear
+  clearPassword: z.boolean().optional(),
+  expiresAt: z.union([z.string(), z.date(), z.null()]).optional(),
+  allowDownloads: z.boolean().optional(),
+  allowComments: z.boolean().optional(),
+  requireEmail: z.boolean().optional(),
+});
+
 // Type definitions
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -347,4 +386,8 @@ export type VideoProcessing = typeof videoProcessing.$inferSelect;
 export type InsertVideoProcessing = z.infer<typeof insertVideoProcessingSchema>;
 
 export type CommentReaction = typeof commentReactions.$inferSelect;
+
+export type ShareLink = typeof shareLinks.$inferSelect;
+export type InsertShareLink = z.infer<typeof insertShareLinkSchema>;
+export type UpdateShareLink = z.infer<typeof updateShareLinkSchema>;
 export type InsertCommentReaction = z.infer<typeof insertCommentReactionSchema>;

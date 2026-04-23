@@ -32,11 +32,13 @@ import {
   ChevronRight,
   Folder,
   FolderOpen,
+  Share2,
   Globe,
   Loader2,
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 
 const createFolderSchema = z.object({
   name: z
@@ -213,6 +215,9 @@ function SidebarFolderItem({ folder }: { folder: any }) {
   const [location] = useLocation();
   const { data: projects, isLoading } = useFolderProjects(open ? folder.id : 0);
   const projectCount = projects?.length ?? 0;
+  const { user } = useAuth();
+  const canShare = user && (user.role === "admin" || (folder.createdById === user.id && !folder.isGlobal));
+  const [shareOpen, setShareOpen] = useState(false);
 
   return (
     <div>
@@ -245,7 +250,28 @@ function SidebarFolderItem({ folder }: { folder: any }) {
             </span>
           )}
         </span>
+        {canShare && (
+          <span
+            role="button"
+            onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
+            title="Share folder"
+            data-testid={`button-share-folder-${folder.id}`}
+          >
+            <Share2 className="h-3.5 w-3.5 text-neutral-500" />
+          </span>
+        )}
       </button>
+
+      {canShare && (
+        <ShareLinksDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          scopeType="folder"
+          scopeId={folder.id}
+          scopeName={folder.name}
+        />
+      )}
 
       {open && (
         <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-neutral-200 dark:border-gray-800 pl-2">

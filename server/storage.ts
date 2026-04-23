@@ -14,6 +14,7 @@ import {
   passwordResets,
   videoProcessing,
   transcripts,
+  shareLinks,
   type User,
   type InsertUser,
   type Folder,
@@ -44,7 +45,8 @@ import {
   type VideoProcessing,
   type InsertVideoProcessing,
   type Transcript,
-  type InsertTranscript
+  type InsertTranscript,
+  type ShareLink
 } from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
@@ -168,6 +170,14 @@ export interface IStorage {
   getCommentReactions(commentId: string): Promise<{ reactionType: string; count: number; userReacted?: boolean }[]>;
   getCommentReactionsWithUserStatus(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean }[]>;
   getCommentReactionsWithUsers(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean; users: { name: string; isCurrentUser: boolean }[] }[]>;
+
+  // Share Links
+  createShareLink(data: { id: string; token: string; scopeType: string; scopeId: number; name?: string | null; passwordHash?: string | null; expiresAt?: Date | null; allowDownloads: boolean; allowComments: boolean; requireEmail: boolean; createdById: number }): Promise<ShareLink>;
+  getShareLink(id: string): Promise<ShareLink | undefined>;
+  getShareLinkByToken(token: string): Promise<ShareLink | undefined>;
+  listShareLinksForScope(scopeType: string, scopeId: number): Promise<ShareLink[]>;
+  updateShareLink(id: string, data: Partial<{ name: string | null; passwordHash: string | null; expiresAt: Date | null; allowDownloads: boolean; allowComments: boolean; requireEmail: boolean; revokedAt: Date | null }>): Promise<ShareLink | undefined>;
+  revokeShareLink(id: string): Promise<boolean>;
 
   // Session store
   sessionStore: any; // Using any to avoid type issues
@@ -1283,6 +1293,41 @@ export class MemStorage implements IStorage {
   async getCommentReactionsWithUsers(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean; users: { name: string; isCurrentUser: boolean }[] }[]> {
     // For MemStorage, return empty array
     return [];
+  }
+
+  // Share Links (MemStorage)
+  private shareLinksMem: Map<string, ShareLink> = new Map();
+  async createShareLink(data: any): Promise<ShareLink> {
+    const link: ShareLink = {
+      id: data.id, token: data.token, scopeType: data.scopeType, scopeId: data.scopeId,
+      name: data.name ?? null, passwordHash: data.passwordHash ?? null,
+      expiresAt: data.expiresAt ?? null, allowDownloads: !!data.allowDownloads,
+      allowComments: data.allowComments !== false, requireEmail: !!data.requireEmail,
+      revokedAt: null, createdById: data.createdById, createdAt: new Date(),
+    };
+    this.shareLinksMem.set(link.id, link);
+    return link;
+  }
+  async getShareLink(id: string): Promise<ShareLink | undefined> { return this.shareLinksMem.get(id); }
+  async getShareLinkByToken(token: string): Promise<ShareLink | undefined> {
+    for (const l of this.shareLinksMem.values()) if (l.token === token) return l;
+    return undefined;
+  }
+  async listShareLinksForScope(scopeType: string, scopeId: number): Promise<ShareLink[]> {
+    return Array.from(this.shareLinksMem.values()).filter(l => l.scopeType === scopeType && l.scopeId === scopeId);
+  }
+  async updateShareLink(id: string, data: any): Promise<ShareLink | undefined> {
+    const cur = this.shareLinksMem.get(id);
+    if (!cur) return undefined;
+    const next = { ...cur, ...data };
+    this.shareLinksMem.set(id, next);
+    return next;
+  }
+  async revokeShareLink(id: string): Promise<boolean> {
+    const cur = this.shareLinksMem.get(id);
+    if (!cur) return false;
+    this.shareLinksMem.set(id, { ...cur, revokedAt: new Date() });
+    return true;
   }
 }
 
@@ -2721,6 +2766,50 @@ export class DatabaseStorage implements IStorage {
       userReacted: group.userReacted,
       users: group.users
     }));
+  }
+
+  // Share Links (DatabaseStorage)
+  async createShareLink(data: any): Promise<ShareLink> {
+    const [row] = await db.insert(shareLinks).values({
+      id: data.id,
+      token: data.token,
+      scopeType: data.scopeType,
+      scopeId: data.scopeId,
+      name: data.name ?? null,
+      passwordHash: data.passwordHash ?? null,
+      expiresAt: data.expiresAt ?? null,
+      allowDownloads: !!data.allowDownloads,
+      allowComments: data.allowComments !== false,
+      requireEmail: !!data.requireEmail,
+      createdById: data.createdById,
+    }).returning();
+    return row;
+  }
+
+  async getShareLink(id: string): Promise<ShareLink | undefined> {
+    const [row] = await db.select().from(shareLinks).where(eq(shareLinks.id, id));
+    return row;
+  }
+
+  async getShareLinkByToken(token: string): Promise<ShareLink | undefined> {
+    const [row] = await db.select().from(shareLinks).where(eq(shareLinks.token, token));
+    return row;
+  }
+
+  async listShareLinksForScope(scopeType: string, scopeId: number): Promise<ShareLink[]> {
+    return await db.select().from(shareLinks)
+      .where(and(eq(shareLinks.scopeType, scopeType), eq(shareLinks.scopeId, scopeId)))
+      .orderBy(desc(shareLinks.createdAt));
+  }
+
+  async updateShareLink(id: string, data: any): Promise<ShareLink | undefined> {
+    const [row] = await db.update(shareLinks).set(data).where(eq(shareLinks.id, id)).returning();
+    return row;
+  }
+
+  async revokeShareLink(id: string): Promise<boolean> {
+    const [row] = await db.update(shareLinks).set({ revokedAt: new Date() }).where(eq(shareLinks.id, id)).returning();
+    return !!row;
   }
 }
 

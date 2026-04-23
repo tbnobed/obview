@@ -38,6 +38,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import ShareLinksDialog from "@/components/sharing/share-links-dialog";
+import { Link as LinkIcon } from "lucide-react";
 
 
 
@@ -72,6 +74,7 @@ export default function ProjectPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'player'>('grid'); // Start with grid view
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [reviewerLinksOpen, setReviewerLinksOpen] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [activitySheetOpen, setActivitySheetOpen] = useState(false);
@@ -421,6 +424,10 @@ export default function ProjectPage() {
                     <Share2 className="mr-2 h-4 w-4" />
                     Share project
                   </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setReviewerLinksOpen(true)} data-testid="menu-reviewer-links">
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Reviewer links
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => setDownloadDialogOpen(true)} data-testid="menu-download">
                     <Download className="mr-2 h-4 w-4" />
                     Download files
@@ -448,6 +455,15 @@ export default function ProjectPage() {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Reviewer Links Dialog */}
+              <ShareLinksDialog
+                open={reviewerLinksOpen}
+                onOpenChange={setReviewerLinksOpen}
+                scopeType="project"
+                scopeId={projectId}
+                scopeName={project?.name}
+              />
 
               {/* Share Dialog */}
               <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
