@@ -75,10 +75,14 @@ export async function resumeStuckVideoProcessing() {
         const qualities = Array.isArray(r.qualities) ? r.qualities : [];
         // Only treat completed-with-no-qualities as stuck for video files.
         // Audio/image rows legitimately have no qualities.
-        // We can't tell file type from the processing row alone, so we
-        // require both an empty qualities array AND a scrubVersionPath
-        // (which is only generated for video).
         return qualities.length === 0 && !!r.scrubVersionPath;
+      }
+      // Re-pick up rows that failed specifically because the old code
+      // refused to encode sub-720p videos and produced zero qualities.
+      // The native-resolution fix now handles those, so retry once.
+      if (r.status === "failed") {
+        const err: string = r.errorMessage || "";
+        return /quality encoding failed|no quality renditions|input resolution too low/i.test(err);
       }
       return false;
     });
