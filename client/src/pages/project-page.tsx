@@ -73,7 +73,6 @@ export default function ProjectPage() {
   const [activeTab, setActiveTab] = useState("media");
   const [viewMode, setViewMode] = useState<'grid' | 'player'>('grid'); // Start with grid view
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [reviewerLinksOpen, setReviewerLinksOpen] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -234,24 +233,6 @@ export default function ProjectPage() {
   }, [location, files]);
 
   const selectedFile = files?.find(file => file.id === selectedFileId) || null;
-  
-  // Share project handler
-  const handleShareProject = () => {
-    const shareUrl = `${window.location.origin}/projects/${projectId}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      toast({
-        title: "Link copied to clipboard",
-        description: "You can now share this link with others",
-      });
-      setShareDialogOpen(false);
-    }).catch(() => {
-      toast({
-        title: "Failed to copy link",
-        description: "Please try again or copy the link manually",
-        variant: "destructive",
-      });
-    });
-  };
   
   // Download project handler
   const handleDownloadFile = (fileId: number) => {
@@ -420,13 +401,9 @@ export default function ProjectPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuItem onSelect={() => setShareDialogOpen(true)} data-testid="menu-share">
+                  <DropdownMenuItem onSelect={() => setReviewerLinksOpen(true)} data-testid="menu-reviewer-links">
                     <Share2 className="mr-2 h-4 w-4" />
                     Share project
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setReviewerLinksOpen(true)} data-testid="menu-reviewer-links">
-                    <LinkIcon className="mr-2 h-4 w-4" />
-                    Reviewer links
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => setDownloadDialogOpen(true)} data-testid="menu-download">
                     <Download className="mr-2 h-4 w-4" />
@@ -464,37 +441,6 @@ export default function ProjectPage() {
                 scopeId={projectId}
                 scopeName={project?.name}
               />
-
-              {/* Share Dialog */}
-              <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Share Project</DialogTitle>
-                  <DialogDescription>
-                    Share this project link with your team members or clients
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex items-center space-x-2 py-4">
-                  <Input 
-                    readOnly
-                    value={`${window.location.origin}/projects/${projectId}`}
-                    className="flex-1"
-                  />
-                  <Button type="button" onClick={handleShareProject} className="shrink-0">
-                    Copy Link
-                  </Button>
-                </div>
-                <DialogFooter className="sm:justify-end">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShareDialogOpen(false)}
-                  >
-                    Close
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
 
             {/* Download Dialog */}
             <Dialog open={downloadDialogOpen} onOpenChange={setDownloadDialogOpen}>
