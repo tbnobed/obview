@@ -205,7 +205,14 @@ function SidebarFolderItem({ folder }: { folder: any }) {
         ) : (
           <Folder className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-400" />
         )}
-        <span className="truncate flex-1 text-left">{folder.name}</span>
+        <span className="truncate flex-1 text-left">
+          {folder.name}
+          {folder.createdByUsername && (
+            <span className="ml-1.5 text-xs text-neutral-400 dark:text-neutral-500 font-normal">
+              · {folder.createdByUsername}
+            </span>
+          )}
+        </span>
       </button>
 
       {open && (
