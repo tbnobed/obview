@@ -79,10 +79,12 @@ export async function resumeStuckVideoProcessing() {
       }
       // Re-pick up rows that failed specifically because the old code
       // refused to encode sub-720p videos and produced zero qualities.
-      // The native-resolution fix now handles those, so retry once.
+      // We deliberately match ONLY the old-bug signatures here — the new
+      // explicit failure message ("Quality encoding failed: …") is excluded
+      // so a genuinely broken file isn't retried on every restart.
       if (r.status === "failed") {
         const err: string = r.errorMessage || "";
-        return /quality encoding failed|no quality renditions|input resolution too low/i.test(err);
+        return /no quality renditions produced|input resolution too low/i.test(err);
       }
       return false;
     });

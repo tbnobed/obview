@@ -268,7 +268,10 @@ export class VideoProcessor {
         '-profile:v', 'main', // Use main profile for better compatibility and speed
         '-level', '3.1',
         '-pix_fmt', 'yuv420p', // Ensures compatibility with all players
-        '-vf', `scale=${evenW}:${evenH}:force_original_aspect_ratio=decrease`, // Cap at target, no upscaling
+        // Cap at target with no upscaling, then round both dimensions to even
+        // (libx264 + yuv420p requires even width/height; aspect-preserving
+        // downscales of portrait/odd-aspect sources can produce odd output).
+        '-vf', `scale=${evenW}:${evenH}:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
         '-maxrate', quality.bitrate,
         '-bufsize', `${parseInt(quality.bitrate) * 1.5}k`, // Reduce buffer size for faster encoding
         '-c:a', 'aac',
