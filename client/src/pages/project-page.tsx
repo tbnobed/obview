@@ -5,7 +5,7 @@ import { useProject } from "@/hooks/use-projects";
 import { useMediaFiles } from "@/hooks/use-media";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileVideo, Edit, Plus, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ChevronLeft, Activity, MoreHorizontal, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Loader2, FileVideo, Plus, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ChevronLeft, Activity, MoreHorizontal, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useSidebar } from "@/hooks/use-sidebar";
 import {
@@ -72,7 +72,6 @@ export default function ProjectPage() {
   const [initialTime, setInitialTime] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("media");
   const [viewMode, setViewMode] = useState<'grid' | 'player'>('grid'); // Start with grid view
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [reviewerLinksOpen, setReviewerLinksOpen] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -387,7 +386,7 @@ export default function ProjectPage() {
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-              {/* Overflow menu — collapses Share, Download, Invite, Edit */}
+              {/* Overflow menu — collapses Share, Download, Invite, Activity, Settings */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -419,16 +418,10 @@ export default function ProjectPage() {
                     Activity
                   </DropdownMenuItem>
                   {isEditor && (
-                    <>
-                      <DropdownMenuItem onSelect={() => setEditDialogOpen(true)} data-testid="menu-edit">
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit project
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setSettingsSheetOpen(true)} data-testid="menu-settings">
-                        <SettingsIcon className="mr-2 h-4 w-4" />
-                        Settings
-                      </DropdownMenuItem>
-                    </>
+                    <DropdownMenuItem onSelect={() => setSettingsSheetOpen(true)} data-testid="menu-settings">
+                      <SettingsIcon className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -525,17 +518,6 @@ export default function ProjectPage() {
 
             {isEditor && (
               <>
-                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit Project</DialogTitle>
-                    </DialogHeader>
-                    <ProjectForm
-                      projectId={projectId}
-                      onSuccess={() => setEditDialogOpen(false)}
-                    />
-                  </DialogContent>
-                </Dialog>
                 <Button
                   size="sm"
                   className="h-9 px-3.5 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 shadow-sm"
