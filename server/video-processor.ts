@@ -235,6 +235,24 @@ export class VideoProcessor {
   }
 
   /**
+   * Run ffprobe and return the full parsed JSON (format + streams).
+   * Used by the MediaInfo dialog so the UI can show a deep, MediaInfo-style
+   * breakdown without us having to persist every probe field in the DB.
+   */
+  static async probeFull(inputPath: string): Promise<any> {
+    const args = [
+      '-v', 'quiet',
+      '-print_format', 'json',
+      '-show_format',
+      '-show_streams',
+      '-show_chapters',
+      inputPath,
+    ];
+    const output = await this.executeFFprobe(args);
+    return JSON.parse(output);
+  }
+
+  /**
    * Generate a specific quality version
    */
   private static async generateQuality(

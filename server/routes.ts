@@ -1827,6 +1827,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get video processing status and metadata
+  // MediaInfo-style technical details for a file. Runs ffprobe on demand
+  // against the original upload and returns format + per-stream info plus
+  // filesystem stats. Used by the "View Details" dropdown action.
+  app.get("/api/files/:id/mediainfo", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+
+      const file = await storage.getFile(fileId);
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      const fsMod = await import("fs/promises");
+      let stat: { size: number; mtimeMs: number } | null = null;
+      let onDisk = false;
+      try {
+        const s = await fsMod.stat(file.filePath);
+        stat = { size: s.size, mtimeMs: s.mtimeMs };
+        onDisk = true;
+      } catch {
+        onDisk = false;
+      }
+
+      let probe: any = null;
+      let probeError: string | null = null;
+      if (onDisk) {
+        try {
+          probe = await VideoProcessor.probeFull(file.filePath);
+        } catch (err: any) {
+          probeError = err?.message || String(err);
+        }
+      } else {
+        probeError = "Original file is not present on disk";
+      }
+
+      res.json({
+        file: {
+          id: file.id,
+          filename: file.filename,
+          fileType: file.fileType,
+          fileSize: file.fileSize,
+          filePath: file.filePath,
+          version: file.version,
+          isLatestVersion: file.isLatestVersion,
+          createdAt: file.createdAt,
+        },
+        diskSize: stat?.size ?? null,
+        mtimeMs: stat?.mtimeMs ?? null,
+        onDisk,
+        probe,
+        probeError,
+      });
+    } catch (error) {
+      console.error("[MediaInfo API] Error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get("/api/files/:id/processing", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);

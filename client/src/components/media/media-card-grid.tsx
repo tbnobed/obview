@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 import { File as StorageFile } from "@shared/schema";
+import MediaInfoDialog from "./media-info-dialog";
 
 interface MediaCardGridProps {
   files: StorageFile[];
@@ -112,10 +113,11 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
     }
   };
 
+  const [mediaInfoOpen, setMediaInfoOpen] = useState(false);
+
   const handleViewDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Navigate to the file view page
-    onSelect(file.id);
+    setMediaInfoOpen(true);
   };
 
   const handleDownload = async (e: React.MouseEvent) => {
@@ -561,6 +563,14 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
           </div>
         </div>
       </CardContent>
+
+      {/* MediaInfo-style technical details */}
+      <MediaInfoDialog
+        open={mediaInfoOpen}
+        onOpenChange={setMediaInfoOpen}
+        fileId={file.id}
+        filename={file.filename}
+      />
 
       {/* Share Link Dialog — pick view-only or comment-enabled */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
