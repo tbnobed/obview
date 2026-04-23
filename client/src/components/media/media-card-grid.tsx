@@ -149,9 +149,25 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
   const handleShareLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      // Generate a view-only share link (no comments) using the file's share token
-      const shareUrl = `${window.location.origin}/share/${file.shareToken}?viewOnly=true`;
-      
+      // Ensure the file has a share token. If not, ask the server to mint one
+      // (this endpoint creates the token on demand and returns the share URL).
+      let token = file.shareToken;
+      if (!token) {
+        const res = await apiRequest("POST", `/api/files/${file.id}/share`);
+        const data = await res.json();
+        // Response shape: { shareUrl: "https://.../share/<token>" }
+        const match = typeof data?.shareUrl === "string"
+          ? data.shareUrl.match(/\/share\/([^/?#]+)/)
+          : null;
+        token = match?.[1] ?? null;
+        if (!token) {
+          throw new Error("Failed to obtain share token");
+        }
+        // Update the local copy so subsequent clicks skip the round-trip
+        (file as any).shareToken = token;
+      }
+      const shareUrl = `${window.location.origin}/share/${token}?viewOnly=true`;
+
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(shareUrl);
         toast({
@@ -471,7 +487,7 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
                   <Download className="h-4 w-4 mr-2" />
                   Download
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleShareLink} disabled={!file.shareToken}>
+                <DropdownMenuItem onClick={handleShareLink}>
                   <Share2 className="h-4 w-4 mr-2" />
                   Share Link
                 </DropdownMenuItem>
