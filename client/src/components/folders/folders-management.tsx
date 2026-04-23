@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Edit, Trash2, Folder, FolderOpen, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Folder, FolderOpen, ExternalLink, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 
@@ -355,6 +355,15 @@ function FolderCard({ folder, onClick, onEdit, onDelete, isDeleting }: FolderCar
               <CardTitle className="text-lg" data-testid={`text-folder-name-${folder.id}`}>
                 {folder.name}
               </CardTitle>
+              {folder.createdByUsername && (
+                <div
+                  className="flex items-center gap-1 mt-0.5 text-xs text-neutral-500 dark:text-gray-400"
+                  data-testid={`text-folder-creator-${folder.id}`}
+                >
+                  <User className="h-3 w-3" />
+                  <span>by {folder.createdByUsername}</span>
+                </div>
+              )}
               {folder.description && (
                 <CardDescription className="text-sm mt-1" data-testid={`text-folder-description-${folder.id}`}>
                   {folder.description}

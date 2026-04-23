@@ -43,10 +43,11 @@ import {
   insertCommentsUnifiedSchema,
   insertFileSchema,
   insertProjectUserSchema,
-  insertApprovalSchema
+  insertApprovalSchema,
+  users as usersTable,
 } from "@shared/schema";
 import { db } from "./db";
-import { sql } from "drizzle-orm";
+import { sql, inArray } from "drizzle-orm";
 import { VideoProcessor } from "./video-processor";
 import {
   transcribeFile,
@@ -779,15 +780,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all folders for the current user
   app.get("/api/folders", isAuthenticated, async (req, res, next) => {
     try {
-      let folders;
-      
-      // Admins can see all folders
-      if (req.user.role === "admin") {
-        folders = await storage.getAllFolders();
-      } else {
-        folders = await storage.getFoldersByUser(req.user.id);
+      const isAdmin = req.user.role === "admin";
+      const folders = isAdmin
+        ? await storage.getAllFolders()
+        : await storage.getFoldersByUser(req.user.id);
+
+      // For admins, enrich each folder with the creator's username so the UI
+      // can disambiguate folders that different users named the same thing
+      // (e.g., multiple "Praise" folders).
+      if (isAdmin && folders.length > 0) {
+        const creatorIds = Array.from(
+          new Set(folders.map((f) => f.createdById).filter((id): id is number => typeof id === "number"))
+        );
+        const creators = creatorIds.length > 0
+          ? await db
+              .select({ id: usersTable.id, username: usersTable.username })
+              .from(usersTable)
+              .where(inArray(usersTable.id, creatorIds))
+          : [];
+        const usernameById = new Map(creators.map((u) => [u.id, u.username]));
+        const enriched = folders.map((f) => ({
+          ...f,
+          createdByUsername: usernameById.get(f.createdById) ?? null,
+        }));
+        return res.json(enriched);
       }
-      
+
       res.json(folders);
     } catch (error) {
       next(error);
