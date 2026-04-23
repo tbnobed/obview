@@ -1,0 +1,622 @@
+obtv-admin@tbn-obviu:~/obview$ docker compose logs -f
+obview_db  |
+obview_db  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+obview_db  |
+obview_db  | 2026-04-23 02:30:31.439 UTC [1] LOG:  starting PostgreSQL 16.10 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+obview_db  | 2026-04-23 02:30:31.439 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db  | 2026-04-23 02:30:31.439 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db  | 2026-04-23 02:30:31.441 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db  | 2026-04-23 02:30:31.447 UTC [29] LOG:  database system was shut down at 2026-04-23 02:29:28 UTC
+obview_db  | 2026-04-23 02:30:31.457 UTC [1] LOG:  database system is ready to accept connections
+obview_db  | 2026-04-23 02:30:37.868 UTC [47] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:37.868 UTC [47] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:37.906 UTC [48] ERROR:  relation "activity_logs" already exists
+obview_db  | 2026-04-23 02:30:37.906 UTC [48] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db  |            "id" serial PRIMARY KEY NOT NULL,
+obview_db  |            "action" text NOT NULL,
+obview_db  |            "entity_type" text NOT NULL,
+obview_db  |            "entity_id" integer NOT NULL,
+obview_db  |            "user_id" integer NOT NULL,
+obview_db  |            "metadata" json,
+obview_db  |            "created_at" timestamp DEFAULT now() NOT NULL
+obview_db  |    );
+obview_db  | 2026-04-23 02:30:37.945 UTC [49] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:37.945 UTC [49] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:37.980 UTC [50] ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+obview_db  | 2026-04-23 02:30:37.980 UTC [50] STATEMENT:  ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_user_id_fkey"
+obview_db  |    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+obview_db  | 2026-04-23 02:30:38.019 UTC [51] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:38.019 UTC [51] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:38.088 UTC [53] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:38.088 UTC [53] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:38.124 UTC [54] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:38.124 UTC [54] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:38.187 UTC [56] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:38.187 UTC [56] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:38.217 UTC [57] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:38.217 UTC [57] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:38.290 UTC [59] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:38.290 UTC [59] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:38.323 UTC [60] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:38.323 UTC [60] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:38.516 UTC [62] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:38.516 UTC [62] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:38.556 UTC [63] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:38.556 UTC [63] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:38.625 UTC [65] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:38.625 UTC [65] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:38.663 UTC [66] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:38.663 UTC [66] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:38.762 UTC [68] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:38.762 UTC [68] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:38.798 UTC [69] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:38.798 UTC [69] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:38.885 UTC [71] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:38.885 UTC [71] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:38.921 UTC [72] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:38.921 UTC [72] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:39.008 UTC [74] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:39.008 UTC [74] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:39.046 UTC [75] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:39.046 UTC [75] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:39.128 UTC [77] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:39.128 UTC [77] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:39.165 UTC [78] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:39.165 UTC [78] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:39.232 UTC [80] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:39.232 UTC [80] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:39.266 UTC [81] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:39.266 UTC [81] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:39.353 UTC [83] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:39.353 UTC [83] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db  | 2026-04-23 02:30:39.389 UTC [84] ERROR:  syntax error at or near "-" at character 1
+obview_db  | 2026-04-23 02:30:39.389 UTC [84] STATEMENT:  -v
+obview_db  | 2026-04-23 02:30:39.444 UTC [86] ERROR:  syntax error at or near ":" at character 60
+obview_db  | 2026-04-23 02:30:39.444 UTC [86] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db  |               ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_app  | Waiting for database to be ready...
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Ensuring unified comment system table exists...
+obview_app  | NOTICE:  relation "comments_unified" already exists, skipping
+obview_app  | NOTICE:  column "annotations" of relation "comments_unified" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | ALTER TABLE
+obview_app  | DO
+obview_app  | NOTICE:  relation "idx_comments_unified_file_id" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comments_unified_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | NOTICE:  relation "idx_comments_unified_parent_id" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comments_unified_file_timestamp" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | Ensuring comment reactions table exists...
+obview_app  | NOTICE:  relation "comment_reactions" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comment_reactions_comment_id" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comment_reactions_comment_reaction" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | DO
+obview_app  | Taking pre-migration database backup to /app/db-backups/pre-migration-20260423-023037.sql ...
+obview_app  | ✅ Pre-migration backup saved: /app/db-backups/pre-migration-20260423-023037.sql (252.0K)
+obview_app  | Ensuring migration tracking table exists...
+obview_app  | NOTICE:  relation "schema_migrations" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | Running database migrations...
+obview_app  | Found db-migrate.cjs, running migrations...
+obview_app  | Initializing database migration...
+obview_app  | Environment: production
+obview_app  | Docker mode: true
+obview_app  | Database connection established
+obview_app  | Skipping drizzle migrations in Docker mode - SQL migrations will handle schema setup
+obview_app  | Database connection verified successfully
+obview_app  | Migration script completed successfully
+obview_app  | Scanning SQL migrations directory...
+obview_app  | ▶ Applying SQL migration: 0000_smooth_whistler.sql
+obview_app  | psql:/app/migrations/0000_smooth_whistler.sql:9: ERROR:  relation "activity_logs" already exists
+obview_app  | ❌ ERROR: 0000_smooth_whistler.sql failed. NOT recorded as applied; will retry on next startup.
+obview_app  |    Investigate the error above before restarting, and consider restoring /app/db-backups/pre-migration-20260423-023037.sql if data was affected.
+obview_app  | ▶ Applying SQL migration: 0001_add_password_resets.sql
+obview_app  | psql:/app/migrations/0001_add_password_resets.sql:10: NOTICE:  relation "password_resets" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0001_add_password_resets.sql:14: ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+obview_app  | ❌ ERROR: 0001_add_password_resets.sql failed. NOT recorded as applied; will retry on next startup.
+obview_app  |    Investigate the error above before restarting, and consider restoring /app/db-backups/pre-migration-20260423-023037.sql if data was affected.
+obview_app  | ▶ Applying SQL migration: 0002_add_theme_preference.sql
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0002_add_theme_preference.sql:2: NOTICE:  column "theme_preference" of relation "users" already exists, skipping
+obview_app  | UPDATE 0
+obview_app  | ✅ Applied 0002_add_theme_preference.sql
+obview_app  | ▶ Applying SQL migration: 0003_add_file_availability.sql
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0003_add_file_availability.sql:2: NOTICE:  column "is_available" of relation "files" already exists, skipping
+obview_app  | ✅ Applied 0003_add_file_availability.sql
+obview_app  | ▶ Applying SQL migration: 0004_update_file_size_type.sql
+obview_app  | ALTER TABLE
+obview_app  | ✅ Applied 0004_update_file_size_type.sql
+obview_app  | ▶ Applying SQL migration: 0005_docker_schema_consolidation.sql
+obview_app  | CREATE EXTENSION
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:15: NOTICE:  extension "pgcrypto" already exists, skipping
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:27: NOTICE:  relation "users" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:38: NOTICE:  relation "projects" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:54: NOTICE:  relation "files" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:66: NOTICE:  relation "comments" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:78: NOTICE:  relation "public_comments" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:87: NOTICE:  relation "project_users" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:98: NOTICE:  relation "activity_logs" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:113: NOTICE:  relation "invitations" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:119: NOTICE:  column "accepted_by_id" of relation "invitations" already exists, skipping
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:129: NOTICE:  relation "approvals" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:139: NOTICE:  relation "password_resets" already exists, skipping
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:406: NOTICE:  relation "idx_files_project_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:407: NOTICE:  relation "idx_files_share_token" already exists, skipping
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:408: NOTICE:  relation "idx_files_is_latest_version" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:409: NOTICE:  relation "idx_comments_file_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:410: NOTICE:  relation "idx_comments_user_id" already exists, skipping
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:411: NOTICE:  relation "idx_comments_timestamp" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:412: NOTICE:  relation "idx_public_comments_file_id" already exists, skipping
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:413: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:414: NOTICE:  relation "idx_public_comments_creator_token" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:415: NOTICE:  relation "idx_project_users_project_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:416: NOTICE:  relation "idx_project_users_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:417: NOTICE:  relation "idx_activity_logs_entity_type_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:418: NOTICE:  relation "idx_activity_logs_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:419: NOTICE:  relation "idx_invitations_token" already exists, skipping
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:420: NOTICE:  relation "idx_invitations_email" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:421: NOTICE:  relation "idx_approvals_file_id" already exists, skipping
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:422: NOTICE:  relation "idx_password_resets_token" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:423: NOTICE:  relation "idx_password_resets_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | DO
+obview_db   | 2026-04-23 02:30:39.485 UTC [87] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-23 02:30:39.485 UTC [87] STATEMENT:  -v
+obview_app  | DO
+obview_app  | ✅ Applied 0005_docker_schema_consolidation.sql
+obview_app  | ▶ Applying SQL migration: 0006_add_video_processing.sql
+obview_app  | psql:/app/migrations/0006_add_video_processing.sql:15: NOTICE:  relation "video_processing" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0006_add_video_processing.sql:18: NOTICE:  relation "idx_video_processing_file_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0006_add_video_processing.sql:20: NOTICE:  relation "idx_video_processing_status" already exists, skipping
+obview_app  | ✅ Applied 0006_add_video_processing.sql
+obview_app  | ▶ Applying SQL migration: 0007_add_folders_support.sql
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:13: NOTICE:  relation "folders" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:27: NOTICE:  relation "idx_folders_created_by_id" already exists, skipping
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:28: NOTICE:  relation "idx_folders_name" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:29: NOTICE:  relation "idx_projects_folder_id" already exists, skipping
+obview_app  | DO
+obview_app  | ✅ Applied 0007_add_folders_support.sql
+obview_app  | ▶ Applying SQL migration: 0008_add_creator_token_to_public_comments.sql
+obview_app  | DO
+obview_app  | psql:/app/migrations/0008_add_creator_token_to_public_comments.sql:16: NOTICE:  relation "idx_public_comments_creator_token" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | ✅ Applied 0008_add_creator_token_to_public_comments.sql
+obview_app  | ▶ Applying SQL migration: 0009_add_parent_id_to_public_comments.sql
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0009_add_parent_id_to_public_comments.sql:16: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+obview_app  | UPDATE 0
+obview_app  | DO
+obview_app  | ✅ Applied 0009_add_parent_id_to_public_comments.sql
+obview_app  | ▶ Applying SQL migration: 0010_fix_public_comments_constraint.sql
+obview_app  | psql:/app/migrations/0010_fix_public_comments_constraint.sql:19: NOTICE:  Removed public_comments_parent_id_fkey constraint to allow cross-table replies
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0010_fix_public_comments_constraint.sql:23: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+obview_app  | ✅ Applied 0010_fix_public_comments_constraint.sql
+obview_app  | ▶ Applying SQL migration: 0011_create_comments_unified.sql
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:16: NOTICE:  relation "comments_unified" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:19: NOTICE:  relation "idx_comments_unified_file_id" already exists, skipping
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:20: NOTICE:  relation "idx_comments_unified_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:21: NOTICE:  relation "idx_comments_unified_parent_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:22: NOTICE:  relation "idx_comments_unified_file_timestamp" already exists, skipping
+obview_app  | ✅ Applied 0011_create_comments_unified.sql
+obview_app  | ▶ Applying SQL migration: 0012_create_comment_reactions.sql
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0012_create_comment_reactions.sql:9: NOTICE:  relation "comment_reactions" already exists, skipping
+obview_app  | DO
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0012_create_comment_reactions.sql:33: NOTICE:  relation "idx_comment_reactions_comment_id" already exists, skipping
+obview_app  | psql:/app/migrations/0012_create_comment_reactions.sql:34: NOTICE:  relation "idx_comment_reactions_comment_reaction" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | DO
+obview_app  | DO
+obview_app  | ✅ Applied 0012_create_comment_reactions.sql
+obview_app  | ▶ Applying SQL migration: 0013_add_annotations_column.sql
+obview_app  | psql:/app/migrations/0013_add_annotations_column.sql:5: NOTICE:  column "annotations" of relation "comments_unified" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | ✅ Applied 0013_add_annotations_column.sql
+obview_app  | ▶ Applying SQL migration: 0014_add_transcripts.sql
+obview_app  | psql:/app/migrations/0014_add_transcripts.sql:14: NOTICE:  relation "transcripts" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0014_add_transcripts.sql:16: NOTICE:  relation "transcripts_file_id_idx" already exists, skipping
+obview_db   | 2026-04-23 02:30:39.547 UTC [89] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-23 02:30:39.547 UTC [89] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_app  | ✅ Applied 0014_add_transcripts.sql
+obview_db   | 2026-04-23 02:30:39.586 UTC [90] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-23 02:30:39.586 UTC [90] STATEMENT:  -v
+obview_app  | ▶ Applying SQL migration: 0015_add_summary.sql
+obview_app  | psql:/app/migrations/0015_add_summary.sql:2: NOTICE:  column "summary" of relation "transcripts" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0015_add_summary.sql:3: NOTICE:  column "summary_status" of relation "transcripts" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0015_add_summary.sql:4: NOTICE:  column "summary_error" of relation "transcripts" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0015_add_summary.sql:5: NOTICE:  column "summary_model" of relation "transcripts" already exists, skipping
+obview_app  | psql:/app/migrations/0015_add_summary.sql:6: NOTICE:  column "summary_processed_at" of relation "transcripts" already exists, skipping
+obview_app  | ALTER TABLE
+obview_db   | 2026-04-23 02:30:39.654 UTC [92] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-23 02:30:39.654 UTC [92] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_app  | ✅ Applied 0015_add_summary.sql
+obview_app  | Database migration process completed.
+obview_app  | Verifying critical foreign keys are present...
+obview_app  | ✅ All required foreign keys are in place.
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Verifying filesystem utilities for admin cleanup operations...
+obview_app  | ✅ Upload directory write permissions verified
+obview_app  | Found built server entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | Using PostgreSQL session store with connection string
+obview_app  | ✅ Serving static files from: /app/dist/public
+obview_app  | Using PostgreSQL session store with connection string
+obview_app  | 🚀 Production server running on port 5000
+obview_app  | 📁 Static files served from: /app/dist/public
+obview_app  | Database connection initialized successfully
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [DEBUG] Getting files for project ID: 26
+obview_app  | [DEBUG] Found 2 files for project ID 26
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 65
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 66
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 0,
+obview_app  |   scrubPath: '/app/uploads/processed/65/scrub/TARA-LEIGH-COBBLE_READING IN ORDER_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 0,
+obview_app  |   scrubPath: '/app/uploads/processed/66/scrub/TARA-LEIGH-COBBLE_READING THROUGH LENSE_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/66/comments requested by user 2
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] User 2 authorized for file 66, fetching comments...
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [DEBUG] File content requested for fileId: 66
+obview_app  | [DEBUG] Database record found for file ID: 66 {
+obview_app  |   filename: 'TARA-LEIGH-COBBLE_READING THROUGH LENSE.mp4',
+obview_app  |   fileType: 'video',
+obview_app  |   filePath: '/app/uploads/1776893577855-327993069.mp4',
+obview_app  |   isAvailable: true
+obview_app  | }
+obview_app  | [DEBUG] Checking if file exists at path: /app/uploads/1776893577855-327993069.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1776893577855-327993069.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1776893577855-327993069.mp4
+obview_app  | [DEBUG] File exists check result: true
+obview_app  | Serving file 66 (TARA-LEIGH-COBBLE_READING THROUGH LENSE.mp4) - type: video, path: /app/uploads/1776893577855-327993069.mp4
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 66
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [DEBUG] File content requested for fileId: 66
+obview_app  | [DEBUG] Database record found for file ID: 66 {
+obview_app  |   filename: 'TARA-LEIGH-COBBLE_READING THROUGH LENSE.mp4',
+obview_app  |   fileType: 'video',
+obview_app  |   filePath: '/app/uploads/1776893577855-327993069.mp4',
+obview_app  |   isAvailable: true
+obview_app  | }
+obview_app  | [DEBUG] Checking if file exists at path: /app/uploads/1776893577855-327993069.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1776893577855-327993069.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1776893577855-327993069.mp4
+obview_app  | [DEBUG] File exists check result: true
+obview_app  | Serving file 66 (TARA-LEIGH-COBBLE_READING THROUGH LENSE.mp4) - type: video, path: /app/uploads/1776893577855-327993069.mp4
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [DEBUG] File content requested for fileId: 66
+obview_app  | [DEBUG] Database record found for file ID: 66 {
+obview_app  |   filename: 'TARA-LEIGH-COBBLE_READING THROUGH LENSE.mp4',
+obview_app  |   fileType: 'video',
+obview_app  |   filePath: '/app/uploads/1776893577855-327993069.mp4',
+obview_app  |   isAvailable: true
+obview_app  | }
+obview_app  | [DEBUG] Checking if file exists at path: /app/uploads/1776893577855-327993069.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1776893577855-327993069.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1776893577855-327993069.mp4
+obview_app  | [DEBUG] File exists check result: true
+obview_app  | Serving file 66 (TARA-LEIGH-COBBLE_READING THROUGH LENSE.mp4) - type: video, path: /app/uploads/1776893577855-327993069.mp4
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 62
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/62/scrub/GodWithUs_Episode 102_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 66
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 0,
+obview_app  |   scrubPath: '/app/uploads/processed/66/scrub/TARA-LEIGH-COBBLE_READING THROUGH LENSE_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 65
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 0,
+obview_app  |   scrubPath: '/app/uploads/processed/65/scrub/TARA-LEIGH-COBBLE_READING IN ORDER_scrub.mp4'
+obview_app  | }
