@@ -5,6 +5,7 @@ import { setupAuth } from "./auth.js";
 import { registerRoutes, resumeStuckVideoProcessing } from "./routes.js";
 import { resumePendingSummarizations } from "./summarization.js";
 import { config } from "./utils/config.js";
+import { dbReady } from "./db.js";
 
 const app = express();
 
@@ -51,15 +52,17 @@ registerRoutes(app).then(server => {
   server.listen(config.port, '0.0.0.0', () => {
     console.log(`🚀 Production server running on port ${config.port}`);
     console.log(`📁 Static files served from: ${staticPath}`);
-    // Resume any video processing or summarization jobs interrupted by the
-    // previous shutdown, and recover videos that silently failed quality
-    // encoding before this fix landed.
-    resumeStuckVideoProcessing().catch((err) =>
-      console.error("[Startup] Could not resume video processing:", err)
-    );
-    resumePendingSummarizations().catch((err) =>
-      console.error("[Startup] Could not resume summarizations:", err)
-    );
+    // Wait for the lazy DB connection to finish initializing, THEN resume any
+    // jobs that were interrupted by the previous shutdown and recover videos
+    // that silently failed quality encoding before this fix landed.
+    dbReady.then(() => {
+      resumeStuckVideoProcessing().catch((err) =>
+        console.error("[Startup] Could not resume video processing:", err)
+      );
+      resumePendingSummarizations().catch((err) =>
+        console.error("[Startup] Could not resume summarizations:", err)
+      );
+    });
   });
 }).catch(error => {
   console.error("Failed to start server:", error);

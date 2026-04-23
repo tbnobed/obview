@@ -59,12 +59,16 @@ const initializeDatabase = async () => {
   }
 };
 
-// Initialize the database connection immediately
-initializeDatabase().catch(error => {
-  console.error('Database initialization failed:', error);
-  process.exit(1); // Exit if we can't connect to the database
-});
+// Initialize the database connection immediately and expose the resulting
+// promise so callers that need a usable `db` at startup (e.g. recovery jobs)
+// can await readiness instead of racing the IIFE.
+const dbReady: Promise<void> = initializeDatabase()
+  .then(() => undefined)
+  .catch((error) => {
+    console.error('Database initialization failed:', error);
+    process.exit(1); // Exit if we can't connect to the database
+  });
 
 // Export the pool and db objects
-// These will be initialized asynchronously by the IIFEs above
-export { pool, db };
+// These will be initialized asynchronously by initializeDatabase().
+export { pool, db, dbReady };
