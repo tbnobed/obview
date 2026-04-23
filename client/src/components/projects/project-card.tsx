@@ -150,42 +150,51 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 </div>
               </div>
             ) : spriteMetadata ? (
-              // Use sprite-based scrubbing
-              <div
-                className="w-full h-full bg-center bg-no-repeat bg-cover pointer-events-none"
-                data-testid={`sprite-preview-${project.id}`}
-                style={{
-                  backgroundImage: `url(/api/files/${project.latestVideoFile.id}/sprite)`,
-                  backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
-                  backgroundPosition: (() => {
-                    if (!isScrubbing) {
-                      // Show first frame when not scrubbing
-                      return `0% 0%`;
-                    }
-                    
-                    // Calculate which thumbnail to show based on scrub position
-                    const thumbnailIndex = Math.min(
-                      Math.floor(scrubPosition * spriteMetadata.thumbnailCount), 
-                      spriteMetadata.thumbnailCount - 1
-                    );
-                    const col = thumbnailIndex % spriteMetadata.cols;
-                    const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
-                    
-                    // Calculate background position (CSS background-position works by moving the image)
-                    const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
-                    const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
-                    
-                    return `${xPercent}% ${yPercent}%`;
-                  })()
-                }}
-                onLoad={() => {
-                  console.log(`🎬 [PROJECT-SPRITE] ✅ Sprite loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
-                  setSpriteLoaded(true);
-                }}
-                onError={() => {
-                  console.error(`🎬 [PROJECT-SPRITE] ❌ Sprite error for project ${project.id}`);
-                }}
-              />
+              // Sprite-based scrubbing. The sprite's cell aspect may be
+              // portrait (vertical/social video) while the card slot is
+              // landscape, so we render the sprite into an inner element
+              // sized to the cell's aspect ratio and letterbox it inside
+              // the card — much better than stretching to fill.
+              <div className="w-full h-full flex items-center justify-center bg-black overflow-hidden">
+                <div
+                  className="bg-center bg-no-repeat pointer-events-none max-w-full max-h-full"
+                  data-testid={`sprite-preview-${project.id}`}
+                  style={{
+                    aspectRatio: `${spriteMetadata.thumbnailWidth || 16} / ${spriteMetadata.thumbnailHeight || 9}`,
+                    width: (spriteMetadata.thumbnailWidth || 16) >= (spriteMetadata.thumbnailHeight || 9) ? '100%' : 'auto',
+                    height: (spriteMetadata.thumbnailWidth || 16) >= (spriteMetadata.thumbnailHeight || 9) ? 'auto' : '100%',
+                    backgroundImage: `url(/api/files/${project.latestVideoFile.id}/sprite)`,
+                    backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
+                    backgroundPosition: (() => {
+                      if (!isScrubbing) {
+                        // Show first frame when not scrubbing
+                        return `0% 0%`;
+                      }
+
+                      // Calculate which thumbnail to show based on scrub position
+                      const thumbnailIndex = Math.min(
+                        Math.floor(scrubPosition * spriteMetadata.thumbnailCount),
+                        spriteMetadata.thumbnailCount - 1
+                      );
+                      const col = thumbnailIndex % spriteMetadata.cols;
+                      const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
+
+                      // Calculate background position (CSS background-position works by moving the image)
+                      const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
+                      const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
+
+                      return `${xPercent}% ${yPercent}%`;
+                    })()
+                  }}
+                  onLoad={() => {
+                    console.log(`🎬 [PROJECT-SPRITE] ✅ Sprite loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
+                    setSpriteLoaded(true);
+                  }}
+                  onError={() => {
+                    console.error(`🎬 [PROJECT-SPRITE] ❌ Sprite error for project ${project.id}`);
+                  }}
+                />
+              </div>
             ) : (
               // Fallback for no sprite data - show static thumbnail
               <div className="w-full h-full flex items-center justify-center bg-gray-800">

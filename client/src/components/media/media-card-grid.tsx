@@ -435,31 +435,39 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
                   />
                   
                   {!thumbnailError && thumbnailLoaded ? (
-                    <div
-                      className="w-full h-full bg-center bg-no-repeat bg-cover pointer-events-none"
-                      data-testid={`sprite-preview-${file.id}`}
-                      style={{
-                        backgroundImage: `url(${thumbnailSrc})`,
-                        backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
-                        backgroundPosition: (() => {
-                          if (!isScrubbing) {
-                            // Show first frame when not scrubbing
-                            return `0% 0%`;
-                          }
-                          
-                          // Calculate which thumbnail to show based on scrub position
-                          const thumbnailIndex = Math.floor(scrubPosition * (spriteMetadata.thumbnailCount - 1));
-                          const col = thumbnailIndex % spriteMetadata.cols;
-                          const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
-                          
-                          // Calculate background position (negative values to shift the sprite)
-                          const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
-                          const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
-                          
-                          return `${xPercent}% ${yPercent}%`;
-                        })()
-                      }}
-                    />
+                    // Letterbox the sprite cell inside the landscape card
+                    // slot so portrait/vertical video keeps its true aspect
+                    // instead of being squished to fill.
+                    <div className="absolute inset-0 flex items-center justify-center bg-black">
+                      <div
+                        className="bg-center bg-no-repeat pointer-events-none max-w-full max-h-full"
+                        data-testid={`sprite-preview-${file.id}`}
+                        style={{
+                          aspectRatio: `${spriteMetadata.thumbnailWidth || 16} / ${spriteMetadata.thumbnailHeight || 9}`,
+                          width: (spriteMetadata.thumbnailWidth || 16) >= (spriteMetadata.thumbnailHeight || 9) ? '100%' : 'auto',
+                          height: (spriteMetadata.thumbnailWidth || 16) >= (spriteMetadata.thumbnailHeight || 9) ? 'auto' : '100%',
+                          backgroundImage: `url(${thumbnailSrc})`,
+                          backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
+                          backgroundPosition: (() => {
+                            if (!isScrubbing) {
+                              // Show first frame when not scrubbing
+                              return `0% 0%`;
+                            }
+
+                            // Calculate which thumbnail to show based on scrub position
+                            const thumbnailIndex = Math.floor(scrubPosition * (spriteMetadata.thumbnailCount - 1));
+                            const col = thumbnailIndex % spriteMetadata.cols;
+                            const row = Math.floor(thumbnailIndex / spriteMetadata.cols);
+
+                            // Calculate background position (negative values to shift the sprite)
+                            const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
+                            const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
+
+                            return `${xPercent}% ${yPercent}%`;
+                          })()
+                        }}
+                      />
+                    </div>
                   ) : null}
                   
                   {/* Fallback for failed thumbnail or while loading */}
