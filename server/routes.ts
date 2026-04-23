@@ -55,6 +55,73 @@ import {
   isTranscriptionAvailable,
 } from "./transcription";
 
+/**
+ * Resume any video processing rows that were stuck mid-encode by a previous
+ * server shutdown/crash. Without this, files appear permanently "Processing"
+ * in the UI because nothing in the new process owns the job.
+ */
+export async function resumeStuckVideoProcessing() {
+  try {
+    const { videoProcessing, files } = await import("@shared/schema");
+    const { eq, or } = await import("drizzle-orm");
+    const stuck = await db
+      .select()
+      .from(videoProcessing)
+      .where(
+        or(
+          eq(videoProcessing.status, "processing"),
+          eq(videoProcessing.status, "pending")
+        )
+      );
+    if (stuck.length === 0) return;
+    console.log(
+      `[Video Processing] Found ${stuck.length} interrupted job(s) — resuming`
+    );
+    for (const row of stuck) {
+      const [file] = await db
+        .select()
+        .from(files)
+        .where(eq(files.id, row.fileId));
+      if (!file) {
+        console.warn(
+          `[Video Processing] Skipping resume for processing ${row.id}: source file ${row.fileId} missing`
+        );
+        await storage
+          .updateVideoProcessing(row.id, {
+            status: "failed",
+            errorMessage: "Source file missing on resume",
+          })
+          .catch(() => {});
+        continue;
+      }
+      if (!fs.existsSync(file.filePath)) {
+        console.warn(
+          `[Video Processing] Skipping resume for ${file.filename}: file not on disk at ${file.filePath}`
+        );
+        await storage
+          .updateVideoProcessing(row.id, {
+            status: "failed",
+            errorMessage: `Original file missing on disk: ${file.filePath}`,
+          })
+          .catch(() => {});
+        continue;
+      }
+      console.log(
+        `[Video Processing] Resuming processing for ${file.filename} (id ${file.id})`
+      );
+      // Fire-and-forget — same pattern as the original upload handler.
+      processVideoInBackground(file, row.id).catch((err) =>
+        console.error(
+          `[Video Processing] Resume failed for ${file.filename}:`,
+          err
+        )
+      );
+    }
+  } catch (err) {
+    console.error("[Video Processing] Startup resume failed:", err);
+  }
+}
+
 // Background video processing function
 async function processVideoInBackground(file: any, processingId: number) {
   try {
