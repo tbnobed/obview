@@ -11,9 +11,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Edit, Trash2, Folder, FolderOpen, ExternalLink, User } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Plus, Edit, Trash2, Folder, FolderOpen, ExternalLink, User, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 interface FoldersManagementProps {
   className?: string;
@@ -24,6 +26,7 @@ const createFolderSchema = z.object({
     .min(1, "Folder name is required")
     .max(50, "Folder name must be 50 characters or less"),
   description: z.string().nullable().optional(),
+  isGlobal: z.boolean().optional(),
 });
 
 type CreateFolderInput = z.infer<typeof createFolderSchema>;
@@ -39,6 +42,8 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
   const createMutation = useCreateFolder();
   const updateMutation = useUpdateFolder(editingFolder?.id || 0);
   const deleteMutation = useDeleteFolder();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   // Create folder form
   const createForm = useForm<CreateFolderInput>({
@@ -46,6 +51,7 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
     defaultValues: {
       name: "",
       description: "",
+      isGlobal: false,
     },
   });
 
@@ -55,6 +61,7 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
     defaultValues: {
       name: "",
       description: "",
+      isGlobal: false,
     },
   });
 
@@ -64,6 +71,7 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
       editForm.reset({
         name: editingFolder.name || "",
         description: editingFolder.description || "",
+        isGlobal: !!editingFolder.isGlobal,
       });
     }
   }, [editingFolder, editForm]);
@@ -170,6 +178,31 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
                     </FormItem>
                   )}
                 />
+                {isAdmin && (
+                  <FormField
+                    control={createForm.control}
+                    name="isGlobal"
+                    render={({ field }) => (
+                      <FormItem className="flex items-start gap-3 rounded-md border p-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={!!field.value}
+                            onCheckedChange={(v) => field.onChange(v === true)}
+                            data-testid="checkbox-folder-global"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="cursor-pointer">
+                            Global folder
+                          </FormLabel>
+                          <p className="text-xs text-muted-foreground">
+                            Visible to all users. Only admins can create or edit global folders.
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <DialogFooter>
                   <Button 
                     type="button" 
@@ -200,19 +233,25 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
         </div>
       ) : folders && folders.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {folders.map((folder) => (
-            <FolderCard
-              key={folder.id}
-              folder={folder}
-              onClick={() => {
-                setSelectedFolder(folder);
-                setProjectsDialogOpen(true);
-              }}
-              onEdit={() => openEditDialog(folder)}
-              onDelete={() => handleDeleteFolder(folder.id)}
-              isDeleting={deleteMutation.isPending}
-            />
-          ))}
+          {folders.map((folder) => {
+            // A user can mutate (edit/delete) a folder if they are an
+            // admin, or if they own a private (non-global) folder.
+            const canMutate = isAdmin || (!folder.isGlobal && folder.createdById === user?.id);
+            return (
+              <FolderCard
+                key={folder.id}
+                folder={folder}
+                canMutate={canMutate}
+                onClick={() => {
+                  setSelectedFolder(folder);
+                  setProjectsDialogOpen(true);
+                }}
+                onEdit={() => openEditDialog(folder)}
+                onDelete={() => handleDeleteFolder(folder.id)}
+                isDeleting={deleteMutation.isPending}
+              />
+            );
+          })}
         </div>
       ) : (
         <Card className="bg-white/50 border-dashed border-2">
@@ -297,6 +336,31 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
                   </FormItem>
                 )}
               />
+              {isAdmin && (
+                <FormField
+                  control={editForm.control}
+                  name="isGlobal"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start gap-3 rounded-md border p-3">
+                      <FormControl>
+                        <Checkbox
+                          checked={!!field.value}
+                          onCheckedChange={(v) => field.onChange(v === true)}
+                          data-testid="checkbox-edit-folder-global"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="cursor-pointer">
+                          Global folder
+                        </FormLabel>
+                        <p className="text-xs text-muted-foreground">
+                          Visible to all users. Only admins can toggle this.
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
               <DialogFooter>
                 <Button 
                   type="button" 
@@ -325,13 +389,14 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
 
 interface FolderCardProps {
   folder: any;
+  canMutate: boolean;
   onClick?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   isDeleting: boolean;
 }
 
-function FolderCard({ folder, onClick, onEdit, onDelete, isDeleting }: FolderCardProps) {
+function FolderCard({ folder, canMutate, onClick, onEdit, onDelete, isDeleting }: FolderCardProps) {
   const { data: projects } = useFolderProjects(folder.id);
   const projectCount = projects?.length || 0;
 
@@ -352,9 +417,21 @@ function FolderCard({ folder, onClick, onEdit, onDelete, isDeleting }: FolderCar
               )}
             </div>
             <div>
-              <CardTitle className="text-lg" data-testid={`text-folder-name-${folder.id}`}>
-                {folder.name}
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg" data-testid={`text-folder-name-${folder.id}`}>
+                  {folder.name}
+                </CardTitle>
+                {folder.isGlobal && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0 gap-1 border-primary-300 text-primary-700 dark:border-[#026d55]/60 dark:text-[#5ee0bd]"
+                    data-testid={`badge-folder-global-${folder.id}`}
+                  >
+                    <Globe className="h-3 w-3" />
+                    Global
+                  </Badge>
+                )}
+              </div>
               {folder.createdByUsername && (
                 <div
                   className="flex items-center gap-1 mt-0.5 text-xs text-neutral-500 dark:text-gray-400"
@@ -372,6 +449,7 @@ function FolderCard({ folder, onClick, onEdit, onDelete, isDeleting }: FolderCar
             </div>
           </div>
           
+          {canMutate ? (
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
@@ -429,6 +507,7 @@ function FolderCard({ folder, onClick, onEdit, onDelete, isDeleting }: FolderCar
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          ) : null}
         </div>
       </CardHeader>
       

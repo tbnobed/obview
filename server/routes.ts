@@ -784,9 +784,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/folders", isAuthenticated, async (req, res, next) => {
     try {
       const isAdmin = req.user.role === "admin";
-      const folders = isAdmin
+      let folders = isAdmin
         ? await storage.getAllFolders()
         : await storage.getFoldersByUser(req.user.id);
+
+      // Non-admins also see all global folders (created by any admin and
+      // shared with the entire workspace).
+      if (!isAdmin) {
+        const allFolders = await storage.getAllFolders();
+        const globalFolders = allFolders.filter((f) => f.isGlobal);
+        const seen = new Set(folders.map((f) => f.id));
+        for (const gf of globalFolders) {
+          if (!seen.has(gf.id)) folders.push(gf);
+        }
+      }
 
       // For admins, enrich each folder with the creator's username so the UI
       // can disambiguate folders that different users named the same thing
@@ -818,9 +829,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new folder
   app.post("/api/folders", isAuthenticated, async (req, res, next) => {
     try {
+      const isAdmin = req.user.role === "admin";
+      // Only admins can create global folders; silently strip the flag for
+      // non-admins instead of failing the request.
+      const incoming = { ...req.body };
+      if (incoming.isGlobal && !isAdmin) {
+        incoming.isGlobal = false;
+      }
       // Validate input using Zod schema
       const validatedData = insertFolderSchema.parse({
-        ...req.body,
+        ...incoming,
         createdById: req.user.id, // Set the creator to the current user
       });
 
@@ -862,8 +880,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Folder not found" });
       }
 
-      // Check if user has access to this folder
-      if (req.user.role !== "admin" && folder.createdById !== req.user.id) {
+      // Check if user has access to this folder. Global folders are
+      // visible to everyone; private folders are limited to the creator
+      // and admins.
+      if (
+        req.user.role !== "admin" &&
+        folder.createdById !== req.user.id &&
+        !folder.isGlobal
+      ) {
         return res.status(403).json({ message: "Forbidden" });
       }
 
@@ -888,13 +912,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Folder not found" });
       }
 
-      // Check if user has access to edit this folder
-      if (req.user.role !== "admin" && existingFolder.createdById !== req.user.id) {
+      // Only admins can edit global folders. Owners can edit their own
+      // private folders. Non-admins cannot toggle the isGlobal flag.
+      const isAdmin = req.user.role === "admin";
+      if (existingFolder.isGlobal && !isAdmin) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      if (!isAdmin && existingFolder.createdById !== req.user.id) {
         return res.status(403).json({ message: "Forbidden" });
       }
 
+      const incoming = { ...req.body };
+      if (!isAdmin && "isGlobal" in incoming) {
+        delete incoming.isGlobal;
+      }
+
       // Validate input
-      const validatedData = insertFolderSchema.partial().parse(req.body);
+      const validatedData = insertFolderSchema.partial().parse(incoming);
       
       const updatedFolder = await storage.updateFolder(folderId, validatedData);
       
@@ -938,8 +972,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Folder not found" });
       }
 
-      // Check if user has access to delete this folder
-      if (req.user.role !== "admin" && existingFolder.createdById !== req.user.id) {
+      // Only admins can delete global folders. Owners can delete their
+      // own private folders.
+      const isAdminDel = req.user.role === "admin";
+      if (existingFolder.isGlobal && !isAdminDel) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      if (!isAdminDel && existingFolder.createdById !== req.user.id) {
         return res.status(403).json({ message: "Forbidden" });
       }
 
@@ -987,12 +1026,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Folder not found" });
       }
 
-      // Check if user has access to this folder
-      if (req.user.role !== "admin" && folder.createdById !== req.user.id) {
+      // Check if user has access to this folder. Global folders are
+      // visible to everyone.
+      const isAdminView = req.user.role === "admin";
+      if (!isAdminView && folder.createdById !== req.user.id && !folder.isGlobal) {
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      const projects = await storage.getProjectsByFolder(folderId);
+      let projects = await storage.getProjectsByFolder(folderId);
+
+      // Non-admins should only see the projects they actually have
+      // access to. Project membership is independent of folder
+      // visibility, so this is enforced for every folder, not just
+      // global ones.
+      if (!isAdminView) {
+        const userProjects = await storage.getProjectsByUser(req.user.id);
+        const userProjectIds = new Set(userProjects.map((p) => p.id));
+        projects = projects.filter((p) => userProjectIds.has(p.id));
+      }
+
       res.json(projects);
     } catch (error) {
       next(error);
@@ -1026,7 +1078,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: req.user.id,
         authenticated: req.isAuthenticated()
       });
-      
+
+      // If a folderId is provided, the requester must be allowed to place
+      // projects in that folder: admin, the folder's creator, or any user
+      // when the folder is global. This prevents leaking project metadata
+      // into private folders owned by other users.
+      if (req.body.folderId != null) {
+        const targetFolder = await storage.getFolder(Number(req.body.folderId));
+        if (!targetFolder) {
+          return res.status(400).json({ message: "Invalid folderId" });
+        }
+        const isAdmin = req.user.role === "admin";
+        if (!isAdmin && !targetFolder.isGlobal && targetFolder.createdById !== req.user.id) {
+          return res.status(403).json({ message: "You don't have access to that folder" });
+        }
+      }
+
       // Make sure createdById exists in the request
       const projectData = {
         ...req.body,
@@ -1102,7 +1169,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
-      
+
+      // If reassigning to a folder, verify the requester is allowed to
+      // place projects there (admin, folder owner, or any user for global
+      // folders). Setting folderId to null is always allowed.
+      if ("folderId" in req.body && req.body.folderId != null) {
+        const targetFolder = await storage.getFolder(Number(req.body.folderId));
+        if (!targetFolder) {
+          return res.status(400).json({ message: "Invalid folderId" });
+        }
+        const isAdmin = req.user.role === "admin";
+        if (!isAdmin && !targetFolder.isGlobal && targetFolder.createdById !== req.user.id) {
+          return res.status(403).json({ message: "You don't have access to that folder" });
+        }
+      }
+
       // Update the project
       const updatedProject = await storage.updateProject(projectId, req.body);
       

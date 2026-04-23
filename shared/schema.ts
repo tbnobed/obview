@@ -23,6 +23,7 @@ export const folders = pgTable("folders", {
   name: text("name").notNull(),
   description: text("description"),
   color: text("color").default("#6366f1"), // Hex color for folder
+  isGlobal: boolean("is_global").notNull().default(false), // Global folders are visible to all users; only admins can create/edit/delete them
   createdById: integer("created_by_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -33,7 +34,8 @@ export const insertFolderSchema = createInsertSchema(folders)
   .extend({
     name: z.string().min(1).max(50, "Folder name must be 50 characters or less"),
     description: z.string().optional(),
-    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a valid hex color").optional()
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color must be a valid hex color").optional(),
+    isGlobal: z.boolean().optional(),
   });
 
 // PROJECT SCHEMA
