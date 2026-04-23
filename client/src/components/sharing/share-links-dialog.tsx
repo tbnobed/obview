@@ -72,7 +72,7 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
         </DialogHeader>
 
         {/* Create new link */}
-        <div className="space-y-4 rounded-md border p-4">
+        <div className="space-y-4 rounded-md border bg-muted/40 dark:bg-muted/20 p-4">
           <div className="text-sm font-medium flex items-center gap-2"><Plus className="h-4 w-4" /> New link</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -132,7 +132,7 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
 
 function ToggleRow({ icon, label, checked, onChange }: { icon: React.ReactNode; label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="flex items-center justify-between rounded-md border p-2">
+    <div className="flex items-center justify-between rounded-md border bg-background p-2">
       <div className="flex items-center gap-2 text-sm">{icon}{label}</div>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
@@ -159,7 +159,7 @@ function LinkRow({
   const expired = link.expiresAt && new Date(link.expiresAt).getTime() < Date.now();
 
   return (
-    <li className="rounded-md border p-3 space-y-2" data-testid={`share-link-${link.id}`}>
+    <li className="rounded-md border bg-muted/40 dark:bg-muted/20 p-3 space-y-2" data-testid={`share-link-${link.id}`}>
       <div className="flex items-start gap-2">
         <LinkIcon className="h-4 w-4 mt-1 text-muted-foreground" />
         <div className="flex-1 min-w-0">
