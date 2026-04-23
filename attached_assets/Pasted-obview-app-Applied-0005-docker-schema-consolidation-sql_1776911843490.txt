@@ -1,0 +1,103 @@
+obview_app  | ✅ Applied 0005_docker_schema_consolidation.sql
+obview_app  | ▶ Applying SQL migration: 0006_add_video_processing.sql
+obview_app  | psql:/app/migrations/0006_add_video_processing.sql:15: NOTICE:  relation "video_processing" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0006_add_video_processing.sql:18: NOTICE:  relation "idx_video_processing_file_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0006_add_video_processing.sql:20: NOTICE:  relation "idx_video_processing_status" already exists, skipping
+obview_app  | ✅ Applied 0006_add_video_processing.sql
+obview_app  | ▶ Applying SQL migration: 0007_add_folders_support.sql
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:13: NOTICE:  relation "folders" already exists, skipping
+obview_app  | DO
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:27: NOTICE:  relation "idx_folders_created_by_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:28: NOTICE:  relation "idx_folders_name" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:29: NOTICE:  relation "idx_projects_folder_id" already exists, skipping
+obview_app  | DO
+obview_app  | ✅ Applied 0007_add_folders_support.sql
+obview_app  | ▶ Applying SQL migration: 0008_add_creator_token_to_public_comments.sql
+obview_app  | DO
+obview_app  | psql:/app/migrations/0008_add_creator_token_to_public_comments.sql:16: NOTICE:  relation "idx_public_comments_creator_token" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | ✅ Applied 0008_add_creator_token_to_public_comments.sql
+obview_app  | ▶ Applying SQL migration: 0009_add_parent_id_to_public_comments.sql
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0009_add_parent_id_to_public_comments.sql:16: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+obview_app  | UPDATE 0
+obview_app  | DO
+obview_app  | ✅ Applied 0009_add_parent_id_to_public_comments.sql
+obview_app  | ▶ Applying SQL migration: 0010_fix_public_comments_constraint.sql
+obview_app  | DO
+obview_app  | psql:/app/migrations/0010_fix_public_comments_constraint.sql:19: NOTICE:  Removed public_comments_parent_id_fkey constraint to allow cross-table replies
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0010_fix_public_comments_constraint.sql:23: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+obview_app  | ✅ Applied 0010_fix_public_comments_constraint.sql
+obview_app  | ▶ Applying SQL migration: 0011_create_comments_unified.sql
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:16: NOTICE:  relation "comments_unified" already exists, skipping
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:19: NOTICE:  relation "idx_comments_unified_file_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:20: NOTICE:  relation "idx_comments_unified_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:21: NOTICE:  relation "idx_comments_unified_parent_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:22: NOTICE:  relation "idx_comments_unified_file_timestamp" already exists, skipping
+obview_app  | ✅ Applied 0011_create_comments_unified.sql
+obview_app  | ▶ Applying SQL migration: 0012_create_comment_reactions.sql
+obview_app  | psql:/app/migrations/0012_create_comment_reactions.sql:9: NOTICE:  relation "comment_reactions" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | DO
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0012_create_comment_reactions.sql:33: NOTICE:  relation "idx_comment_reactions_comment_id" already exists, skipping
+obview_app  | psql:/app/migrations/0012_create_comment_reactions.sql:34: NOTICE:  relation "idx_comment_reactions_comment_reaction" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | DO
+obview_app  | DO
+obview_app  | ✅ Applied 0012_create_comment_reactions.sql
+obview_app  | ▶ Applying SQL migration: 0013_add_annotations_column.sql
+obview_app  | psql:/app/migrations/0013_add_annotations_column.sql:5: NOTICE:  column "annotations" of relation "comments_unified" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | ✅ Applied 0013_add_annotations_column.sql
+obview_app  | ▶ Applying SQL migration: 0014_add_transcripts.sql
+obview_app  | psql:/app/migrations/0014_add_transcripts.sql:14: NOTICE:  relation "transcripts" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0014_add_transcripts.sql:16: NOTICE:  relation "transcripts_file_id_idx" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | ✅ Applied 0014_add_transcripts.sql
+obview_app  | ▶ Applying SQL migration: 0015_add_summary.sql
+obview_app  | psql:/app/migrations/0015_add_summary.sql:2: NOTICE:  column "summary" of relation "transcripts" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0015_add_summary.sql:3: NOTICE:  column "summary_status" of relation "transcripts" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0015_add_summary.sql:4: NOTICE:  column "summary_error" of relation "transcripts" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0015_add_summary.sql:5: NOTICE:  column "summary_model" of relation "transcripts" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0015_add_summary.sql:6: NOTICE:  column "summary_processed_at" of relation "transcripts" already exists, skipping
+obview_app  | ✅ Applied 0015_add_summary.sql
+obview_app  | Database migration process completed.
+obview_app  | Verifying critical foreign keys are present...
+obview_app  | ✅ All required foreign keys are in place.
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Admin user already exists, skipping creation
+obview_app  | Setup completed successfully
+obview_app  | Verifying filesystem utilities for admin cleanup operations...
+obview_app  | ✅ Upload directory write permissions verified
+obview_app  | Found built server entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | Using PostgreSQL session store with connection string
+obview_app  | ✅ Serving static files from: /app/dist/public
+obview_app  | Using PostgreSQL session store with connection string
+obview_app  | 🚀 Production server running on port 5000
+obview_app  | 📁 Static files served from: /app/dist/public
+obview_app  | Database connection initialized successfully
