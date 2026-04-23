@@ -216,6 +216,10 @@ export const videoProcessing = pgTable("video_processing", {
   scrubVersionPath: text("scrub_version_path"),
   thumbnailSpritePath: text("thumbnail_sprite_path"),
   spriteMetadata: json("sprite_metadata").$type<{cols: number, rows: number, thumbnailWidth: number, thumbnailHeight: number, interval: number, thumbnailCount: number, duration: number}>(),
+  // Full ffprobe JSON (format + streams) captured at processing time so the
+  // MediaInfo dialog can render rich technical details without re-running
+  // ffprobe on every open.
+  mediaInfo: json("media_info").$type<any>(),
   duration: integer("duration"), // video duration in seconds
   frameRate: integer("frame_rate"), // frames per second
   errorMessage: text("error_message"),

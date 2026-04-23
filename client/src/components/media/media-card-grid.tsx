@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -120,26 +120,27 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
     setMediaInfoOpen(true);
   };
 
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Stream a URL into a blob and trigger a Save As with the chosen filename.
+  // Used both for the original download and for any processed quality variant.
+  const downloadUrlAs = async (url: string, downloadName: string) => {
     try {
-      const response = await fetch(`/api/files/${file.id}/content`);
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Download failed');
-      
+
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
-      a.href = url;
-      a.download = file.filename;
+      a.href = blobUrl;
+      a.download = downloadName;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(blobUrl);
       document.body.removeChild(a);
-      
+
       toast({
         title: "Download started",
-        description: `Downloading ${file.filename}`,
+        description: `Downloading ${downloadName}`,
       });
     } catch (error) {
       toast({
@@ -148,6 +149,27 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
         variant: "destructive",
       });
     }
+  };
+
+  const handleDownloadOriginal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    downloadUrlAs(`/api/files/${file.id}/content`, file.filename);
+  };
+
+  // Build a download filename like "myclip_720p.mp4" preserving the original
+  // base name and the quality's container extension when possible.
+  const buildQualityFilename = (resolution: string, sourcePath?: string) => {
+    const base = file.filename.replace(/\.[^.]+$/, "");
+    const ext = sourcePath?.match(/\.[a-z0-9]+$/i)?.[0] ?? ".mp4";
+    return `${base}_${resolution}${ext}`;
+  };
+
+  const handleDownloadQuality = (e: React.MouseEvent, resolution: string, sourcePath?: string) => {
+    e.stopPropagation();
+    downloadUrlAs(
+      `/api/files/${file.id}/qualities/${encodeURIComponent(resolution)}`,
+      buildQualityFilename(resolution, sourcePath),
+    );
   };
 
   // Share dialog state. We open a small dialog so the user can pick between
@@ -513,10 +535,56 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDownload}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </DropdownMenuItem>
+                {(() => {
+                  // For videos with completed processing, expose every encoded
+                  // resolution alongside the original. For other file types
+                  // (audio, image) there are no transcoded variants, so fall
+                  // back to a single download item.
+                  const qualities: Array<{ resolution: string; path: string; size: number }> =
+                    (processing as any)?.qualities || [];
+                  const hasQualityVariants =
+                    file.fileType === "video" && qualities.length > 0;
+
+                  if (!hasQualityVariants) {
+                    return (
+                      <DropdownMenuItem onClick={handleDownloadOriginal}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </DropdownMenuItem>
+                    );
+                  }
+
+                  return (
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-56">
+                        <DropdownMenuItem onClick={handleDownloadOriginal}>
+                          <span className="flex-1">Original</span>
+                          <span className="ml-2 text-xs text-neutral-500">
+                            {formatFileSize(file.fileSize)}
+                          </span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {qualities.map((q) => (
+                          <DropdownMenuItem
+                            key={q.resolution}
+                            onClick={(e) => handleDownloadQuality(e, q.resolution, q.path)}
+                          >
+                            <span className="flex-1">{q.resolution}</span>
+                            {q.size ? (
+                              <span className="ml-2 text-xs text-neutral-500">
+                                {formatFileSize(q.size)}
+                              </span>
+                            ) : null}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  );
+                })()}
                 <DropdownMenuItem onClick={openShareDialog}>
                   <Share2 className="h-4 w-4 mr-2" />
                   Share Link

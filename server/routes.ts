@@ -163,13 +163,16 @@ async function processVideoInBackground(file: any, processingId: number) {
       filename: path.parse(file.filename).name
     });
     
-    // Update processing record with results (including spriteMetadata)
+    // Update processing record with results (including spriteMetadata and
+    // the cached ffprobe payload so the MediaInfo dialog doesn't have to
+    // re-run ffprobe every time someone opens it).
     await storage.updateVideoProcessing(processingId, {
       status: "completed",
       qualities: result.qualities,
       scrubVersionPath: result.scrubVersion,
       thumbnailSpritePath: result.thumbnailSprite,
       spriteMetadata: result.spriteMetadata, // Fix: Include sprite metadata
+      mediaInfo: result.mediaInfo,
       duration: Math.round(result.duration),
       frameRate: Math.round(result.frameRate),
       processedAt: new Date()
@@ -1853,16 +1856,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         onDisk = false;
       }
 
-      let probe: any = null;
+      // Prefer the cached ffprobe payload captured at processing time. Fall
+      // back to a live probe (and persist it for next time) only when the
+      // cache is empty — e.g. legacy rows from before this column existed,
+      // or audio/image uploads that don't go through the video processor.
+      const processing = await storage.getVideoProcessing(fileId);
+      let probe: any = processing?.mediaInfo ?? null;
       let probeError: string | null = null;
-      if (onDisk) {
-        try {
-          probe = await VideoProcessor.probeFull(file.filePath);
-        } catch (err: any) {
-          probeError = err?.message || String(err);
+      let cached = !!probe;
+
+      if (!probe) {
+        if (onDisk) {
+          try {
+            probe = await VideoProcessor.probeFull(file.filePath);
+            // Best-effort backfill so subsequent opens hit the cache
+            if (processing) {
+              storage.updateVideoProcessing(processing.id, { mediaInfo: probe })
+                .catch(err => console.warn("[MediaInfo API] backfill failed:", err));
+            }
+          } catch (err: any) {
+            probeError = err?.message || String(err);
+          }
+        } else {
+          probeError = "Original file is not present on disk";
         }
-      } else {
-        probeError = "Original file is not present on disk";
       }
 
       res.json({
@@ -1881,6 +1898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         onDisk,
         probe,
         probeError,
+        cached,
       });
     } catch (error) {
       console.error("[MediaInfo API] Error:", error);

@@ -17,6 +17,7 @@ export interface ProcessedVideoResult {
   spriteMetadata: any;
   duration: number;
   frameRate: number;
+  mediaInfo: any;
 }
 
 interface VideoQuality {
@@ -49,7 +50,15 @@ export class VideoProcessor {
     await fs.mkdir(scrubDir, { recursive: true });
     await fs.mkdir(thumbsDir, { recursive: true });
     
-    // Get video metadata
+    // Get video metadata. We also capture the full ffprobe JSON once here so
+    // it can be persisted alongside the processing record — the MediaInfo
+    // dialog reads it from the DB instead of re-running ffprobe each open.
+    let mediaInfo: any = null;
+    try {
+      mediaInfo = await this.probeFull(inputPath);
+    } catch (err) {
+      console.warn(`[VideoProcessor] probeFull failed (non-fatal):`, err);
+    }
     const metadata = await this.getVideoMetadata(inputPath);
     console.log(`[VideoProcessor] Video metadata:`, metadata);
     
@@ -90,7 +99,8 @@ export class VideoProcessor {
       thumbnailSprite: spriteResult.path,
       spriteMetadata: spriteResult.metadata,
       duration: metadata.duration,
-      frameRate: metadata.frameRate
+      frameRate: metadata.frameRate,
+      mediaInfo,
     };
   }
 
