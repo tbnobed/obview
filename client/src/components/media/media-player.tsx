@@ -2058,9 +2058,18 @@ export default function MediaPlayer({
         >
           <div className="p-2">
             <div className="relative">
-              {/* Video-based scrub preview using scrub version */}
+              {/* Video-based scrub preview. Size is constrained by max width
+                  AND max height so portrait/vertical sources (very common for
+                  social media) render at their true aspect instead of being
+                  cropped by object-cover into a landscape box. */}
               <video
-                className="w-48 h-32 rounded object-cover bg-gray-800 pointer-events-none"
+                className="rounded bg-gray-800 pointer-events-none block"
+                style={{
+                  maxWidth: '192px',
+                  maxHeight: '256px',
+                  width: 'auto',
+                  height: 'auto',
+                }}
                 data-testid="video-scrub-preview"
                 src={`/api/files/${file.id}/scrub`}
                 muted

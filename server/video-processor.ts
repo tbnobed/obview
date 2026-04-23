@@ -375,15 +375,36 @@ export class VideoProcessor {
       const thumbnailCount = Math.ceil(metadata.duration / effectiveInterval);
       const cols = Math.ceil(Math.sqrt(thumbnailCount));
       const rows = Math.ceil(thumbnailCount / cols);
-      
-      console.log(`[VideoProcessor] Sprite generation: ${metadata.duration}s video, ${effectiveInterval.toFixed(2)}s intervals, ${thumbnailCount} thumbnails (${cols}x${rows} grid)`);
-      
-      // Generate sprite with thumbnails
+
+      // Aspect-aware cell size. Previously we forced every cell to 800x450
+      // landscape and padded portrait/square videos with black bars, which
+      // looked terrible for vertical (social) content. Now: fit each cell
+      // into a 480x480 bounding box at the source's native aspect ratio,
+      // round to even dimensions for libx264/yuv420p safety.
+      const maxEdge = 480;
+      const srcW = Math.max(1, metadata.width || 16);
+      const srcH = Math.max(1, metadata.height || 9);
+      const aspect = srcW / srcH;
+      let cellW: number;
+      let cellH: number;
+      if (aspect >= 1) {
+        cellW = maxEdge;
+        cellH = Math.round(maxEdge / aspect);
+      } else {
+        cellH = maxEdge;
+        cellW = Math.round(maxEdge * aspect);
+      }
+      cellW = Math.max(2, cellW - (cellW % 2));
+      cellH = Math.max(2, cellH - (cellH % 2));
+
+      console.log(`[VideoProcessor] Sprite generation: ${metadata.duration}s video, ${effectiveInterval.toFixed(2)}s intervals, ${thumbnailCount} thumbnails (${cols}x${rows} grid), cell ${cellW}x${cellH}`);
+
+      // Generate sprite with thumbnails (no padding — cells keep source aspect)
       const args = [
         '-i', inputPath,
         '-vf', [
           `fps=${(1/effectiveInterval).toFixed(6)}`,
-          'scale=800:450:force_original_aspect_ratio=decrease,pad=800:450:(ow-iw)/2:(oh-ih)/2',
+          `scale=${cellW}:${cellH}:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
           `tile=${cols}x${rows}`
         ].join(','),
         '-frames:v', '1',
@@ -392,16 +413,17 @@ export class VideoProcessor {
         '-y',
         outputPath
       ];
-      
+
       console.log(`[VideoProcessor] Generating thumbnail sprite...`);
       await this.executeFFmpeg(args, config.video.timeouts.sprite);
-      
-      // Create sprite metadata
+
+      // Create sprite metadata. thumbnailWidth/Height now reflect the actual
+      // cell aspect so the client can size the preview window correctly.
       const spriteInfo = {
         cols,
         rows,
-        thumbnailWidth: 800,
-        thumbnailHeight: 450,
+        thumbnailWidth: cellW,
+        thumbnailHeight: cellH,
         interval: effectiveInterval,
         thumbnailCount,
         duration: metadata.duration
