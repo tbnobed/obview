@@ -368,8 +368,15 @@ export default function ProjectPage() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 shrink-0 text-neutral-500 hover:text-foreground"
-              onClick={() => navigate("/projects")}
-              title="Back to projects"
+              onClick={() => {
+                if (viewMode === "player") {
+                  setSelectedFileId(null);
+                  setViewMode("grid");
+                } else {
+                  navigate("/projects");
+                }
+              }}
+              title={viewMode === "player" ? "Back to project media" : "Back to projects"}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
