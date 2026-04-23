@@ -2,7 +2,8 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { setupAuth } from "./auth.js";
-import { registerRoutes } from "./routes.js";
+import { registerRoutes, resumeStuckVideoProcessing } from "./routes.js";
+import { resumePendingSummarizations } from "./summarization.js";
 import { config } from "./utils/config.js";
 
 const app = express();
@@ -50,6 +51,15 @@ registerRoutes(app).then(server => {
   server.listen(config.port, '0.0.0.0', () => {
     console.log(`🚀 Production server running on port ${config.port}`);
     console.log(`📁 Static files served from: ${staticPath}`);
+    // Resume any video processing or summarization jobs interrupted by the
+    // previous shutdown, and recover videos that silently failed quality
+    // encoding before this fix landed.
+    resumeStuckVideoProcessing().catch((err) =>
+      console.error("[Startup] Could not resume video processing:", err)
+    );
+    resumePendingSummarizations().catch((err) =>
+      console.error("[Startup] Could not resume summarizations:", err)
+    );
   });
 }).catch(error => {
   console.error("Failed to start server:", error);
