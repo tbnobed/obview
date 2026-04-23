@@ -10,6 +10,8 @@ import {
 } from "@/hooks/use-folders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Form,
   FormControl,
@@ -30,6 +32,7 @@ import {
   ChevronRight,
   Folder,
   FolderOpen,
+  Globe,
   Loader2,
   Plus,
 } from "lucide-react";
@@ -41,6 +44,7 @@ const createFolderSchema = z.object({
     .min(1, "Folder name is required")
     .max(50, "Folder name must be 50 characters or less"),
   description: z.string().nullable().optional(),
+  isGlobal: z.boolean().optional(),
 });
 
 type CreateFolderInput = z.infer<typeof createFolderSchema>;
@@ -49,10 +53,12 @@ export default function SidebarFolders() {
   const { data: folders, isLoading } = useFolders();
   const [createOpen, setCreateOpen] = useState(false);
   const createMutation = useCreateFolder();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const form = useForm<CreateFolderInput>({
     resolver: zodResolver(createFolderSchema),
-    defaultValues: { name: "", description: "" },
+    defaultValues: { name: "", description: "", isGlobal: false },
   });
 
   const handleCreate = async (data: CreateFolderInput) => {
@@ -129,6 +135,32 @@ export default function SidebarFolders() {
                     </FormItem>
                   )}
                 />
+                {isAdmin && (
+                  <FormField
+                    control={form.control}
+                    name="isGlobal"
+                    render={({ field }) => (
+                      <FormItem className="flex items-start gap-3 rounded-md border p-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={!!field.value}
+                            onCheckedChange={(v) => field.onChange(v === true)}
+                            data-testid="checkbox-sidebar-folder-global"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="cursor-pointer flex items-center gap-1.5">
+                            <Globe className="h-3.5 w-3.5" />
+                            Global folder
+                          </FormLabel>
+                          <p className="text-xs text-muted-foreground">
+                            Visible to all users. Only admins can create or edit global folders.
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <DialogFooter>
                   <Button
                     type="button"
