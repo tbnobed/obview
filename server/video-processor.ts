@@ -246,14 +246,20 @@ export class VideoProcessor {
   ): Promise<VideoQuality | null> {
     try {
       const outputPath = path.join(outputDir, `${filename}_${quality.name}.mp4`);
-      
-      // Skip if input resolution is lower than target
-      if (metadata.width < quality.width || metadata.height < quality.height) {
-        console.log(`[VideoProcessor] Skipping ${quality.name} - input resolution too low`);
-        return null;
-      }
-      
-      // FFmpeg arguments for H.264 720p encoding optimized for speed and low bandwidth
+
+      // If input is smaller than the target resolution we used to skip the
+      // quality entirely, which left the file with zero playable renditions
+      // and the UI stuck on "Processing" forever. Instead, encode at the
+      // input's native resolution: same H.264 streaming-optimised output,
+      // just no upscaling. force_original_aspect_ratio=decrease already
+      // handles the downscale case and is a no-op when the source is smaller.
+      const targetW = Math.min(quality.width, metadata.width);
+      const targetH = Math.min(quality.height, metadata.height);
+      // FFmpeg requires even dimensions for yuv420p
+      const evenW = targetW - (targetW % 2);
+      const evenH = targetH - (targetH % 2);
+
+      // FFmpeg arguments for H.264 encoding optimized for speed and low bandwidth
       const args = [
         '-i', inputPath,
         '-c:v', 'libx264',
@@ -262,7 +268,7 @@ export class VideoProcessor {
         '-profile:v', 'main', // Use main profile for better compatibility and speed
         '-level', '3.1',
         '-pix_fmt', 'yuv420p', // Ensures compatibility with all players
-        '-vf', `scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black`, // Cap at 720p, pad with black
+        '-vf', `scale=${evenW}:${evenH}:force_original_aspect_ratio=decrease`, // Cap at target, no upscaling
         '-maxrate', quality.bitrate,
         '-bufsize', `${parseInt(quality.bitrate) * 1.5}k`, // Reduce buffer size for faster encoding
         '-c:a', 'aac',
