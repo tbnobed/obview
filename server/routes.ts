@@ -64,15 +64,24 @@ export async function resumeStuckVideoProcessing() {
   try {
     const { videoProcessing, files } = await import("@shared/schema");
     const { eq, or } = await import("drizzle-orm");
-    const stuck = await db
-      .select()
-      .from(videoProcessing)
-      .where(
-        or(
-          eq(videoProcessing.status, "processing"),
-          eq(videoProcessing.status, "pending")
-        )
-      );
+    const allRows = await db.select().from(videoProcessing);
+    // Stuck = mid-encode when the previous process died, OR previously
+    // "completed" but with zero quality renditions (silent FFmpeg failure
+    // from before this fix). Both manifest as a permanent "Processing"
+    // badge in the UI.
+    const stuck = allRows.filter((r: any) => {
+      if (r.status === "processing" || r.status === "pending") return true;
+      if (r.status === "completed") {
+        const qualities = Array.isArray(r.qualities) ? r.qualities : [];
+        // Only treat completed-with-no-qualities as stuck for video files.
+        // Audio/image rows legitimately have no qualities.
+        // We can't tell file type from the processing row alone, so we
+        // require both an empty qualities array AND a scrubVersionPath
+        // (which is only generated for video).
+        return qualities.length === 0 && !!r.scrubVersionPath;
+      }
+      return false;
+    });
     if (stuck.length === 0) return;
     console.log(
       `[Video Processing] Found ${stuck.length} interrupted job(s) — resuming`

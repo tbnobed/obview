@@ -71,10 +71,21 @@ export class VideoProcessor {
       spritePromise
     ]);
     
+    const validQualities = qualities.filter(q => q !== null) as VideoQuality[];
+
+    // If every quality variant failed, surface the underlying FFmpeg error
+    // instead of silently completing with no playable renditions (which
+    // leaves the UI stuck on "Processing" forever).
+    if (validQualities.length === 0 && this.QUALITIES.length > 0) {
+      const detail = (this as any)._lastQualityError || "no quality renditions produced";
+      (this as any)._lastQualityError = undefined;
+      throw new Error(`Quality encoding failed: ${detail}`);
+    }
+
     console.log(`[VideoProcessor] Processing completed for: ${filename}`);
-    
+
     return {
-      qualities: qualities.filter(q => q !== null) as VideoQuality[],
+      qualities: validQualities,
       scrubVersion,
       thumbnailSprite: spriteResult.path,
       spriteMetadata: spriteResult.metadata,
@@ -276,8 +287,11 @@ export class VideoProcessor {
         size: stats.size,
         bitrate: quality.bitrate
       };
-    } catch (error) {
-      console.error(`[VideoProcessor] Error generating ${quality.name}:`, error);
+    } catch (error: any) {
+      const msg = error?.message || String(error);
+      console.error(`[VideoProcessor] Error generating ${quality.name}:`, msg);
+      // Tag the error so processVideo() can surface it instead of silently dropping.
+      (this as any)._lastQualityError = `${quality.name}: ${msg}`;
       return null;
     }
   }
