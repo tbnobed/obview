@@ -77,14 +77,18 @@ export async function resumeStuckVideoProcessing() {
         // Audio/image rows legitimately have no qualities.
         return qualities.length === 0 && !!r.scrubVersionPath;
       }
-      // Re-pick up rows that failed specifically because the old code
-      // refused to encode sub-720p videos and produced zero qualities.
-      // We deliberately match ONLY the old-bug signatures here — the new
-      // explicit failure message ("Quality encoding failed: …") is excluded
-      // so a genuinely broken file isn't retried on every restart.
+      // Re-pick up rows that failed due to now-fixed encoder bugs:
+      //  1. Old "skip sub-720p" code produced zero qualities.
+      //  2. Aspect-preserving downscale of portrait/odd-aspect sources
+      //     produced odd output dimensions, which libx264+yuv420p rejects
+      //     with "width not divisible by 2" / FFmpeg exit code 187.
+      // The native-resolution + even-rounding fixes resolve both, so a
+      // single retry is safe. Generic "Quality encoding failed" without
+      // these markers is NOT matched, so genuinely broken files don't
+      // retry on every restart.
       if (r.status === "failed") {
         const err: string = r.errorMessage || "";
-        return /no quality renditions produced|input resolution too low/i.test(err);
+        return /no quality renditions produced|input resolution too low|width not divisible by 2|height not divisible by 2|code 187/i.test(err);
       }
       return false;
     });
