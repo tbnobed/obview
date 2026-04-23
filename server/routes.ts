@@ -6,7 +6,7 @@ import multer from "multer";
 import type { Multer } from "multer"; // Import multer types
 import path from "path";
 import { z } from "zod";
-import { File as StorageFile } from "@shared/schema";
+import { File as StorageFile, videoProcessing, files as filesTable } from "@shared/schema";
 import * as fileSystem from "./utils/filesystem";
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
@@ -62,8 +62,8 @@ import {
  */
 export async function resumeStuckVideoProcessing() {
   try {
-    const { videoProcessing, files } = await import("@shared/schema");
-    const { eq, or } = await import("drizzle-orm");
+    const { eq } = await import("drizzle-orm");
+    console.log("[Video Processing] Startup recovery scanning for stuck jobs...");
     const allRows = await db.select().from(videoProcessing);
     // Stuck = mid-encode when the previous process died, OR previously
     // "completed" but with zero quality renditions (silent FFmpeg failure
@@ -89,8 +89,8 @@ export async function resumeStuckVideoProcessing() {
     for (const row of stuck) {
       const [file] = await db
         .select()
-        .from(files)
-        .where(eq(files.id, row.fileId));
+        .from(filesTable)
+        .where(eq(filesTable.id, row.fileId));
       if (!file) {
         console.warn(
           `[Video Processing] Skipping resume for processing ${row.id}: source file ${row.fileId} missing`
