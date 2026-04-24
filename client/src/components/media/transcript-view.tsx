@@ -52,9 +52,23 @@ interface Props {
   fileId: number;
   currentTime: number;
   onSeek: (time: number) => void;
+  apiBase?: string;
+  readOnly?: boolean;
+  allowDownloads?: boolean;
+  queryKey?: readonly unknown[];
 }
 
-export default function TranscriptView({ fileId, currentTime, onSeek }: Props) {
+export default function TranscriptView({
+  fileId,
+  currentTime,
+  onSeek,
+  apiBase,
+  readOnly = false,
+  allowDownloads = true,
+  queryKey,
+}: Props) {
+  const base = apiBase || `/api/files/${fileId}`;
+  const qKey = queryKey || ["/api/files", fileId, "transcript"];
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const activeRef = useRef<HTMLButtonElement | null>(null);
@@ -62,9 +76,9 @@ export default function TranscriptView({ fileId, currentTime, onSeek }: Props) {
   const [autoScroll, setAutoScroll] = useState(true);
 
   const { data: transcript, isLoading, error, refetch } = useQuery<Transcript>({
-    queryKey: ["/api/files", fileId, "transcript"],
+    queryKey: qKey,
     queryFn: async () => {
-      const res = await fetch(`/api/files/${fileId}/transcript`, {
+      const res = await fetch(`${base}/transcript`, {
         credentials: "include",
       });
       if (res.status === 404) return null as any;
@@ -82,14 +96,14 @@ export default function TranscriptView({ fileId, currentTime, onSeek }: Props) {
 
   const regenerate = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", `/api/files/${fileId}/transcript/regenerate`);
+      await apiRequest("POST", `${base}/transcript/regenerate`);
     },
     onSuccess: () => {
       toast({
         title: "Transcription started",
         description: "This may take a moment depending on the length of the file.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/files", fileId, "transcript"] });
+      queryClient.invalidateQueries({ queryKey: qKey });
     },
     onError: (err: Error) =>
       toast({
@@ -152,16 +166,20 @@ export default function TranscriptView({ fileId, currentTime, onSeek }: Props) {
         <FileText className="h-10 w-10 mx-auto text-neutral-400 mb-3" />
         <h4 className="font-medium text-neutral-900 dark:text-white">No transcript yet</h4>
         <p className="text-sm text-neutral-500 dark:text-gray-400 mt-1 mb-4">
-          Generate a transcript for this file to see it here.
+          {readOnly
+            ? "The owner hasn't generated a transcript for this file yet."
+            : "Generate a transcript for this file to see it here."}
         </p>
-        <Button onClick={() => regenerate.mutate()} disabled={regenerate.isPending}>
-          {regenerate.isPending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCcw className="h-4 w-4 mr-2" />
-          )}
-          Generate transcript
-        </Button>
+        {!readOnly && (
+          <Button onClick={() => regenerate.mutate()} disabled={regenerate.isPending}>
+            {regenerate.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-4 w-4 mr-2" />
+            )}
+            Generate transcript
+          </Button>
+        )}
       </div>
     );
   }
@@ -192,14 +210,16 @@ export default function TranscriptView({ fileId, currentTime, onSeek }: Props) {
             </div>
           </div>
         </div>
-        <Button onClick={() => regenerate.mutate()} disabled={regenerate.isPending}>
-          {regenerate.isPending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCcw className="h-4 w-4 mr-2" />
-          )}
-          Try again
-        </Button>
+        {!readOnly && (
+          <Button onClick={() => regenerate.mutate()} disabled={regenerate.isPending}>
+            {regenerate.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-4 w-4 mr-2" />
+            )}
+            Try again
+          </Button>
+        )}
       </div>
     );
   }
@@ -216,45 +236,49 @@ export default function TranscriptView({ fileId, currentTime, onSeek }: Props) {
             className="pl-7 h-8 text-sm"
           />
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 px-2">
-              <Download className="h-4 w-4 mr-1" />
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <a href={`/api/files/${fileId}/transcript.txt`} download>
-                Download .txt
-              </a>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <a href={`/api/files/${fileId}/transcript.srt`} download>
-                Download .srt
-              </a>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <a href={`/api/files/${fileId}/transcript.vtt`} download>
-                Download .vtt
-              </a>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 px-2"
-          onClick={() => regenerate.mutate()}
-          disabled={regenerate.isPending}
-          title="Regenerate transcript"
-        >
-          {regenerate.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCcw className="h-4 w-4" />
-          )}
-        </Button>
+        {allowDownloads && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 px-2">
+                <Download className="h-4 w-4 mr-1" />
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <a href={`${base}/transcript.txt`} download>
+                  Download .txt
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={`${base}/transcript.srt`} download>
+                  Download .srt
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={`${base}/transcript.vtt`} download>
+                  Download .vtt
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        {!readOnly && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2"
+            onClick={() => regenerate.mutate()}
+            disabled={regenerate.isPending}
+            title="Regenerate transcript"
+          >
+            {regenerate.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-4 w-4" />
+            )}
+          </Button>
+        )}
       </div>
 
       <div ref={containerRef} className="flex-1 min-h-0 overflow-auto px-2 py-2">

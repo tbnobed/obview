@@ -9,6 +9,7 @@ import * as fileSystem from "./utils/filesystem";
 import { hashPassword, comparePasswords } from "./auth";
 import { insertShareLinkSchema, updateShareLinkSchema, insertCommentsUnifiedSchema } from "@shared/schema";
 import type { ShareLink, File as DbFile } from "@shared/schema";
+import { segmentsToVtt, segmentsToSrt } from "./transcription";
 
 declare module "express-session" {
   interface SessionData {
@@ -447,6 +448,58 @@ export function registerShareLinkRoutes(
       if (!file) return res.status(404).send("Not found");
       if (file.isAvailable === false || !(await fileSystem.fileExists(file.filePath))) return res.status(404).send("Not available");
       await streamRanged(req, res, file.filePath, contentTypeFor(file.filename, file.fileType), file.filename);
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/public/share/:token/files/:fileId/transcript", async (req, res, next) => {
+    try {
+      const gated = await loadGatedLink(req, res); if (!gated) return;
+      const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
+      if (!file) return res.status(404).json({ message: "Not found" });
+      const transcript = await storage.getTranscript(file.id);
+      if (!transcript) return res.status(404).json({ message: "No transcript yet" });
+      res.json(transcript);
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/public/share/:token/files/:fileId/transcript.vtt", async (req, res, next) => {
+    try {
+      const gated = await loadGatedLink(req, res); if (!gated) return;
+      if (!gated.link.allowDownloads) return res.status(403).send("Downloads disabled for this link");
+      const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
+      if (!file) return res.status(404).send("Not found");
+      const transcript = await storage.getTranscript(file.id);
+      if (!transcript || !transcript.segments?.length) return res.status(404).send("No transcript available");
+      res.setHeader("Content-Type", "text/vtt");
+      res.send(segmentsToVtt(transcript.segments));
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/public/share/:token/files/:fileId/transcript.srt", async (req, res, next) => {
+    try {
+      const gated = await loadGatedLink(req, res); if (!gated) return;
+      if (!gated.link.allowDownloads) return res.status(403).send("Downloads disabled for this link");
+      const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
+      if (!file) return res.status(404).send("Not found");
+      const transcript = await storage.getTranscript(file.id);
+      if (!transcript || !transcript.segments?.length) return res.status(404).send("No transcript available");
+      res.setHeader("Content-Type", "application/x-subrip");
+      res.setHeader("Content-Disposition", `attachment; filename="transcript-${file.id}.srt"`);
+      res.send(segmentsToSrt(transcript.segments));
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/public/share/:token/files/:fileId/transcript.txt", async (req, res, next) => {
+    try {
+      const gated = await loadGatedLink(req, res); if (!gated) return;
+      if (!gated.link.allowDownloads) return res.status(403).send("Downloads disabled for this link");
+      const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
+      if (!file) return res.status(404).send("Not found");
+      const transcript = await storage.getTranscript(file.id);
+      if (!transcript) return res.status(404).send("No transcript available");
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="transcript-${file.id}.txt"`);
+      res.send(transcript.text || (transcript.segments || []).map((s: any) => s.text).join("\n"));
     } catch (e) { next(e); }
   });
 

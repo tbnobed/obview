@@ -18,15 +18,20 @@ interface Transcript {
 
 interface Props {
   fileId: number;
+  apiBase?: string;
+  readOnly?: boolean;
+  queryKey?: readonly unknown[];
 }
 
-export default function SynopsisView({ fileId }: Props) {
+export default function SynopsisView({ fileId, apiBase, readOnly = false, queryKey }: Props) {
+  const base = apiBase || `/api/files/${fileId}`;
+  const qKey = queryKey || ["/api/files", fileId, "transcript"];
   const { toast } = useToast();
 
   const { data: transcript, isLoading } = useQuery<Transcript | null>({
-    queryKey: ["/api/files", fileId, "transcript"],
+    queryKey: qKey,
     queryFn: async () => {
-      const res = await fetch(`/api/files/${fileId}/transcript`, {
+      const res = await fetch(`${base}/transcript`, {
         credentials: "include",
       });
       if (res.status === 404) return null as any;
@@ -44,14 +49,14 @@ export default function SynopsisView({ fileId }: Props) {
 
   const regenerate = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", `/api/files/${fileId}/summary/regenerate`);
+      await apiRequest("POST", `${base}/summary/regenerate`);
     },
     onSuccess: () => {
       toast({
         title: "Generating synopsis",
         description: "The first run downloads the local model and may take a few minutes.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/files", fileId, "transcript"] });
+      queryClient.invalidateQueries({ queryKey: qKey });
     },
     onError: (err: Error) =>
       toast({
@@ -101,21 +106,23 @@ export default function SynopsisView({ fileId }: Props) {
           <Sparkles className="h-4 w-4 text-amber-500" />
           AI Synopsis
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs"
-          onClick={() => regenerate.mutate()}
-          disabled={inProgress}
-          title="Regenerate synopsis"
-        >
-          {inProgress ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-          ) : (
-            <RefreshCcw className="h-3.5 w-3.5 mr-1" />
-          )}
-          Regenerate
-        </Button>
+        {!readOnly && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => regenerate.mutate()}
+            disabled={inProgress}
+            title="Regenerate synopsis"
+          >
+            {inProgress ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+            ) : (
+              <RefreshCcw className="h-3.5 w-3.5 mr-1" />
+            )}
+            Regenerate
+          </Button>
+        )}
       </div>
 
       <div className="px-4 py-4 flex-1">

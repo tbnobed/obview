@@ -25,6 +25,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TranscriptView from "@/components/media/transcript-view";
+import SynopsisView from "@/components/media/synopsis-view";
 
 type ShareInfo = {
   scopeType: "project" | "folder" | "file";
@@ -494,13 +497,27 @@ function FileViewer({
   const { toast } = useToast();
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
   const seekTo = (t: number) => {
     const el = mediaRef.current;
     if (el) {
       el.currentTime = t;
+      setCurrentTime(t);
       el.play?.().catch(() => {});
     }
   };
+
+  useEffect(() => {
+    const el = mediaRef.current;
+    if (!el) return;
+    const onTime = () => setCurrentTime(el.currentTime || 0);
+    el.addEventListener("timeupdate", onTime);
+    return () => el.removeEventListener("timeupdate", onTime);
+  }, [file.id]);
+
+  const apiBase = `/api/public/share/${token}/files/${file.id}`;
+  const transcriptQueryKey = ["share-transcript", token, file.id] as const;
+  const supportsTranscript = isVideo || isAudio;
 
   const post = useMutation({
     mutationFn: async () => {
@@ -603,113 +620,163 @@ function FileViewer({
         </div>
       </div>
 
-      {/* Comments column */}
-      <aside className="space-y-3">
-        <div className="rounded-lg bg-white dark:bg-gray-900 border border-neutral-200 dark:border-gray-800">
-          <div className="px-4 py-3 border-b border-neutral-200 dark:border-gray-800 flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-primary dark:text-[#10a37f]" />
-            <h3 className="text-sm font-semibold">Comments</h3>
-            {commentsQ.data && commentsQ.data.length > 0 && (
-              <span className="ml-auto text-xs text-neutral-500 dark:text-gray-400">
-                {commentsQ.data.length}
-              </span>
-            )}
+      {/* Right side panel: Comments / Transcript / Synopsis */}
+      <aside className="rounded-lg bg-white dark:bg-[#0f1218] border border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]">
+        <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
+          <div className="px-3 py-2.5 border-b border-neutral-200 dark:border-gray-800">
+            <TabsList className="bg-neutral-100 dark:bg-gray-900">
+              <TabsTrigger value="comments" className="text-xs px-3">
+                Comments
+                {commentsQ.data && commentsQ.data.length > 0 && (
+                  <span className="ml-1.5 text-[10px] opacity-70">
+                    {commentsQ.data.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              {supportsTranscript && (
+                <TabsTrigger value="transcript" className="text-xs px-3">
+                  Transcript
+                </TabsTrigger>
+              )}
+              {supportsTranscript && (
+                <TabsTrigger value="synopsis" className="text-xs px-3">
+                  Synopsis
+                </TabsTrigger>
+              )}
+            </TabsList>
           </div>
 
-          {!allowComments ? (
-            <div className="p-4">
-              <Alert>
-                <AlertDescription>
-                  Comments are disabled for this share link.
-                </AlertDescription>
-              </Alert>
-            </div>
-          ) : (
-            <div className="p-3 space-y-2 border-b border-neutral-200 dark:border-gray-800">
-              <Input
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700"
-              />
-              <textarea
-                className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 min-h-[80px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500"
-                placeholder={
-                  isVideo || isAudio
-                    ? "Leave feedback at current playhead..."
-                    : "Leave feedback..."
-                }
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  disabled={!content.trim() || post.isPending}
-                  onClick={() => post.mutate()}
-                  data-testid="button-post-share-comment"
-                >
-                  <Send className="h-3.5 w-3.5 mr-1" />
-                  {post.isPending ? "Posting..." : "Post"}
-                </Button>
+          <TabsContent
+            value="comments"
+            className="flex-1 min-h-0 m-0 flex flex-col overflow-hidden"
+          >
+            {!allowComments ? (
+              <div className="p-4">
+                <Alert>
+                  <AlertDescription>
+                    Comments are disabled for this share link.
+                  </AlertDescription>
+                </Alert>
               </div>
-            </div>
-          )}
-
-          <div className="max-h-[60vh] overflow-y-auto divide-y divide-neutral-200 dark:divide-gray-800">
-            {commentsQ.isLoading && (
-              <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
-                Loading comments...
-              </p>
+            ) : (
+              <div className="p-3 space-y-2 border-b border-neutral-200 dark:border-gray-800 shrink-0">
+                <Input
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
+                />
+                <textarea
+                  className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 min-h-[72px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
+                  placeholder={
+                    isVideo || isAudio
+                      ? `Leave feedback at ${fmtTime(currentTime) || "0:00"}...`
+                      : "Leave feedback..."
+                  }
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    disabled={!content.trim() || post.isPending}
+                    onClick={() => post.mutate()}
+                    data-testid="button-post-share-comment"
+                  >
+                    <Send className="h-3.5 w-3.5 mr-1" />
+                    {post.isPending ? "Posting..." : "Post"}
+                  </Button>
+                </div>
+              </div>
             )}
-            {commentsQ.data?.map((c) => {
-              const author = c.user?.name || c.authorName || "Anonymous";
-              const initial = (author[0] || "U").toUpperCase();
-              return (
-                <div
-                  key={c.id}
-                  className="px-4 py-3 flex gap-2 hover:bg-neutral-50 dark:hover:bg-gray-800/40 transition-colors"
-                  data-testid={`share-comment-${c.id}`}
-                >
-                  <Avatar className="h-7 w-7 mt-0.5 shrink-0">
-                    <AvatarFallback className="bg-primary-100 dark:bg-[#10a37f]/20 text-primary-700 dark:text-[#10a37f] text-[11px] font-medium">
-                      {initial}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-neutral-900 dark:text-gray-100 truncate">
-                        {author}
-                      </span>
-                      <span className="text-[10px] text-neutral-500 dark:text-gray-400 shrink-0">
-                        {formatTimeAgo(new Date(c.createdAt))}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+
+            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-neutral-200 dark:divide-gray-800">
+              {commentsQ.isLoading && (
+                <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
+                  Loading comments...
+                </p>
+              )}
+              {commentsQ.data?.map((c) => {
+                const author = c.user?.name || c.authorName || "Anonymous";
+                const initial = (author[0] || "U").toUpperCase();
+                return (
+                  <div
+                    key={c.id}
+                    className="px-4 py-3 flex gap-2.5 hover:bg-neutral-50 dark:hover:bg-gray-800/40 transition-colors"
+                    data-testid={`share-comment-${c.id}`}
+                  >
+                    <Avatar className="h-8 w-8 mt-0.5 shrink-0">
+                      <AvatarFallback className="bg-primary/10 dark:bg-[#10a37f]/20 text-primary dark:text-[#10a37f] text-xs font-semibold">
+                        {initial}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-neutral-900 dark:text-gray-100 truncate">
+                          {author}
+                        </span>
+                        <span className="text-[10px] text-neutral-500 dark:text-gray-400 shrink-0">
+                          {formatTimeAgo(new Date(c.createdAt))}
+                        </span>
+                      </div>
                       {c.timestamp != null && (
                         <button
                           onClick={() => seekTo(c.timestamp!)}
-                          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-neutral-100 dark:bg-gray-800 text-neutral-800 dark:text-gray-300 hover:bg-primary/10 dark:hover:bg-[#10a37f]/20"
+                          className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 dark:bg-[#10a37f]/20 text-primary dark:text-[#10a37f] hover:bg-primary/20 dark:hover:bg-[#10a37f]/30 transition-colors"
                           title="Jump to this moment"
                         >
                           {fmtTime(c.timestamp)}
                         </button>
                       )}
-                    </div>
-                    <div className="mt-1 text-xs text-neutral-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                      {c.content}
+                      <div className="mt-1 text-sm text-neutral-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
+                        {c.content}
+                      </div>
                     </div>
                   </div>
+                );
+              })}
+              {commentsQ.data && commentsQ.data.length === 0 && (
+                <div className="px-4 py-10 text-center">
+                  <MessageSquare className="h-8 w-8 mx-auto text-neutral-300 dark:text-gray-600 mb-2" />
+                  <p className="text-xs text-neutral-500 dark:text-gray-400">
+                    No comments yet. Be the first to leave feedback.
+                  </p>
                 </div>
-              );
-            })}
-            {commentsQ.data && commentsQ.data.length === 0 && (
-              <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
-                No comments yet. Be the first to leave feedback.
-              </p>
-            )}
-          </div>
-        </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {supportsTranscript && (
+            <TabsContent
+              value="transcript"
+              className="flex-1 min-h-0 m-0 overflow-hidden"
+            >
+              <TranscriptView
+                fileId={file.id}
+                currentTime={currentTime}
+                onSeek={seekTo}
+                apiBase={apiBase}
+                readOnly
+                allowDownloads={allowDownloads}
+                queryKey={transcriptQueryKey}
+              />
+            </TabsContent>
+          )}
+
+          {supportsTranscript && (
+            <TabsContent
+              value="synopsis"
+              className="flex-1 min-h-0 m-0 overflow-hidden"
+            >
+              <SynopsisView
+                fileId={file.id}
+                apiBase={apiBase}
+                readOnly
+                queryKey={transcriptQueryKey}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
       </aside>
     </div>
   );
