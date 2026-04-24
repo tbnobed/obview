@@ -254,6 +254,29 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
     setMediaContainerSize({ width: rect.width, height: rect.height });
     return () => ro.disconnect();
   }, [file.id]);
+
+  // When watermarked, intercept any attempt to fullscreen the bare <video>
+  // (native button, double-click, etc.) and redirect fullscreen to the
+  // container so the watermark overlay stays visible.
+  useEffect(() => {
+    if (!watermarkOn) return;
+    const onFsChange = () => {
+      const fs = document.fullscreenElement as HTMLElement | null;
+      const video = mediaRef.current as HTMLVideoElement | null;
+      const container = mediaContainerRef.current;
+      if (fs && video && fs === video && container) {
+        document.exitFullscreen()
+          .then(() => container.requestFullscreen?.().catch(() => {}))
+          .catch(() => {});
+      }
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange as any);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange as any);
+    };
+  }, [watermarkOn, file.id]);
   const stopJKLShuttle = () => {
     if (jklIntervalRef.current) {
       clearInterval(jklIntervalRef.current);
@@ -668,7 +691,20 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 controlsList={watermarkOn ? "nodownload nofullscreen noremoteplayback" : "nodownload"}
                 disablePictureInPicture={watermarkOn}
                 onContextMenu={watermarkOn ? (e) => e.preventDefault() : undefined}
-                className="w-full h-full object-contain bg-black"
+                onDoubleClick={
+                  watermarkOn
+                    ? (e) => {
+                        e.preventDefault();
+                        const container = mediaContainerRef.current;
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen().catch(() => {});
+                        } else {
+                          container?.requestFullscreen?.().catch(() => {});
+                        }
+                      }
+                    : undefined
+                }
+                className={`w-full h-full object-contain bg-black${watermarkOn ? " share-video-watermarked" : ""}`}
                 data-testid="share-video-player"
               >
                 <source src={mediaSrc720} type="video/mp4" />

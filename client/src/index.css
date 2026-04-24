@@ -283,3 +283,9 @@
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+
+/* Hide native fullscreen button on watermarked share videos so users
+   can't fullscreen the bare <video> (which would hide the overlay). */
+.share-video-watermarked::-webkit-media-controls-fullscreen-button {
+  display: none !important;
+}
