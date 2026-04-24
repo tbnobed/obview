@@ -29,6 +29,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [viewOnly, setViewOnly] = useState(false);
+  const [watermark, setWatermark] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
@@ -36,14 +37,17 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
   const { createShareLink } = useShareLink();
   const { toast } = useToast();
 
+  const buildUrl = (base: string, opts: { viewOnly: boolean; watermark: boolean }) => {
+    const params: string[] = [];
+    if (opts.viewOnly) params.push("viewOnly=true");
+    if (opts.watermark) params.push("watermark=true");
+    return params.length ? `${base}?${params.join("&")}` : base;
+  };
+
   const generateShareUrl = async () => {
     try {
       const result = await createShareLink.mutateAsync(fileId);
-      let url = result.shareUrl;
-      if (viewOnly) {
-        url += "?viewOnly=true";
-      }
-      setShareUrl(url);
+      setShareUrl(buildUrl(result.shareUrl, { viewOnly, watermark }));
     } catch (error) {
       console.error("Error creating share link", error);
     }
@@ -58,14 +62,20 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
   const handleViewOnlyChange = async (checked: boolean) => {
     setViewOnly(checked);
     setCopied(false);
-    // Regenerate URL with new viewOnly setting
     try {
       const result = await createShareLink.mutateAsync(fileId);
-      let url = result.shareUrl;
-      if (checked) {
-        url += "?viewOnly=true";
-      }
-      setShareUrl(url);
+      setShareUrl(buildUrl(result.shareUrl, { viewOnly: checked, watermark }));
+    } catch (error) {
+      console.error("Error updating share link", error);
+    }
+  };
+
+  const handleWatermarkChange = async (checked: boolean) => {
+    setWatermark(checked);
+    setCopied(false);
+    try {
+      const result = await createShareLink.mutateAsync(fileId);
+      setShareUrl(buildUrl(result.shareUrl, { viewOnly, watermark: checked }));
     } catch (error) {
       console.error("Error updating share link", error);
     }
@@ -156,7 +166,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex items-center space-x-2 mt-4 mb-3">
+          <div className="flex items-center space-x-2 mt-4 mb-2">
             <Checkbox 
               id="viewOnly" 
               checked={viewOnly}
@@ -168,6 +178,20 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
               className="text-sm font-medium text-gray-900 dark:text-gray-300 cursor-pointer"
             >
               View only (hide comments)
+            </label>
+          </div>
+          <div className="flex items-center space-x-2 mb-3">
+            <Checkbox
+              id="watermark"
+              checked={watermark}
+              onCheckedChange={handleWatermarkChange}
+              data-testid="checkbox-watermark"
+            />
+            <label
+              htmlFor="watermark"
+              className="text-sm font-medium text-gray-900 dark:text-gray-300 cursor-pointer"
+            >
+              Watermark playback (deters screen recording)
             </label>
           </div>
           

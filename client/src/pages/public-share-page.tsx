@@ -53,6 +53,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import WatermarkOverlay from "@/components/media/watermark-overlay";
 
 type TimeFormat = "Frames" | "Standard" | "Timecode";
 
@@ -146,6 +147,9 @@ export default function PublicSharePage() {
   const viewOnly =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("viewOnly") === "true";
+  const watermarkOn =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("watermark") === "true";
 
   const fileQ = useQuery<SharedFile>({
     queryKey: ["share-metadata", token],
@@ -203,6 +207,9 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
   const viewOnly =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("viewOnly") === "true";
+  const watermarkOn =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("watermark") === "true";
   const { toast } = useToast();
   const kind = fileKind(file.fileType);
   const isVideo = kind === "video";
@@ -703,6 +710,9 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 containerWidth={mediaContainerSize.width}
                 containerHeight={mediaContainerSize.height}
               />
+            )}
+            {watermarkOn && (isVideo || isImage) && (
+              <WatermarkOverlay label={`${file.filename} · ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC`} />
             )}
           </div>
 
