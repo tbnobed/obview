@@ -18,6 +18,10 @@ import {
   ChevronUp,
   Send,
   Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize2,
   Image as ImageIcon,
   Music,
   File as FileIcon,
@@ -287,7 +291,7 @@ export default function MultiSharePage() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {info.allowDownloads && (
+            {info.allowDownloads && !info.watermarkEnabled && (
               <a
                 className="inline-flex items-center text-xs bg-primary text-primary-foreground rounded-md px-3 py-1.5 hover:opacity-90"
                 href={`/api/public/share/${token}/files/${activeFile.id}/download`}
@@ -624,6 +628,8 @@ function FileViewer({
   const jklDirectionRef = useRef<"forward" | "backward" | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isPaused, setIsPaused] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [timeFormat, setTimeFormat] = useState<TimeFormat>("Standard");
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [displayAnnotations, setDisplayAnnotations] = useState<Annotation[] | null>(null);
@@ -681,26 +687,33 @@ function FileViewer({
     const onMeta = () => {
       if (Number.isFinite(el.duration)) setDuration(el.duration);
     };
-    el.addEventListener("play", start);
-    el.addEventListener("playing", start);
-    el.addEventListener("pause", stop);
+    const onPlay = () => { setIsPaused(false); start(); };
+    const onPause = () => { setIsPaused(true); stop(); };
+    const onVolume = () => { setIsMuted(el.muted || el.volume === 0); };
+    el.addEventListener("play", onPlay);
+    el.addEventListener("playing", onPlay);
+    el.addEventListener("pause", onPause);
     el.addEventListener("seeked", stop);
-    el.addEventListener("ended", stop);
+    el.addEventListener("ended", onPause);
     el.addEventListener("timeupdate", stop);
     el.addEventListener("loadedmetadata", onMeta);
     el.addEventListener("durationchange", onMeta);
+    el.addEventListener("volumechange", onVolume);
     onMeta();
+    onVolume();
+    setIsPaused(el.paused);
     if (!el.paused) start();
     return () => {
       cancelAnimationFrame(raf);
-      el.removeEventListener("play", start);
-      el.removeEventListener("playing", start);
-      el.removeEventListener("pause", stop);
+      el.removeEventListener("play", onPlay);
+      el.removeEventListener("playing", onPlay);
+      el.removeEventListener("pause", onPause);
       el.removeEventListener("seeked", stop);
-      el.removeEventListener("ended", stop);
+      el.removeEventListener("ended", onPause);
       el.removeEventListener("timeupdate", stop);
       el.removeEventListener("loadedmetadata", onMeta);
       el.removeEventListener("durationchange", onMeta);
+      el.removeEventListener("volumechange", onVolume);
     };
   }, [file.id]);
 
@@ -790,7 +803,10 @@ function FileViewer({
             if (document.fullscreenElement) {
               document.exitFullscreen().catch(() => {});
             } else {
-              (el as HTMLVideoElement).requestFullscreen?.().catch(() => {});
+              const target = watermarkLabel
+                ? (mediaContainerRef.current as HTMLElement | null)
+                : (el as HTMLVideoElement);
+              target?.requestFullscreen?.().catch(() => {});
             }
           }
           break;
@@ -967,9 +983,22 @@ function FileViewer({
           {isVideo && (
             <video
               ref={mediaRef as any}
-              controls
+              controls={!watermarkLabel}
               playsInline
               preload="metadata"
+              controlsList={watermarkLabel ? undefined : "nodownload"}
+              disablePictureInPicture={!!watermarkLabel}
+              onContextMenu={watermarkLabel ? (e) => e.preventDefault() : undefined}
+              onClick={
+                watermarkLabel
+                  ? () => {
+                      const v = mediaRef.current as HTMLVideoElement | null;
+                      if (!v) return;
+                      if (v.paused) v.play().catch(() => {});
+                      else v.pause();
+                    }
+                  : undefined
+              }
               className="w-full h-full object-contain bg-black"
               data-testid="share-video-player"
             >
@@ -1026,6 +1055,80 @@ function FileViewer({
           )}
           {watermarkLabel && (isVideo || isImage) && (
             <WatermarkOverlay label={watermarkLabel} />
+          )}
+          {watermarkLabel && isVideo && isPaused && (
+            <button
+              type="button"
+              onClick={() => mediaRef.current?.play().catch(() => {})}
+              className="absolute inset-0 z-10 flex items-center justify-center bg-black/20"
+              aria-label="Play"
+              data-testid="button-play-overlay"
+            >
+              <span className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-black/60 text-white">
+                <Play className="h-8 w-8 translate-x-0.5" fill="currentColor" />
+              </span>
+            </button>
+          )}
+          {watermarkLabel && (isVideo || isImage) && (
+            <div
+              className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-2 px-3 py-2 bg-gradient-to-t from-black/80 to-transparent"
+              data-testid="watermark-controls"
+            >
+              {isVideo && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const v = mediaRef.current as HTMLVideoElement | null;
+                    if (!v) return;
+                    if (v.paused) v.play().catch(() => {});
+                    else v.pause();
+                  }}
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-md text-white hover:bg-white/10"
+                  aria-label={isPaused ? "Play" : "Pause"}
+                  data-testid="button-watermark-playpause"
+                >
+                  {isPaused ? <Play className="h-4 w-4" fill="currentColor" /> : <Pause className="h-4 w-4" fill="currentColor" />}
+                </button>
+              )}
+              {isVideo && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const v = mediaRef.current as HTMLVideoElement | null;
+                    if (!v) return;
+                    v.muted = !v.muted;
+                  }}
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-md text-white hover:bg-white/10"
+                  aria-label={isMuted ? "Unmute" : "Mute"}
+                  data-testid="button-watermark-mute"
+                >
+                  {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                </button>
+              )}
+              {isVideo && (
+                <span className="text-xs text-white/80 tabular-nums select-none">
+                  {fmtTime(currentTime) || "00:00"} / {fmtTime(duration) || "00:00"}
+                </span>
+              )}
+              <div className="ml-auto" />
+              <button
+                type="button"
+                onClick={() => {
+                  const target = mediaContainerRef.current as HTMLElement | null;
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                  } else {
+                    target?.requestFullscreen?.().catch(() => {});
+                  }
+                }}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-md text-white hover:bg-white/10"
+                title="Fullscreen (F)"
+                aria-label="Toggle fullscreen"
+                data-testid="button-fullscreen-watermarked"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+            </div>
           )}
         </div>
 
@@ -1198,7 +1301,7 @@ function FileViewer({
                 v{file.version} · {fmtBytes(file.fileSize)}
               </div>
             </div>
-            {allowDownloads && (
+            {allowDownloads && !watermarkLabel && (
               <a
                 className="inline-flex items-center text-sm bg-primary text-primary-foreground rounded-md px-3 py-2 hover:opacity-90"
                 href={`/api/public/share/${token}/files/${file.id}/download`}
@@ -1466,7 +1569,7 @@ function FileViewer({
                 onSeek={seekTo}
                 apiBase={apiBase}
                 readOnly
-                allowDownloads={allowDownloads}
+                allowDownloads={allowDownloads && !watermarkLabel}
                 queryKey={transcriptQueryKey}
               />
             </TabsContent>
