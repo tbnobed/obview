@@ -560,6 +560,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          {!viewOnly && (
           <Dialog open={rcOpen} onOpenChange={setRcOpen}>
             <DialogTrigger asChild>
               <Button
@@ -621,6 +622,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               </form>
             </DialogContent>
           </Dialog>
+          )}
           <a
             className="inline-flex items-center text-xs h-7 px-2.5 rounded-md bg-primary text-primary-foreground hover:opacity-90"
             href={`/api/share/${token}/qualities/720p`}
