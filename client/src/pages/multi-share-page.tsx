@@ -582,8 +582,22 @@ function FileViewer({
   const { toast } = useToast();
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
+  const commentInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const jklIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const jklSpeedRef = useRef<number>(1);
+  const jklDirectionRef = useRef<"forward" | "backward" | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [timeFormat, setTimeFormat] = useState<TimeFormat>("Standard");
+  const stopJKLShuttle = () => {
+    if (jklIntervalRef.current) {
+      clearInterval(jklIntervalRef.current);
+      jklIntervalRef.current = null;
+    }
+    jklSpeedRef.current = 1;
+    jklDirectionRef.current = null;
+    const el = mediaRef.current;
+    if (el) el.playbackRate = 1;
+  };
   const seekTo = (t: number) => {
     const el = mediaRef.current;
     if (el) {
@@ -629,77 +643,152 @@ function FileViewer({
 
   useEffect(() => {
     if (!isVideo && !isAudio) return;
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      const tag = t?.tagName;
-      if (
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        tag === "SELECT" ||
-        t?.isContentEditable
-      ) {
+    const frameRate = 30;
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInTextInput =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.contentEditable === "true";
+
+      if (isInTextInput) {
+        if (
+          e.code === "Tab" &&
+          (target instanceof HTMLTextAreaElement ||
+            target?.tagName === "TEXTAREA")
+        ) {
+          e.preventDefault();
+          (target as HTMLElement).blur();
+          (mediaRef.current as HTMLElement | null)?.focus?.();
+        }
         return;
       }
+
       const el = mediaRef.current;
       if (!el) return;
-      switch (e.key) {
-        case " ":
-        case "k":
-        case "K":
+      const duration = el.duration || 0;
+
+      switch (e.code) {
+        case "Space":
           e.preventDefault();
+          stopJKLShuttle();
           if (el.paused) el.play().catch(() => {});
           else el.pause();
           break;
-        case "ArrowLeft":
+        case "KeyC":
           e.preventDefault();
-          el.currentTime = Math.max(0, el.currentTime - 5);
+          commentInputRef.current?.focus();
           break;
-        case "ArrowRight":
-          e.preventDefault();
-          el.currentTime = Math.min(
-            el.duration || el.currentTime + 5,
-            el.currentTime + 5,
-          );
-          break;
-        case "j":
-        case "J":
-          e.preventDefault();
-          el.currentTime = Math.max(0, el.currentTime - 10);
-          break;
-        case "l":
-        case "L":
-          e.preventDefault();
-          el.currentTime = Math.min(
-            el.duration || el.currentTime + 10,
-            el.currentTime + 10,
-          );
-          break;
-        case "m":
-        case "M":
+        case "KeyM":
           e.preventDefault();
           el.muted = !el.muted;
           break;
-        case "ArrowUp":
-          e.preventDefault();
-          el.volume = Math.min(1, el.volume + 0.1);
-          break;
-        case "ArrowDown":
-          e.preventDefault();
-          el.volume = Math.max(0, el.volume - 0.1);
-          break;
-        case "f":
-        case "F":
+        case "KeyF":
           if (isVideo) {
             e.preventDefault();
-            const v = el as HTMLVideoElement;
-            if (document.fullscreenElement) document.exitFullscreen();
-            else v.requestFullscreen?.().catch(() => {});
+            if (document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {});
+            } else {
+              (el as HTMLVideoElement).requestFullscreen?.().catch(() => {});
+            }
+          }
+          break;
+        case "KeyK":
+          e.preventDefault();
+          stopJKLShuttle();
+          el.pause();
+          break;
+        case "Escape":
+          if (document.fullscreenElement) {
+            e.preventDefault();
+            document.exitFullscreen().catch(() => {});
+          }
+          break;
+        case "ArrowLeft": {
+          e.preventDefault();
+          stopJKLShuttle();
+          const framesBack = e.shiftKey ? 10 : 1;
+          const t = Math.max(0, el.currentTime - framesBack / frameRate);
+          el.currentTime = t;
+          setCurrentTime(t);
+          break;
+        }
+        case "ArrowRight": {
+          e.preventDefault();
+          stopJKLShuttle();
+          const framesFwd = e.shiftKey ? 10 : 1;
+          const t = Math.min(
+            duration || el.currentTime + framesFwd / frameRate,
+            el.currentTime + framesFwd / frameRate,
+          );
+          el.currentTime = t;
+          setCurrentTime(t);
+          break;
+        }
+        case "KeyJ": {
+          e.preventDefault();
+          if (jklIntervalRef.current) {
+            clearInterval(jklIntervalRef.current);
+            jklIntervalRef.current = null;
+          }
+          if (jklDirectionRef.current === "backward") {
+            jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
+          } else {
+            if (!el.paused) {
+              el.pause();
+              el.playbackRate = 1;
+            }
+            jklSpeedRef.current = 1;
+            jklDirectionRef.current = "backward";
+          }
+          jklIntervalRef.current = setInterval(() => {
+            const m = mediaRef.current;
+            if (!m) return;
+            const t = Math.max(0, m.currentTime - jklSpeedRef.current * 0.1);
+            m.currentTime = t;
+            setCurrentTime(t);
+            if (t === 0) stopJKLShuttle();
+          }, 100);
+          break;
+        }
+        case "KeyL": {
+          e.preventDefault();
+          if (jklIntervalRef.current) {
+            clearInterval(jklIntervalRef.current);
+            jklIntervalRef.current = null;
+          }
+          if (jklDirectionRef.current === "forward") {
+            jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
+          } else {
+            jklSpeedRef.current = 1;
+            jklDirectionRef.current = "forward";
+          }
+          el.playbackRate = jklSpeedRef.current;
+          if (el.paused) el.play().catch(() => {});
+          break;
+        }
+        case "Home":
+          e.preventDefault();
+          stopJKLShuttle();
+          el.currentTime = 0;
+          setCurrentTime(0);
+          break;
+        case "End":
+          e.preventDefault();
+          stopJKLShuttle();
+          if (duration) {
+            el.currentTime = duration;
+            setCurrentTime(duration);
           }
           break;
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleGlobalKeyDown);
+      stopJKLShuttle();
+    };
   }, [file.id, isVideo, isAudio]);
 
   const apiBase = `/api/public/share/${token}/files/${file.id}`;
@@ -1010,6 +1099,7 @@ function FileViewer({
                 />
                 <div className="relative">
                   <textarea
+                    ref={commentInputRef}
                     className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pr-10 min-h-[60px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
                     placeholder={
                       isVideo || isAudio
