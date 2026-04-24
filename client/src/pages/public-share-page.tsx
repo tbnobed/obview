@@ -537,6 +537,17 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
     refetchOnWindowFocus: true,
   });
 
+  // Hide annotations as soon as the playhead leaves the comment's exact frame
+  useEffect(() => {
+    if (!activeCommentId) return;
+    const active = (commentsQ.data || []).find((c) => c.id === activeCommentId);
+    if (!active || active.timestamp == null) return;
+    if (Math.abs(currentTime - active.timestamp) > 0.05) {
+      setActiveCommentId(null);
+      setDisplayAnnotations(null);
+    }
+  }, [currentTime, activeCommentId, commentsQ.data]);
+
   const post = useMutation({
     mutationFn: async () => {
       const el = mediaRef.current;

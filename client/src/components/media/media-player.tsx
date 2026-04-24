@@ -1556,6 +1556,18 @@ export default function MediaPlayer({
     return () => observer.disconnect();
   }, []);
 
+  // Hide annotations as soon as the playhead leaves the comment's exact frame
+  useEffect(() => {
+    if (!activeCommentId || !comments?.length) return;
+    const active = comments.find((c: Comment) => c.id === activeCommentId);
+    if (!active || active.timestamp == null) return;
+    const tolerance = Math.max(0.05, 1 / (frameRate || 30));
+    if (Math.abs(currentTime - active.timestamp) > tolerance) {
+      setActiveCommentId(undefined);
+      setDisplayAnnotations(null);
+    }
+  }, [currentTime, activeCommentId, comments, frameRate]);
+
   const handleStartAnnotation = () => {
     const mediaElement = videoRef.current || audioRef.current;
     if (mediaElement && !mediaElement.paused) {

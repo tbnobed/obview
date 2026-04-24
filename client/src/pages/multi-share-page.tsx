@@ -737,6 +737,17 @@ function FileViewer({
     }
   }, [commentsQ.data, activeCommentId]);
 
+  // Hide annotations as soon as the playhead leaves the comment's exact frame
+  useEffect(() => {
+    if (!activeCommentId) return;
+    const active = (commentsQ.data || []).find((c) => c.id === activeCommentId);
+    if (!active || active.timestamp == null) return;
+    if (Math.abs(currentTime - active.timestamp) > 0.05) {
+      setActiveCommentId(null);
+      setDisplayAnnotations(null);
+    }
+  }, [currentTime, activeCommentId, commentsQ.data]);
+
   const handleSaveAnnotation = (annotations: Annotation[]) => {
     setPendingAnnotations(annotations.length ? annotations : null);
     setIsAnnotating(false);
