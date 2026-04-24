@@ -164,9 +164,10 @@ run_migrations() {
 
       # Checksum and filename are well-constrained (sha256 hex + basename), but
       # we still use -v vars instead of string interpolation for safety.
-      ALREADY_APPLIED=$(psql "$DATABASE_URL" -tAc \
+      ALREADY_APPLIED=$(psql "$DATABASE_URL" \
+        -v ON_ERROR_STOP=1 \
         -v migname="$MIG_NAME" -v migsum="$MIG_SUM" \
-        "SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;" 2>/dev/null || echo "")
+        -tAc "SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;" 2>/dev/null || echo "")
 
       if [ "$ALREADY_APPLIED" = "1" ]; then
         echo "⏭  Skipping $MIG_NAME (already applied with matching checksum)."
@@ -178,9 +179,11 @@ run_migrations() {
       # Some migrations use DO $$ blocks that catch their own exceptions internally,
       # so only unhandled SQL errors outside those blocks will abort the transaction.
       if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --single-transaction -f "$migration"; then
-        psql "$DATABASE_URL" -v migname="$MIG_NAME" -v migsum="$MIG_SUM" -c \
-          "INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
-           ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();" > /dev/null 2>&1 || true
+        psql "$DATABASE_URL" \
+          -v ON_ERROR_STOP=1 \
+          -v migname="$MIG_NAME" -v migsum="$MIG_SUM" \
+          -c "INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();" > /dev/null 2>&1 || true
         echo "✅ Applied $MIG_NAME"
       else
         echo "❌ ERROR: $MIG_NAME failed. NOT recorded as applied; will retry on next startup."
