@@ -577,7 +577,14 @@ function FileViewer({
     },
   });
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("share-reviewer-name") || "";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (name) localStorage.setItem("share-reviewer-name", name);
+  }, [name]);
   const [content, setContent] = useState("");
   const { toast } = useToast();
 
