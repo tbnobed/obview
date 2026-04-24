@@ -283,6 +283,8 @@ export const shareLinks = pgTable("share_links", {
   allowDownloads: boolean("allow_downloads").notNull().default(false),
   allowComments: boolean("allow_comments").notNull().default(true),
   requireEmail: boolean("require_email").notNull().default(false),
+  watermarkEnabled: boolean("watermark_enabled").notNull().default(false),
+  watermarkText: text("watermark_text"),
   revokedAt: timestamp("revoked_at"),
   createdById: integer("created_by_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -298,6 +300,8 @@ export const insertShareLinkSchema = createInsertSchema(shareLinks)
     allowDownloads: z.boolean().optional(),
     allowComments: z.boolean().optional(),
     requireEmail: z.boolean().optional(),
+    watermarkEnabled: z.boolean().optional(),
+    watermarkText: z.string().max(120).optional().nullable(),
   });
 
 export const updateShareLinkSchema = z.object({
@@ -308,6 +312,8 @@ export const updateShareLinkSchema = z.object({
   allowDownloads: z.boolean().optional(),
   allowComments: z.boolean().optional(),
   requireEmail: z.boolean().optional(),
+  watermarkEnabled: z.boolean().optional(),
+  watermarkText: z.string().max(120).optional().nullable(),
 });
 
 // Type definitions

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Trash2, Plus, Link as LinkIcon, ExternalLink, Lock, Calendar, Download, MessageSquare, Mail } from "lucide-react";
+import { Copy, Trash2, Plus, Link as LinkIcon, ExternalLink, Lock, Calendar, Download, MessageSquare, Mail, Shield } from "lucide-react";
 import { useShareLinks, useCreateShareLink, useRevokeShareLink, useUpdateShareLink, type ShareLinkDTO } from "@/hooks/use-share-links";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -37,10 +37,13 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
   const [allowDownloads, setAllowDownloads] = useState(false);
   const [allowComments, setAllowComments] = useState(true);
   const [requireEmail, setRequireEmail] = useState(false);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(false);
+  const [watermarkText, setWatermarkText] = useState("");
 
   const resetForm = () => {
     setName(""); setPassword(""); setExpiresAt("");
     setAllowDownloads(false); setAllowComments(true); setRequireEmail(false);
+    setWatermarkEnabled(false); setWatermarkText("");
   };
 
   const onCreate = async () => {
@@ -49,6 +52,8 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
       password: password || null,
       expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
       allowDownloads, allowComments, requireEmail,
+      watermarkEnabled,
+      watermarkText: watermarkText.trim() ? watermarkText.trim() : null,
     });
     resetForm();
     toast({ title: "Share link created" });
@@ -92,6 +97,21 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
             <ToggleRow icon={<Download className="h-4 w-4" />} label="Allow downloads" checked={allowDownloads} onChange={setAllowDownloads} />
             <ToggleRow icon={<MessageSquare className="h-4 w-4" />} label="Allow comments" checked={allowComments} onChange={setAllowComments} />
             <ToggleRow icon={<Mail className="h-4 w-4" />} label="Require reviewer email" checked={requireEmail} onChange={setRequireEmail} />
+          </div>
+          <div className="space-y-2">
+            <ToggleRow icon={<Shield className="h-4 w-4" />} label="Watermark playback (deters screen recording)" checked={watermarkEnabled} onChange={setWatermarkEnabled} />
+            {watermarkEnabled && (
+              <div className="space-y-1">
+                <Label htmlFor="sl-wmtext" className="text-xs">Watermark text (optional)</Label>
+                <Input
+                  id="sl-wmtext"
+                  placeholder="Leave blank to use reviewer email + timestamp"
+                  value={watermarkText}
+                  onChange={e => setWatermarkText(e.target.value)}
+                  maxLength={120}
+                />
+              </div>
+            )}
           </div>
           <div className="flex justify-end">
             <Button onClick={onCreate} disabled={createMut.isPending} data-testid="button-create-share-link">

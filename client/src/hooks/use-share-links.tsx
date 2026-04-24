@@ -13,6 +13,8 @@ export type ShareLinkDTO = {
   allowDownloads: boolean;
   allowComments: boolean;
   requireEmail: boolean;
+  watermarkEnabled: boolean;
+  watermarkText: string | null;
   revokedAt: string | null;
   createdById: number;
   createdAt: string;
@@ -49,6 +51,8 @@ export type CreateShareLinkInput = {
   allowDownloads?: boolean;
   allowComments?: boolean;
   requireEmail?: boolean;
+  watermarkEnabled?: boolean;
+  watermarkText?: string | null;
 };
 
 export function useCreateShareLink(arg: ScopeArg) {

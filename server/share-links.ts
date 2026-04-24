@@ -34,6 +34,16 @@ function pwSigOf(link: ShareLink): string | null {
   return link.passwordHash ? crypto.createHash("sha256").update(link.passwordHash).digest("hex").slice(0, 16) : null;
 }
 
+function buildWatermarkLabel(req: Request, link: ShareLink): string | null {
+  if (!link.watermarkEnabled) return null;
+  if (link.watermarkText && link.watermarkText.trim().length > 0) return link.watermarkText.trim();
+  // Default label: reviewer email if captured, else IP fragment, plus short timestamp
+  const u = req.session?.shareUnlocks?.[link.token];
+  const who = u?.email || (req.ip || req.socket.remoteAddress || "viewer").toString();
+  const ts = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
+  return `${who} · ${ts}`;
+}
+
 function isUnlocked(req: Request, link: ShareLink): boolean {
   // No password and no email gate => always unlocked
   if (!link.passwordHash && !link.requireEmail) return true;
@@ -213,6 +223,8 @@ export function registerShareLinkRoutes(
       allowDownloads: !!parsed.data.allowDownloads,
       allowComments: parsed.data.allowComments !== false,
       requireEmail: !!parsed.data.requireEmail,
+      watermarkEnabled: !!parsed.data.watermarkEnabled,
+      watermarkText: parsed.data.watermarkText ?? null,
       createdById: req.user!.id,
     });
     res.status(201).json(sanitizeLink(link));
@@ -266,6 +278,8 @@ export function registerShareLinkRoutes(
       if (parsed.data.allowDownloads !== undefined) update.allowDownloads = parsed.data.allowDownloads;
       if (parsed.data.allowComments !== undefined) update.allowComments = parsed.data.allowComments;
       if (parsed.data.requireEmail !== undefined) update.requireEmail = parsed.data.requireEmail;
+      if (parsed.data.watermarkEnabled !== undefined) update.watermarkEnabled = parsed.data.watermarkEnabled;
+      if (parsed.data.watermarkText !== undefined) update.watermarkText = parsed.data.watermarkText;
       if (parsed.data.expiresAt !== undefined) update.expiresAt = parsed.data.expiresAt ? new Date(parsed.data.expiresAt as any) : null;
       if (parsed.data.clearPassword) update.passwordHash = null;
       else if (parsed.data.password) update.passwordHash = await hashPassword(parsed.data.password);
@@ -314,6 +328,9 @@ export function registerShareLinkRoutes(
         requiresEmail: link.requireEmail,
         allowDownloads: link.allowDownloads,
         allowComments: link.allowComments,
+        watermarkEnabled: link.watermarkEnabled,
+        watermarkText: link.watermarkText,
+        watermarkLabel: buildWatermarkLabel(req, link),
         unlocked: !expired && isUnlocked(req, link),
       });
     } catch (e) { next(e); }
@@ -379,6 +396,9 @@ export function registerShareLinkRoutes(
         name: link.name,
         allowDownloads: link.allowDownloads,
         allowComments: link.allowComments,
+        watermarkEnabled: link.watermarkEnabled,
+        watermarkText: link.watermarkText,
+        watermarkLabel: buildWatermarkLabel(req, link),
         projects: Array.from(byProject.values()),
       });
     } catch (e) { next(e); }
