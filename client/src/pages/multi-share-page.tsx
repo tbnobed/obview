@@ -666,9 +666,8 @@ function FileViewer({
       }),
   });
 
-  const mediaSrc = isVideo
-    ? `/api/public/share/${token}/files/${file.id}/scrub`
-    : `/api/public/share/${token}/files/${file.id}/content`;
+  const mediaSrc = `/api/public/share/${token}/files/${file.id}/content`;
+  const mediaSrc720 = `/api/public/share/${token}/files/${file.id}/qualities/720p`;
 
   return (
     <div
@@ -696,11 +695,15 @@ function FileViewer({
           {isVideo && (
             <video
               ref={mediaRef as any}
-              src={mediaSrc}
               controls
+              playsInline
+              preload="metadata"
               className="w-full h-full object-contain bg-black"
               data-testid="share-video-player"
-            />
+            >
+              <source src={mediaSrc720} type="video/mp4" />
+              <source src={mediaSrc} type="video/mp4" />
+            </video>
           )}
           {isAudio && (
             <div className="w-full h-full p-12 flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/5 to-primary/20 dark:from-[#10a37f]/5 dark:to-[#10a37f]/20">
