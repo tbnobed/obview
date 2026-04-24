@@ -246,15 +246,6 @@ function SidebarFolderItem({ folder }: { folder: any }) {
         )}
         <span className="truncate flex-1 text-left">
           {folder.name}
-          {folder.isGlobal ? (
-            <span className="ml-1.5 text-[10px] uppercase tracking-wide rounded px-1 py-px bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300 font-medium align-middle">
-              Global
-            </span>
-          ) : (
-            <span className="ml-1.5 text-[10px] uppercase tracking-wide rounded px-1 py-px bg-neutral-200 text-neutral-600 dark:bg-gray-800 dark:text-gray-400 font-medium align-middle">
-              Personal
-            </span>
-          )}
           {folder.createdByUsername && (
             <span className="ml-1.5 text-xs text-neutral-400 dark:text-neutral-500 font-normal">
               · {folder.createdByUsername}
