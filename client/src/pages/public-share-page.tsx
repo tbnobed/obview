@@ -909,9 +909,8 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                     No comments yet. Be the first to leave one.
                   </div>
                 )}
-                {commentsQ.data?.map((c, i) => {
-                  const created = new Date(c.createdAt);
-                  const dateStr = `${created.getMonth() + 1}/${created.getDate()}/${created.getFullYear()}`;
+                {commentsQ.data?.map((c, index) => {
+                  const author = c.authorName || "Anonymous";
                   const isActive = activeCommentId === c.id;
                   const hasAnno = !!parsePublicAnnotations(c);
                   return (
@@ -923,29 +922,28 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                         if (c.timestamp != null) seekTo(c.timestamp);
                       }}
                       className={cn(
-                        "rounded-lg border border-neutral-200 dark:border-[hsl(var(--comments-card-border))] bg-white dark:bg-[hsl(var(--comments-card-bg))] p-3 cursor-pointer transition-colors",
-                        isActive && "ring-2 ring-primary border-primary",
+                        "rounded-lg border p-3 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))] cursor-pointer transition-colors",
+                        isActive &&
+                          "ring-2 ring-primary dark:ring-[#10a37f] border-primary dark:border-[#10a37f]",
                       )}
                       data-testid={`share-comment-${c.id}`}
                     >
-                      <div className="flex items-start gap-2">
-                        <div className="h-7 w-7 rounded-full bg-neutral-200 dark:bg-gray-700 flex items-center justify-center shrink-0">
-                          <svg
-                            className="h-4 w-4 text-neutral-500 dark:text-gray-400"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                          </svg>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 flex-wrap min-w-0">
-                              <span className="font-medium text-sm truncate text-neutral-900 dark:text-gray-100">
-                                {c.authorName}
+                      <div className="flex gap-3">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarFallback className="bg-gray-600 text-white text-xs">
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium text-neutral-900 dark:text-[hsl(var(--comments-text))]">
+                                {author}
                               </span>
                               <span className="text-xs text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
-                                {dateStr}
+                                {new Date(c.createdAt).toLocaleDateString()}
                               </span>
                               {c.timestamp != null && (
                                 <button
@@ -956,6 +954,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                     seekTo(c.timestamp!);
                                   }}
                                   className="text-xs font-mono px-2 py-1 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))] hover:opacity-80 transition-opacity"
+                                  title="Jump to this moment"
                                   data-testid={`button-seek-${c.id}`}
                                 >
                                   {fmtTime(c.timestamp)}
@@ -970,11 +969,11 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                 </span>
                               )}
                             </div>
-                            <span className="text-xs text-neutral-400 dark:text-[hsl(var(--comments-muted))] shrink-0">
-                              #{i + 1}
+                            <span className="text-xs font-medium text-neutral-500 dark:text-[hsl(var(--comments-muted))] shrink-0">
+                              #{index + 1}
                             </span>
                           </div>
-                          <div className="mt-1.5 text-sm text-neutral-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+                          <div className="text-sm text-neutral-800 dark:text-[hsl(var(--comments-text))] whitespace-pre-wrap break-words leading-relaxed">
                             {c.content}
                           </div>
                         </div>
