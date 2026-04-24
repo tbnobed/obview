@@ -15,12 +15,20 @@ import {
   FileVideo,
   ChevronLeft,
   ChevronDown,
+  ChevronUp,
   Send,
   Play,
   Image as ImageIcon,
   Music,
   File as FileIcon,
+  PencilLine,
+  X as XIcon,
 } from "lucide-react";
+import {
+  AnnotationCanvas,
+  AnnotationOverlay,
+  type Annotation,
+} from "@/components/media/annotation-canvas";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -77,7 +85,17 @@ type Comment = {
   createdAt: string;
   parentId: string | null;
   user?: { name: string } | null;
+  annotations?: string | null;
 };
+
+function parseAnnotations(c: { annotations?: string | null } | null | undefined): Annotation[] | null {
+  if (!c?.annotations) return null;
+  try {
+    const parsed = typeof c.annotations === "string" ? JSON.parse(c.annotations) : c.annotations;
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed as Annotation[];
+  } catch {}
+  return null;
+}
 
 function fmtBytes(n: number) {
   if (!n) return "0 B";
@@ -589,12 +607,32 @@ function FileViewer({
   const { toast } = useToast();
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
+  const mediaContainerRef = useRef<HTMLDivElement | null>(null);
   const commentInputRef = useRef<HTMLTextAreaElement | null>(null);
   const jklIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const jklSpeedRef = useRef<number>(1);
   const jklDirectionRef = useRef<"forward" | "backward" | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [timeFormat, setTimeFormat] = useState<TimeFormat>("Standard");
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const [displayAnnotations, setDisplayAnnotations] = useState<Annotation[] | null>(null);
+  const [pendingAnnotations, setPendingAnnotations] = useState<Annotation[] | null>(null);
+  const [isAnnotating, setIsAnnotating] = useState(false);
+  const [mediaContainerSize, setMediaContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const el = mediaContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const rect = el.getBoundingClientRect();
+      setMediaContainerSize({ width: rect.width, height: rect.height });
+    });
+    ro.observe(el);
+    const rect = el.getBoundingClientRect();
+    setMediaContainerSize({ width: rect.width, height: rect.height });
+    return () => ro.disconnect();
+  }, [file.id]);
   const stopJKLShuttle = () => {
     if (jklIntervalRef.current) {
       clearInterval(jklIntervalRef.current);
@@ -630,12 +668,18 @@ function FileViewer({
       cancelAnimationFrame(raf);
       setCurrentTime(el.currentTime || 0);
     };
+    const onMeta = () => {
+      if (Number.isFinite(el.duration)) setDuration(el.duration);
+    };
     el.addEventListener("play", start);
     el.addEventListener("playing", start);
     el.addEventListener("pause", stop);
     el.addEventListener("seeked", stop);
     el.addEventListener("ended", stop);
     el.addEventListener("timeupdate", stop);
+    el.addEventListener("loadedmetadata", onMeta);
+    el.addEventListener("durationchange", onMeta);
+    onMeta();
     if (!el.paused) start();
     return () => {
       cancelAnimationFrame(raf);
@@ -645,8 +689,47 @@ function FileViewer({
       el.removeEventListener("seeked", stop);
       el.removeEventListener("ended", stop);
       el.removeEventListener("timeupdate", stop);
+      el.removeEventListener("loadedmetadata", onMeta);
+      el.removeEventListener("durationchange", onMeta);
     };
   }, [file.id]);
+
+  // Reset per-file transient state when switching files (FileViewer is reused)
+  useEffect(() => {
+    setActiveCommentId(null);
+    setDisplayAnnotations(null);
+    setPendingAnnotations(null);
+    setIsAnnotating(false);
+    setDuration(0);
+    setCurrentTime(0);
+  }, [file.id]);
+
+  // Drop activeCommentId if the comment no longer exists after refetch
+  useEffect(() => {
+    if (!activeCommentId) return;
+    const list = commentsQ.data || [];
+    if (!list.some((c) => c.id === activeCommentId)) {
+      setActiveCommentId(null);
+      setDisplayAnnotations(null);
+    }
+  }, [commentsQ.data, activeCommentId]);
+
+  const handleSaveAnnotation = (annotations: Annotation[]) => {
+    setPendingAnnotations(annotations.length ? annotations : null);
+    setIsAnnotating(false);
+    setTimeout(() => commentInputRef.current?.focus(), 0);
+  };
+
+  const jumpToCommentAt = (index: number, list: Comment[]) => {
+    const c = list[index];
+    if (!c) return;
+    setActiveCommentId(c.id);
+    setDisplayAnnotations(parseAnnotations(c));
+    if (c.timestamp != null) seekTo(c.timestamp);
+    document
+      .querySelector(`[data-testid="share-comment-${c.id}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
 
   useEffect(() => {
     if (!isVideo && !isAudio) return;
@@ -816,6 +899,10 @@ function FileViewer({
             content,
             displayName: name || "Anonymous",
             timestamp: ts,
+            annotations:
+              pendingAnnotations && pendingAnnotations.length
+                ? JSON.stringify(pendingAnnotations)
+                : undefined,
           }),
         },
       );
@@ -826,6 +913,8 @@ function FileViewer({
     },
     onSuccess: () => {
       setContent("");
+      setPendingAnnotations(null);
+      setDisplayAnnotations(null);
       commentsQ.refetch();
       toast({ title: "Comment posted" });
     },
@@ -857,7 +946,9 @@ function FileViewer({
         )}
       >
         <div
+          ref={mediaContainerRef}
           className={cn(
+            "relative",
             fullScreen
               ? "flex-1 min-h-0 w-full flex items-center justify-center bg-black"
               : "flex-1 min-h-0 rounded-lg overflow-hidden bg-black border border-neutral-200 dark:border-gray-800 shadow-sm flex items-center justify-center",
@@ -900,7 +991,139 @@ function FileViewer({
               No preview available for this file type.
             </div>
           )}
+          {isVideo && isAnnotating && mediaContainerSize.width > 0 && (
+            <AnnotationCanvas
+              onSave={handleSaveAnnotation}
+              onCancel={() => setIsAnnotating(false)}
+              initialAnnotations={pendingAnnotations || []}
+              containerWidth={mediaContainerSize.width}
+              containerHeight={mediaContainerSize.height}
+            />
+          )}
+          {isVideo && !isAnnotating && displayAnnotations && displayAnnotations.length > 0 && mediaContainerSize.width > 0 && (
+            <AnnotationOverlay
+              annotations={displayAnnotations}
+              containerWidth={mediaContainerSize.width}
+              containerHeight={mediaContainerSize.height}
+            />
+          )}
+          {isVideo && !isAnnotating && !displayAnnotations && pendingAnnotations && pendingAnnotations.length > 0 && mediaContainerSize.width > 0 && (
+            <AnnotationOverlay
+              annotations={pendingAnnotations}
+              containerWidth={mediaContainerSize.width}
+              containerHeight={mediaContainerSize.height}
+            />
+          )}
         </div>
+
+        {/* Comment markers rail + prev/next */}
+        {(isVideo || isAudio) && (() => {
+          const tsComments = (commentsQ.data || []).filter(
+            (c) => !c.parentId && c.timestamp != null,
+          );
+          const sorted = [...tsComments].sort(
+            (a, b) => (a.timestamp || 0) - (b.timestamp || 0),
+          );
+          const activeIdx = activeCommentId
+            ? sorted.findIndex((c) => c.id === activeCommentId)
+            : -1;
+          const goPrev = () => {
+            if (!sorted.length) return;
+            if (activeIdx <= 0) jumpToCommentAt(sorted.length - 1, sorted);
+            else jumpToCommentAt(activeIdx - 1, sorted);
+          };
+          const goNext = () => {
+            if (!sorted.length) return;
+            if (activeIdx === -1 || activeIdx >= sorted.length - 1)
+              jumpToCommentAt(0, sorted);
+            else jumpToCommentAt(activeIdx + 1, sorted);
+          };
+          return (
+            <div
+              className={cn(
+                "shrink-0 flex items-center gap-2 px-3 py-2",
+                fullScreen
+                  ? "border-t border-gray-800 bg-black"
+                  : "rounded-md bg-neutral-50 dark:bg-gray-900 border border-neutral-200 dark:border-gray-800",
+              )}
+              data-testid="share-marker-rail"
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-neutral-500 dark:text-gray-400"
+                onClick={goPrev}
+                disabled={sorted.length === 0}
+                title="Previous comment (Shift+P)"
+                data-testid="button-prev-comment"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+              <div
+                className="relative flex-1 h-5 cursor-pointer"
+                onClick={(e) => {
+                  if (!duration) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                  seekTo(duration * pos);
+                }}
+                data-testid="share-marker-track"
+              >
+                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-neutral-200 dark:bg-gray-800" />
+                {duration > 0 && (
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 h-1 rounded-l-full bg-primary/60 dark:bg-[#026d55]/70"
+                    style={{ left: 0, width: `${(currentTime / duration) * 100}%` }}
+                  />
+                )}
+                {duration > 0 && sorted.map((c) => {
+                  const pos = ((c.timestamp || 0) / duration) * 100;
+                  const isActive = activeCommentId === c.id;
+                  const initial =
+                    (c.user?.name || c.authorName || "A").charAt(0).toUpperCase();
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={cn(
+                        "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-5 rounded-full border-2 border-white shadow flex items-center justify-center text-[10px] font-bold text-black transition-transform hover:scale-110",
+                        isActive ? "bg-blue-500 text-white" : "bg-amber-400",
+                      )}
+                      style={{ left: `${pos}%` }}
+                      title={`${c.user?.name || c.authorName || "Anonymous"}: ${c.content.slice(0, 80)}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const idx = sorted.findIndex((x) => x.id === c.id);
+                        jumpToCommentAt(idx, sorted);
+                      }}
+                      data-testid={`share-marker-${c.id}`}
+                    >
+                      {initial}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="text-[11px] font-mono text-neutral-500 dark:text-gray-400 tabular-nums">
+                {sorted.length === 0
+                  ? "0"
+                  : activeIdx >= 0
+                    ? `${activeIdx + 1}/${sorted.length}`
+                    : `${sorted.length}`}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-neutral-500 dark:text-gray-400"
+                onClick={goNext}
+                disabled={sorted.length === 0}
+                title="Next comment (Shift+N)"
+                data-testid="button-next-comment"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        })()}
 
         {/* Timecode bar — fullscreen + playable media only */}
         {fullScreen && (isVideo || isAudio) && (
@@ -1032,10 +1255,20 @@ function FileViewer({
               )}
               {commentsQ.data?.map((c, index) => {
                 const author = c.user?.name || c.authorName || "Anonymous";
+                const isActive = activeCommentId === c.id;
+                const hasAnno = !!parseAnnotations(c);
                 return (
                   <div
                     key={c.id}
-                    className="rounded-lg border p-3 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))]"
+                    onClick={() => {
+                      setActiveCommentId(c.id);
+                      setDisplayAnnotations(parseAnnotations(c));
+                      if (c.timestamp != null) seekTo(c.timestamp);
+                    }}
+                    className={cn(
+                      "rounded-lg border p-3 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))] cursor-pointer transition-colors",
+                      isActive && "ring-2 ring-primary dark:ring-[#10a37f] border-primary dark:border-[#10a37f]",
+                    )}
                     data-testid={`share-comment-${c.id}`}
                   >
                     <div className="flex gap-3">
@@ -1057,12 +1290,25 @@ function FileViewer({
                             </span>
                             {c.timestamp != null && (
                               <button
-                                onClick={() => seekTo(c.timestamp!)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveCommentId(c.id);
+                                  setDisplayAnnotations(parseAnnotations(c));
+                                  seekTo(c.timestamp!);
+                                }}
                                 className="text-xs font-mono px-2 py-1 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))] hover:opacity-80 transition-opacity"
                                 title="Jump to this moment"
                               >
                                 {fmtTime(c.timestamp)}
                               </button>
+                            )}
+                            {hasAnno && (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-gray-800 text-neutral-600 dark:text-gray-300"
+                                title="Has annotation"
+                              >
+                                <PencilLine className="h-3 w-3" /> Drawing
+                              </span>
                             )}
                           </div>
                           <span className="text-xs font-medium text-neutral-500 dark:text-[hsl(var(--comments-muted))] shrink-0">
@@ -1145,6 +1391,51 @@ function FileViewer({
                     <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
                       {fmtTime(currentTime) || "00:00"}
                     </span>
+                  </div>
+                )}
+                {isVideo && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        if (mediaRef.current && !mediaRef.current.paused) {
+                          mediaRef.current.pause();
+                        }
+                        setDisplayAnnotations(null);
+                        setIsAnnotating(true);
+                      }}
+                      data-testid="button-share-annotate"
+                      title="Draw on the frame"
+                    >
+                      <PencilLine className="h-3.5 w-3.5 mr-1.5" />
+                      {pendingAnnotations && pendingAnnotations.length
+                        ? "Edit drawing"
+                        : "Annotate"}
+                    </Button>
+                    {pendingAnnotations && pendingAnnotations.length > 0 && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs text-neutral-500 dark:text-gray-400"
+                        onClick={() => {
+                          setPendingAnnotations(null);
+                          setDisplayAnnotations(null);
+                        }}
+                        title="Clear drawing"
+                        data-testid="button-share-clear-annotation"
+                      >
+                        <XIcon className="h-3.5 w-3.5 mr-1" /> Clear
+                      </Button>
+                    )}
+                    {pendingAnnotations && pendingAnnotations.length > 0 && (
+                      <span className="text-[10px] text-neutral-500 dark:text-gray-400">
+                        Drawing attached
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

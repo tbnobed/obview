@@ -564,6 +564,12 @@ export function registerShareLinkRoutes(
       if (email) payload.authorEmail = email;
       if (req.body.timestamp != null) payload.timestamp = req.body.timestamp;
       if (req.body.parentId) payload.parentId = req.body.parentId;
+      if (req.body.annotations) {
+        payload.annotations =
+          typeof req.body.annotations === "string"
+            ? req.body.annotations
+            : JSON.stringify(req.body.annotations);
+      }
       const parsed = insertCommentsUnifiedSchema.safeParse(payload);
       if (!parsed.success) {
         console.warn("[share-links] invalid public comment", parsed.error.errors);
