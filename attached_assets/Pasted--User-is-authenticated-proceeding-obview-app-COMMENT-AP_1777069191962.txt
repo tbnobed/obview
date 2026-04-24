@@ -1,0 +1,542 @@
+ User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/70/comments requested by user 1
+obview_db   | 2026-04-24 07:28:16.186 UTC [70178] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:16.246 UTC [70180] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:16.246 UTC [70180] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:16.282 UTC [70181] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:16.282 UTC [70181] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:16.468 UTC [70183] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:16.468 UTC [70183] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:16.505 UTC [70184] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:16.505 UTC [70184] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:16.573 UTC [70186] ERROR:  syntax error at or near ":" at character 60
+obview_app  | 🔍 [COMMENT API] User 1 authorized for file 70, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 2 comments for file 70
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-24T16:16:39.484Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_db   | 2026-04-24 07:28:16.573 UTC [70186] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:16.611 UTC [70187] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:16.611 UTC [70187] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:16.704 UTC [70189] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:16.704 UTC [70189] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:16.741 UTC [70190] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:16.741 UTC [70190] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:16.832 UTC [70192] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:16.832 UTC [70192] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:16.867 UTC [70193] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:16.867 UTC [70193] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:16.958 UTC [70195] ERROR:  syntax error at or near ":" at character 60
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/70/comments requested by user 1
+obview_app  | 🔍 [COMMENT API] User 1 authorized for file 70, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 2 comments for file 70
+obview_db   | 2026-04-24 07:28:16.958 UTC [70195] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:16.996 UTC [70196] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:16.996 UTC [70196] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:17.078 UTC [70198] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:17.078 UTC [70198] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:17.115 UTC [70199] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:17.115 UTC [70199] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:17.176 UTC [70201] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:17.176 UTC [70201] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:17.213 UTC [70202] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:17.213 UTC [70202] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:17.290 UTC [70204] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:17.290 UTC [70204] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:17.328 UTC [70205] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:17.328 UTC [70205] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:17.396 UTC [70207] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:17.396 UTC [70207] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:17.433 UTC [70208] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:17.433 UTC [70208] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:17.504 UTC [70210] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:17.504 UTC [70210] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:17.533 UTC [70211] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:17.533 UTC [70211] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:17.600 UTC [70213] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:17.600 UTC [70213] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:17.635 UTC [70214] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:17.635 UTC [70214] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:17.703 UTC [70216] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:17.703 UTC [70216] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:17.741 UTC [70217] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:17.741 UTC [70217] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:17.811 UTC [70219] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:17.811 UTC [70219] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:28:17.847 UTC [70220] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 07:28:17.847 UTC [70220] STATEMENT:  -v
+obview_db   | 2026-04-24 07:28:17.923 UTC [70222] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 07:28:17.923 UTC [70222] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 07:30:11.088 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 07:30:17.521 UTC [27] LOG:  checkpoint complete: wrote 66 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=6.425 s, sync=0.005 s, total=6.434 s; sync files=43, longest=0.002 s, average=0.001 s; distance=247 kB, estimate=247 kB; lsn=0/562C468, redo lsn=0/562C430
+obview_db   | 2026-04-24 07:35:11.586 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 07:35:12.598 UTC [27] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.006 s, sync=0.003 s, total=1.013 s; sync files=8, longest=0.002 s, average=0.001 s; distance=39 kB, estimate=227 kB; lsn=0/56360A0, redo lsn=0/5636068
+obview_db   | 2026-04-24 07:40:11.699 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 07:40:12.009 UTC [27] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.003 s, total=0.311 s; sync files=4, longest=0.002 s, average=0.001 s; distance=10 kB, estimate=205 kB; lsn=0/5638C70, redo lsn=0/5638C38
+obview_db   | 2026-04-24 15:28:16.314 UTC [91801] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:16.314 UTC [91801] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:16.348 UTC [91802] ERROR:  relation "activity_logs" already exists
+obview_db   | 2026-04-24 15:28:16.348 UTC [91802] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   );
+obview_db   | 2026-04-24 15:28:16.383 UTC [91803] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:16.383 UTC [91803] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:16.420 UTC [91804] ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+obview_db   | 2026-04-24 15:28:16.420 UTC [91804] STATEMENT:  ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_user_id_fkey"
+obview_db   |   FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+obview_db   | 2026-04-24 15:28:16.457 UTC [91805] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:16.457 UTC [91805] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:16.529 UTC [91807] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:16.529 UTC [91807] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:16.568 UTC [91808] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:16.568 UTC [91808] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:16.632 UTC [91810] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:16.632 UTC [91810] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:16.660 UTC [91811] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:16.660 UTC [91811] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:16.729 UTC [91813] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:16.729 UTC [91813] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:16.764 UTC [91814] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:16.764 UTC [91814] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:16.964 UTC [91816] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:16.964 UTC [91816] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:17.006 UTC [91817] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:17.006 UTC [91817] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:17.080 UTC [91819] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:17.080 UTC [91819] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:17.112 UTC [91820] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:17.112 UTC [91820] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:17.214 UTC [91822] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:17.214 UTC [91822] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:17.254 UTC [91823] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:17.254 UTC [91823] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:17.338 UTC [91825] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:17.338 UTC [91825] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:17.376 UTC [91826] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:17.376 UTC [91826] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:17.465 UTC [91828] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:17.465 UTC [91828] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:17.504 UTC [91829] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:17.504 UTC [91829] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:17.589 UTC [91831] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:17.589 UTC [91831] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:17.628 UTC [91832] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:17.628 UTC [91832] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:17.699 UTC [91834] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:17.699 UTC [91834] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:17.737 UTC [91835] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:17.737 UTC [91835] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:17.816 UTC [91837] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:17.816 UTC [91837] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:17.844 UTC [91838] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:17.844 UTC [91838] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:17.913 UTC [91840] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:17.913 UTC [91840] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:17.946 UTC [91841] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:17.946 UTC [91841] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:18.012 UTC [91843] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:18.012 UTC [91843] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:18.048 UTC [91844] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:18.048 UTC [91844] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:18.120 UTC [91846] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:18.120 UTC [91846] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:18.155 UTC [91847] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:18.155 UTC [91847] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:18.222 UTC [91849] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:18.222 UTC [91849] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:18.256 UTC [91850] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:18.256 UTC [91850] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:18.322 UTC [91852] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:18.322 UTC [91852] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:18.354 UTC [91853] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:18.354 UTC [91853] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:18.426 UTC [91855] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:18.426 UTC [91855] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:28:18.463 UTC [91856] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 15:28:18.463 UTC [91856] STATEMENT:  -v
+obview_db   | 2026-04-24 15:28:18.536 UTC [91858] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 15:28:18.536 UTC [91858] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 15:30:19.808 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 15:30:28.259 UTC [27] LOG:  checkpoint complete: wrote 86 buffers (0.5%); 0 WAL file(s) added, 0 removed, 0 recycled; write=8.441 s, sync=0.006 s, total=8.452 s; sync files=37, longest=0.002 s, average=0.001 s; distance=363 kB, estimate=363 kB; lsn=0/5693910, redo lsn=0/56938D8
+obview_db   | 2026-04-24 16:15:20.088 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 16:15:20.698 UTC [27] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.604 s, sync=0.003 s, total=0.610 s; sync files=5, longest=0.002 s, average=0.001 s; distance=20 kB, estimate=328 kB; lsn=0/5698A70, redo lsn=0/5698A38
+obview_db   | 2026-04-24 16:20:20.798 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 16:20:21.509 UTC [27] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.704 s, sync=0.003 s, total=0.711 s; sync files=6, longest=0.002 s, average=0.001 s; distance=45 kB, estimate=300 kB; lsn=0/56A3E88, redo lsn=0/56A3E50
+obview_db   | 2026-04-24 17:10:21.360 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:10:22.975 UTC [27] LOG:  checkpoint complete: wrote 17 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.609 s, sync=0.003 s, total=1.616 s; sync files=14, longest=0.002 s, average=0.001 s; distance=59 kB, estimate=276 kB; lsn=0/56B55C0, redo lsn=0/56B2A68
+obview_db   | 2026-04-24 17:15:22.076 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:15:22.788 UTC [27] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.704 s, sync=0.003 s, total=0.712 s; sync files=7, longest=0.002 s, average=0.001 s; distance=48 kB, estimate=253 kB; lsn=0/56BED40, redo lsn=0/56BED08
+obview_db   | 2026-04-24 17:20:22.888 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:20:23.900 UTC [27] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.005 s, sync=0.003 s, total=1.012 s; sync files=8, longest=0.002 s, average=0.001 s; distance=52 kB, estimate=233 kB; lsn=0/56CE638, redo lsn=0/56CBD48
+obview_db   | 2026-04-24 17:25:23.000 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:25:24.011 UTC [27] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.005 s, sync=0.002 s, total=1.012 s; sync files=8, longest=0.002 s, average=0.001 s; distance=52 kB, estimate=215 kB; lsn=0/56D90B0, redo lsn=0/56D9078
+obview_db   | 2026-04-24 17:30:23.112 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:30:24.123 UTC [27] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.006 s, sync=0.002 s, total=1.012 s; sync files=8, longest=0.002 s, average=0.001 s; distance=52 kB, estimate=199 kB; lsn=0/56E6128, redo lsn=0/56E60F0
+obview_db   | 2026-04-24 17:35:23.224 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:35:23.835 UTC [27] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.604 s, sync=0.003 s, total=0.612 s; sync files=6, longest=0.002 s, average=0.001 s; distance=38 kB, estimate=182 kB; lsn=0/56EFA38, redo lsn=0/56EFA00
+obview_db   | 2026-04-24 17:40:23.936 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:40:24.947 UTC [27] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.005 s, sync=0.003 s, total=1.012 s; sync files=8, longest=0.002 s, average=0.001 s; distance=53 kB, estimate=170 kB; lsn=0/56FD0F0, redo lsn=0/56FD0B8
+obview_db   | 2026-04-24 17:45:24.048 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:45:25.059 UTC [27] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.005 s, sync=0.003 s, total=1.012 s; sync files=8, longest=0.002 s, average=0.001 s; distance=53 kB, estimate=158 kB; lsn=0/570A8E8, redo lsn=0/570A8B0
+obview_db   | 2026-04-24 17:50:24.159 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:50:24.467 UTC [27] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.002 s, total=0.308 s; sync files=4, longest=0.001 s, average=0.001 s; distance=13 kB, estimate=143 kB; lsn=0/570DFB8, redo lsn=0/570DF80
+obview_db   | 2026-04-24 17:55:24.568 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 17:55:24.875 UTC [27] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.002 s, total=0.308 s; sync files=4, longest=0.001 s, average=0.001 s; distance=14 kB, estimate=130 kB; lsn=0/57117C0, redo lsn=0/5711788
+obview_db   | 2026-04-24 18:00:24.976 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 18:00:27.497 UTC [27] LOG:  checkpoint complete: wrote 26 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.512 s, sync=0.004 s, total=2.521 s; sync files=22, longest=0.002 s, average=0.001 s; distance=92 kB, estimate=127 kB; lsn=0/57289E0, redo lsn=0/57289A8
+obview_db   | 2026-04-24 18:05:24.597 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 18:05:25.212 UTC [27] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.603 s, sync=0.002 s, total=0.615 s; sync files=6, longest=0.002 s, average=0.001 s; distance=38 kB, estimate=118 kB; lsn=0/5732510, redo lsn=0/57324D8
+obview_db   | 2026-04-24 18:10:24.312 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 18:10:25.022 UTC [27] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.705 s, sync=0.002 s, total=0.711 s; sync files=7, longest=0.001 s, average=0.001 s; distance=52 kB, estimate=111 kB; lsn=0/573F5F8, redo lsn=0/573F5C0
+obview_db   | 2026-04-24 18:15:24.123 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 18:15:24.834 UTC [27] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.705 s, sync=0.003 s, total=0.711 s; sync files=7, longest=0.002 s, average=0.001 s; distance=43 kB, estimate=104 kB; lsn=0/574A240, redo lsn=0/574A208
+obview_db   | 2026-04-24 19:35:26.362 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 19:35:26.671 UTC [27] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.002 s, total=0.309 s; sync files=4, longest=0.002 s, average=0.001 s; distance=13 kB, estimate=95 kB; lsn=0/574D9E0, redo lsn=0/574D9A8
+obview_db   | 2026-04-24 20:10:27.311 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 20:10:30.837 UTC [27] LOG:  checkpoint complete: wrote 36 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.516 s, sync=0.005 s, total=3.526 s; sync files=36, longest=0.002 s, average=0.001 s; distance=71 kB, estimate=93 kB; lsn=0/5762408, redo lsn=0/575F788
+obview_db   | 2026-04-24 20:15:27.938 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 20:15:30.781 UTC [27] LOG:  checkpoint complete: wrote 29 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.814 s, sync=0.024 s, total=2.844 s; sync files=25, longest=0.021 s, average=0.001 s; distance=100 kB, estimate=100 kB; lsn=0/5778990, redo lsn=0/5778958
+obview_db   | 2026-04-24 20:20:27.824 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 20:20:28.847 UTC [27] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.004 s, sync=0.003 s, total=1.024 s; sync files=8, longest=0.002 s, average=0.001 s; distance=55 kB, estimate=95 kB; lsn=0/5786738, redo lsn=0/5786700
+obview_db   | 2026-04-24 20:25:27.948 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 20:25:28.959 UTC [27] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.006 s, sync=0.002 s, total=1.012 s; sync files=8, longest=0.002 s, average=0.001 s; distance=52 kB, estimate=91 kB; lsn=0/5796650, redo lsn=0/5793A28
+obview_db   | 2026-04-24 20:30:28.060 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 20:30:31.386 UTC [27] LOG:  checkpoint complete: wrote 35 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.316 s, sync=0.005 s, total=3.327 s; sync files=25, longest=0.002 s, average=0.001 s; distance=141 kB, estimate=141 kB; lsn=0/57B9F28, redo lsn=0/57B6FF0
+obview_db   | 2026-04-24 20:35:28.487 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 20:35:30.704 UTC [27] LOG:  checkpoint complete: wrote 23 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.210 s, sync=0.004 s, total=2.218 s; sync files=21, longest=0.002 s, average=0.001 s; distance=85 kB, estimate=135 kB; lsn=0/57CC710, redo lsn=0/57CC6D8
+obview_db   | 2026-04-24 21:40:29.955 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 21:40:30.263 UTC [27] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.002 s, total=0.309 s; sync files=4, longest=0.002 s, average=0.001 s; distance=12 kB, estimate=123 kB; lsn=0/57CF7A0, redo lsn=0/57CF768
+obview_db   | 2026-04-24 21:50:29.464 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 21:50:29.772 UTC [27] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.302 s, sync=0.002 s, total=0.309 s; sync files=4, longest=0.002 s, average=0.001 s; distance=10 kB, estimate=112 kB; lsn=0/57D2298, redo lsn=0/57D2260
+obview_db   | 2026-04-24 22:03:45.648 UTC [109805] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:45.648 UTC [109805] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:45.685 UTC [109806] ERROR:  relation "activity_logs" already exists
+obview_db   | 2026-04-24 22:03:45.685 UTC [109806] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   );
+obview_db   | 2026-04-24 22:03:45.719 UTC [109807] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:45.719 UTC [109807] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:45.756 UTC [109808] ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+obview_db   | 2026-04-24 22:03:45.756 UTC [109808] STATEMENT:  ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_user_id_fkey"
+obview_db   |   FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+obview_db   | 2026-04-24 22:03:45.793 UTC [109809] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:45.793 UTC [109809] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:45.861 UTC [109811] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:45.861 UTC [109811] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:45.898 UTC [109812] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:45.898 UTC [109812] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:45.968 UTC [109814] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:45.968 UTC [109814] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:46.006 UTC [109815] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:46.006 UTC [109815] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:46.075 UTC [109817] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:46.075 UTC [109817] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:46.114 UTC [109818] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:46.114 UTC [109818] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:46.301 UTC [109820] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:46.301 UTC [109820] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:46.338 UTC [109821] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:46.338 UTC [109821] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:46.406 UTC [109823] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:46.406 UTC [109823] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:46.438 UTC [109824] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:46.438 UTC [109824] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:46.541 UTC [109826] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:46.541 UTC [109826] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:46.577 UTC [109827] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:46.577 UTC [109827] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:46.673 UTC [109829] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:46.673 UTC [109829] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:46.713 UTC [109830] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:46.713 UTC [109830] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:46.808 UTC [109832] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:46.808 UTC [109832] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:46.842 UTC [109833] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:46.842 UTC [109833] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:46.921 UTC [109835] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:46.921 UTC [109835] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:46.955 UTC [109836] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:46.955 UTC [109836] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:47.023 UTC [109838] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:47.023 UTC [109838] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:47.060 UTC [109839] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:47.060 UTC [109839] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:47.135 UTC [109841] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:47.135 UTC [109841] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:47.170 UTC [109842] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:47.170 UTC [109842] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:47.239 UTC [109844] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:47.239 UTC [109844] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:47.279 UTC [109845] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:47.279 UTC [109845] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:47.339 UTC [109847] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:47.339 UTC [109847] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:47.376 UTC [109848] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:47.376 UTC [109848] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:47.436 UTC [109850] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:47.436 UTC [109850] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:47.470 UTC [109851] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:47.470 UTC [109851] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:47.533 UTC [109853] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:47.533 UTC [109853] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:47.573 UTC [109854] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:47.573 UTC [109854] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:47.638 UTC [109856] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:47.638 UTC [109856] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:47.674 UTC [109857] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:47.674 UTC [109857] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:47.731 UTC [109859] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:47.731 UTC [109859] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:03:47.762 UTC [109860] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:03:47.762 UTC [109860] STATEMENT:  -v
+obview_db   | 2026-04-24 22:03:47.831 UTC [109862] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:03:47.831 UTC [109862] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:05:30.073 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-04-24 22:05:34.704 UTC [27] LOG:  checkpoint complete: wrote 48 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=4.622 s, sync=0.005 s, total=4.632 s; sync files=33, longest=0.002 s, average=0.001 s; distance=169 kB, estimate=169 kB; lsn=0/57FC868, redo lsn=0/57FC830
+obview_db   | 2026-04-24 22:16:27.855 UTC [110448] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:27.855 UTC [110448] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:27.895 UTC [110449] ERROR:  relation "activity_logs" already exists
+obview_db   | 2026-04-24 22:16:27.895 UTC [110449] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   );
+obview_db   | 2026-04-24 22:16:27.927 UTC [110450] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:27.927 UTC [110450] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:27.967 UTC [110451] ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+obview_db   | 2026-04-24 22:16:27.967 UTC [110451] STATEMENT:  ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_user_id_fkey"
+obview_db   |   FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+obview_db   | 2026-04-24 22:16:28.001 UTC [110452] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:28.001 UTC [110452] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:28.060 UTC [110454] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:28.060 UTC [110454] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:28.099 UTC [110455] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:28.099 UTC [110455] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:28.167 UTC [110457] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:28.167 UTC [110457] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:28.206 UTC [110458] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:28.206 UTC [110458] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:28.287 UTC [110460] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:28.287 UTC [110460] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:28.320 UTC [110461] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:28.320 UTC [110461] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:28.518 UTC [110463] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:28.518 UTC [110463] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:28.554 UTC [110464] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:28.554 UTC [110464] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:28.619 UTC [110466] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:28.619 UTC [110466] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:28.657 UTC [110467] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:28.657 UTC [110467] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:28.757 UTC [110469] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:28.757 UTC [110469] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:28.793 UTC [110470] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:28.793 UTC [110470] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:28.883 UTC [110472] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:28.883 UTC [110472] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:28.921 UTC [110473] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:28.921 UTC [110473] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:29.016 UTC [110475] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:29.016 UTC [110475] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:29.053 UTC [110476] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:29.053 UTC [110476] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:29.146 UTC [110478] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:29.146 UTC [110478] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:29.183 UTC [110479] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:29.183 UTC [110479] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:29.253 UTC [110481] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:29.253 UTC [110481] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:29.290 UTC [110482] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:29.290 UTC [110482] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:29.377 UTC [110485] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:29.377 UTC [110485] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:29.416 UTC [110486] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:29.416 UTC [110486] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:29.484 UTC [110488] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:29.484 UTC [110488] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:29.524 UTC [110489] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:29.524 UTC [110489] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:29.592 UTC [110491] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:29.592 UTC [110491] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:29.630 UTC [110492] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:29.630 UTC [110492] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:29.693 UTC [110494] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:29.693 UTC [110494] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:29.727 UTC [110495] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:29.727 UTC [110495] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:29.796 UTC [110497] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:29.796 UTC [110497] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:29.836 UTC [110498] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:29.836 UTC [110498] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:29.899 UTC [110500] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:29.899 UTC [110500] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:29.936 UTC [110501] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:29.936 UTC [110501] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:30.001 UTC [110503] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:30.001 UTC [110503] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-04-24 22:16:30.033 UTC [110504] ERROR:  syntax error at or near "-" at character 1
+obview_db   | 2026-04-24 22:16:30.033 UTC [110504] STATEMENT:  -v
+obview_db   | 2026-04-24 22:16:30.097 UTC [110506] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-04-24 22:16:30.097 UTC [110506] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-24T16:16:39.484Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/70/comments requested by user 1
+obview_app  | 🔍 [COMMENT API] User 1 authorized for file 70, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 2 comments for file 70
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-24T16:16:39.484Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/70/comments requested by user 1
+obview_app  | 🔍 [COMMENT API] User 1 authorized for file 70, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 2 comments for file 70
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-24T16:16:39.484Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/70/comments requested by user 1
+obview_app  | 🔍 [COMMENT API] User 1 authorized for file 70, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 2 comments for file 70
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-24T16:16:39.484Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/70/comments requested by user 1
