@@ -143,6 +143,9 @@ const requestChangesSchema = z.object({
 export default function PublicSharePage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
+  const viewOnly =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("viewOnly") === "true";
 
   const fileQ = useQuery<SharedFile>({
     queryKey: ["share-metadata", token],
@@ -197,6 +200,9 @@ export default function PublicSharePage() {
 }
 
 function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) {
+  const viewOnly =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("viewOnly") === "true";
   const { toast } = useToast();
   const kind = fileKind(file.fileType);
   const isVideo = kind === "video";
@@ -699,7 +705,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           </div>
 
           {/* Comment markers rail + prev/next */}
-          {(isVideo || isAudio) && (() => {
+          {!viewOnly && (isVideo || isAudio) && (() => {
             const tsComments = (commentsQ.data || []).filter(
               (c) => !c.parentId && c.timestamp != null,
             );
@@ -855,23 +861,25 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           data-testid="share-sidebar"
         >
           <Tabs
-            defaultValue="comments"
+            defaultValue={viewOnly ? (isVideo || isAudio ? "transcript" : "synopsis") : "comments"}
             className="flex-1 min-h-0 flex flex-col"
           >
             <div className="px-3 py-2.5 border-b border-neutral-200 dark:border-gray-800">
               <TabsList className="bg-neutral-100 dark:bg-gray-900">
-                <TabsTrigger
-                  value="comments"
-                  className="text-xs px-3"
-                  data-testid="tab-comments"
-                >
-                  Comments
-                  {commentsQ.data && commentsQ.data.length > 0 && (
-                    <span className="ml-1.5 text-[10px] opacity-70">
-                      {commentsQ.data.length}
-                    </span>
-                  )}
-                </TabsTrigger>
+                {!viewOnly && (
+                  <TabsTrigger
+                    value="comments"
+                    className="text-xs px-3"
+                    data-testid="tab-comments"
+                  >
+                    Comments
+                    {commentsQ.data && commentsQ.data.length > 0 && (
+                      <span className="ml-1.5 text-[10px] opacity-70">
+                        {commentsQ.data.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                )}
                 {(isVideo || isAudio) && (
                   <TabsTrigger
                     value="transcript"
@@ -893,6 +901,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               </TabsList>
             </div>
 
+            {!viewOnly && (
             <TabsContent
               value="comments"
               className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
@@ -1082,6 +1091,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 )}
               </div>
             </TabsContent>
+            )}
 
             {(isVideo || isAudio) && (
               <TabsContent
