@@ -554,15 +554,21 @@ export function registerShareLinkRoutes(
       if (!file) return res.status(404).json({ message: "Not found" });
 
       const sessionEmail = req.session?.shareUnlocks?.[gated.link.token]?.email;
-      const parsed = insertCommentsUnifiedSchema.safeParse({
-        ...req.body,
+      const email = req.body.authorEmail || req.body.email || sessionEmail || undefined;
+      const payload: Record<string, unknown> = {
+        content: req.body.content,
         fileId: file.id,
         isPublic: true,
-        userId: null,
         authorName: req.body.displayName || req.body.authorName || "Anonymous",
-        authorEmail: req.body.authorEmail || req.body.email || sessionEmail || null,
-      });
-      if (!parsed.success) return res.status(400).json({ message: "Invalid comment", errors: parsed.error.errors });
+      };
+      if (email) payload.authorEmail = email;
+      if (req.body.timestamp != null) payload.timestamp = req.body.timestamp;
+      if (req.body.parentId) payload.parentId = req.body.parentId;
+      const parsed = insertCommentsUnifiedSchema.safeParse(payload);
+      if (!parsed.success) {
+        console.warn("[share-links] invalid public comment", parsed.error.errors);
+        return res.status(400).json({ message: "Invalid comment", errors: parsed.error.errors });
+      }
 
       const creatorToken = crypto.randomBytes(32).toString("hex");
       const comment = await storage.createUnifiedComment({ ...parsed.data, creatorToken } as any);
