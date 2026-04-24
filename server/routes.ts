@@ -2725,6 +2725,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Transcript / synopsis for legacy shared file (read-only, public)
+  app.get("/api/share/:token/transcript", async (req, res, next) => {
+    try {
+      const file = await storage.getFileByShareToken(req.params.token);
+      if (!file) return res.status(404).json({ message: "Shared file not found" });
+      const transcript = await storage.getTranscript(file.id);
+      if (!transcript) return res.status(404).json({ message: "No transcript yet" });
+      res.json(transcript);
+    } catch (e) { next(e); }
+  });
+  app.get("/api/share/:token/transcript.vtt", async (req, res, next) => {
+    try {
+      const file = await storage.getFileByShareToken(req.params.token);
+      if (!file) return res.status(404).send("Shared file not found");
+      const t = await storage.getTranscript(file.id);
+      if (!t || !t.segments?.length) return res.status(404).send("No transcript available");
+      const { segmentsToVtt } = await import("./transcription");
+      res.setHeader("Content-Type", "text/vtt; charset=utf-8");
+      res.send(segmentsToVtt(t.segments as any));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/share/:token/transcript.srt", async (req, res, next) => {
+    try {
+      const file = await storage.getFileByShareToken(req.params.token);
+      if (!file) return res.status(404).send("Shared file not found");
+      const t = await storage.getTranscript(file.id);
+      if (!t || !t.segments?.length) return res.status(404).send("No transcript available");
+      const { segmentsToSrt } = await import("./transcription");
+      res.setHeader("Content-Type", "application/x-subrip; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="transcript-${file.id}.srt"`);
+      res.send(segmentsToSrt(t.segments as any));
+    } catch (e) { next(e); }
+  });
+  app.get("/api/share/:token/transcript.txt", async (req, res, next) => {
+    try {
+      const file = await storage.getFileByShareToken(req.params.token);
+      if (!file) return res.status(404).send("Shared file not found");
+      const t = await storage.getTranscript(file.id);
+      if (!t) return res.status(404).send("No transcript available");
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="transcript-${file.id}.txt"`);
+      res.send((t as any).text || ((t.segments as any[]) || []).map((s: any) => s.text).join("\n"));
+    } catch (e) { next(e); }
+  });
+
   // Request changes for shared file (no authentication required)
   app.post("/api/share/:token/request-changes", async (req, res, next) => {
     try {

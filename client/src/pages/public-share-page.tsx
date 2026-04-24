@@ -27,6 +27,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import TranscriptView from "@/components/media/transcript-view";
+import SynopsisView from "@/components/media/synopsis-view";
 import {
   AlertCircle,
   Download,
@@ -852,16 +854,48 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           className="w-full lg:w-[360px] shrink-0 flex flex-col bg-white dark:bg-[#0a0d12] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 min-h-0 overflow-hidden"
           data-testid="share-sidebar"
         >
-          <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
-            <TabsList className="m-3 mb-0 grid grid-cols-1">
-              <TabsTrigger value="comments" data-testid="tab-comments">
-                Comments {commentsQ.data ? `(${commentsQ.data.length})` : ""}
-              </TabsTrigger>
-            </TabsList>
+          <Tabs
+            defaultValue="comments"
+            className="flex-1 min-h-0 flex flex-col"
+          >
+            <div className="px-3 py-2.5 border-b border-neutral-200 dark:border-gray-800">
+              <TabsList className="bg-neutral-100 dark:bg-gray-900">
+                <TabsTrigger
+                  value="comments"
+                  className="text-xs px-3"
+                  data-testid="tab-comments"
+                >
+                  Comments
+                  {commentsQ.data && commentsQ.data.length > 0 && (
+                    <span className="ml-1.5 text-[10px] opacity-70">
+                      {commentsQ.data.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                {(isVideo || isAudio) && (
+                  <TabsTrigger
+                    value="transcript"
+                    className="text-xs px-3"
+                    data-testid="tab-transcript"
+                  >
+                    Transcript
+                  </TabsTrigger>
+                )}
+                {(isVideo || isAudio) && (
+                  <TabsTrigger
+                    value="synopsis"
+                    className="text-xs px-3"
+                    data-testid="tab-synopsis"
+                  >
+                    Synopsis
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </div>
 
             <TabsContent
               value="comments"
-              className="data-[state=active]:flex flex-col flex-1 min-h-0 mt-2"
+              className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
             >
               <div
                 className="flex-1 min-h-0 overflow-y-auto px-3 space-y-2"
@@ -1049,6 +1083,37 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 )}
               </div>
             </TabsContent>
+
+            {(isVideo || isAudio) && (
+              <TabsContent
+                value="transcript"
+                className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
+              >
+                <TranscriptView
+                  fileId={file.id}
+                  currentTime={currentTime}
+                  onSeek={seekTo}
+                  apiBase={`/api/share/${token}`}
+                  readOnly
+                  allowDownloads
+                  queryKey={["share-transcript", token, file.id]}
+                />
+              </TabsContent>
+            )}
+
+            {(isVideo || isAudio) && (
+              <TabsContent
+                value="synopsis"
+                className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
+              >
+                <SynopsisView
+                  fileId={file.id}
+                  apiBase={`/api/share/${token}`}
+                  readOnly
+                  queryKey={["share-transcript", token, file.id]}
+                />
+              </TabsContent>
+            )}
           </Tabs>
         </aside>
       </div>
