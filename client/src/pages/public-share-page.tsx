@@ -1,35 +1,93 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "wouter";
-import { AlertCircle, Maximize, Pause, Play, Volume2, VolumeX, MessageCircle, Clock, MessageSquare, MoreHorizontal, Filter, Search, Send, X, FileVideo, Trash2, Check, PenTool } from "lucide-react";
-import { AnnotationCanvas, AnnotationOverlay, type Annotation } from "@/components/media/annotation-canvas";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import Logo from "@/components/ui/logo";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  AlertCircle,
+  Download,
+  ChevronDown,
+  Send,
+  Music,
+  Image as ImageIcon,
+  File as FileIcon,
+  MessageSquareWarning,
+} from "lucide-react";
+import Logo from "@/components/ui/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertCommentsUnifiedSchema, type UnifiedComment } from "@shared/schema";
-import { z } from "zod";
-import ReactionPicker from "@/components/comments/reaction-picker";
-import ReactionsDisplay from "@/components/comments/reactions-display";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { cn } from "@/lib/utils";
 
-// Schema for request changes form
-const requestChangesSchema = z.object({
-  requesterName: z.string().min(1, "Name is required"),
-  requesterEmail: z.string().email("Valid email is required"),
-});
+type TimeFormat = "Frames" | "Standard" | "Timecode";
+
+function formatTimecode(
+  seconds: number,
+  format: TimeFormat,
+  fps: number = 30,
+): string {
+  if (!Number.isFinite(seconds) || seconds < 0) seconds = 0;
+  const totalFrames = Math.floor(seconds * fps);
+  if (format === "Frames") return totalFrames.toString();
+  const hh = Math.floor(seconds / 3600);
+  const mm = Math.floor((seconds % 3600) / 60);
+  const ss = Math.floor(seconds % 60);
+  const ff = totalFrames % fps;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  if (format === "Standard") {
+    return `${pad(hh)}:${pad(mm)}:${pad(ss)}:${pad(ff)}`;
+  }
+  return `${pad(hh)}:${pad(mm)}:${pad(ss)};${pad(ff)}`;
+}
+
+function fmtTime(seconds: number | null) {
+  if (seconds === null || seconds === undefined) return null;
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+function fmtBytes(bytes: number) {
+  const u = ["B", "KB", "MB", "GB", "TB"];
+  let v = bytes;
+  let i = 0;
+  while (v >= 1024 && i < u.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  return `${v.toFixed(v >= 100 || i === 0 ? 0 : 1)} ${u[i]}`;
+}
+
+function fileKind(t: string) {
+  if (t === "video" || t?.startsWith("video/")) return "video";
+  if (t === "audio" || t?.startsWith("audio/")) return "audio";
+  if (t === "image" || t?.startsWith("image/")) return "image";
+  return "other";
+}
 
 interface SharedFile {
   id: number;
@@ -40,2035 +98,681 @@ interface SharedFile {
   createdAt: string;
 }
 
-// Format time for Frame.io style (HH:MM:SS:FF - hours:minutes:seconds:frames)
-const formatTime = (time: number) => {
-  const hours = Math.floor(time / 3600);
-  const minutes = Math.floor((time % 3600) / 60);
-  const seconds = Math.floor(time % 60);
-  
-  if (hours > 0) {
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  } else {
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }
-};
+interface PublicComment {
+  id: string;
+  authorName: string;
+  authorEmail: string | null;
+  content: string;
+  timestamp: number | null;
+  parentId: string | null;
+  createdAt: string;
+  creatorToken?: string;
+}
 
-// Get user initials for avatar fallback
-const getUserInitials = (name: string) => {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-};
+const requestChangesSchema = z.object({
+  requesterName: z.string().min(1, "Name is required"),
+  requesterEmail: z.string().email("Valid email is required"),
+});
 
 export default function PublicSharePage() {
-  const { token } = useParams<{ token: string }>();
-  const { toast } = useToast();
-  
-  // Check if this is a view-only link (hide comments)
-  const urlParams = new URLSearchParams(window.location.search);
-  const isViewOnly = urlParams.get('viewOnly') === 'true';
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [mediaError, setMediaError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [previewTime, setPreviewTime] = useState(0);
-  const [showScrubPreview, setShowScrubPreview] = useState(false);
-  const [scrubPreviewTime, setScrubPreviewTime] = useState(0);
-  const [scrubPreviewLeft, setScrubPreviewLeft] = useState(0);
-  const [scrubPreviewTop, setScrubPreviewTop] = useState(0);
-  const [hoveredComment, setHoveredComment] = useState<number | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [isRequestChangesOpen, setIsRequestChangesOpen] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [inPoint, setInPoint] = useState<number | null>(null);
-  const [outPoint, setOutPoint] = useState<number | null>(null);
-  const frameRate = 30;
-  
-  // Sprite scrubbing state for shared links
-  const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
-  const [spriteLoaded, setSpriteLoaded] = useState(false);
-  
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const mediaContainerRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
-  const previewVideoRef = useRef<HTMLVideoElement>(null);
-  const scrubPreviewRef = useRef<HTMLDivElement>(null);
-  const lastSeekTimeRef = useRef<number>(0);
-  const seekThrottleRef = useRef<NodeJS.Timeout | null>(null);
-  const rafIdRef = useRef<number | null>(null);
-  const jklIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const jklSpeedRef = useRef<number>(1);
-  const jklDirectionRef = useRef<'forward' | 'backward' | null>(null);
-  const [isAnnotating, setIsAnnotating] = useState(false);
-  const [pendingAnnotations, setPendingAnnotations] = useState<Annotation[] | null>(null);
-  const [displayAnnotations, setDisplayAnnotations] = useState<Annotation[] | null>(null);
-  const [mediaContainerSize, setMediaContainerSize] = useState({ width: 0, height: 0 });
+  const params = useParams<{ token: string }>();
+  const token = params.token;
 
-  // Fetch shared file metadata
-  const { data: file, isLoading, error } = useQuery<SharedFile>({
-    queryKey: ['/api/share', token, 'metadata'],
+  const fileQ = useQuery<SharedFile>({
+    queryKey: ["share-metadata", token],
     queryFn: async () => {
-      const response = await fetch(`/api/share/${token}/metadata`);
-      if (!response.ok) {
-        throw new Error('File not found or expired');
+      const r = await fetch(`/api/share/${token}/metadata`);
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        throw new Error(data.message || "Shared file not found");
       }
-      return response.json();
+      return r.json();
     },
     enabled: !!token,
-    retry: false
+    retry: false,
   });
 
-  // Fetch comments for the markers
-  const { data: comments } = useQuery<UnifiedComment[]>({
-    queryKey: ['/api/share', token, 'comments'],
-    queryFn: async () => {
-      const response = await fetch(`/api/share/${token}/comments`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch comments');
-      }
-      return response.json();
-    },
-    enabled: !!token && !!file,
-    refetchInterval: 5000,
-    refetchOnWindowFocus: true,
-    retry: false
-  });
+  if (!token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Invalid share link.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
-  // Fetch video processing data for proxy versions (for shared files)
-  const { data: videoProcessing } = useQuery({
-    queryKey: ['/api/share', token, 'processing'],
-    queryFn: async () => {
-      // For shared files, we need to check if processing is available via a different endpoint
-      // This will require server-side support for shared file processing data
-      const response = await fetch(`/api/share/${token}/processing`);
-      if (!response.ok) {
-        return null; // Return null if processing data not available for shared files
-      }
-      return response.json();
-    },
-    enabled: !!token && !!file && file.fileType === 'video',
-    retry: false
-  });
+  if (fileQ.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      </div>
+    );
+  }
 
-  // Load sprite metadata for shared video files
+  if (fileQ.error || !fileQ.data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 space-y-3 text-center">
+            <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
+            <div className="font-medium">Share unavailable</div>
+            <div className="text-sm text-muted-foreground">
+              {(fileQ.error as Error)?.message || "This shared file is no longer available."}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return <SingleFileViewer token={token} file={fileQ.data} />;
+}
+
+function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) {
+  const { toast } = useToast();
+  const kind = fileKind(file.fileType);
+  const isVideo = kind === "video";
+  const isAudio = kind === "audio";
+  const isImage = kind === "image";
+
+  const [name, setName] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("share-reviewer-name") || "";
+  });
   useEffect(() => {
-    if (file && file.fileType === 'video' && videoProcessing?.status === 'completed') {
-      fetch(`/api/share/${token}/sprite-metadata`)
-        .then(res => res.ok ? res.json() : null)
-        .then(metadata => {
-          if (metadata) {
-            setSpriteMetadata(metadata);
-            console.log(`🎬 [SHARE-SPRITE] Loaded metadata for shared file ${file.id}:`, metadata);
-          }
-        })
-        .catch(err => console.warn(`🎬 [SHARE-SPRITE] Failed to load metadata for shared file ${file.id}:`, err));
-    } else {
-      setSpriteMetadata(null);
-      setSpriteLoaded(false);
-    }
-  }, [file?.id, file?.fileType, videoProcessing?.status, token]);
+    if (typeof window === "undefined") return;
+    if (name) localStorage.setItem("share-reviewer-name", name);
+  }, [name]);
+  const [content, setContent] = useState("");
+  const [currentTime, setCurrentTime] = useState(0);
+  const [timeFormat, setTimeFormat] = useState<TimeFormat>("Standard");
 
-  // Request changes form
-  const requestChangesForm = useForm<z.infer<typeof requestChangesSchema>>({
-    resolver: zodResolver(requestChangesSchema),
-    defaultValues: {
-      requesterName: "",
-      requesterEmail: "",
-    },
-  });
-
-  // Request changes mutation
-  const requestChangesMutation = useMutation({
-    mutationFn: (data: z.infer<typeof requestChangesSchema>) => {
-      return apiRequest('POST', `/api/share/${token}/request-changes`, data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Changes requested",
-        description: "Your request has been sent successfully. Project members will be notified via email."
-      });
-      setIsRequestChangesOpen(false);
-      requestChangesForm.reset();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to request changes",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Handle play/pause
+  const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
+  const commentInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const jklIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const jklSpeedRef = useRef<number>(1);
+  const jklDirectionRef = useRef<"forward" | "backward" | null>(null);
   const stopJKLShuttle = () => {
     if (jklIntervalRef.current) {
       clearInterval(jklIntervalRef.current);
       jklIntervalRef.current = null;
     }
-    jklDirectionRef.current = null;
     jklSpeedRef.current = 1;
-    const el = videoRef.current || audioRef.current;
+    jklDirectionRef.current = null;
+    const el = mediaRef.current;
     if (el) el.playbackRate = 1;
   };
 
-  const togglePlay = () => {
-    const mediaElement = videoRef.current || audioRef.current;
-    if (!mediaElement) return;
-
-    if (isPlaying) {
-      mediaElement.pause();
-    } else {
-      mediaElement.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
-
-  const toggleMute = () => {
-    const mediaElement = videoRef.current || audioRef.current;
-    if (!mediaElement) return;
-    const newMuted = !isMuted;
-    mediaElement.muted = newMuted;
-    setIsMuted(newMuted);
-  };
-
+  // Smooth time tracking via RAF while playing
   useEffect(() => {
-    const el = mediaContainerRef.current;
+    const el = mediaRef.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      setMediaContainerSize({ width: rect.width, height: rect.height });
-    }
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setMediaContainerSize({ width: entry.contentRect.width, height: entry.contentRect.height });
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [file?.id, file?.fileType]);
-
-  const handleStartAnnotation = () => {
-    const mediaElement = videoRef.current || audioRef.current;
-    if (mediaElement && !mediaElement.paused) {
-      mediaElement.pause();
-      setIsPlaying(false);
-    }
-    stopJKLShuttle();
-    setIsAnnotating(true);
-  };
-
-  const handleSaveAnnotation = (annotations: Annotation[]) => {
-    setPendingAnnotations(annotations);
-    setIsAnnotating(false);
-  };
-
-  const handleCancelAnnotation = () => {
-    setIsAnnotating(false);
-  };
-
-  const handleClearAnnotations = () => {
-    setPendingAnnotations(null);
-    setDisplayAnnotations(null);
-  };
-
-  const handleCommentHover = (comment: any) => {
-    if (comment?.annotations) {
-      try {
-        const parsed = typeof comment.annotations === 'string' ? JSON.parse(comment.annotations) : comment.annotations;
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setDisplayAnnotations(parsed);
-          return;
-        }
-      } catch {}
-    }
-    setDisplayAnnotations(null);
-  };
-
-  const handleCommentLeave = () => {
-    setDisplayAnnotations(null);
-  };
-
-  const focusCommentTextarea = () => {
-    const mediaElement = videoRef.current || audioRef.current;
-    if (mediaElement && !mediaElement.paused) {
-      mediaElement.pause();
-      setIsPlaying(false);
-    }
-    stopJKLShuttle();
-    const textarea = document.querySelector('[data-testid="textarea-comment"]') as HTMLTextAreaElement;
-    if (textarea) textarea.focus();
-  };
-
-  // Handle volume change
-  const handleVolumeChange = (value: string) => {
-    const newVolume = parseFloat(value);
-    setVolume(newVolume);
-    
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
-    } else if (audioRef.current) {
-      audioRef.current.volume = newVolume;
-    }
-  };
-
-  // Handle progress click
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!progressRef.current) return;
-    
-    const rect = progressRef.current.getBoundingClientRect();
-    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const newTime = duration * pos;
-    
-    setCurrentTime(newTime);
-    
-    if (videoRef.current) {
-      videoRef.current.currentTime = newTime;
-    } else if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
-    }
-  };
-
-  // Function to seek video to specific timestamp (for comment clicks)
-  const seekToTimestamp = (timestamp: number) => {
-    const mediaElement = videoRef.current || audioRef.current;
-    if (!mediaElement) return;
-    
-    setCurrentTime(timestamp);
-    mediaElement.currentTime = timestamp;
-  };
-
-  // Handle fullscreen
-  const toggleFullscreen = () => {
-    if (!mediaContainerRef.current) return;
-    
-    // Check if we're dealing with a video element on iOS Safari
-    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    const videoElement = videoRef.current;
-    
-    if (!document.fullscreenElement) {
-      // For iOS Safari with video, use webkitEnterFullscreen
-      if (isIOSSafari && videoElement && file?.fileType === 'video') {
-        try {
-          (videoElement as any).webkitEnterFullscreen();
-        } catch (err) {
-          console.error('iOS fullscreen error:', err);
-        }
-      } else {
-        // Use standard fullscreen API for other browsers
-        mediaContainerRef.current.requestFullscreen().catch(err => {
-          console.error('Fullscreen error:', err);
-        });
-      }
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+    let raf = 0;
+    const tick = () => {
+      setCurrentTime(el.currentTime || 0);
+      raf = requestAnimationFrame(tick);
     };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    const start = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      setCurrentTime(el.currentTime || 0);
+    };
+    el.addEventListener("play", start);
+    el.addEventListener("playing", start);
+    el.addEventListener("pause", stop);
+    el.addEventListener("seeked", stop);
+    el.addEventListener("ended", stop);
+    el.addEventListener("timeupdate", stop);
+    if (!el.paused) start();
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      cancelAnimationFrame(raf);
+      el.removeEventListener("play", start);
+      el.removeEventListener("playing", start);
+      el.removeEventListener("pause", stop);
+      el.removeEventListener("seeked", stop);
+      el.removeEventListener("ended", stop);
+      el.removeEventListener("timeupdate", stop);
     };
-  }, []);
-  
-  // Optimized throttled seeking function
-  const performSeek = (time: number) => {
-    const mediaElement = videoRef.current || audioRef.current;
-    if (!mediaElement) return;
-    
-    // Clear any pending seek operation
-    if (seekThrottleRef.current) {
-      clearTimeout(seekThrottleRef.current);
-    }
-    
-    // Throttle seeking to avoid excessive operations
-    const now = Date.now();
-    const timeSinceLastSeek = now - lastSeekTimeRef.current;
-    const SEEK_THROTTLE_MS = 100; // Limit to 10 seeks per second
-    
-    if (timeSinceLastSeek >= SEEK_THROTTLE_MS) {
-      // Can seek immediately
-      mediaElement.currentTime = time;
-      lastSeekTimeRef.current = now;
-    } else {
-      // Schedule delayed seek
-      seekThrottleRef.current = setTimeout(() => {
-        mediaElement.currentTime = time;
-        lastSeekTimeRef.current = Date.now();
-      }, SEEK_THROTTLE_MS - timeSinceLastSeek);
-    }
-  };
-  
-  
-  // Handle global mouse events for optimized scrubbing
+  }, [file.id]);
+
+  // Global keyboard shortcuts (matches authenticated player)
   useEffect(() => {
-    const handleMouseUp = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        // Perform final seek on mouse up
-        performSeek(previewTime);
-        setCurrentTime(previewTime);
-      }
-    };
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging && progressRef.current) {
-        // Use RAF for smooth visual updates
-        if (rafIdRef.current) {
-          cancelAnimationFrame(rafIdRef.current);
-        }
-        
-        rafIdRef.current = requestAnimationFrame(() => {
-          if (!progressRef.current) return;
-          
-          const rect = progressRef.current.getBoundingClientRect();
-          // Get x position relative to progress bar (clamped between 0 and 1)
-          const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-          const newTime = duration * pos;
-          
-          // Update preview time immediately for visual feedback
-          setPreviewTime(newTime);
-          // CRITICAL FIX: Update scrub preview position to follow mouse
-          setScrubPreviewTime(newTime);
-          
-          // Position preview using viewport coordinates
-          const progressRect = progressRef.current.getBoundingClientRect();
-          const previewWidth = 208;
-          const previewHeight = 150;
-          const desiredLeft = e.clientX - previewWidth / 2;
-          const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-          const top = progressRect.top - previewHeight - 12;
-          
-          setScrubPreviewLeft(left);
-          setScrubPreviewTop(top);
-          setShowScrubPreview(true);
-          
-          // Update preview video time if it exists
-          if (previewVideoRef.current && duration > 0) {
-            previewVideoRef.current.currentTime = newTime;
-          }
-          
-          // Only seek occasionally during drag for performance
-          const now = Date.now();
-          if (now - lastSeekTimeRef.current > 200) { // Seek every 200ms during drag
-            performSeek(newTime);
-            setCurrentTime(newTime);
-          }
-        });
-      }
-    };
-    
-    const handleMouseDown = (e: MouseEvent) => {
-      // Check if the click was on the progress bar
-      if (progressRef.current && progressRef.current.contains(e.target as Node)) {
-        setIsDragging(true);
-        // Set initial preview time
-        const rect = progressRef.current.getBoundingClientRect();
-        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        const newTime = duration * pos;
-        setPreviewTime(newTime);
-      }
-    };
-    
-    // Touch event handlers for iOS Safari
-    const handleTouchStart = (e: TouchEvent) => {
-      // Check if the touch was on the progress bar
-      if (progressRef.current && progressRef.current.contains(e.target as Node)) {
-        setIsDragging(true);
-        // Set initial preview time
-        const rect = progressRef.current.getBoundingClientRect();
-        const touch = e.touches[0];
-        const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
-        const newTime = duration * pos;
-        setPreviewTime(newTime);
-      }
-    };
-    
-    const handleTouchEnd = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        // Perform final seek on touch end
-        performSeek(previewTime);
-        setCurrentTime(previewTime);
-      }
-    };
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      if (isDragging && progressRef.current && e.touches.length > 0) {
-        e.preventDefault(); // Prevent scrolling during scrub
-        
-        // Use RAF for smooth visual updates
-        if (rafIdRef.current) {
-          cancelAnimationFrame(rafIdRef.current);
-        }
-        
-        rafIdRef.current = requestAnimationFrame(() => {
-          if (!progressRef.current || !e.touches.length) return;
-          
-          const rect = progressRef.current.getBoundingClientRect();
-          const touch = e.touches[0];
-          // Get x position relative to progress bar (clamped between 0 and 1)
-          const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
-          const newTime = duration * pos;
-          
-          // Update preview time immediately for visual feedback
-          setPreviewTime(newTime);
-          // CRITICAL FIX: Update scrub preview position to follow touch
-          setScrubPreviewTime(newTime);
-          
-          // Position preview using viewport coordinates
-          const progressRect = progressRef.current.getBoundingClientRect();
-          const previewWidth = 208;
-          const previewHeight = 150;
-          const desiredLeft = touch.clientX - previewWidth / 2;
-          const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-          const top = progressRect.top - previewHeight - 12;
-          
-          setScrubPreviewLeft(left);
-          setScrubPreviewTop(top);
-          setShowScrubPreview(true);
-          
-          // Update preview video time if it exists
-          if (previewVideoRef.current && duration > 0) {
-            previewVideoRef.current.currentTime = newTime;
-          }
-          
-          // Only seek occasionally during drag for performance
-          const now = Date.now();
-          if (now - lastSeekTimeRef.current > 200) { // Seek every 200ms during drag
-            performSeek(newTime);
-            setCurrentTime(newTime);
-          }
-        });
-      }
-    };
-    
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('touchstart', handleTouchStart);
-    document.addEventListener('touchend', handleTouchEnd);
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    
-    return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('touchmove', handleTouchMove);
-      
-      // Cleanup RAF and timeouts
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-      if (seekThrottleRef.current) {
-        clearTimeout(seekThrottleRef.current);
-      }
-    };
-  }, [duration, isDragging, previewTime]);
-  
-  // Keyboard controls for play/pause (matching authenticated player)
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      const isInTextInput = target instanceof HTMLInputElement ||
+    if (!isVideo && !isAudio) return;
+    const frameRate = 30;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInTextInput =
+        target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
         target instanceof HTMLSelectElement ||
-        target.contentEditable === 'true';
-
+        target?.contentEditable === "true";
       if (isInTextInput) {
-        if (e.code === 'Tab' && (target instanceof HTMLTextAreaElement || target.tagName === 'TEXTAREA')) {
+        if (e.code === "Tab" && target?.tagName === "TEXTAREA") {
           e.preventDefault();
           (target as HTMLElement).blur();
-          mediaContainerRef.current?.focus();
+          (mediaRef.current as HTMLElement | null)?.focus?.();
         }
         return;
       }
-
-      const mediaElement = videoRef.current || audioRef.current;
-
+      const el = mediaRef.current;
+      if (!el) return;
+      const duration = el.duration || 0;
       switch (e.code) {
-        case 'Space':
+        case "Space":
           e.preventDefault();
-          if (!mediaElement || mediaError || !file) break;
           stopJKLShuttle();
-          togglePlay();
+          if (el.paused) el.play().catch(() => {});
+          else el.pause();
           break;
-        case 'KeyK':
+        case "KeyC":
           e.preventDefault();
-          if (!mediaElement || mediaError || !file) break;
-          stopJKLShuttle();
-          mediaElement.pause();
-          setIsPlaying(false);
+          commentInputRef.current?.focus();
           break;
-        case 'KeyC':
+        case "KeyM":
           e.preventDefault();
-          if (!isViewOnly) focusCommentTextarea();
+          el.muted = !el.muted;
           break;
-        case 'KeyM':
-          e.preventDefault();
-          toggleMute();
-          break;
-        case 'KeyF':
-          e.preventDefault();
-          toggleFullscreen();
-          break;
-        case 'Escape':
-          if (isFullscreen) {
+        case "KeyF":
+          if (isVideo) {
             e.preventDefault();
-            toggleFullscreen();
+            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+            else (el as HTMLVideoElement).requestFullscreen?.().catch(() => {});
           }
           break;
-        case 'ArrowLeft':
+        case "KeyK":
           e.preventDefault();
-          if (mediaElement && !mediaError && file) {
-            stopJKLShuttle();
-            const framesBack = e.shiftKey ? 10 : 1;
-            const backTime = Math.max(0, mediaElement.currentTime - framesBack / frameRate);
-            performSeek(backTime);
-            setCurrentTime(backTime);
+          stopJKLShuttle();
+          el.pause();
+          break;
+        case "Escape":
+          if (document.fullscreenElement) {
+            e.preventDefault();
+            document.exitFullscreen().catch(() => {});
           }
           break;
-        case 'ArrowRight':
+        case "ArrowLeft": {
           e.preventDefault();
-          if (mediaElement && !mediaError && file) {
-            stopJKLShuttle();
-            const framesForward = e.shiftKey ? 10 : 1;
-            const fwdTime = Math.min(duration, mediaElement.currentTime + framesForward / frameRate);
-            performSeek(fwdTime);
-            setCurrentTime(fwdTime);
-          }
+          stopJKLShuttle();
+          const framesBack = e.shiftKey ? 10 : 1;
+          const t = Math.max(0, el.currentTime - framesBack / frameRate);
+          el.currentTime = t;
+          setCurrentTime(t);
           break;
-        case 'KeyJ': {
+        }
+        case "ArrowRight": {
           e.preventDefault();
-          if (!mediaElement || mediaError || !file) break;
+          stopJKLShuttle();
+          const framesFwd = e.shiftKey ? 10 : 1;
+          const t = Math.min(
+            duration || el.currentTime + framesFwd / frameRate,
+            el.currentTime + framesFwd / frameRate,
+          );
+          el.currentTime = t;
+          setCurrentTime(t);
+          break;
+        }
+        case "KeyJ": {
+          e.preventDefault();
           if (jklIntervalRef.current) {
             clearInterval(jklIntervalRef.current);
             jklIntervalRef.current = null;
           }
-          if (jklDirectionRef.current === 'backward') {
+          if (jklDirectionRef.current === "backward") {
             jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
           } else {
-            if (!mediaElement.paused) {
-              mediaElement.pause();
-              mediaElement.playbackRate = 1;
-              setIsPlaying(false);
+            if (!el.paused) {
+              el.pause();
+              el.playbackRate = 1;
             }
             jklSpeedRef.current = 1;
-            jklDirectionRef.current = 'backward';
+            jklDirectionRef.current = "backward";
           }
           jklIntervalRef.current = setInterval(() => {
-            const el = videoRef.current || audioRef.current;
-            if (el) {
-              const t = Math.max(0, el.currentTime - jklSpeedRef.current * 0.1);
-              el.currentTime = t;
-              setCurrentTime(t);
-              if (t === 0) stopJKLShuttle();
-            }
+            const m = mediaRef.current;
+            if (!m) return;
+            const t = Math.max(0, m.currentTime - jklSpeedRef.current * 0.1);
+            m.currentTime = t;
+            setCurrentTime(t);
+            if (t === 0) stopJKLShuttle();
           }, 100);
           break;
         }
-        case 'KeyL': {
+        case "KeyL": {
           e.preventDefault();
-          if (!mediaElement || mediaError || !file) break;
           if (jklIntervalRef.current) {
             clearInterval(jklIntervalRef.current);
             jklIntervalRef.current = null;
           }
-          if (jklDirectionRef.current === 'forward') {
+          if (jklDirectionRef.current === "forward") {
             jklSpeedRef.current = Math.min(jklSpeedRef.current * 2, 8);
           } else {
             jklSpeedRef.current = 1;
-            jklDirectionRef.current = 'forward';
+            jklDirectionRef.current = "forward";
           }
-          mediaElement.playbackRate = jklSpeedRef.current;
-          if (mediaElement.paused) {
-            const pp = mediaElement.play();
-            if (pp) pp.then(() => setIsPlaying(true)).catch(() => {});
-          }
+          el.playbackRate = jklSpeedRef.current;
+          if (el.paused) el.play().catch(() => {});
           break;
         }
-        case 'KeyI':
+        case "Home":
           e.preventDefault();
-          if (file && mediaElement) {
-            setInPoint(mediaElement.currentTime);
-            toast({ title: `In point: ${formatTime(mediaElement.currentTime)}`, description: "Press O to set the out point" });
-          }
+          stopJKLShuttle();
+          el.currentTime = 0;
+          setCurrentTime(0);
           break;
-        case 'KeyO':
+        case "End":
           e.preventDefault();
-          if (file && mediaElement) {
-            setOutPoint(mediaElement.currentTime);
-            toast({ title: `Out point: ${formatTime(mediaElement.currentTime)}`, description: inPoint !== null ? `Range: ${formatTime(inPoint)} → ${formatTime(mediaElement.currentTime)}` : "Set an in point with I first" });
-          }
-          break;
-        case 'Home':
-          e.preventDefault();
-          if (mediaElement && !mediaError && file) {
-            stopJKLShuttle();
-            performSeek(0);
-            setCurrentTime(0);
-          }
-          break;
-        case 'End':
-          e.preventDefault();
-          if (mediaElement && !mediaError && file) {
-            stopJKLShuttle();
-            performSeek(duration);
+          stopJKLShuttle();
+          if (duration) {
+            el.currentTime = duration;
             setCurrentTime(duration);
           }
           break;
       }
     };
-    
-    document.addEventListener('keydown', handleKeyPress);
-    
+    document.addEventListener("keydown", handler);
     return () => {
-      document.removeEventListener('keydown', handleKeyPress);
+      document.removeEventListener("keydown", handler);
+      stopJKLShuttle();
     };
-  }, [isPlaying, mediaError, file, isViewOnly, isFullscreen, isMuted, duration, inPoint]);
-  
-  // Handle progress bar hover for scrub preview
-  const handleProgressHover = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!progressRef.current || isDragging) return;
-    
-    const rect = progressRef.current.getBoundingClientRect();
-    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const hoverTime = duration * pos;
-    
-    setScrubPreviewTime(hoverTime);
-    
-    // Position preview using viewport coordinates  
-    const previewWidth = 208;
-    const previewHeight = 150;
-    const desiredLeft = e.clientX - previewWidth / 2;
-    const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-    const top = rect.top - previewHeight - 12;
-    
-    setScrubPreviewLeft(left);
-    setScrubPreviewTop(top);
-    setShowScrubPreview(true);
-    
-    // Update preview video time
-    if (previewVideoRef.current && duration > 0) {
-      previewVideoRef.current.currentTime = hoverTime;
-    }
-  };
-  
-  const handleProgressLeave = () => {
-    setShowScrubPreview(false);
-  };
+  }, [file.id, isVideo, isAudio]);
 
-
-  // Handle media events
-  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
-    setCurrentTime(e.currentTarget.currentTime);
-  };
-
-  const handleDurationChange = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
-    setDuration(e.currentTarget.duration);
-  };
-
-  const handlePlay = () => setIsPlaying(true);
-  const handlePause = () => setIsPlaying(false);
-
-  const handleMediaError = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
-    console.error('Media error:', e);
-    setMediaError(true);
-    setErrorMessage("Unable to load media file");
-  };
-
-  // Handle preview video load
-  const handlePreviewVideoLoad = () => {
-    if (previewVideoRef.current && videoRef.current) {
-      // Sync preview video with main video when loaded
-      previewVideoRef.current.currentTime = videoRef.current.currentTime;
+  const seekTo = (t: number) => {
+    const el = mediaRef.current;
+    if (el) {
+      el.currentTime = t;
+      setCurrentTime(t);
+      el.play?.().catch(() => {});
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <Logo className="mx-auto mb-4" />
-          <div className="text-gray-600 dark:text-gray-400">Loading shared file...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !file) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <Logo className="mx-auto mb-6" />
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              This shared file is no longer available or the link has expired.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-[100svh] bg-gray-50 dark:bg-gray-900 flex flex-col w-full overflow-hidden">
-      {/* Compact Header */}
-      <div className="flex-shrink-0 py-2 px-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Logo className="h-6 w-6" />
-            <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-                {file.projectName}
-              </h1>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {file.filename}
-              </p>
-            </div>
-          </div>
-          
-          {/* Request Changes Button - Only show when comments are allowed */}
-          {!isViewOnly && (
-            <Dialog open={isRequestChangesOpen} onOpenChange={setIsRequestChangesOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="outline"
-                  className="bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600"
-                  data-testid="request-changes-button"
-                >
-                  Request Changes
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Request Changes</DialogTitle>
-                </DialogHeader>
-                <Form {...requestChangesForm}>
-                  <form onSubmit={requestChangesForm.handleSubmit((data) => requestChangesMutation.mutate(data))} className="space-y-4">
-                    <FormField
-                      control={requestChangesForm.control}
-                      name="requesterName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Your Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter your full name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={requestChangesForm.control}
-                      name="requesterEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Your Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="Enter your email address" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setIsRequestChangesOpen(false)}
-                        disabled={requestChangesMutation.isPending}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        className="bg-red-500 hover:bg-red-600"
-                        disabled={requestChangesMutation.isPending}
-                        data-testid="submit-request-changes"
-                      >
-                        {requestChangesMutation.isPending ? "Sending..." : "Send Request"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-      </div>
-
-      {/* Main content area - fills remaining height with bulletproof mobile/desktop patterns */}
-      <div className="flex-1 min-h-0 overflow-hidden p-1 lg:p-4">
-        {/* Mobile-first responsive grid: Mobile stacked, Desktop side-by-side */}
-        <div className={cn(
-          "h-full grid gap-1 lg:gap-4",
-          isViewOnly 
-            ? "grid-rows-[minmax(0,1fr)]"
-            : "grid-rows-[auto_1fr] lg:grid-cols-[minmax(0,1fr)_clamp(280px,32vw,420px)] lg:grid-rows-[minmax(0,1fr)_auto]"
-        )}>
-          {/* Media Player - Mobile: fixed height, Desktop: remaining space when comments shown */}
-          <div className="min-h-0 flex flex-col overflow-hidden">
-            <Card className="h-full flex flex-col overflow-hidden border-0">
-              <CardContent className="flex-1 min-h-0 flex flex-col p-1 lg:p-2">
-                {/* Video container - Mobile: fixed aspect ratio, Desktop: fills available space */}
-                <div ref={mediaContainerRef} className="relative rounded-lg overflow-hidden w-full aspect-video lg:flex-1 lg:aspect-auto">
-              {/* Render media player based on file type */}
-              {file.fileType === 'video' && !mediaError && (
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-contain"
-                  onTimeUpdate={handleTimeUpdate}
-                  onDurationChange={handleDurationChange}
-                  onPlay={handlePlay}
-                  onPause={handlePause}
-                  onError={handleMediaError}
-                  preload="metadata"
-                  playsInline
-                  data-testid="shared-video-player"
-                >
-                  {/* Use 720p proxy for shared files when available */}
-                  {videoProcessing?.status === 'completed' && 
-                   videoProcessing.qualities?.some((q: any) => q.resolution === '720p') && (
-                    <source src={`/api/share/${token}/qualities/720p`} type="video/mp4" />
-                  )}
-                  {/* Always include original shared file as fallback */}
-                  <source src={`/public/share/${token}`} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              )}
-              
-              {file.fileType === 'audio' && !mediaError && (
-                <div className="flex items-center justify-center w-full h-full bg-gray-800">
-                  <audio
-                    ref={audioRef}
-                    src={`/public/share/${token}`}
-                    onTimeUpdate={handleTimeUpdate}
-                    onDurationChange={handleDurationChange}
-                    onPlay={handlePlay}
-                    onPause={handlePause}
-                    onError={handleMediaError}
-                    preload="metadata"
-                    className="hidden"
-                    data-testid="shared-audio-player"
-                  />
-                  <div className="text-white text-center">
-                    <div className="text-4xl md:text-6xl mb-2">🎵</div>
-                    <div className="text-lg md:text-xl px-4">{file.filename}</div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Show error message only when media fails to load */}
-              {mediaError && (
-                <div className="flex items-center justify-center w-full h-full bg-gray-800">
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{errorMessage}</AlertDescription>
-                  </Alert>
-                </div>
-              )}
-              {isAnnotating && mediaContainerSize.width > 0 && (
-                <AnnotationCanvas
-                  onSave={handleSaveAnnotation}
-                  onCancel={handleCancelAnnotation}
-                  initialAnnotations={pendingAnnotations || []}
-                  containerWidth={mediaContainerSize.width}
-                  containerHeight={mediaContainerSize.height}
-                />
-              )}
-              {!isAnnotating && displayAnnotations && displayAnnotations.length > 0 && mediaContainerSize.width > 0 && (
-                <AnnotationOverlay
-                  annotations={displayAnnotations}
-                  containerWidth={mediaContainerSize.width}
-                  containerHeight={mediaContainerSize.height}
-                />
-              )}
-              {!isAnnotating && pendingAnnotations && pendingAnnotations.length > 0 && !displayAnnotations && mediaContainerSize.width > 0 && (
-                <AnnotationOverlay
-                  annotations={pendingAnnotations}
-                  containerWidth={mediaContainerSize.width}
-                  containerHeight={mediaContainerSize.height}
-                />
-              )}
-            </div>
-
-            {/* Media Controls - Mobile: compact, Desktop: normal spacing */}
-            {(file.fileType === 'video' || file.fileType === 'audio') && (
-              <div className="mt-1 p-1.5 bg-neutral-50 dark:bg-gray-800 rounded-lg lg:mt-2 lg:p-2">
-                
-                {/* Main controls row - no timeline here */}
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center space-x-1.5 lg:space-x-3">
-                    <Button
-                      onClick={togglePlay}
-                      variant="ghost"
-                      size="icon"
-                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
-                      data-testid="play-pause-button"
-                    >
-                      {isPlaying ? (
-                        <Pause className="h-6 w-6" />
-                      ) : (
-                        <Play className="h-6 w-6" />
-                      )}
-                    </Button>
-                    
-                    <span className="font-mono text-xs text-neutral-600 dark:text-gray-400 lg:text-sm">
-                      {formatTime(currentTime)} / {formatTime(duration)}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-1.5 lg:space-x-3">
-                    <div className="hidden lg:flex items-center">
-                      <button onClick={toggleMute} className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] transition-colors mr-2" title={isMuted ? "Unmute (M)" : "Mute (M)"}>
-                        {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                      </button>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={volume}
-                        onChange={(e) => handleVolumeChange(e.target.value)}
-                        className="w-20"
-                      />
-                    </div>
-                    
-                    {file.fileType === 'video' && (
-                      <Button
-                        onClick={toggleFullscreen}
-                        variant="ghost"
-                        size="icon"
-                        className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
-                        title="Toggle fullscreen"
-                      >
-                        <Maximize className="h-5 w-5" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Timeline row - full width */}
-                <div className="w-full flex flex-col gap-1">
-                    {/* Extended hover area around progress bar */}
-                    <div
-                      className="relative py-2 cursor-pointer"
-                      onClick={handleProgressClick}
-                      onMouseMove={(e) => {
-                        if (!progressRef.current || isDragging) return;
-                        
-                        const progressRect = progressRef.current.getBoundingClientRect();
-                        // Calculate viewport position for preview
-                        const pos = Math.max(0, Math.min(1, (e.clientX - progressRect.left) / progressRect.width));
-                        const hoverTime = duration * pos;
-                        
-                        // Position preview using viewport coordinates
-                        const previewWidth = 208; // w-48 + padding = 192 + 16
-                        const previewHeight = 150; // Approximate height
-                        const desiredLeft = e.clientX - previewWidth / 2;
-                        const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-                        const top = progressRect.top - previewHeight - 12;
-                        
-                        setScrubPreviewTime(hoverTime);
-                        setScrubPreviewLeft(left);
-                        setScrubPreviewTop(top);
-                        setShowScrubPreview(true);
-                        
-                        if (previewVideoRef.current && duration > 0) {
-                          previewVideoRef.current.currentTime = hoverTime;
-                        }
-                      }}
-                      onMouseLeave={handleProgressLeave}
-                      data-testid="progress-bar-extended-area"
-                    >
-                      {/* Progress bar */}
-                      <div
-                        ref={progressRef}
-                        className="video-progress relative h-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 cursor-pointer rounded-full group border border-gray-400 dark:border-gray-500"
-                        data-testid="progress-bar"
-                      >
-                        <div
-                          className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
-                          style={{ width: `${(currentTime / duration) * 100}%` }}
-                        ></div>
-                        <div
-                          className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ left: `${(currentTime / duration) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  
-                  {/* Comment markers rail */}
-                  <div className="relative h-5 overflow-visible pointer-events-none" aria-hidden="true">
-                    {!isViewOnly && duration > 0 && comments && comments.length > 0 && comments.map((comment: UnifiedComment) => {
-                      // Only show markers for comments with timestamps (not replies)
-                      if (comment.parentId !== null && comment.parentId !== undefined) return null;
-                      if (comment.timestamp === null || comment.timestamp === undefined) return null;
-                      
-                      // Calculate percentage position - safely handle divide by zero
-                      const timestamp = comment.timestamp || 0;
-                      const position = duration > 0 ? (timestamp / duration) * 100 : 0;
-                      
-                      // Skip markers that would be off the timeline
-                      if (position < 0 || position > 100) return null;
-                      
-                      return (
-                        <div 
-                          key={comment.id}
-                          className="absolute -top-1 z-10 pointer-events-auto cursor-pointer"
-                          style={{ 
-                            left: `${position}%`, 
-                            transform: 'translateX(-50%)'
-                          }}
-                          onMouseEnter={(e) => {
-                            setHoveredComment(comment.id);
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            setTooltipPosition({
-                              x: rect.left + rect.width / 2,
-                              y: rect.top - 10
-                            });
-                          }}
-                          onMouseLeave={() => {
-                            setHoveredComment(null);
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Jump to timestamp
-                            const mediaElement = videoRef.current || audioRef.current;
-                            if (mediaElement && comment.timestamp !== null) {
-                              mediaElement.currentTime = comment.timestamp;
-                              setCurrentTime(comment.timestamp);
-                            }
-                          }}
-                          data-testid={`comment-marker-${comment.id}`}
-                        >
-                          <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold text-black shadow-lg border-2 border-white">
-                            {comment.authorName?.charAt(0)?.toUpperCase() || 'A'}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                
-                {/* Comment Marker Tooltip */}
-                {hoveredComment && comments && (
-                  (() => {
-                    const comment = comments.find(c => c.id === hoveredComment);
-                    if (!comment) return null;
-                    
-                    // Position tooltip using viewport coordinates
-                    const hasActivePreview = showScrubPreview && duration > 0 && file.fileType === 'video';
-                    const positionStyle = hasActivePreview ? {
-                      position: 'fixed' as const,
-                      left: tooltipPosition.x - 180, // Position to the left of preview
-                      top: tooltipPosition.y - 80,
-                      transform: 'translateY(-100%)',
-                      zIndex: 60
-                    } : {
-                      position: 'fixed' as const,
-                      left: tooltipPosition.x,
-                      top: tooltipPosition.y,
-                      transform: 'translate(-50%, -100%)',
-                      zIndex: 60
-                    };
-                    
-                    return (
-                      <div
-                        className="pointer-events-none fixed z-50"
-                        style={positionStyle}
-                      >
-                        <div className="bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg max-w-xs">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs font-medium">
-                              {comment.authorName?.charAt(0) || 'A'}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-xs">
-                                {comment.authorName || 'Anonymous'}
-                              </span>
-                              <span className="text-yellow-400 text-xs font-mono">
-                                {comment.timestamp !== null ? formatTime(comment.timestamp) : '00:00:00:00'}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-xs leading-relaxed break-words">
-                            {comment.content}
-                          </p>
-                        </div>
-                        {/* Arrow pointing down */}
-                        <div className="absolute left-1/2 transform -translate-x-1/2 top-full">
-                          <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
-                        </div>
-                      </div>
-                    );
-                  })()
-                )}
-              </div>
-            )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Comments Section - Mobile: bottom panel, Desktop: right sidebar, hidden in view-only mode */}
-          {!isViewOnly && (
-            <div className="min-h-0 flex flex-col overflow-hidden lg:h-full">
-              <div className="h-full flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
-                {/* Header - Mobile: compact padding, Desktop: normal padding */}
-                <div className="flex items-center p-2 border-b border-gray-700 lg:p-4">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-3 w-3 text-gray-400 lg:h-4 lg:w-4" />
-                    <span className="text-xs font-medium text-white lg:text-sm">All comments</span>
-                  </div>
-                </div>
-
-                {/* Comments List - Mobile: compact spacing, Desktop: normal spacing */}
-                <div className="flex-1 min-h-0 overflow-auto p-2 space-y-2 lg:p-3 lg:space-y-3">
-                  <CommentsList
-                    token={token!}
-                    onTimestampClick={seekToTimestamp}
-                    onCommentHover={handleCommentHover}
-                    onCommentLeave={handleCommentLeave}
-                    onCommentSelect={(comment: any) => {
-                      if (comment?.annotations) {
-                        try {
-                          const parsed = typeof comment.annotations === 'string'
-                            ? JSON.parse(comment.annotations)
-                            : comment.annotations;
-                          if (Array.isArray(parsed) && parsed.length > 0) {
-                            setDisplayAnnotations(parsed);
-                            return;
-                          }
-                        } catch (e) {
-                          console.error('Failed to parse annotations', e);
-                        }
-                      }
-                      setDisplayAnnotations(null);
-                    }}
-                  />
-                </div>
-
-                {/* Comment Input - Mobile: compact sticky composer, Desktop: normal */}
-                <div className="flex-shrink-0 sticky bottom-0 mx-2 mb-2 mt-3 lg:mx-3 lg:mb-3 lg:mt-6" style={{ backgroundColor: 'hsl(210, 25%, 8%)' }}>
-                  <div 
-                    className="rounded-lg p-2 w-full lg:p-3"
-                    style={{
-                      backgroundColor: 'hsl(210, 20%, 12%)',
-                      border: '1px solid hsl(210, 15%, 18%)'
-                    }}
-                  >
-                    <PublicCommentForm token={token!} fileId={file.id} currentTime={currentTime} pendingAnnotations={pendingAnnotations} onStartAnnotation={handleStartAnnotation} onClearAnnotations={handleClearAnnotations} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Portal-based scrub preview that can extend beyond progress bar - Desktop only */}
-      {showScrubPreview && duration > 0 && file.fileType === 'video' && window.innerWidth >= 1024 && createPortal(
-        <div
-          ref={scrubPreviewRef}
-          className="pointer-events-none z-50"
-          style={{
-            position: 'fixed',
-            left: `${scrubPreviewLeft}px`,
-            top: `${scrubPreviewTop}px`
-          }}
-        >
-          <div className="p-2">
-            <div className="relative">
-              {/* Video-based scrub preview using scrub version */}
-              <video
-                className="w-48 h-32 rounded object-cover bg-gray-800 pointer-events-none"
-                data-testid="shared-video-scrub-preview"
-                src={`/api/share/${token}/scrub`}
-                muted
-                playsInline
-                ref={(video) => {
-                  if (video && !isNaN(scrubPreviewTime)) {
-                    video.currentTime = scrubPreviewTime;
-                  }
-                }}
-              />
-            </div>
-            <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
-              {formatTime(scrubPreviewTime)}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-}
-
-// Public Comment Form Component
-function PublicCommentForm({ token, fileId, currentTime, parentId, onSuccess, pendingAnnotations, onStartAnnotation, onClearAnnotations }: { 
-  token: string; 
-  fileId: number; 
-  currentTime: number; 
-  parentId?: string;
-  onSuccess?: () => void;
-  pendingAnnotations?: Annotation[] | null;
-  onStartAnnotation?: () => void;
-  onClearAnnotations?: () => void;
-}) {
-  const { toast } = useToast();
-  
-  // Load saved name from localStorage
-  const savedName = typeof window !== 'undefined' ? localStorage.getItem('public-commenter-name') || '' : '';
-  
-  const form = useForm<z.infer<typeof insertCommentsUnifiedSchema>>({
-    resolver: zodResolver(insertCommentsUnifiedSchema),
-    defaultValues: {
-      authorName: savedName,
-      content: "",
-      fileId: fileId,
-      parentId: parentId || undefined,
-      timestamp: Math.floor(currentTime), // Always include current time
-      isPublic: true,
-    },
-  });
-
-  const createCommentMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof insertCommentsUnifiedSchema>) => {
-      return await apiRequest("POST", `/api/share/${token}/comments`, data);
-    },
-    onSuccess: (response: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/share', token, 'comments'] });
-      
-      // Store the creatorToken in localStorage for future deletion
-      if (response.creatorToken && response.id) {
-        localStorage.setItem(`comment-token-${response.id}`, response.creatorToken);
-      }
-      
-      // Get current name value before reset and preserve it
-      const currentName = form.getValues('authorName');
-      form.reset({
-        authorName: currentName, // Preserve the name
-        content: "",              // Clear only the comment content
-        fileId: fileId,
-        parentId: parentId || undefined,
-        timestamp: Math.floor(currentTime),
-        isPublic: true,
-      });
-      
-      toast({
-        title: parentId ? "Reply posted!" : "Comment posted!",
-        description: parentId ? "Your reply has been added." : "Your comment has been added to the discussion.",
-      });
-      
-      // Call the onSuccess callback if provided (for closing reply form)
-      onSuccess?.();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error posting comment",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof insertCommentsUnifiedSchema>) => {
-    // Save name to localStorage for future comments
-    if (typeof window !== 'undefined' && data.authorName) {
-      localStorage.setItem('public-commenter-name', data.authorName);
-    }
-    
-    // Always attach current time and parentId
-    const dataWithTime = {
-      ...data,
-      timestamp: Math.floor(currentTime),
-      parentId: parentId || undefined,
-      isPublic: true,
-    };
-    createCommentMutation.mutate(dataWithTime);
-  };
-
-  const [content, setContent] = useState("");
-  const [authorName, setAuthorName] = useState(savedName);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Auto-grow textarea function - same as main timeline comments
-  const autoGrowTextarea = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  };
-
-  // Auto-grow on content change
-  useEffect(() => {
-    autoGrowTextarea();
-  }, [content]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!content.trim() || !authorName.trim()) return;
-    
-    const data: any = {
-      authorName: authorName.trim(),
-      content: content.trim(),
-      fileId,
-      parentId: parentId || undefined,
-      timestamp: Math.floor(currentTime),
-      isPublic: true,
-    };
-    if (pendingAnnotations && pendingAnnotations.length > 0) {
-      data.annotations = JSON.stringify(pendingAnnotations);
-    }
-    
-    // Save name to localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('public-commenter-name', authorName.trim());
-    }
-    
-    createCommentMutation.mutate(data);
-  };
-
-  // Reset content after successful submission
-  useEffect(() => {
-    if (!createCommentMutation.isPending && content) {
-      setContent("");
-      if (onClearAnnotations) onClearAnnotations();
-    }
-  }, [createCommentMutation.isPending]);
-
-  return (
-    <form onSubmit={handleSubmit} className="w-full" data-comment-form>
-      {/* Name input for public users - compact design */}
-      {!parentId && (
-        <div className="mb-3">
-          <input
-            type="text"
-            value={authorName}
-            onChange={(e) => setAuthorName(e.target.value)}
-            placeholder="Your name"
-            className="w-full px-3 py-2 text-sm rounded border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-            data-testid="input-name"
-            required
-          />
-        </div>
-      )}
-      
-      {/* Unified comment input container - Frame.io style */}
-      <div className="flex items-start gap-3 w-full">
-        {/* Auto-growing textarea */}
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => {
-            setContent(e.target.value);
-          }}
-          onClick={() => {
-            // Pause video when clicking on textarea
-            const videoElement = document.querySelector('video');
-            const audioElement = document.querySelector('audio');
-            if (videoElement && !videoElement.paused) {
-              videoElement.pause();
-            } else if (audioElement && !audioElement.paused) {
-              audioElement.pause();
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              handleSubmit(e);
-            }
-            // Prevent spacebar from triggering video controls
-            if (e.key === ' ' || e.key === 'k') {
-              e.stopPropagation();
-            }
-          }}
-          placeholder={parentId ? "Write a reply..." : "Leave your comment..."}
-          className="flex-1 bg-transparent text-white placeholder-gray-400 text-sm resize-none border-none outline-none min-h-[2.5rem] leading-relaxed"
-          style={{ 
-            fontFamily: 'inherit',
-            overflow: 'hidden',
-            resize: 'none'
-          }}
-          rows={1}
-          data-testid="textarea-comment"
-          required
-        />
-        
-        {onStartAnnotation && !parentId && (
-          <button
-            type="button"
-            onClick={onStartAnnotation}
-            className={cn(
-              "flex-shrink-0 p-2 rounded transition-colors",
-              pendingAnnotations && pendingAnnotations.length > 0 
-                ? "text-[#026d55]" 
-                : "text-gray-400 hover:text-yellow-400 hover:bg-gray-700"
-            )}
-            title="Draw on frame"
-          >
-            <PenTool className="h-4 w-4" />
-          </button>
-        )}
-        
-        {/* Submit button */}
-        <button
-          type="submit"
-          disabled={!content.trim() || !authorName.trim() || createCommentMutation.isPending}
-          className="flex-shrink-0 p-2 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
-          data-testid="button-submit-comment"
-        >
-          <Send className="h-4 w-4 text-white" />
-        </button>
-      </div>
-      
-      {/* Timestamp indicator */}
-      <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-        <Clock className="h-3 w-3" />
-        <span>Will be posted at {formatTime(currentTime)}</span>
-      </div>
-    </form>
-  );
-}
-
-
-// Comments List Component
-function CommentsList({ token, onTimestampClick, onCommentHover, onCommentLeave, onCommentSelect }: { token: string; onTimestampClick?: (timestamp: number) => void; onCommentHover?: (comment: any) => void; onCommentLeave?: () => void; onCommentSelect?: (comment: any) => void }) {
-  const [replyingToId, setReplyingToId] = useState<number | null>(null);
-  const { toast } = useToast();
-  
-  // Delete comment mutation for public comments
-  const deleteCommentMutation = useMutation({
-    mutationFn: async (commentId: number) => {
-      const creatorToken = localStorage.getItem(`comment-token-${commentId}`);
-      return await apiRequest("DELETE", `/api/public-comments/${commentId}`, { creatorToken });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Comment deleted",
-        description: "Your comment has been removed.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/share', token, 'comments'] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to delete comment",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Check if user can delete a comment (based on localStorage creatorToken)
-  const canDeleteComment = (commentId: number) => {
-    return localStorage.getItem(`comment-token-${commentId}`) !== null;
-  };
-
-  // Handle delete comment
-  const handleDeleteComment = (commentId: number) => {
-    if (window.confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
-      deleteCommentMutation.mutate(commentId);
-    }
-  };
-  
-  const { data: comments, isLoading, error } = useQuery<UnifiedComment[]>({
-    queryKey: ['/api/share', token, 'comments'],
+  const commentsQ = useQuery<PublicComment[]>({
+    queryKey: ["share-comments", token],
     queryFn: async () => {
-      const response = await fetch(`/api/share/${token}/comments`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch comments');
-      }
-      return response.json();
+      const r = await fetch(`/api/share/${token}/comments`);
+      if (!r.ok) throw new Error("Failed to load comments");
+      return r.json();
     },
     refetchInterval: 5000,
     refetchOnWindowFocus: true,
   });
 
-  // Build comment threads safely with cycle detection
-  const buildCommentThreads = useMemo(() => {
-    if (!comments?.length) return [];
-    
-    // Step 1: Build a map of all comments for fast lookup
-    const commentMap = new Map<number, any>();
-    
-    // Initialize all comments with empty children arrays
-    comments.forEach((comment: any) => {
-      commentMap.set(comment.id, { ...comment, children: [] });
-    });
-    
-    // Step 2: Build parent-child relationships with cycle detection
-    comments.forEach((comment: any) => {
-      if (comment.parentId) {
-        const parent = commentMap.get(comment.parentId);
-        const child = commentMap.get(comment.id);
-        
-        // Check for cycles and orphaned references
-        if (parent && child) {
-          // Detect cycles by checking if we're trying to make an ancestor a child
-          let currentParent = parent;
-          let cycleDetected = false;
-          let depth = 0;
-          
-          while (currentParent && depth < 15) {
-            if (currentParent.id === comment.id) {
-              cycleDetected = true;
-              break;
-            }
-            currentParent = currentParent.parentId ? commentMap.get(currentParent.parentId) : null;
-            depth++;
-          }
-          
-          if (!cycleDetected && depth < 10) {
-            parent.children.push(child);
-          } else {
-            // Break the cycle by making this a top-level comment
-            console.warn(`Cycle detected or max depth exceeded for comment ${comment.id}, making it top-level`);
-            child.parentId = null;
-          }
-        }
+  const post = useMutation({
+    mutationFn: async () => {
+      const el = mediaRef.current;
+      const ts = el && (isVideo || isAudio) ? Math.floor(el.currentTime) : null;
+      const r = await fetch(`/api/share/${token}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          authorName: name || "Anonymous",
+          timestamp: ts,
+        }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.message || "Failed");
       }
-    });
-    
-    // Step 3: Get top-level comments and sort by timestamp (timeline order)
-    const topLevelComments = Array.from(commentMap.values()).filter((comment: any) => !comment.parentId);
-    
-    // Sort comments by timestamp - same logic as authenticated TimelineComments
-    topLevelComments.sort((a: any, b: any) => {
-      // If both have timestamps, sort by timestamp (timeline order)
-      if (a.timestamp !== null && b.timestamp !== null) {
-        return a.timestamp - b.timestamp;
-      }
-      // If only a has timestamp, a comes first
-      if (a.timestamp !== null) return -1;
-      // If only b has timestamp, b comes first  
-      if (b.timestamp !== null) return 1;
-      // If neither has timestamp, maintain original order
-      return 0;
-    });
-    
-    return topLevelComments;
-  }, [comments]);
+    },
+    onSuccess: () => {
+      setContent("");
+      commentsQ.refetch();
+      toast({ title: "Comment posted" });
+    },
+    onError: (e: Error) =>
+      toast({
+        title: "Could not post",
+        description: e.message,
+        variant: "destructive",
+      }),
+  });
 
-  // Get user initials for avatar
-  const getUserInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
+  const requestChangesForm = useForm<z.infer<typeof requestChangesSchema>>({
+    resolver: zodResolver(requestChangesSchema),
+    defaultValues: { requesterName: name || "", requesterEmail: "" },
+  });
+  const [rcOpen, setRcOpen] = useState(false);
+  const requestChangesMutation = useMutation({
+    mutationFn: (data: z.infer<typeof requestChangesSchema>) =>
+      apiRequest("POST", `/api/share/${token}/request-changes`, data),
+    onSuccess: () => {
+      toast({ title: "Changes requested", description: "The owner will be notified." });
+      requestChangesForm.reset({ requesterName: name || "", requesterEmail: "" });
+      setRcOpen(false);
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not submit", description: e.message, variant: "destructive" }),
+  });
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin h-6 w-6 border-2 border-gray-400 border-t-transparent rounded-full"></div>
-      </div>
-    );
-  }
+  const mediaSrc = `/public/share/${token}`;
+  const mediaSrc720 = `/api/share/${token}/qualities/720p`;
 
-  if (error) {
-    return (
-      <div className="p-4 bg-red-900/20 text-red-400 text-sm">
-        Error loading comments: {error.message}
-      </div>
-    );
-  }
-
-  if (!comments || comments.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <MessageSquare className="h-12 w-12 text-gray-600 mb-3" />
-        <p className="text-gray-400 text-sm">No comments yet</p>
-        <p className="text-gray-500 text-xs">Be the first to comment!</p>
-      </div>
-    );
-  }
-
-
-  // Recursive component to render nested replies with strict safety
-  const RenderReplies = ({ comment, depth = 0, visited = new Set() }: { 
-    comment: any, 
-    depth?: number,
-    visited?: Set<number>
-  }) => {
-    // Safety check - ensure comment exists
-    if (!comment || !comment.id) {
-      console.warn('RenderReplies: comment is undefined or missing id');
-      return null;
-    }
-
-    // Prevent infinite loops with multiple safety checks
-    if (depth > 10 || visited.has(comment.id)) {
-      console.warn(`Cycle or max depth detected for comment ${comment.id} at depth ${depth}`);
-      return null;
-    }
-    
-    // Add to visited set for this render path
-    const newVisited = new Set(visited);
-    newVisited.add(comment.id);
-    
-    return (
-      <div key={comment.id}>
-        <div 
-          className="rounded-lg p-3"
-          style={{
-            backgroundColor: 'hsl(210, 20%, 12%)',
-            border: '1px solid hsl(210, 15%, 18%)'
-          }}
-        >
-        <div className="flex gap-3">
-          <Avatar className="h-6 w-6 flex-shrink-0">
-            <AvatarImage src={undefined} />
-            <AvatarFallback className="bg-gray-600 text-white text-xs">
-              {getUserInitials(comment.authorName || 'A')}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-medium text-white">
-                {comment.authorName || 'Anonymous'}
-              </span>
-              <span className="text-xs text-gray-400">
-                {new Date(comment.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            <div className="text-xs text-gray-200 mb-2">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  img: ({ node, ...props }) => {
-                    // Rewrite image URLs to use share token for public access
-                    const src = props.src;
-                    const rewrittenSrc = src && src.startsWith('/api/files/') && src.includes('/content') 
-                      ? src.replace('/api/files/', `/api/share/${token}/files/`)
-                      : src;
-                    
-                    return (
-                      <img 
-                        {...props}
-                        src={rewrittenSrc}
-                        className="max-w-full h-auto rounded-md my-1 border border-gray-600"
-                        style={{ maxHeight: '200px' }}
-                        onClick={(e) => e.stopPropagation()} 
-                      />
-                    );
-                  },
-                  a: ({ node, href, ...props }) => {
-                    const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
-                    // Rewrite file download URLs to use share token
-                    const rewrittenHref = isFileDownload 
-                      ? href.replace('/api/files/', `/api/share/${token}/files/`)
-                      : href;
-                    
-                    return (
-                      <a 
-                        href={rewrittenHref}
-                        {...props} 
-                        className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isFileDownload) {
-                            e.preventDefault();
-                            window.open(rewrittenHref, '_blank');
-                          }
-                        }}
-                      >
-                        {isFileDownload && <span className="mr-1">📎</span>}
-                        {props.children}
-                      </a>
-                    );
-                  }
-                }}
-              >
-                {comment.content}
-              </ReactMarkdown>
-            </div>
-            
-            {/* Reactions Display */}
-            <ReactionsDisplay commentId={comment.id} />
-            
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3 mt-1">
-              <button 
-                className="text-xs text-gray-300 hover:text-cyan-400 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setReplyingToId(replyingToId === comment.id ? null : comment.id);
-                }}
-              >
-                Reply
-              </button>
-              
-              {canDeleteComment(comment) && (
-                <button
-                  className="text-xs text-gray-300 hover:text-red-500 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm("Are you sure you want to delete this comment?")) {
-                      deleteCommentMutation.mutate(comment.id);
-                    }
-                  }}
-                  disabled={deleteCommentMutation.isPending}
-                >
-                  <Trash2 className="h-3 w-3 inline mr-1" />
-                  Delete
-                </button>
-              )}
-              
-              <div style={{scale: '0.8', transformOrigin: 'left'}}>
-                <ReactionPicker commentId={comment.id} />
-              </div>
-            </div>
-
-            {/* Reply Form */}
-            {replyingToId === comment.id && (
-              <div className="mt-3">
-                <div 
-                  className="rounded-lg p-3"
-                  style={{
-                    backgroundColor: 'hsl(210, 20%, 12%)',
-                    border: '1px solid hsl(210, 15%, 18%)'
-                  }}
-                >
-                  <PublicCommentForm 
-                    token={token} 
-                    fileId={comment.fileId} 
-                    currentTime={comment.timestamp || 0}
-                    parentId={comment.id}
-                    onSuccess={() => setReplyingToId(null)}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Render children recursively with safety checks */}
-            {comment.children?.length > 0 && (
-              <div className="mt-3 ml-4 pl-4 border-l border-gray-600 space-y-3">
-                {comment.children.map((child: any) => (
-                  <RenderReplies 
-                    key={child.id}
-                    comment={child} 
-                    depth={depth + 1} 
-                    visited={newVisited}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Filter for top-level comments only (no parent)
-  const topLevelComments = buildCommentThreads;
+  const heading = file.projectName || "Shared file";
 
   return (
-    <div className="space-y-3 w-full max-w-none" data-testid="comments-list">
-      {topLevelComments.map((comment: any, index: number) => (
-        <div 
-          key={comment.id} 
-          onClick={() => {
-            onCommentSelect?.(comment);
-            if (comment.timestamp !== null) onTimestampClick?.(comment.timestamp!);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onCommentSelect?.(comment);
-              if (comment.timestamp !== null) onTimestampClick?.(comment.timestamp!);
-            }
-          }}
-          className={`rounded-lg p-4 transition-colors cursor-pointer hover:opacity-80`}
-          style={{
-            backgroundColor: 'hsl(210, 20%, 12%)',
-            border: '1px solid hsl(210, 15%, 18%)'
-          }}
-          title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp!)} in the video` : undefined}
-          role={comment.timestamp !== null ? 'button' : undefined}
-          tabIndex={comment.timestamp !== null ? 0 : undefined}
-          data-testid={`comment-${comment.id}`}
-          onMouseEnter={() => onCommentHover?.(comment)}
-          onMouseLeave={() => onCommentLeave?.()}
-        >
-          <div className="flex gap-3">
-            {/* Avatar */}
-            <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarImage src={undefined} />
-              <AvatarFallback className="bg-gray-600 text-white text-xs">
-                {getUserInitials(comment.authorName || 'A')}
-              </AvatarFallback>
-            </Avatar>
-
-            {/* Comment Content */}
-            <div className="flex-1 min-w-0">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-white">
-                    {comment.authorName || 'Anonymous'}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {new Date(comment.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Timestamp */}
-              {comment.timestamp !== null && (
-                <div className="inline-flex items-center gap-1.5 mb-2">
-                  <span
-                    className="text-amber-400 font-mono text-sm"
-                    data-testid={`timestamp-${comment.id}`}
-                  >
-                    {formatTime(comment.timestamp)}
-                  </span>
-                  {(comment as any).annotations && (
-                    <PenTool className="h-3 w-3 text-yellow-400" title="Has drawing annotation" />
-                  )}
-                  {comment.isResolved && (
-                    <Check className="h-3 w-3 text-green-500" />
-                  )}
-                </div>
-              )}
-
-              {/* Comment Text */}
-              <div className="text-sm text-gray-200 mb-3">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    img: ({ node, ...props }) => {
-                      // Rewrite image URLs to use share token for public access
-                      const src = props.src;
-                      const rewrittenSrc = src && src.startsWith('/api/files/') && src.includes('/content') 
-                        ? src.replace('/api/files/', `/api/share/${token}/files/`)
-                        : src;
-                      
-                      return (
-                        <img 
-                          {...props}
-                          src={rewrittenSrc}
-                          className="max-w-full h-auto rounded-md my-1 border border-gray-600"
-                          style={{ maxHeight: '300px' }}
-                          onClick={(e) => e.stopPropagation()} 
-                        />
-                      );
-                    },
-                    a: ({ node, href, ...props }) => {
-                      const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
-                      // Rewrite file download URLs to use share token
-                      const rewrittenHref = isFileDownload 
-                        ? href.replace('/api/files/', `/api/share/${token}/files/`)
-                        : href;
-                      
-                      return (
-                        <a 
-                          href={rewrittenHref}
-                          {...props} 
-                          className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isFileDownload) {
-                              e.preventDefault();
-                              window.open(rewrittenHref, '_blank');
-                            }
-                          }}
-                        >
-                          {isFileDownload && <span className="mr-1">📎</span>}
-                          {props.children}
-                        </a>
-                      );
-                    }
-                  }}
-                >
-                  {comment.content.length > 100 ? `${comment.content.substring(0, 100)}...` : comment.content}
-                </ReactMarkdown>
-              </div>
-
-              {/* Reactions Display */}
-              <ReactionsDisplay commentId={comment.id} />
-              
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3 mt-2">
-                <button 
-                  className="text-xs text-gray-300 hover:text-cyan-400 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setReplyingToId(replyingToId === comment.id ? null : comment.id);
-                  }}
-                >
-                  {replyingToId === comment.id ? "Cancel Reply" : "Reply"}
-                </button>
-                
-                {canDeleteComment(comment.id) && (
-                  <button 
-                    className="text-xs text-gray-300 hover:text-red-500 transition-colors flex items-center gap-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteComment(comment.id);
-                    }}
-                    disabled={deleteCommentMutation.isPending}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Delete
-                  </button>
-                )}
-                
-                <div style={{scale: '0.9', transformOrigin: 'left'}}>
-                  <ReactionPicker commentId={comment.id} />
-                </div>
-              </div>
-
-              {/* Reply Form */}
-              {replyingToId === comment.id && (
-                <div className="mt-3">
-                  <div 
-                    className="rounded-lg p-3"
-                    style={{
-                      backgroundColor: 'hsl(210, 20%, 12%)',
-                      border: '1px solid hsl(210, 15%, 18%)'
-                    }}
-                  >
-                    <PublicCommentForm 
-                      token={token} 
-                      fileId={comment.fileId} 
-                      currentTime={comment.timestamp || 0}
-                      parentId={comment.id}
-                      onSuccess={() => setReplyingToId(null)}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Nested Replies - Render children with cycle-safe recursion */}
-              {comment.children?.length > 0 && (
-                <div className="mt-3 ml-4 pl-4 border-l border-gray-600 space-y-3">
-                  {comment.children.map((child: any) => (
-                    <RenderReplies 
-                      key={child.id}
-                      comment={child} 
-                      depth={1} 
-                      visited={new Set()}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+    <div className="h-screen w-screen flex flex-col bg-black text-gray-100 overflow-hidden">
+      {/* Slim top bar */}
+      <header className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Logo className="h-6 w-auto" />
+          <div className="text-xs text-gray-400 truncate hidden sm:block">{heading}</div>
+          <span className="text-gray-600 hidden sm:inline">/</span>
+          <div
+            className="font-medium text-sm truncate text-gray-100"
+            data-testid="text-share-filename"
+          >
+            {file.filename}
           </div>
         </div>
-      ))}
+        <div className="flex items-center gap-1.5">
+          <Dialog open={rcOpen} onOpenChange={setRcOpen}>
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 text-xs"
+                data-testid="button-request-changes"
+              >
+                <MessageSquareWarning className="h-3.5 w-3.5 mr-1" />
+                Request Changes
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Request changes</DialogTitle>
+              </DialogHeader>
+              <form
+                onSubmit={requestChangesForm.handleSubmit((d) =>
+                  requestChangesMutation.mutate(d),
+                )}
+                className="space-y-4"
+              >
+                <div className="space-y-1.5">
+                  <Label htmlFor="rc-name">Your name</Label>
+                  <Input
+                    id="rc-name"
+                    {...requestChangesForm.register("requesterName")}
+                    data-testid="input-rc-name"
+                  />
+                  {requestChangesForm.formState.errors.requesterName && (
+                    <div className="text-xs text-destructive">
+                      {requestChangesForm.formState.errors.requesterName.message}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="rc-email">Your email</Label>
+                  <Input
+                    id="rc-email"
+                    type="email"
+                    {...requestChangesForm.register("requesterEmail")}
+                    data-testid="input-rc-email"
+                  />
+                  {requestChangesForm.formState.errors.requesterEmail && (
+                    <div className="text-xs text-destructive">
+                      {requestChangesForm.formState.errors.requesterEmail.message}
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="submit"
+                    disabled={requestChangesMutation.isPending}
+                    data-testid="button-submit-rc"
+                  >
+                    {requestChangesMutation.isPending ? "Sending…" : "Send request"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <a
+            className="inline-flex items-center text-xs h-7 px-2.5 rounded-md bg-primary text-primary-foreground hover:opacity-90"
+            href={`/api/share/${token}/qualities/720p`}
+            download={file.filename}
+            data-testid="button-download-share"
+          >
+            <Download className="h-3.5 w-3.5 mr-1" /> Download
+          </a>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      {/* Body: player + sidebar */}
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden bg-black">
+        {/* Player column */}
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col bg-black">
+          <div className="flex-1 min-h-0 w-full flex items-center justify-center bg-black">
+            {isVideo && (
+              <video
+                ref={mediaRef as any}
+                controls
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-contain bg-black"
+                data-testid="share-video-player"
+              >
+                <source src={mediaSrc720} type="video/mp4" />
+                <source src={mediaSrc} type="video/mp4" />
+              </video>
+            )}
+            {isAudio && (
+              <div className="w-full h-full p-12 flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/5 to-primary/20">
+                <Music className="h-16 w-16 text-primary" />
+                <audio
+                  ref={mediaRef as any}
+                  src={mediaSrc}
+                  controls
+                  className="w-full max-w-md"
+                />
+              </div>
+            )}
+            {isImage && (
+              <img
+                src={mediaSrc}
+                alt={file.filename}
+                className="max-w-full max-h-full object-contain"
+                data-testid="share-image-preview"
+              />
+            )}
+            {!isVideo && !isAudio && !isImage && (
+              <div className="p-12 text-center text-gray-500">
+                <FileIcon className="h-12 w-12 mx-auto mb-2" />
+                No preview available for this file type.
+              </div>
+            )}
+          </div>
+
+          {/* Timecode bar */}
+          {(isVideo || isAudio) && (
+            <div
+              className="shrink-0 flex items-center justify-center gap-2 px-4 py-2 border-t border-gray-800 bg-black"
+              data-testid="timecode-bar"
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-gray-900/70 hover:bg-gray-800 border border-gray-700 px-3 py-1.5 font-mono text-sm text-gray-100"
+                    data-testid="button-timecode-format"
+                    aria-label="Time format"
+                    title="Time format"
+                  >
+                    <span data-testid="text-timecode">
+                      {formatTimecode(currentTime, timeFormat)}
+                    </span>
+                    <ChevronDown className="h-3 w-3 text-gray-400" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="bg-gray-900 border-gray-700 text-gray-100 min-w-[140px]"
+                >
+                  <DropdownMenuLabel className="text-gray-400 text-xs font-normal">
+                    Time Format
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  {(["Frames", "Standard", "Timecode"] as TimeFormat[]).map((fmt) => (
+                    <DropdownMenuItem
+                      key={fmt}
+                      onClick={() => setTimeFormat(fmt)}
+                      className={cn(
+                        "cursor-pointer focus:bg-gray-800 focus:text-gray-100",
+                        timeFormat === fmt && "text-primary",
+                      )}
+                      data-testid={`menu-timeformat-${fmt.toLowerCase()}`}
+                    >
+                      {fmt}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <aside
+          className="w-full lg:w-[360px] shrink-0 flex flex-col bg-white dark:bg-[#0a0d12] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 min-h-0 overflow-hidden"
+          data-testid="share-sidebar"
+        >
+          <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
+            <TabsList className="m-3 mb-0 grid grid-cols-1">
+              <TabsTrigger value="comments" data-testid="tab-comments">
+                Comments {commentsQ.data ? `(${commentsQ.data.length})` : ""}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent
+              value="comments"
+              className="data-[state=active]:flex flex-col flex-1 min-h-0 mt-2"
+            >
+              <div
+                className="flex-1 min-h-0 overflow-y-auto px-3 space-y-2"
+                data-testid="share-comments-list"
+              >
+                {commentsQ.isLoading && (
+                  <div className="text-sm text-neutral-500 px-1 py-2">Loading…</div>
+                )}
+                {commentsQ.data?.length === 0 && (
+                  <div className="text-sm text-neutral-500 px-1 py-6 text-center">
+                    No comments yet. Be the first to leave one.
+                  </div>
+                )}
+                {commentsQ.data?.map((c, i) => {
+                  const created = new Date(c.createdAt);
+                  const dateStr = `${created.getMonth() + 1}/${created.getDate()}/${created.getFullYear()}`;
+                  return (
+                    <div
+                      key={c.id}
+                      className="rounded-lg border border-neutral-200 dark:border-[hsl(var(--comments-card-border))] bg-white dark:bg-[hsl(var(--comments-card-bg))] p-3"
+                      data-testid={`comment-${c.id}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="h-7 w-7 rounded-full bg-neutral-200 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                          <svg
+                            className="h-4 w-4 text-neutral-500 dark:text-gray-400"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <span className="font-medium text-sm truncate text-neutral-900 dark:text-gray-100">
+                                {c.authorName}
+                              </span>
+                              <span className="text-xs text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                                {dateStr}
+                              </span>
+                              {c.timestamp != null && (
+                                <button
+                                  onClick={() => seekTo(c.timestamp!)}
+                                  className="text-xs font-mono px-2 py-1 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))] hover:opacity-80 transition-opacity"
+                                  data-testid={`button-seek-${c.id}`}
+                                >
+                                  {fmtTime(c.timestamp)}
+                                </button>
+                              )}
+                            </div>
+                            <span className="text-xs text-neutral-400 dark:text-[hsl(var(--comments-muted))] shrink-0">
+                              #{i + 1}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 text-sm text-neutral-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+                            {c.content}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Sticky composer */}
+              <div className="border-t border-neutral-200 dark:border-[hsl(var(--comments-card-border))] p-3 space-y-2 shrink-0 bg-white dark:bg-[#0f1218]">
+                <Input
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
+                  data-testid="input-share-author"
+                />
+                <div className="relative">
+                  <textarea
+                    ref={commentInputRef}
+                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pr-10 min-h-[60px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
+                    placeholder={
+                      isVideo || isAudio
+                        ? `Add a comment at ${fmtTime(currentTime) || "0:00"}...`
+                        : "Add a comment..."
+                    }
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key === "Enter" &&
+                        !e.shiftKey &&
+                        content.trim() &&
+                        !post.isPending
+                      ) {
+                        e.preventDefault();
+                        post.mutate();
+                      }
+                    }}
+                    data-testid="textarea-share-comment"
+                  />
+                  <Button
+                    size="icon"
+                    className="absolute bottom-2 right-2 h-7 w-7"
+                    disabled={!content.trim() || post.isPending}
+                    onClick={() => post.mutate()}
+                    data-testid="button-post-share-comment"
+                    title="Post"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                {(isVideo || isAudio) && (
+                  <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                    <span>Will be posted at {fmtTime(currentTime) || "00:00"}</span>
+                    <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
+                      {fmtTime(currentTime) || "00:00"}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </aside>
+      </div>
     </div>
   );
 }
