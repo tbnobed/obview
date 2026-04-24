@@ -533,6 +533,7 @@ export default function MediaPlayer({
           break;
         case 'ArrowLeft':
           e.preventDefault();
+          e.stopImmediatePropagation();
           if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
             const idx = files.findIndex(f => f.id === file?.id);
             if (idx > 0) onSelectFile(files[idx - 1].id);
@@ -546,6 +547,7 @@ export default function MediaPlayer({
           break;
         case 'ArrowRight':
           e.preventDefault();
+          e.stopImmediatePropagation();
           if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
             const idx = files.findIndex(f => f.id === file?.id);
             if (idx < files.length - 1) onSelectFile(files[idx + 1].id);
@@ -639,8 +641,8 @@ export default function MediaPlayer({
       }
     };
 
-    document.addEventListener('keydown', handleGlobalKeyDown);
-    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+    document.addEventListener('keydown', handleGlobalKeyDown, true);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown, true);
   }, [file, files, mediaError, isPlaying, isFullscreen, isMuted, duration, frameRate, inPoint]);
 
   // Extract frame rate from video when it loads metadata
@@ -1058,6 +1060,7 @@ export default function MediaPlayer({
       // Left arrow: 1 frame back; Shift+Left: 10 frames back; Cmd+Shift+Left: previous asset
       case 'ArrowLeft':
         e.preventDefault();
+        e.stopImmediatePropagation();
         if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
           const idx = files.findIndex(f => f.id === file?.id);
           if (idx > 0) onSelectFile(files[idx - 1].id);
@@ -1073,6 +1076,7 @@ export default function MediaPlayer({
       // Right arrow: 1 frame forward; Shift+Right: 10 frames forward; Cmd+Shift+Right: next asset
       case 'ArrowRight':
         e.preventDefault();
+        e.stopImmediatePropagation();
         if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
           const idx = files.findIndex(f => f.id === file?.id);
           if (idx < files.length - 1) onSelectFile(files[idx + 1].id);

@@ -823,6 +823,7 @@ function FileViewer({
           break;
         case "ArrowLeft": {
           e.preventDefault();
+          e.stopImmediatePropagation();
           stopJKLShuttle();
           const framesBack = e.shiftKey ? 10 : 1;
           const t = Math.max(0, el.currentTime - framesBack / frameRate);
@@ -832,6 +833,7 @@ function FileViewer({
         }
         case "ArrowRight": {
           e.preventDefault();
+          e.stopImmediatePropagation();
           stopJKLShuttle();
           const framesFwd = e.shiftKey ? 10 : 1;
           const t = Math.min(
@@ -900,9 +902,9 @@ function FileViewer({
           break;
       }
     };
-    document.addEventListener("keydown", handleGlobalKeyDown);
+    document.addEventListener("keydown", handleGlobalKeyDown, true);
     return () => {
-      document.removeEventListener("keydown", handleGlobalKeyDown);
+      document.removeEventListener("keydown", handleGlobalKeyDown, true);
       stopJKLShuttle();
     };
   }, [file.id, isVideo, isAudio]);

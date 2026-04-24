@@ -431,6 +431,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           break;
         case "ArrowLeft": {
           e.preventDefault();
+          e.stopImmediatePropagation();
           stopJKLShuttle();
           const framesBack = e.shiftKey ? 10 : 1;
           const t = Math.max(0, el.currentTime - framesBack / frameRate);
@@ -440,6 +441,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
         }
         case "ArrowRight": {
           e.preventDefault();
+          e.stopImmediatePropagation();
           stopJKLShuttle();
           const framesFwd = e.shiftKey ? 10 : 1;
           const t = Math.min(
@@ -508,9 +510,9 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           break;
       }
     };
-    document.addEventListener("keydown", handler);
+    document.addEventListener("keydown", handler, true);
     return () => {
-      document.removeEventListener("keydown", handler);
+      document.removeEventListener("keydown", handler, true);
       stopJKLShuttle();
     };
   }, [file.id, isVideo, isAudio]);
