@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock, AlertCircle, Download, MessageSquare, FileVideo, ChevronLeft, Send } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Lock,
+  AlertCircle,
+  Download,
+  MessageSquare,
+  FileVideo,
+  ChevronLeft,
+  Send,
+  Play,
+  Image as ImageIcon,
+  Music,
+  File as FileIcon,
+} from "lucide-react";
 import Logo from "@/components/ui/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
+import { formatTimeAgo } from "@/lib/utils/formatters";
+import { cn } from "@/lib/utils";
 
 type ShareInfo = {
   scopeType: "project" | "folder" | "file";
@@ -53,15 +69,33 @@ type Comment = {
 
 function fmtBytes(n: number) {
   if (!n) return "0 B";
-  const u = ["B", "KB", "MB", "GB", "TB"]; let i = 0; let v = n;
-  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  const u = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let v = n;
+  while (v >= 1024 && i < u.length - 1) {
+    v /= 1024;
+    i++;
+  }
   return `${v.toFixed(v >= 100 || i === 0 ? 0 : 1)} ${u[i]}`;
+}
+
+function fmtTime(seconds: number | null) {
+  if (seconds === null || seconds === undefined) return null;
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+function fileKind(t: string) {
+  if (t === "video" || t?.startsWith("video/")) return "video";
+  if (t === "audio" || t?.startsWith("audio/")) return "audio";
+  if (t === "image" || t?.startsWith("image/")) return "image";
+  return "other";
 }
 
 export default function MultiSharePage() {
   const params = useParams();
   const token = params.token as string;
-  const { toast } = useToast();
 
   const infoQ = useQuery<ShareInfo>({
     queryKey: ["share-info", token],
@@ -74,7 +108,9 @@ export default function MultiSharePage() {
   });
 
   const [unlocked, setUnlocked] = useState(false);
-  useEffect(() => { if (infoQ.data?.unlocked) setUnlocked(true); }, [infoQ.data?.unlocked]);
+  useEffect(() => {
+    if (infoQ.data?.unlocked) setUnlocked(true);
+  }, [infoQ.data?.unlocked]);
 
   const manifestQ = useQuery<Manifest>({
     queryKey: ["share-manifest", token],
@@ -83,56 +119,117 @@ export default function MultiSharePage() {
       if (!r.ok) throw new Error("locked");
       return r.json();
     },
-    enabled: !!infoQ.data && !infoQ.data.expired && (unlocked || (!infoQ.data.requiresPassword && !infoQ.data.requiresEmail)),
+    enabled:
+      !!infoQ.data &&
+      !infoQ.data.expired &&
+      (unlocked ||
+        (!infoQ.data.requiresPassword && !infoQ.data.requiresEmail)),
     retry: false,
   });
 
   const [activeFile, setActiveFile] = useState<ManifestFile | null>(null);
 
   if (infoQ.isLoading) {
-    return <CenteredShell><p className="text-sm text-muted-foreground">Loading...</p></CenteredShell>;
+    return (
+      <CenteredShell>
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </CenteredShell>
+    );
   }
   if (infoQ.isError) {
-    return <CenteredShell>
-      <Alert variant="destructive"><AlertCircle className="h-4 w-4" />
-        <AlertDescription>This share link is invalid, expired, or revoked.</AlertDescription>
-      </Alert>
-    </CenteredShell>;
+    return (
+      <CenteredShell>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            This share link is invalid, expired, or revoked.
+          </AlertDescription>
+        </Alert>
+      </CenteredShell>
+    );
   }
   const info = infoQ.data!;
   if (info.expired) {
-    return <CenteredShell>
-      <Alert variant="destructive"><AlertCircle className="h-4 w-4" />
-        <AlertDescription>This share link has expired.</AlertDescription>
-      </Alert>
-    </CenteredShell>;
+    return (
+      <CenteredShell>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>This share link has expired.</AlertDescription>
+        </Alert>
+      </CenteredShell>
+    );
   }
 
   if (!unlocked && (info.requiresPassword || info.requiresEmail)) {
-    return <UnlockGate token={token} info={info} onUnlocked={() => { setUnlocked(true); infoQ.refetch(); }} />;
+    return (
+      <UnlockGate
+        token={token}
+        info={info}
+        onUnlocked={() => {
+          setUnlocked(true);
+          infoQ.refetch();
+        }}
+      />
+    );
   }
 
-  const heading = info.name || info.scopeName || (info.scopeType === "project" ? "Shared project" : info.scopeType === "folder" ? "Shared folder" : "Shared file");
+  const heading =
+    info.name ||
+    info.scopeName ||
+    (info.scopeType === "project"
+      ? "Shared project"
+      : info.scopeType === "folder"
+        ? "Shared folder"
+        : "Shared file");
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto flex items-center justify-between p-4">
-          <div className="flex items-center gap-3"><Logo /><div>
-            <div className="text-sm text-muted-foreground capitalize">{info.scopeType} share</div>
-            <h1 className="text-lg font-semibold" data-testid="share-heading">{heading}</h1>
-          </div></div>
-          {activeFile && (
-            <Button variant="ghost" size="sm" onClick={() => setActiveFile(null)}>
-              <ChevronLeft className="h-4 w-4 mr-1" /> Back to files
-            </Button>
-          )}
+    <div className="min-h-screen bg-neutral-50 dark:bg-[#0a0d14] text-neutral-900 dark:text-gray-100">
+      {/* App-style header */}
+      <header className="bg-white dark:bg-gray-900 border-b border-neutral-200 dark:border-gray-800">
+        <div className="container mx-auto flex items-center justify-between px-4 py-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <Logo size="sm" />
+            <div className="hidden sm:block min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-neutral-500 dark:text-gray-400">
+                {info.scopeType === "project"
+                  ? "Project share"
+                  : info.scopeType === "folder"
+                    ? "Folder share"
+                    : "File share"}
+              </div>
+              <h1
+                className="text-sm font-semibold truncate text-neutral-900 dark:text-gray-100"
+                data-testid="share-heading"
+              >
+                {heading}
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {activeFile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveFile(null)}
+                className="text-neutral-700 dark:text-gray-300"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Back to files</span>
+              </Button>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto p-4">
+      <main className="container mx-auto px-4 py-6">
         {!activeFile ? (
-          <FileList manifest={manifestQ.data} loading={manifestQ.isLoading} onPick={setActiveFile} token={token} />
+          <FileList
+            manifest={manifestQ.data}
+            loading={manifestQ.isLoading}
+            onPick={setActiveFile}
+            token={token}
+          />
         ) : (
           <FileViewer
             token={token}
@@ -148,13 +245,21 @@ export default function MultiSharePage() {
 
 function CenteredShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-[#0a0d14] p-4">
       <div className="max-w-md w-full">{children}</div>
     </div>
   );
 }
 
-function UnlockGate({ token, info, onUnlocked }: { token: string; info: ShareInfo; onUnlocked: () => void }) {
+function UnlockGate({
+  token,
+  info,
+  onUnlocked,
+}: {
+  token: string;
+  info: ShareInfo;
+  onUnlocked: () => void;
+}) {
   const { toast } = useToast();
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -164,7 +269,10 @@ function UnlockGate({ token, info, onUnlocked }: { token: string; info: ShareInf
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ password: password || undefined, email: email || undefined }),
+        body: JSON.stringify({
+          password: password || undefined,
+          email: email || undefined,
+        }),
       });
       if (!r.ok) {
         const data = await r.json().catch(() => ({}));
@@ -172,27 +280,56 @@ function UnlockGate({ token, info, onUnlocked }: { token: string; info: ShareInf
       }
     },
     onSuccess: onUnlocked,
-    onError: (e: Error) => toast({ title: "Unlock failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) =>
+      toast({
+        title: "Unlock failed",
+        description: e.message,
+        variant: "destructive",
+      }),
   });
   return (
     <CenteredShell>
-      <Card>
+      <Card className="bg-white dark:bg-gray-900 border-neutral-200 dark:border-gray-800">
         <CardContent className="p-6 space-y-4">
-          <div className="flex items-center gap-2"><Lock className="h-5 w-5" /><h2 className="text-lg font-semibold">Reviewer access</h2></div>
-          <p className="text-sm text-muted-foreground">{info.name || info.scopeName}</p>
+          <div className="flex items-center justify-center mb-2">
+            <Logo size="md" />
+          </div>
+          <div className="flex items-center gap-2 justify-center">
+            <Lock className="h-4 w-4 text-primary dark:text-[#10a37f]" />
+            <h2 className="text-base font-semibold">Reviewer access</h2>
+          </div>
+          <p className="text-sm text-center text-neutral-500 dark:text-gray-400">
+            {info.name || info.scopeName}
+          </p>
           {info.requiresEmail && (
             <div className="space-y-1">
               <Label htmlFor="g-email">Your email</Label>
-              <Input id="g-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" />
+              <Input
+                id="g-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+              />
             </div>
           )}
           {info.requiresPassword && (
             <div className="space-y-1">
               <Label htmlFor="g-pw">Password</Label>
-              <Input id="g-pw" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+              <Input
+                id="g-pw"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
           )}
-          <Button className="w-full" disabled={m.isPending} onClick={() => m.mutate()} data-testid="button-unlock-share">
+          <Button
+            className="w-full"
+            disabled={m.isPending}
+            onClick={() => m.mutate()}
+            data-testid="button-unlock-share"
+          >
             {m.isPending ? "Unlocking..." : "Continue"}
           </Button>
         </CardContent>
@@ -201,40 +338,49 @@ function UnlockGate({ token, info, onUnlocked }: { token: string; info: ShareInf
   );
 }
 
-function FileList({ manifest, loading, onPick, token }: { manifest?: Manifest; loading: boolean; onPick: (f: ManifestFile) => void; token: string }) {
-  if (loading || !manifest) return <p className="text-sm text-muted-foreground">Loading files...</p>;
-  if (manifest.projects.length === 0) return <p className="text-sm text-muted-foreground">No files in this share.</p>;
+function FileList({
+  manifest,
+  loading,
+  onPick,
+  token,
+}: {
+  manifest?: Manifest;
+  loading: boolean;
+  onPick: (f: ManifestFile) => void;
+  token: string;
+}) {
+  if (loading || !manifest) {
+    return (
+      <p className="text-sm text-neutral-500 dark:text-gray-400">
+        Loading files...
+      </p>
+    );
+  }
+  if (manifest.projects.length === 0) {
+    return (
+      <p className="text-sm text-neutral-500 dark:text-gray-400">
+        No files in this share.
+      </p>
+    );
+  }
   return (
-    <div className="space-y-6">
-      {manifest.projects.map(p => (
+    <div className="space-y-8">
+      {manifest.projects.map((p) => (
         <section key={p.id} data-testid={`share-project-${p.id}`}>
-          <h2 className="text-sm font-semibold mb-2">{p.name}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {p.files.map(f => (
-              <button
+          <h2 className="text-sm font-semibold mb-3 text-neutral-700 dark:text-gray-200 uppercase tracking-wider">
+            {p.name}
+            <span className="ml-2 text-xs font-normal normal-case text-neutral-400 dark:text-gray-500">
+              {p.files.length} file{p.files.length === 1 ? "" : "s"}
+            </span>
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {p.files.map((f) => (
+              <FileCard
                 key={f.id}
+                file={f}
+                token={token}
                 onClick={() => onPick(f)}
-                disabled={!f.isAvailable}
-                className="text-left rounded-lg border bg-card p-3 hover:border-primary transition disabled:opacity-50"
-                data-testid={`share-file-${f.id}`}
-              >
-                <div className="aspect-video rounded bg-muted flex items-center justify-center overflow-hidden">
-                  {f.fileType === "video" || f.fileType?.startsWith("video/") ? (
-                    <video
-                      preload="metadata"
-                      muted
-                      className="w-full h-full object-contain bg-black"
-                      src={`/api/public/share/${token}/files/${f.id}/scrub`}
-                    />
-                  ) : f.fileType === "image" || f.fileType?.startsWith("image/") ? (
-                    <img className="w-full h-full object-contain" src={`/api/public/share/${token}/files/${f.id}/content`} alt={f.filename} />
-                  ) : (
-                    <FileVideo className="h-10 w-10 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="mt-2 text-sm font-medium truncate" title={f.filename}>{f.filename}</div>
-                <div className="text-xs text-muted-foreground">v{f.version} · {fmtBytes(f.fileSize)}</div>
-              </button>
+              />
             ))}
           </div>
         </section>
@@ -243,15 +389,101 @@ function FileList({ manifest, loading, onPick, token }: { manifest?: Manifest; l
   );
 }
 
-function FileViewer({ token, file, allowComments, allowDownloads }: { token: string; file: ManifestFile; allowComments: boolean; allowDownloads: boolean }) {
-  const isVideo = file.fileType === "video" || file.fileType?.startsWith("video/");
-  const isAudio = file.fileType === "audio" || file.fileType?.startsWith("audio/");
-  const isImage = file.fileType === "image" || file.fileType?.startsWith("image/");
+function FileCard({
+  file,
+  token,
+  onClick,
+}: {
+  file: ManifestFile;
+  token: string;
+  onClick: () => void;
+}) {
+  const kind = fileKind(file.fileType);
+  return (
+    <button
+      onClick={onClick}
+      disabled={!file.isAvailable}
+      className={cn(
+        "group text-left rounded-lg overflow-hidden transition-all duration-200",
+        "bg-white dark:bg-[#1a1f26] border border-neutral-200 dark:border-gray-700",
+        "hover:shadow-lg hover:border-primary/40 dark:hover:border-gray-600",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+      )}
+      data-testid={`share-file-${file.id}`}
+    >
+      <div className="relative aspect-video bg-neutral-100 dark:bg-gray-900 overflow-hidden">
+        {kind === "video" ? (
+          <>
+            <video
+              preload="metadata"
+              muted
+              className="w-full h-full object-cover bg-black"
+              src={`/api/public/share/${token}/files/${file.id}/scrub`}
+            />
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+              <div className="bg-white/90 rounded-full p-3 shadow-lg">
+                <Play className="h-5 w-5 text-gray-900 fill-gray-900" />
+              </div>
+            </div>
+          </>
+        ) : kind === "image" ? (
+          <img
+            src={`/api/public/share/${token}/files/${file.id}/content`}
+            alt={file.filename}
+            className="w-full h-full object-cover"
+          />
+        ) : kind === "audio" ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/30 dark:from-[#10a37f]/10 dark:to-[#10a37f]/30">
+            <Music className="h-10 w-10 text-primary dark:text-[#10a37f]" />
+          </div>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-gray-800">
+            <FileIcon className="h-10 w-10 text-neutral-400 dark:text-gray-500" />
+          </div>
+        )}
+        <div className="absolute top-2 left-2">
+          <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/60 text-white font-medium">
+            {kind}
+          </span>
+        </div>
+      </div>
+      <div className="p-3">
+        <div
+          className="text-sm font-medium truncate text-neutral-900 dark:text-gray-100"
+          title={file.filename}
+        >
+          {file.filename}
+        </div>
+        <div className="text-xs text-neutral-500 dark:text-gray-400 mt-0.5">
+          v{file.version} · {fmtBytes(file.fileSize)}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function FileViewer({
+  token,
+  file,
+  allowComments,
+  allowDownloads,
+}: {
+  token: string;
+  file: ManifestFile;
+  allowComments: boolean;
+  allowDownloads: boolean;
+}) {
+  const kind = fileKind(file.fileType);
+  const isVideo = kind === "video";
+  const isAudio = kind === "audio";
+  const isImage = kind === "image";
 
   const commentsQ = useQuery<Comment[]>({
     queryKey: ["share-comments", token, file.id],
     queryFn: async () => {
-      const r = await fetch(`/api/public/share/${token}/files/${file.id}/comments`);
+      const r = await fetch(
+        `/api/public/share/${token}/files/${file.id}/comments`,
+      );
       if (!r.ok) throw new Error("failed");
       return r.json();
     },
@@ -260,21 +492,49 @@ function FileViewer({ token, file, allowComments, allowDownloads }: { token: str
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const { toast } = useToast();
+
+  const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
+  const seekTo = (t: number) => {
+    const el = mediaRef.current;
+    if (el) {
+      el.currentTime = t;
+      el.play?.().catch(() => {});
+    }
+  };
+
   const post = useMutation({
     mutationFn: async () => {
-      const r = await fetch(`/api/public/share/${token}/files/${file.id}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ content, displayName: name || "Anonymous" }),
-      });
+      const el = mediaRef.current;
+      const ts = el && (isVideo || isAudio) ? Math.floor(el.currentTime) : null;
+      const r = await fetch(
+        `/api/public/share/${token}/files/${file.id}/comments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            content,
+            displayName: name || "Anonymous",
+            timestamp: ts,
+          }),
+        },
+      );
       if (!r.ok) {
         const d = await r.json().catch(() => ({}));
         throw new Error(d.message || "Failed");
       }
     },
-    onSuccess: () => { setContent(""); commentsQ.refetch(); toast({ title: "Comment posted" }); },
-    onError: (e: Error) => toast({ title: "Could not post", description: e.message, variant: "destructive" }),
+    onSuccess: () => {
+      setContent("");
+      commentsQ.refetch();
+      toast({ title: "Comment posted" });
+    },
+    onError: (e: Error) =>
+      toast({
+        title: "Could not post",
+        description: e.message,
+        variant: "destructive",
+      }),
   });
 
   const mediaSrc = isVideo
@@ -282,67 +542,175 @@ function FileViewer({ token, file, allowComments, allowDownloads }: { token: str
     : `/api/public/share/${token}/files/${file.id}/content`;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="lg:col-span-2 space-y-3">
-        <div className="rounded-lg overflow-hidden bg-black">
-          {isVideo && <video src={mediaSrc} controls className="w-full max-h-[70vh] mx-auto bg-black" />}
-          {isAudio && <audio src={mediaSrc} controls className="w-full" />}
-          {isImage && <img src={mediaSrc} alt={file.filename} className="w-full max-h-[70vh] object-contain mx-auto bg-black" />}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Player column */}
+      <div className="lg:col-span-2 space-y-4">
+        <div className="rounded-lg overflow-hidden bg-black border border-neutral-200 dark:border-gray-800 shadow-sm">
+          {isVideo && (
+            <video
+              ref={mediaRef as any}
+              src={mediaSrc}
+              controls
+              className="w-full max-h-[70vh] mx-auto bg-black"
+              data-testid="share-video-player"
+            />
+          )}
+          {isAudio && (
+            <div className="p-12 flex flex-col items-center gap-4 bg-gradient-to-br from-primary/5 to-primary/20 dark:from-[#10a37f]/5 dark:to-[#10a37f]/20">
+              <Music className="h-16 w-16 text-primary dark:text-[#10a37f]" />
+              <audio
+                ref={mediaRef as any}
+                src={mediaSrc}
+                controls
+                className="w-full max-w-md"
+              />
+            </div>
+          )}
+          {isImage && (
+            <img
+              src={mediaSrc}
+              alt={file.filename}
+              className="w-full max-h-[70vh] object-contain mx-auto bg-black"
+            />
+          )}
           {!isVideo && !isAudio && !isImage && (
-            <div className="p-12 text-center text-muted-foreground">No preview available for this file type.</div>
+            <div className="p-12 text-center text-neutral-400 dark:text-gray-500">
+              <FileIcon className="h-12 w-12 mx-auto mb-2" />
+              No preview available for this file type.
+            </div>
           )}
         </div>
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-medium">{file.filename}</div>
-            <div className="text-xs text-muted-foreground">v{file.version} · {fmtBytes(file.fileSize)}</div>
+
+        {/* File meta bar */}
+        <div className="flex items-center justify-between rounded-lg bg-white dark:bg-gray-900 border border-neutral-200 dark:border-gray-800 px-4 py-3">
+          <div className="min-w-0">
+            <div className="font-medium truncate text-neutral-900 dark:text-gray-100">
+              {file.filename}
+            </div>
+            <div className="text-xs text-neutral-500 dark:text-gray-400 mt-0.5">
+              v{file.version} · {fmtBytes(file.fileSize)}
+            </div>
           </div>
           {allowDownloads && (
             <a
-              className="inline-flex items-center text-sm bg-primary text-primary-foreground rounded-md px-3 py-1.5 hover:opacity-90"
+              className="inline-flex items-center text-sm bg-primary text-primary-foreground rounded-md px-3 py-2 hover:opacity-90"
               href={`/api/public/share/${token}/files/${file.id}/download`}
               data-testid="button-download-shared"
             >
-              <Download className="h-4 w-4 mr-1" /> Download
+              <Download className="h-4 w-4 mr-1.5" /> Download
             </a>
           )}
         </div>
       </div>
 
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Comments</h3>
-        {!allowComments && (
-          <Alert><AlertDescription>Comments are disabled for this share link.</AlertDescription></Alert>
-        )}
-        {allowComments && (
-          <div className="space-y-2 rounded-md border p-2">
-            <Input placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />
-            <textarea
-              className="w-full text-sm rounded-md border p-2 min-h-[80px] bg-background"
-              placeholder="Leave feedback..."
-              value={content}
-              onChange={e => setContent(e.target.value)}
-            />
-            <Button size="sm" disabled={!content.trim() || post.isPending} onClick={() => post.mutate()} data-testid="button-post-share-comment">
-              <Send className="h-3.5 w-3.5 mr-1" /> Post
-            </Button>
+      {/* Comments column */}
+      <aside className="space-y-3">
+        <div className="rounded-lg bg-white dark:bg-gray-900 border border-neutral-200 dark:border-gray-800">
+          <div className="px-4 py-3 border-b border-neutral-200 dark:border-gray-800 flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-primary dark:text-[#10a37f]" />
+            <h3 className="text-sm font-semibold">Comments</h3>
+            {commentsQ.data && commentsQ.data.length > 0 && (
+              <span className="ml-auto text-xs text-neutral-500 dark:text-gray-400">
+                {commentsQ.data.length}
+              </span>
+            )}
           </div>
-        )}
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-          {commentsQ.data?.map(c => (
-            <div key={c.id} className="rounded-md border p-2 text-sm" data-testid={`share-comment-${c.id}`}>
-              <div className="text-xs text-muted-foreground mb-1">
-                {c.user?.name || c.authorName || "Anonymous"}
-                {c.timestamp != null && <span> · @ {Math.floor(c.timestamp)}s</span>}
-              </div>
-              <div className="whitespace-pre-wrap">{c.content}</div>
+
+          {!allowComments ? (
+            <div className="p-4">
+              <Alert>
+                <AlertDescription>
+                  Comments are disabled for this share link.
+                </AlertDescription>
+              </Alert>
             </div>
-          ))}
-          {commentsQ.data && commentsQ.data.length === 0 && (
-            <p className="text-xs text-muted-foreground">No comments yet.</p>
+          ) : (
+            <div className="p-3 space-y-2 border-b border-neutral-200 dark:border-gray-800">
+              <Input
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700"
+              />
+              <textarea
+                className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 min-h-[80px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500"
+                placeholder={
+                  isVideo || isAudio
+                    ? "Leave feedback at current playhead..."
+                    : "Leave feedback..."
+                }
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  disabled={!content.trim() || post.isPending}
+                  onClick={() => post.mutate()}
+                  data-testid="button-post-share-comment"
+                >
+                  <Send className="h-3.5 w-3.5 mr-1" />
+                  {post.isPending ? "Posting..." : "Post"}
+                </Button>
+              </div>
+            </div>
           )}
+
+          <div className="max-h-[60vh] overflow-y-auto divide-y divide-neutral-200 dark:divide-gray-800">
+            {commentsQ.isLoading && (
+              <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
+                Loading comments...
+              </p>
+            )}
+            {commentsQ.data?.map((c) => {
+              const author = c.user?.name || c.authorName || "Anonymous";
+              const initial = (author[0] || "U").toUpperCase();
+              return (
+                <div
+                  key={c.id}
+                  className="px-4 py-3 flex gap-2 hover:bg-neutral-50 dark:hover:bg-gray-800/40 transition-colors"
+                  data-testid={`share-comment-${c.id}`}
+                >
+                  <Avatar className="h-7 w-7 mt-0.5 shrink-0">
+                    <AvatarFallback className="bg-primary-100 dark:bg-[#10a37f]/20 text-primary-700 dark:text-[#10a37f] text-[11px] font-medium">
+                      {initial}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-neutral-900 dark:text-gray-100 truncate">
+                        {author}
+                      </span>
+                      <span className="text-[10px] text-neutral-500 dark:text-gray-400 shrink-0">
+                        {formatTimeAgo(new Date(c.createdAt))}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      {c.timestamp != null && (
+                        <button
+                          onClick={() => seekTo(c.timestamp!)}
+                          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-neutral-100 dark:bg-gray-800 text-neutral-800 dark:text-gray-300 hover:bg-primary/10 dark:hover:bg-[#10a37f]/20"
+                          title="Jump to this moment"
+                        >
+                          {fmtTime(c.timestamp)}
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-1 text-xs text-neutral-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                      {c.content}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {commentsQ.data && commentsQ.data.length === 0 && (
+              <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
+                No comments yet. Be the first to leave feedback.
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }

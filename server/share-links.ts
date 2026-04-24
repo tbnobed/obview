@@ -456,11 +456,28 @@ export function registerShareLinkRoutes(
       const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
       if (!file) return res.status(404).json({ message: "Not found" });
       const all = await storage.getUnifiedCommentsByFileV2(file.id);
+
       // Public reviewers may only see public comments. Strip creatorToken.
-      const sanitized = all
+      const visible = all
         .filter((c: any) => c.isPublic === true)
         .map((c: any) => { const { creatorToken, ...rest } = c; return rest; });
-      res.json(sanitized);
+
+      // Enrich with author names so registered users don't appear as "Anonymous"
+      const userIds = Array.from(new Set(visible.map((c: any) => c.userId).filter((x: any) => x != null)));
+      const userMap = new Map<number, string>();
+      await Promise.all(userIds.map(async (uid) => {
+        try {
+          const u = await storage.getUser(uid as number);
+          if (u) userMap.set(u.id, u.name || u.username || "User");
+        } catch {}
+      }));
+
+      const enriched = visible.map((c: any) => ({
+        ...c,
+        user: c.userId && userMap.has(c.userId) ? { name: userMap.get(c.userId) } : null,
+      }));
+
+      res.json(enriched);
     } catch (e) { next(e); }
   });
 
