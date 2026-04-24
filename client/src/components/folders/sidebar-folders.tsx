@@ -189,11 +189,7 @@ export default function SidebarFolders() {
           <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
         </div>
       ) : folders && folders.length > 0 ? (
-        <div className="space-y-0.5">
-          {folders.map((folder: any) => (
-            <SidebarFolderItem key={folder.id} folder={folder} />
-          ))}
-        </div>
+        <FolderGroups folders={folders} currentUserId={user?.id} isAdmin={isAdmin} />
       ) : (
         <div className="px-2 py-2 text-xs text-neutral-500 dark:text-neutral-400">
           No folders yet.{" "}
@@ -204,6 +200,133 @@ export default function SidebarFolders() {
           >
             Create one
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FolderGroups({
+  folders,
+  currentUserId,
+  isAdmin,
+}: {
+  folders: any[];
+  currentUserId?: number;
+  isAdmin: boolean;
+}) {
+  const global = folders.filter((f) => f.isGlobal);
+  const mine = folders.filter((f) => !f.isGlobal && f.createdById === currentUserId);
+  const others = folders.filter((f) => !f.isGlobal && f.createdById !== currentUserId);
+
+  // Group "others" by owner
+  const ownerMap = new Map<number, { ownerId: number; ownerName: string; folders: any[] }>();
+  for (const f of others) {
+    const id = f.createdById;
+    if (!ownerMap.has(id)) {
+      ownerMap.set(id, {
+        ownerId: id,
+        ownerName: f.createdByUsername || `User ${id}`,
+        folders: [],
+      });
+    }
+    ownerMap.get(id)!.folders.push(f);
+  }
+  const owners = Array.from(ownerMap.values()).sort((a, b) =>
+    a.ownerName.localeCompare(b.ownerName)
+  );
+
+  return (
+    <div className="space-y-2">
+      {global.length > 0 && (
+        <FolderSection label="Global" defaultOpen>
+          {global.map((f) => (
+            <SidebarFolderItem key={f.id} folder={f} />
+          ))}
+        </FolderSection>
+      )}
+
+      {mine.length > 0 && (
+        <FolderSection label="My folders" defaultOpen>
+          {mine.map((f) => (
+            <SidebarFolderItem key={f.id} folder={f} />
+          ))}
+        </FolderSection>
+      )}
+
+      {isAdmin && owners.length > 0 && (
+        <FolderSection label={`Other users (${owners.length})`} defaultOpen={false}>
+          {owners.map((owner) => (
+            <OwnerGroup key={owner.ownerId} owner={owner} />
+          ))}
+        </FolderSection>
+      )}
+    </div>
+  );
+}
+
+function FolderSection({
+  label,
+  defaultOpen,
+  children,
+}: {
+  label: string;
+  defaultOpen: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-1 px-2 py-1 text-[10px] uppercase tracking-wider font-semibold text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+      >
+        <ChevronRight
+          className={cn(
+            "h-3 w-3 shrink-0 transition-transform",
+            open && "rotate-90"
+          )}
+        />
+        {label}
+      </button>
+      {open && <div className="space-y-0.5 mt-0.5">{children}</div>}
+    </div>
+  );
+}
+
+function OwnerGroup({ owner }: { owner: { ownerId: number; ownerName: string; folders: any[] } }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "group flex w-full items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors",
+          "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-gray-900/70"
+        )}
+        title={owner.ownerName}
+      >
+        <ChevronRight
+          className={cn(
+            "h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform",
+            open && "rotate-90"
+          )}
+        />
+        <Folder className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-400" />
+        <span className="truncate flex-1 text-left">
+          {owner.ownerName}
+          <span className="ml-1.5 text-xs text-neutral-400 dark:text-neutral-500 font-normal">
+            · {owner.folders.length}
+          </span>
+        </span>
+      </button>
+      {open && (
+        <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-neutral-200 dark:border-gray-800 pl-2">
+          {owner.folders.map((f) => (
+            <SidebarFolderItem key={f.id} folder={f} />
+          ))}
         </div>
       )}
     </div>
