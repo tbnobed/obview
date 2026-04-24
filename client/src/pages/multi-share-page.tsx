@@ -627,6 +627,81 @@ function FileViewer({
     };
   }, [file.id]);
 
+  useEffect(() => {
+    if (!isVideo && !isAudio) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        t?.isContentEditable
+      ) {
+        return;
+      }
+      const el = mediaRef.current;
+      if (!el) return;
+      switch (e.key) {
+        case " ":
+        case "k":
+        case "K":
+          e.preventDefault();
+          if (el.paused) el.play().catch(() => {});
+          else el.pause();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          el.currentTime = Math.max(0, el.currentTime - 5);
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          el.currentTime = Math.min(
+            el.duration || el.currentTime + 5,
+            el.currentTime + 5,
+          );
+          break;
+        case "j":
+        case "J":
+          e.preventDefault();
+          el.currentTime = Math.max(0, el.currentTime - 10);
+          break;
+        case "l":
+        case "L":
+          e.preventDefault();
+          el.currentTime = Math.min(
+            el.duration || el.currentTime + 10,
+            el.currentTime + 10,
+          );
+          break;
+        case "m":
+        case "M":
+          e.preventDefault();
+          el.muted = !el.muted;
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          el.volume = Math.min(1, el.volume + 0.1);
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          el.volume = Math.max(0, el.volume - 0.1);
+          break;
+        case "f":
+        case "F":
+          if (isVideo) {
+            e.preventDefault();
+            const v = el as HTMLVideoElement;
+            if (document.fullscreenElement) document.exitFullscreen();
+            else v.requestFullscreen?.().catch(() => {});
+          }
+          break;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [file.id, isVideo, isAudio]);
+
   const apiBase = `/api/public/share/${token}/files/${file.id}`;
   const transcriptQueryKey = ["share-transcript", token, file.id] as const;
   const supportsTranscript = isVideo || isAudio;
@@ -943,6 +1018,17 @@ function FileViewer({
                     }
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key === "Enter" &&
+                        !e.shiftKey &&
+                        content.trim() &&
+                        !post.isPending
+                      ) {
+                        e.preventDefault();
+                        post.mutate();
+                      }
+                    }}
                     data-testid="textarea-share-comment"
                   />
                   <Button
