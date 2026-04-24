@@ -637,7 +637,19 @@ function FileViewer({
 
       {/* Right side panel: Comments / Transcript / Synopsis */}
       <aside className="rounded-lg bg-white dark:bg-[#0f1218] border border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]">
-        <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
+        <Tabs
+          defaultValue={(() => {
+            if (typeof window === "undefined") return "comments";
+            const t = new URLSearchParams(window.location.search).get("tab");
+            const allowed = new Set<string>(["comments"]);
+            if (supportsTranscript) {
+              allowed.add("transcript");
+              allowed.add("synopsis");
+            }
+            return t && allowed.has(t) ? t : "comments";
+          })()}
+          className="flex-1 min-h-0 flex flex-col"
+        >
           <div className="px-3 py-2.5 border-b border-neutral-200 dark:border-gray-800">
             <TabsList className="bg-neutral-100 dark:bg-gray-900">
               <TabsTrigger value="comments" className="text-xs px-3">
@@ -663,7 +675,7 @@ function FileViewer({
 
           <TabsContent
             value="comments"
-            className="flex-1 min-h-0 m-0 flex flex-col overflow-hidden"
+            className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
           >
             {/* Comments list (scrolls) */}
             <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-2.5">
@@ -784,7 +796,7 @@ function FileViewer({
           {supportsTranscript && (
             <TabsContent
               value="transcript"
-              className="flex-1 min-h-0 m-0 overflow-hidden"
+              className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
             >
               <TranscriptView
                 fileId={file.id}
@@ -801,7 +813,7 @@ function FileViewer({
           {supportsTranscript && (
             <TabsContent
               value="synopsis"
-              className="flex-1 min-h-0 m-0 overflow-hidden"
+              className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
             >
               <SynopsisView
                 fileId={file.id}

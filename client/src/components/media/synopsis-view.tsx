@@ -100,7 +100,7 @@ export default function SynopsisView({ fileId, apiBase, readOnly = false, queryK
   const inProgress = status === "pending" || status === "processing" || regenerate.isPending;
 
   return (
-    <div className="flex flex-col h-full overflow-auto">
+    <div className="flex flex-col h-full min-h-0 flex-1 overflow-auto">
       <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
         <div className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-white">
           <Sparkles className="h-4 w-4 text-amber-500" />

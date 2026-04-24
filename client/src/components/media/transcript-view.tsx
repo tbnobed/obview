@@ -225,8 +225,8 @@ export default function TranscriptView({
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="px-4 py-2 border-b border-neutral-200 dark:border-gray-800 flex items-center gap-2">
+    <div className="flex flex-col h-full min-h-0 flex-1">
+      <div className="px-4 py-2 border-b border-neutral-200 dark:border-gray-800 flex items-center gap-2 shrink-0">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
           <Input
