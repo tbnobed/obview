@@ -200,6 +200,62 @@ export default function MultiSharePage() {
         ? "Shared folder"
         : "Shared file");
 
+  // Full-screen Frame.io-style layout when viewing a file
+  if (activeFile) {
+    return (
+      <div className="h-screen w-screen flex flex-col bg-black text-gray-100 overflow-hidden">
+        {/* Slim top bar */}
+        <header className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveFile(null)}
+              className="h-7 px-2 text-gray-300 hover:text-white hover:bg-gray-800"
+              data-testid="button-back-to-files"
+              aria-label="Back to files"
+              title="Back to files"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="text-xs text-gray-400 truncate hidden sm:block">
+              {heading}
+            </div>
+            <span className="text-gray-600 hidden sm:inline">/</span>
+            <div
+              className="text-sm font-medium truncate text-gray-100"
+              data-testid="share-active-filename"
+            >
+              {activeFile.filename}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {info.allowDownloads && (
+              <a
+                className="inline-flex items-center text-xs bg-primary text-primary-foreground rounded-md px-3 py-1.5 hover:opacity-90"
+                href={`/api/public/share/${token}/files/${activeFile.id}/download`}
+                data-testid="button-download-shared-top"
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" /> Download
+              </a>
+            )}
+            <ThemeToggle />
+          </div>
+        </header>
+
+        {/* Body: player + side panel fill the rest */}
+        <FileViewer
+          token={token}
+          file={activeFile}
+          allowComments={info.allowComments}
+          allowDownloads={info.allowDownloads}
+          fullScreen
+        />
+      </div>
+    );
+  }
+
+  // Standard list view
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-[#0a0d14] text-neutral-900 dark:text-gray-100">
       {/* App-style header */}
@@ -224,38 +280,18 @@ export default function MultiSharePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {activeFile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveFile(null)}
-                className="text-neutral-700 dark:text-gray-300"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">Back to files</span>
-              </Button>
-            )}
             <ThemeToggle />
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        {!activeFile ? (
-          <FileList
-            manifest={manifestQ.data}
-            loading={manifestQ.isLoading}
-            onPick={setActiveFile}
-            token={token}
-          />
-        ) : (
-          <FileViewer
-            token={token}
-            file={activeFile}
-            allowComments={info.allowComments}
-            allowDownloads={info.allowDownloads}
-          />
-        )}
+        <FileList
+          manifest={manifestQ.data}
+          loading={manifestQ.isLoading}
+          onPick={setActiveFile}
+          token={token}
+        />
       </main>
     </div>
   );
@@ -485,11 +521,13 @@ function FileViewer({
   file,
   allowComments,
   allowDownloads,
+  fullScreen = false,
 }: {
   token: string;
   file: ManifestFile;
   allowComments: boolean;
   allowDownloads: boolean;
+  fullScreen?: boolean;
 }) {
   const kind = fileKind(file.fileType);
   const isVideo = kind === "video";
@@ -574,10 +612,28 @@ function FileViewer({
     : `/api/public/share/${token}/files/${file.id}/content`;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(70vh+88px)] lg:min-h-[520px]">
+    <div
+      className={cn(
+        fullScreen
+          ? "flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden bg-black"
+          : "grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(70vh+88px)] lg:min-h-[520px]",
+      )}
+    >
       {/* Player column */}
-      <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
-        <div className="flex-1 min-h-0 rounded-lg overflow-hidden bg-black border border-neutral-200 dark:border-gray-800 shadow-sm flex items-center justify-center">
+      <div
+        className={cn(
+          fullScreen
+            ? "flex-1 min-h-0 min-w-0 flex items-center justify-center bg-black"
+            : "lg:col-span-2 flex flex-col gap-4 min-h-0",
+        )}
+      >
+        <div
+          className={cn(
+            fullScreen
+              ? "w-full h-full flex items-center justify-center bg-black"
+              : "flex-1 min-h-0 rounded-lg overflow-hidden bg-black border border-neutral-200 dark:border-gray-800 shadow-sm flex items-center justify-center",
+          )}
+        >
           {isVideo && (
             <video
               ref={mediaRef as any}
@@ -613,30 +669,38 @@ function FileViewer({
           )}
         </div>
 
-        {/* File meta bar */}
-        <div className="flex items-center justify-between rounded-lg bg-white dark:bg-gray-900 border border-neutral-200 dark:border-gray-800 px-4 py-3 shrink-0">
-          <div className="min-w-0">
-            <div className="font-medium truncate text-neutral-900 dark:text-gray-100">
-              {file.filename}
+        {/* File meta bar — only in non-fullscreen mode (fullscreen has top bar) */}
+        {!fullScreen && (
+          <div className="flex items-center justify-between rounded-lg bg-white dark:bg-gray-900 border border-neutral-200 dark:border-gray-800 px-4 py-3 shrink-0">
+            <div className="min-w-0">
+              <div className="font-medium truncate text-neutral-900 dark:text-gray-100">
+                {file.filename}
+              </div>
+              <div className="text-xs text-neutral-500 dark:text-gray-400 mt-0.5">
+                v{file.version} · {fmtBytes(file.fileSize)}
+              </div>
             </div>
-            <div className="text-xs text-neutral-500 dark:text-gray-400 mt-0.5">
-              v{file.version} · {fmtBytes(file.fileSize)}
-            </div>
+            {allowDownloads && (
+              <a
+                className="inline-flex items-center text-sm bg-primary text-primary-foreground rounded-md px-3 py-2 hover:opacity-90"
+                href={`/api/public/share/${token}/files/${file.id}/download`}
+                data-testid="button-download-shared"
+              >
+                <Download className="h-4 w-4 mr-1.5" /> Download
+              </a>
+            )}
           </div>
-          {allowDownloads && (
-            <a
-              className="inline-flex items-center text-sm bg-primary text-primary-foreground rounded-md px-3 py-2 hover:opacity-90"
-              href={`/api/public/share/${token}/files/${file.id}/download`}
-              data-testid="button-download-shared"
-            >
-              <Download className="h-4 w-4 mr-1.5" /> Download
-            </a>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Right side panel: Comments / Transcript / Synopsis */}
-      <aside className="rounded-lg bg-white dark:bg-[#0f1218] border border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]">
+      <aside
+        className={cn(
+          fullScreen
+            ? "w-full lg:w-[360px] shrink-0 bg-white dark:bg-[#0f1218] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[40vh] lg:h-auto"
+            : "rounded-lg bg-white dark:bg-[#0f1218] border border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]",
+        )}
+      >
         <Tabs
           defaultValue={(() => {
             if (typeof window === "undefined") return "comments";
