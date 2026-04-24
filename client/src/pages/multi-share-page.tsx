@@ -596,9 +596,35 @@ function FileViewer({
   useEffect(() => {
     const el = mediaRef.current;
     if (!el) return;
-    const onTime = () => setCurrentTime(el.currentTime || 0);
-    el.addEventListener("timeupdate", onTime);
-    return () => el.removeEventListener("timeupdate", onTime);
+    let raf = 0;
+    const tick = () => {
+      setCurrentTime(el.currentTime || 0);
+      raf = requestAnimationFrame(tick);
+    };
+    const start = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      setCurrentTime(el.currentTime || 0);
+    };
+    el.addEventListener("play", start);
+    el.addEventListener("playing", start);
+    el.addEventListener("pause", stop);
+    el.addEventListener("seeked", stop);
+    el.addEventListener("ended", stop);
+    el.addEventListener("timeupdate", stop);
+    if (!el.paused) start();
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("play", start);
+      el.removeEventListener("playing", start);
+      el.removeEventListener("pause", stop);
+      el.removeEventListener("seeked", stop);
+      el.removeEventListener("ended", stop);
+      el.removeEventListener("timeupdate", stop);
+    };
   }, [file.id]);
 
   const apiBase = `/api/public/share/${token}/files/${file.id}`;
@@ -705,7 +731,7 @@ function FileViewer({
         {/* Timecode bar — fullscreen + playable media only */}
         {fullScreen && (isVideo || isAudio) && (
           <div
-            className="shrink-0 flex items-center justify-end gap-2 px-4 py-2 border-t border-gray-800 bg-black"
+            className="shrink-0 flex items-center justify-center gap-2 px-4 py-2 border-t border-gray-800 bg-black"
             data-testid="timecode-bar"
           >
             <DropdownMenu>
