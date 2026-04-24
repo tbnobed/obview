@@ -132,6 +132,21 @@ export default function MultiSharePage() {
 
   const [activeFile, setActiveFile] = useState<ManifestFile | null>(null);
 
+  useEffect(() => {
+    if (!manifestQ.data) return;
+    const params = new URLSearchParams(window.location.search);
+    const fid = params.get("file");
+    if (fid && !activeFile) {
+      for (const p of manifestQ.data.projects) {
+        const found = p.files.find((f) => String(f.id) === fid);
+        if (found) {
+          setActiveFile(found);
+          break;
+        }
+      }
+    }
+  }, [manifestQ.data, activeFile]);
+
   if (infoQ.isLoading) {
     return (
       <CenteredShell>
@@ -559,21 +574,21 @@ function FileViewer({
     : `/api/public/share/${token}/files/${file.id}/content`;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(70vh+88px)] lg:min-h-[520px]">
       {/* Player column */}
-      <div className="lg:col-span-2 space-y-4">
-        <div className="rounded-lg overflow-hidden bg-black border border-neutral-200 dark:border-gray-800 shadow-sm">
+      <div className="lg:col-span-2 flex flex-col gap-4 min-h-0">
+        <div className="flex-1 min-h-0 rounded-lg overflow-hidden bg-black border border-neutral-200 dark:border-gray-800 shadow-sm flex items-center justify-center">
           {isVideo && (
             <video
               ref={mediaRef as any}
               src={mediaSrc}
               controls
-              className="w-full max-h-[70vh] mx-auto bg-black"
+              className="w-full h-full object-contain bg-black"
               data-testid="share-video-player"
             />
           )}
           {isAudio && (
-            <div className="p-12 flex flex-col items-center gap-4 bg-gradient-to-br from-primary/5 to-primary/20 dark:from-[#10a37f]/5 dark:to-[#10a37f]/20">
+            <div className="w-full h-full p-12 flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/5 to-primary/20 dark:from-[#10a37f]/5 dark:to-[#10a37f]/20">
               <Music className="h-16 w-16 text-primary dark:text-[#10a37f]" />
               <audio
                 ref={mediaRef as any}
@@ -587,7 +602,7 @@ function FileViewer({
             <img
               src={mediaSrc}
               alt={file.filename}
-              className="w-full max-h-[70vh] object-contain mx-auto bg-black"
+              className="max-w-full max-h-full object-contain"
             />
           )}
           {!isVideo && !isAudio && !isImage && (
@@ -599,7 +614,7 @@ function FileViewer({
         </div>
 
         {/* File meta bar */}
-        <div className="flex items-center justify-between rounded-lg bg-white dark:bg-gray-900 border border-neutral-200 dark:border-gray-800 px-4 py-3">
+        <div className="flex items-center justify-between rounded-lg bg-white dark:bg-gray-900 border border-neutral-200 dark:border-gray-800 px-4 py-3 shrink-0">
           <div className="min-w-0">
             <div className="font-medium truncate text-neutral-900 dark:text-gray-100">
               {file.filename}
