@@ -650,8 +650,72 @@ function FileViewer({
             value="comments"
             className="flex-1 min-h-0 m-0 flex flex-col overflow-hidden"
           >
+            {/* Comments list (scrolls) */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-2.5">
+              {commentsQ.isLoading && (
+                <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
+                  Loading comments...
+                </p>
+              )}
+              {commentsQ.data?.map((c, index) => {
+                const author = c.user?.name || c.authorName || "Anonymous";
+                return (
+                  <div
+                    key={c.id}
+                    className="rounded-lg border p-3 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))]"
+                    data-testid={`share-comment-${c.id}`}
+                  >
+                    <div className="flex gap-3">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarFallback className="bg-gray-600 text-white text-xs">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                          </svg>
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium text-neutral-900 dark:text-[hsl(var(--comments-text))]">
+                              {author}
+                            </span>
+                            <span className="text-xs text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                              {new Date(c.createdAt).toLocaleDateString()}
+                            </span>
+                            {c.timestamp != null && (
+                              <button
+                                onClick={() => seekTo(c.timestamp!)}
+                                className="text-xs font-mono px-2 py-1 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))] hover:opacity-80 transition-opacity"
+                                title="Jump to this moment"
+                              >
+                                {fmtTime(c.timestamp)}
+                              </button>
+                            )}
+                          </div>
+                          <span className="text-xs font-medium text-neutral-500 dark:text-[hsl(var(--comments-muted))] shrink-0">
+                            #{index + 1}
+                          </span>
+                        </div>
+                        <div className="text-sm text-neutral-800 dark:text-[hsl(var(--comments-text))] whitespace-pre-wrap break-words leading-relaxed">
+                          {c.content}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {commentsQ.data && commentsQ.data.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <MessageSquare className="h-10 w-10 mb-3 text-neutral-300 dark:text-[hsl(var(--comments-muted))]" />
+                  <p className="text-sm text-neutral-500 dark:text-[hsl(var(--comments-muted))]">No comments yet</p>
+                  <p className="text-xs text-neutral-400 dark:text-[hsl(var(--comments-muted))]">Be the first to comment!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Sticky comment input at bottom (matches main app) */}
             {!allowComments ? (
-              <div className="p-4">
+              <div className="border-t border-neutral-200 dark:border-[hsl(var(--comments-card-border))] p-3 shrink-0">
                 <Alert>
                   <AlertDescription>
                     Comments are disabled for this share link.
@@ -659,91 +723,47 @@ function FileViewer({
                 </Alert>
               </div>
             ) : (
-              <div className="p-3 space-y-2 border-b border-neutral-200 dark:border-gray-800 shrink-0">
+              <div className="border-t border-neutral-200 dark:border-[hsl(var(--comments-card-border))] p-3 space-y-2 shrink-0 bg-white dark:bg-[#0f1218]">
                 <Input
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
+                  data-testid="input-share-author"
                 />
-                <textarea
-                  className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 min-h-[72px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
-                  placeholder={
-                    isVideo || isAudio
-                      ? `Leave feedback at ${fmtTime(currentTime) || "0:00"}...`
-                      : "Leave feedback..."
-                  }
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                />
-                <div className="flex justify-end">
+                <div className="relative">
+                  <textarea
+                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pr-10 min-h-[60px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
+                    placeholder={
+                      isVideo || isAudio
+                        ? `Add a comment at ${fmtTime(currentTime) || "0:00"}...`
+                        : "Add a comment..."
+                    }
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    data-testid="textarea-share-comment"
+                  />
                   <Button
-                    size="sm"
+                    size="icon"
+                    className="absolute bottom-2 right-2 h-7 w-7"
                     disabled={!content.trim() || post.isPending}
                     onClick={() => post.mutate()}
                     data-testid="button-post-share-comment"
+                    title="Post"
                   >
-                    <Send className="h-3.5 w-3.5 mr-1" />
-                    {post.isPending ? "Posting..." : "Post"}
+                    <Send className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+                {(isVideo || isAudio) && (
+                  <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                    <span>Will be posted at {fmtTime(currentTime) || "00:00"}</span>
+                    <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
+                      {fmtTime(currentTime) || "00:00"}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
-
-            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-neutral-200 dark:divide-gray-800">
-              {commentsQ.isLoading && (
-                <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
-                  Loading comments...
-                </p>
-              )}
-              {commentsQ.data?.map((c) => {
-                const author = c.user?.name || c.authorName || "Anonymous";
-                const initial = (author[0] || "U").toUpperCase();
-                return (
-                  <div
-                    key={c.id}
-                    className="px-4 py-3 flex gap-2.5 hover:bg-neutral-50 dark:hover:bg-gray-800/40 transition-colors"
-                    data-testid={`share-comment-${c.id}`}
-                  >
-                    <Avatar className="h-8 w-8 mt-0.5 shrink-0">
-                      <AvatarFallback className="bg-primary/10 dark:bg-[#10a37f]/20 text-primary dark:text-[#10a37f] text-xs font-semibold">
-                        {initial}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium text-neutral-900 dark:text-gray-100 truncate">
-                          {author}
-                        </span>
-                        <span className="text-[10px] text-neutral-500 dark:text-gray-400 shrink-0">
-                          {formatTimeAgo(new Date(c.createdAt))}
-                        </span>
-                      </div>
-                      {c.timestamp != null && (
-                        <button
-                          onClick={() => seekTo(c.timestamp!)}
-                          className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-primary/10 dark:bg-[#10a37f]/20 text-primary dark:text-[#10a37f] hover:bg-primary/20 dark:hover:bg-[#10a37f]/30 transition-colors"
-                          title="Jump to this moment"
-                        >
-                          {fmtTime(c.timestamp)}
-                        </button>
-                      )}
-                      <div className="mt-1 text-sm text-neutral-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
-                        {c.content}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {commentsQ.data && commentsQ.data.length === 0 && (
-                <div className="px-4 py-10 text-center">
-                  <MessageSquare className="h-8 w-8 mx-auto text-neutral-300 dark:text-gray-600 mb-2" />
-                  <p className="text-xs text-neutral-500 dark:text-gray-400">
-                    No comments yet. Be the first to leave feedback.
-                  </p>
-                </div>
-              )}
-            </div>
           </TabsContent>
 
           {supportsTranscript && (
