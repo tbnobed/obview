@@ -41,6 +41,7 @@ import {
   MessageSquareWarning,
   PencilLine,
   X as XIcon,
+  Maximize2,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -371,8 +372,14 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
         case "KeyF":
           if (isVideo) {
             e.preventDefault();
-            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-            else (el as HTMLVideoElement).requestFullscreen?.().catch(() => {});
+            if (document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {});
+            } else {
+              const target = watermarkOn
+                ? (mediaContainerRef.current as HTMLElement | null)
+                : (el as HTMLVideoElement);
+              target?.requestFullscreen?.().catch(() => {});
+            }
           }
           break;
         case "KeyK":
@@ -630,14 +637,16 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
             </DialogContent>
           </Dialog>
           )}
-          <a
-            className="inline-flex items-center text-xs h-7 px-2.5 rounded-md bg-primary text-primary-foreground hover:opacity-90"
-            href={`/api/share/${token}/qualities/720p`}
-            download={file.filename}
-            data-testid="button-download-share"
-          >
-            <Download className="h-3.5 w-3.5 mr-1" /> Download
-          </a>
+          {!watermarkOn && (
+            <a
+              className="inline-flex items-center text-xs h-7 px-2.5 rounded-md bg-primary text-primary-foreground hover:opacity-90"
+              href={`/api/share/${token}/qualities/720p`}
+              download={file.filename}
+              data-testid="button-download-share"
+            >
+              <Download className="h-3.5 w-3.5 mr-1" /> Download
+            </a>
+          )}
           <ThemeToggle />
         </div>
       </header>
@@ -656,6 +665,9 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 controls
                 playsInline
                 preload="metadata"
+                controlsList={watermarkOn ? "nodownload nofullscreen noremoteplayback" : "nodownload"}
+                disablePictureInPicture={watermarkOn}
+                onContextMenu={watermarkOn ? (e) => e.preventDefault() : undefined}
                 className="w-full h-full object-contain bg-black"
                 data-testid="share-video-player"
               >
@@ -713,6 +725,25 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
             )}
             {watermarkOn && (isVideo || isImage) && (
               <WatermarkOverlay label={`${file.filename} · ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC`} />
+            )}
+            {watermarkOn && (isVideo || isImage) && (
+              <button
+                type="button"
+                onClick={() => {
+                  const target = mediaContainerRef.current as HTMLElement | null;
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                  } else {
+                    target?.requestFullscreen?.().catch(() => {});
+                  }
+                }}
+                className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-8 w-8 rounded-md bg-black/50 hover:bg-black/70 text-white"
+                title="Fullscreen (F)"
+                aria-label="Toggle fullscreen"
+                data-testid="button-fullscreen-watermarked"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
             )}
           </div>
 
@@ -1116,7 +1147,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   onSeek={seekTo}
                   apiBase={`/api/share/${token}`}
                   readOnly
-                  allowDownloads
+                  allowDownloads={!watermarkOn}
                   queryKey={["share-transcript", token, file.id]}
                 />
               </TabsContent>
