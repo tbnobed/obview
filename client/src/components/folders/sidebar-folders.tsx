@@ -150,32 +150,30 @@ export default function SidebarFolders() {
                     </FormItem>
                   )}
                 />
-                {isAdmin && (
-                  <FormField
-                    control={form.control}
-                    name="isGlobal"
-                    render={({ field }) => (
-                      <FormItem className="flex items-start gap-3 rounded-md border p-3">
-                        <FormControl>
-                          <Checkbox
-                            checked={!!field.value}
-                            onCheckedChange={(v) => field.onChange(v === true)}
-                            data-testid="checkbox-sidebar-folder-global"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="cursor-pointer flex items-center gap-1.5">
-                            <Globe className="h-3.5 w-3.5" />
-                            Global folder
-                          </FormLabel>
-                          <p className="text-xs text-muted-foreground">
-                            Visible to all users. Only admins can create or edit global folders.
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                )}
+                <FormField
+                  control={form.control}
+                  name="isGlobal"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start gap-3 rounded-md border p-3">
+                      <FormControl>
+                        <Checkbox
+                          checked={!!field.value}
+                          onCheckedChange={(v) => field.onChange(v === true)}
+                          data-testid="checkbox-sidebar-folder-global"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="cursor-pointer flex items-center gap-1.5">
+                          <Globe className="h-3.5 w-3.5" />
+                          Global folder
+                        </FormLabel>
+                        <p className="text-xs text-muted-foreground">
+                          Visible to all users on the platform.
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
                 <DialogFooter>
                   <Button
                     type="button"
@@ -353,7 +351,9 @@ function SidebarFolderItem({ folder }: { folder: any }) {
   const projectCount = projects?.length ?? 0;
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const canShare = user && (isAdmin || (folder.createdById === user.id && !folder.isGlobal));
+  const isOwner = !!user && folder.createdById === user.id;
+  const canShare = user && (isAdmin || isOwner);
+  const canToggleGlobal = isAdmin || isOwner;
   const [shareOpen, setShareOpen] = useState(false);
   const toggleGlobal = useToggleFolderGlobal();
   const isToggling =
@@ -392,7 +392,7 @@ function SidebarFolderItem({ folder }: { folder: any }) {
             </span>
           )}
         </span>
-        {isAdmin && (
+        {canToggleGlobal && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <span

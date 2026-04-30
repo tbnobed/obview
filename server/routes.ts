@@ -856,13 +856,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new folder
   app.post("/api/folders", isAuthenticated, async (req, res, next) => {
     try {
-      const isAdmin = req.user.role === "admin";
-      // Only admins can create global folders; silently strip the flag for
-      // non-admins instead of failing the request.
+      // Any authenticated user may create a global folder.
       const incoming = { ...req.body };
-      if (incoming.isGlobal && !isAdmin) {
-        incoming.isGlobal = false;
-      }
       // Validate input using Zod schema
       const validatedData = insertFolderSchema.parse({
         ...incoming,
@@ -939,20 +934,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Folder not found" });
       }
 
-      // Only admins can edit global folders. Owners can edit their own
-      // private folders. Non-admins cannot toggle the isGlobal flag.
+      // Admins can edit any folder. Folder owners can edit (and toggle the
+      // isGlobal flag on) their own folders, whether private or global.
       const isAdmin = req.user.role === "admin";
-      if (existingFolder.isGlobal && !isAdmin) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      if (!isAdmin && existingFolder.createdById !== req.user.id) {
+      const isOwner = existingFolder.createdById === req.user.id;
+      if (!isAdmin && !isOwner) {
         return res.status(403).json({ message: "Forbidden" });
       }
 
       const incoming = { ...req.body };
-      if (!isAdmin && "isGlobal" in incoming) {
-        delete incoming.isGlobal;
-      }
 
       // Validate input
       const validatedData = insertFolderSchema.partial().parse(incoming);
@@ -999,12 +989,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Folder not found" });
       }
 
-      // Only admins can delete global folders. Owners can delete their
-      // own private folders.
+      // Admins or the folder owner can delete the folder.
       const isAdminDel = req.user.role === "admin";
-      if (existingFolder.isGlobal && !isAdminDel) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       if (!isAdminDel && existingFolder.createdById !== req.user.id) {
         return res.status(403).json({ message: "Forbidden" });
       }
