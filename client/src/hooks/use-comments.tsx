@@ -74,6 +74,36 @@ export const useToggleCommentResolution = (fileId: number) => {
   });
 };
 
+// Hook to edit a comment's content (works for both authenticated and public comments)
+export const useUpdateCommentContent = (fileId: number) => {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      commentId,
+      content,
+      creatorToken,
+    }: { commentId: string; content: string; creatorToken?: string }) => {
+      if (creatorToken) {
+        return apiRequest('PATCH', `/api/public-comments/${commentId}`, { creatorToken, content });
+      }
+      return apiRequest('PATCH', `/api/comments/${commentId}`, { content });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', null, 'comments'] });
+      toast({ title: "Comment updated" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update comment",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 // Hook to delete a comment (unified endpoint approach)
 export const useDeleteComment = (fileId: number) => {
   const { toast } = useToast();
@@ -89,7 +119,14 @@ export const useDeleteComment = (fileId: number) => {
         return apiRequest('DELETE', `/api/comments/${commentId}`);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      // Clean up local creator token for public comments to avoid orphan keys
+      try {
+        if (variables?.commentId) {
+          localStorage.removeItem(`comment-token-${variables.commentId}`);
+          localStorage.removeItem(`share-comment-token-${variables.commentId}`);
+        }
+      } catch {}
       // Invalidate and refetch with the array format query key
       queryClient.invalidateQueries({ queryKey: ['/api/files', fileId, 'comments'] });
       // Also invalidate the project comments to show updates there

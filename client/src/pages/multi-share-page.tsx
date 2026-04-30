@@ -27,6 +27,10 @@ import {
   File as FileIcon,
   PencilLine,
   X as XIcon,
+  Pencil,
+  Trash2,
+  Reply,
+  Check,
 } from "lucide-react";
 import {
   AnnotationCanvas,
@@ -98,6 +102,20 @@ type Comment = {
   user?: { name: string } | null;
   annotations?: string | null;
 };
+
+const COMMENT_TOKEN_KEY = (id: string) => `share-comment-token-${id}`;
+function rememberCommentToken(id: string, token: string) {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(COMMENT_TOKEN_KEY(id), token); } catch {}
+}
+function getCommentToken(id: string): string | null {
+  if (typeof window === "undefined") return null;
+  try { return localStorage.getItem(COMMENT_TOKEN_KEY(id)); } catch { return null; }
+}
+function forgetCommentToken(id: string) {
+  if (typeof window === "undefined") return;
+  try { localStorage.removeItem(COMMENT_TOKEN_KEY(id)); } catch {}
+}
 
 function parseAnnotations(c: { annotations?: string | null } | null | undefined): Annotation[] | null {
   if (!c?.annotations) return null;
@@ -924,6 +942,11 @@ function FileViewer({
   const transcriptQueryKey = ["share-transcript", token, file.id] as const;
   const supportsTranscript = isVideo || isAudio;
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+
   const post = useMutation({
     mutationFn: async () => {
       const el = mediaRef.current;
@@ -949,8 +972,12 @@ function FileViewer({
         const d = await r.json().catch(() => ({}));
         throw new Error(d.message || "Failed");
       }
+      return (await r.json().catch(() => null)) as
+        | { id: string; creatorToken?: string }
+        | null;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data?.id && data.creatorToken) rememberCommentToken(data.id, data.creatorToken);
       setContent("");
       setPendingAnnotations(null);
       setDisplayAnnotations(null);
@@ -963,6 +990,88 @@ function FileViewer({
         description: e.message,
         variant: "destructive",
       }),
+  });
+
+  const replyPost = useMutation({
+    mutationFn: async ({ parentId, text }: { parentId: string; text: string }) => {
+      const r = await fetch(
+        `/api/public/share/${token}/files/${file.id}/comments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            content: text,
+            displayName: name || "Anonymous",
+            timestamp: null,
+            parentId,
+          }),
+        },
+      );
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.message || "Failed");
+      }
+      return (await r.json().catch(() => null)) as
+        | { id: string; creatorToken?: string }
+        | null;
+    },
+    onSuccess: (data) => {
+      if (data?.id && data.creatorToken) rememberCommentToken(data.id, data.creatorToken);
+      setReplyingToId(null);
+      setReplyContent("");
+      commentsQ.refetch();
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not reply", description: e.message, variant: "destructive" }),
+  });
+
+  const editPost = useMutation({
+    mutationFn: async ({ commentId, text }: { commentId: string; text: string }) => {
+      const ct = getCommentToken(commentId);
+      if (!ct) throw new Error("You can only edit your own comments");
+      const r = await fetch(`/api/public-comments/${commentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ creatorToken: ct, content: text }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.message || "Failed");
+      }
+    },
+    onSuccess: () => {
+      setEditingId(null);
+      setEditContent("");
+      commentsQ.refetch();
+      toast({ title: "Comment updated" });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not edit", description: e.message, variant: "destructive" }),
+  });
+
+  const deletePost = useMutation({
+    mutationFn: async (commentId: string) => {
+      const ct = getCommentToken(commentId);
+      if (!ct) throw new Error("You can only delete your own comments");
+      const r = await fetch(`/api/public-comments/${commentId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ creatorToken: ct }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.message || "Failed");
+      }
+      return commentId;
+    },
+    onSuccess: (commentId) => {
+      forgetCommentToken(commentId);
+      commentsQ.refetch();
+      toast({ title: "Comment deleted" });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not delete", description: e.message, variant: "destructive" }),
   });
 
   const mediaSrc = `/api/public/share/${token}/files/${file.id}/content`;
@@ -1382,76 +1491,212 @@ function FileViewer({
                   Loading comments...
                 </p>
               )}
-              {commentsQ.data?.map((c, index) => {
-                const author = c.user?.name || c.authorName || "Anonymous";
-                const isActive = activeCommentId === c.id;
-                const hasAnno = !!parseAnnotations(c);
-                return (
-                  <div
-                    key={c.id}
-                    onClick={() => {
-                      setActiveCommentId(c.id);
-                      setDisplayAnnotations(parseAnnotations(c));
-                      if (c.timestamp != null) seekTo(c.timestamp);
-                    }}
-                    className={cn(
-                      "rounded-lg border p-3 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))] cursor-pointer transition-colors",
-                      isActive && "ring-2 ring-primary dark:ring-[#10a37f] border-primary dark:border-[#10a37f]",
-                    )}
-                    data-testid={`share-comment-${c.id}`}
-                  >
-                    <div className="flex gap-3">
-                      <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarFallback className="bg-gray-600 text-white text-xs">
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                          </svg>
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium text-neutral-900 dark:text-[hsl(var(--comments-text))]">
-                              {author}
-                            </span>
-                            <span className="text-xs text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
-                              {new Date(c.createdAt).toLocaleDateString()}
-                            </span>
-                            {c.timestamp != null && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveCommentId(c.id);
-                                  setDisplayAnnotations(parseAnnotations(c));
-                                  seekTo(c.timestamp!);
-                                }}
-                                className="text-xs font-mono px-2 py-1 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))] hover:opacity-80 transition-opacity"
-                                title="Jump to this moment"
-                              >
-                                {fmtTime(c.timestamp)}
-                              </button>
+              {(() => {
+                const all = commentsQ.data || [];
+                const topLevel = all.filter((c) => !c.parentId);
+                const repliesByParent = new Map<string, Comment[]>();
+                for (const c of all) {
+                  if (c.parentId) {
+                    const arr = repliesByParent.get(c.parentId) || [];
+                    arr.push(c);
+                    repliesByParent.set(c.parentId, arr);
+                  }
+                }
+                const renderItem = (c: Comment, index: number, isReply: boolean) => {
+                  const author = c.user?.name || c.authorName || "Anonymous";
+                  const isActive = activeCommentId === c.id;
+                  const hasAnno = !!parseAnnotations(c);
+                  const isMine = !!getCommentToken(c.id);
+                  const isEditing = editingId === c.id;
+                  const isReplying = replyingToId === c.id;
+                  const replies = repliesByParent.get(c.id) || [];
+                  return (
+                    <div key={c.id} className={isReply ? "ml-6" : undefined}>
+                      <div
+                        onClick={() => {
+                          if (isEditing) return;
+                          setActiveCommentId(c.id);
+                          setDisplayAnnotations(parseAnnotations(c));
+                          if (c.timestamp != null) seekTo(c.timestamp);
+                        }}
+                        className={cn(
+                          "rounded-lg border p-3 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))] cursor-pointer transition-colors",
+                          isActive && "ring-2 ring-primary dark:ring-[#10a37f] border-primary dark:border-[#10a37f]",
+                        )}
+                        data-testid={`share-comment-${c.id}`}
+                      >
+                        <div className="flex gap-3">
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarFallback className="bg-gray-600 text-white text-xs">
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                              </svg>
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-medium text-neutral-900 dark:text-[hsl(var(--comments-text))]">
+                                  {author}
+                                </span>
+                                <span className="text-xs text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                                  {new Date(c.createdAt).toLocaleDateString()}
+                                </span>
+                                {c.timestamp != null && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveCommentId(c.id);
+                                      setDisplayAnnotations(parseAnnotations(c));
+                                      seekTo(c.timestamp!);
+                                    }}
+                                    className="text-xs font-mono px-2 py-1 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))] hover:opacity-80 transition-opacity"
+                                    title="Jump to this moment"
+                                  >
+                                    {fmtTime(c.timestamp)}
+                                  </button>
+                                )}
+                                {hasAnno && (
+                                  <span
+                                    className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-gray-800 text-neutral-600 dark:text-gray-300"
+                                    title="Has annotation"
+                                  >
+                                    <PencilLine className="h-3 w-3" /> Drawing
+                                  </span>
+                                )}
+                              </div>
+                              {!isReply && (
+                                <span className="text-xs font-medium text-neutral-500 dark:text-[hsl(var(--comments-muted))] shrink-0">
+                                  #{index + 1}
+                                </span>
+                              )}
+                            </div>
+                            {isEditing ? (
+                              <div onClick={(e) => e.stopPropagation()} className="space-y-2">
+                                <textarea
+                                  className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 min-h-[60px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 resize-none"
+                                  value={editContent}
+                                  onChange={(e) => setEditContent(e.target.value)}
+                                  data-testid={`textarea-edit-${c.id}`}
+                                />
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    disabled={!editContent.trim() || editPost.isPending}
+                                    onClick={() =>
+                                      editPost.mutate({ commentId: c.id, text: editContent.trim() })
+                                    }
+                                    data-testid={`button-save-edit-${c.id}`}
+                                  >
+                                    <Check className="h-3 w-3 mr-1" /> Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 text-xs"
+                                    onClick={() => { setEditingId(null); setEditContent(""); }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-neutral-800 dark:text-[hsl(var(--comments-text))] whitespace-pre-wrap break-words leading-relaxed">
+                                {c.content}
+                              </div>
                             )}
-                            {hasAnno && (
-                              <span
-                                className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-gray-800 text-neutral-600 dark:text-gray-300"
-                                title="Has annotation"
+                            {!isEditing && allowComments && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-2 flex items-center gap-3 text-[11px] text-neutral-500 dark:text-gray-400"
                               >
-                                <PencilLine className="h-3 w-3" /> Drawing
-                              </span>
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center gap-1 hover:text-neutral-800 dark:hover:text-gray-200"
+                                  onClick={() => {
+                                    setReplyingToId(isReplying ? null : c.id);
+                                    setReplyContent("");
+                                  }}
+                                  data-testid={`button-reply-${c.id}`}
+                                >
+                                  <Reply className="h-3 w-3" /> Reply
+                                </button>
+                                {isMine && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="inline-flex items-center gap-1 hover:text-neutral-800 dark:hover:text-gray-200"
+                                      onClick={() => {
+                                        setEditingId(c.id);
+                                        setEditContent(c.content);
+                                      }}
+                                      data-testid={`button-edit-${c.id}`}
+                                    >
+                                      <Pencil className="h-3 w-3" /> Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="inline-flex items-center gap-1 text-red-500 hover:text-red-600"
+                                      onClick={() => {
+                                        if (window.confirm("Delete this comment?")) {
+                                          deletePost.mutate(c.id);
+                                        }
+                                      }}
+                                      data-testid={`button-delete-${c.id}`}
+                                    >
+                                      <Trash2 className="h-3 w-3" /> Delete
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             )}
                           </div>
-                          <span className="text-xs font-medium text-neutral-500 dark:text-[hsl(var(--comments-muted))] shrink-0">
-                            #{index + 1}
-                          </span>
-                        </div>
-                        <div className="text-sm text-neutral-800 dark:text-[hsl(var(--comments-text))] whitespace-pre-wrap break-words leading-relaxed">
-                          {c.content}
                         </div>
                       </div>
+                      {isReplying && allowComments && (
+                        <div className="ml-6 mt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <textarea
+                            className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 min-h-[50px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 resize-none"
+                            placeholder={`Reply to ${author}...`}
+                            value={replyContent}
+                            onChange={(e) => setReplyContent(e.target.value)}
+                            data-testid={`textarea-reply-${c.id}`}
+                            autoFocus
+                          />
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs"
+                              disabled={!replyContent.trim() || replyPost.isPending}
+                              onClick={() =>
+                                replyPost.mutate({ parentId: c.id, text: replyContent.trim() })
+                              }
+                              data-testid={`button-post-reply-${c.id}`}
+                            >
+                              <Send className="h-3 w-3 mr-1" /> Reply
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs"
+                              onClick={() => { setReplyingToId(null); setReplyContent(""); }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      {replies.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {replies.map((r) => renderItem(r, 0, true))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                };
+                return topLevel.map((c, i) => renderItem(c, i, false));
+              })()}
               {commentsQ.data && commentsQ.data.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <MessageSquare className="h-10 w-10 mb-3 text-neutral-300 dark:text-[hsl(var(--comments-muted))]" />

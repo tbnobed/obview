@@ -3531,13 +3531,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only allow updating specific fields
-      const allowedUpdates = ["isResolved"];
+      const allowedUpdates = ["isResolved", "content"];
       const updates: Record<string, any> = {};
       
       for (const field of allowedUpdates) {
         if (req.body[field] !== undefined) {
           updates[field] = req.body[field];
         }
+      }
+
+      // Restrict content edits to the comment author (admins/editors can still resolve)
+      if (updates.content !== undefined) {
+        if (typeof updates.content !== "string" || !updates.content.trim()) {
+          return res.status(400).json({ message: "Content cannot be empty" });
+        }
+        if (comment.userId !== req.user.id) {
+          return res.status(403).json({ message: "Only the author can edit a comment's content" });
+        }
+        updates.content = updates.content.trim();
       }
       
       // Update the unified comment
@@ -3672,6 +3683,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Edit a public comment's content (requires creatorToken for authorization)
+  app.patch("/api/public-comments/:commentId", async (req, res, next) => {
+    try {
+      const commentId = req.params.commentId;
+      const { creatorToken, content } = req.body || {};
+
+      const comment = await storage.getUnifiedComment(commentId);
+      if (!comment) return res.status(404).json({ message: "Comment not found" });
+      if (!comment.isPublic) return res.status(400).json({ message: "This is not a public comment" });
+      if (!comment.creatorToken || !creatorToken || comment.creatorToken !== creatorToken) {
+        return res.status(403).json({ message: "You don't have permission to edit this comment" });
+      }
+      if (typeof content !== "string" || !content.trim()) {
+        return res.status(400).json({ message: "Content cannot be empty" });
+      }
+
+      const updated = await storage.updateUnifiedComment(commentId, { content: content.trim() });
+      if (!updated) return res.status(404).json({ message: "Comment not found" });
+
+      // Strip creatorToken from response
+      const { creatorToken: _ct, ...safe } = updated as any;
+      res.json(safe);
     } catch (error) {
       next(error);
     }

@@ -9,10 +9,11 @@ import CommentForm from "./comment-form";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
-import { Trash2, Check } from "lucide-react";
+import { Trash2, Check, Pencil } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useDeleteComment } from "@/hooks/use-comments";
+import { useDeleteComment, useUpdateCommentContent } from "@/hooks/use-comments";
 import ReactionPicker from "./reaction-picker";
 import ReactionsDisplay from "./reactions-display";
 import { useCommentReactionsWithUsers } from "@/hooks/use-reactions";
@@ -28,10 +29,40 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
   const { user } = useAuth();
   const { toast } = useToast();
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState<string>("");
   const commentsRef = useRef<HTMLDivElement>(null);
-  
+
   // Delete comment mutation
   const deleteCommentMutation = useDeleteComment(comment.fileId);
+
+  // Update comment content mutation
+  const updateCommentMutation = useUpdateCommentContent(comment.fileId);
+
+  const canEditAuthored = (c: any) => {
+    if (c.isPublic) {
+      return !!localStorage.getItem(`comment-token-${c.id}`);
+    }
+    return !!user && c.userId === user.id;
+  };
+
+  const handleStartEdit = (c: any) => {
+    setEditingId(c.id);
+    setEditContent(c.content || "");
+    setShowReplyForm(false);
+  };
+
+  const handleSaveEdit = (c: any) => {
+    const trimmed = editContent.trim();
+    if (!trimmed) return;
+    const creatorToken = c.isPublic
+      ? localStorage.getItem(`comment-token-${c.id}`) || undefined
+      : undefined;
+    updateCommentMutation.mutate(
+      { commentId: c.id, content: trimmed, creatorToken },
+      { onSuccess: () => { setEditingId(null); setEditContent(""); } },
+    );
+  };
   
   // Get reactions to derive userReactions for the picker
   const { data: reactions = [] } = useCommentReactionsWithUsers(comment.id);
@@ -220,50 +251,80 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
             </div>
           </div>
           
-          <div className="mt-1 text-xs text-neutral-700 dark:text-gray-300 comment-content">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                // Override image rendering to add proper styling
-                img: ({ node, ...props }) => (
-                  <img 
-                    {...props} 
-                    className="max-w-full h-auto rounded-md my-1 border border-gray-200"
-                    style={{ maxHeight: '300px' }}
-                    onClick={(e) => e.stopPropagation()} 
-                  />
-                ),
-                // Override link rendering with special handling for file downloads
-                a: ({ node, href, ...props }) => {
-                  // Check if this is a file download link
-                  const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
-                  
-                  return (
-                    <a 
-                      href={href}
+          {editingId === comment.id ? (
+            <div className="mt-1 space-y-2" onClick={(e) => e.stopPropagation()}>
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="min-h-[70px] text-xs"
+                data-testid={`textarea-edit-comment-${comment.id}`}
+              />
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  className="h-6 text-[10px] px-2"
+                  disabled={!editContent.trim() || updateCommentMutation.isPending}
+                  onClick={() => handleSaveEdit(comment)}
+                  data-testid={`button-save-edit-${comment.id}`}
+                >
+                  <Check className="h-3 w-3 mr-1" /> Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 text-[10px] px-2"
+                  onClick={() => { setEditingId(null); setEditContent(""); }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-1 text-xs text-neutral-700 dark:text-gray-300 comment-content">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // Override image rendering to add proper styling
+                  img: ({ node, ...props }) => (
+                    <img 
                       {...props} 
-                      className={`${isFileDownload ? 'text-blue-600 font-medium' : 'text-primary'} hover:underline`}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // For file downloads, we want to trigger the download attribute
-                        if (isFileDownload) {
-                          e.preventDefault();
-                          window.open(href, '_blank');
-                        }
-                      }}
-                    >
-                      {isFileDownload && <span className="mr-1">📎</span>}
-                      {props.children}
-                    </a>
-                  );
-                }
-              }}
-            >
-              {comment.content}
-            </ReactMarkdown>
-          </div>
+                      className="max-w-full h-auto rounded-md my-1 border border-gray-200"
+                      style={{ maxHeight: '300px' }}
+                      onClick={(e) => e.stopPropagation()} 
+                    />
+                  ),
+                  // Override link rendering with special handling for file downloads
+                  a: ({ node, href, ...props }) => {
+                    // Check if this is a file download link
+                    const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
+                    
+                    return (
+                      <a 
+                        href={href}
+                        {...props} 
+                        className={`${isFileDownload ? 'text-blue-600 font-medium' : 'text-primary'} hover:underline`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // For file downloads, we want to trigger the download attribute
+                          if (isFileDownload) {
+                            e.preventDefault();
+                            window.open(href, '_blank');
+                          }
+                        }}
+                      >
+                        {isFileDownload && <span className="mr-1">📎</span>}
+                        {props.children}
+                      </a>
+                    );
+                  }
+                }}
+              >
+                {comment.content}
+              </ReactMarkdown>
+            </div>
+          )}
           
           {/* Reactions Display */}
           <ReactionsDisplay 
@@ -298,6 +359,18 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
               </Button>
             )}
             
+            {canEditAuthored(comment) && editingId !== comment.id && (
+              <Button
+                variant="link"
+                className="text-[10px] p-0 h-auto"
+                onClick={() => handleStartEdit(comment)}
+                data-testid={`button-edit-comment-${comment.id}`}
+              >
+                <Pencil className="h-2.5 w-2.5 mr-1 inline" />
+                Edit
+              </Button>
+            )}
+
             {canDelete && (
               <Button
                 variant="link"
@@ -341,6 +414,16 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                         <span className="text-[10px] text-neutral-500 dark:text-gray-400">
                           {formatTimeAgo(new Date(reply.createdAt))}
                         </span>
+                        {canEditAuthored(reply) && editingId !== reply.id && (
+                          <Button
+                            variant="link"
+                            className="text-[10px] p-0 h-auto"
+                            onClick={() => handleStartEdit(reply)}
+                            data-testid={`button-edit-comment-${reply.id}`}
+                          >
+                            <Pencil className="h-2.5 w-2.5" />
+                          </Button>
+                        )}
                         {canDelete && (
                           <Button
                             variant="link"
@@ -362,34 +445,64 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                       </div>
                     </div>
                     
-                    <div className="mt-0.5 text-xs text-neutral-700 dark:text-gray-300 comment-content">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          img: ({ node, ...props }) => (
-                            <img 
-                              {...props} 
-                              className="max-w-full h-auto rounded-md my-1 border border-gray-200"
-                              style={{ maxHeight: '300px' }}
-                              onClick={(e) => e.stopPropagation()} 
-                            />
-                          ),
-                          a: ({ node, ...props }) => (
-                            <a 
-                              {...props} 
-                              className="text-primary hover:underline"
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {props.children}
-                            </a>
-                          )
-                        }}
-                      >
-                        {reply.content}
-                      </ReactMarkdown>
-                    </div>
+                    {editingId === reply.id ? (
+                      <div className="mt-1 space-y-2" onClick={(e) => e.stopPropagation()}>
+                        <Textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="min-h-[60px] text-xs"
+                          data-testid={`textarea-edit-comment-${reply.id}`}
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            className="h-6 text-[10px] px-2"
+                            disabled={!editContent.trim() || updateCommentMutation.isPending}
+                            onClick={() => handleSaveEdit(reply)}
+                            data-testid={`button-save-edit-${reply.id}`}
+                          >
+                            <Check className="h-3 w-3 mr-1" /> Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 text-[10px] px-2"
+                            onClick={() => { setEditingId(null); setEditContent(""); }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-0.5 text-xs text-neutral-700 dark:text-gray-300 comment-content">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            img: ({ node, ...props }) => (
+                              <img 
+                                {...props} 
+                                className="max-w-full h-auto rounded-md my-1 border border-gray-200"
+                                style={{ maxHeight: '300px' }}
+                                onClick={(e) => e.stopPropagation()} 
+                              />
+                            ),
+                            a: ({ node, ...props }) => (
+                              <a 
+                                {...props} 
+                                className="text-primary hover:underline"
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {props.children}
+                              </a>
+                            )
+                          }}
+                        >
+                          {reply.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

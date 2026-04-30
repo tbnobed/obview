@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useComments } from "@/hooks/use-comments";
+import { useComments, useUpdateCommentContent } from "@/hooks/use-comments";
 import CommentForm from "@/components/comments/comment-form";
 import CommentThread from "@/components/comments/comment-thread";
-import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock, PenTool } from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock, PenTool, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getUserInitials } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -51,7 +52,9 @@ export default function TimelineComments({
   const [filter, setFilter] = useState<string>("all");
   const [markers, setMarkers] = useState<{ time: number, left: string, commentId: string }[]>([]);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
-  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState<string>("");
+
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -91,6 +94,40 @@ export default function TimelineComments({
       });
     },
   });
+
+  // Edit comment mutation (handles both authed + public)
+  const updateCommentMutation = useUpdateCommentContent(fileId);
+
+  // Check if user can edit a comment (same rules as delete)
+  const canEditComment = (comment: any) => {
+    if (comment.isPublic) {
+      return !!localStorage.getItem(`comment-token-${comment.id}`);
+    }
+    return !!user && comment.userId === user.id;
+  };
+
+  const handleStartEdit = (comment: any) => {
+    setEditingId(comment.id);
+    setEditContent(comment.content || "");
+    setReplyingToId(null);
+  };
+
+  const handleSaveEdit = (comment: any) => {
+    const trimmed = editContent.trim();
+    if (!trimmed) return;
+    const creatorToken = comment.isPublic
+      ? localStorage.getItem(`comment-token-${comment.id}`) || undefined
+      : undefined;
+    updateCommentMutation.mutate(
+      { commentId: comment.id, content: trimmed, creatorToken },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          setEditContent("");
+        },
+      },
+    );
+  };
 
   // Check if user can delete a comment
   const canDeleteComment = (comment: any) => {
@@ -144,50 +181,80 @@ export default function TimelineComments({
                     {new Date(reply.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <div className="text-xs text-gray-200 mb-2">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      // Override image rendering to add proper styling
-                      img: ({ node, ...props }) => (
-                        <img 
-                          {...props} 
-                          className="max-w-full h-auto rounded-md my-1 border border-gray-200 dark:border-gray-600"
-                          style={{ maxHeight: '200px' }}
-                          onClick={(e) => e.stopPropagation()} 
-                        />
-                      ),
-                      // Override link rendering with special handling for file downloads
-                      a: ({ node, href, ...props }) => {
-                        // Check if this is a file download link
-                        const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
-                        
-                        return (
-                          <a 
-                            href={href}
+                {editingId === reply.id ? (
+                  <div className="mb-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                    <Textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="min-h-[60px] text-xs bg-gray-800 border-gray-600 text-gray-100"
+                      data-testid={`textarea-edit-comment-${reply.id}`}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        className="h-6 text-xs px-2"
+                        disabled={!editContent.trim() || updateCommentMutation.isPending}
+                        onClick={(e) => { e.stopPropagation(); handleSaveEdit(reply); }}
+                        data-testid={`button-save-edit-${reply.id}`}
+                      >
+                        <Check className="h-3 w-3 mr-1" /> Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 text-xs px-2"
+                        onClick={(e) => { e.stopPropagation(); setEditingId(null); setEditContent(""); }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-200 mb-2">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        // Override image rendering to add proper styling
+                        img: ({ node, ...props }) => (
+                          <img 
                             {...props} 
-                            className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // For file downloads, we want to trigger the download attribute
-                              if (isFileDownload) {
-                                e.preventDefault();
-                                window.open(href, '_blank');
-                              }
-                            }}
-                          >
-                            {isFileDownload && <span className="mr-1">📎</span>}
-                            {props.children}
-                          </a>
-                        );
-                      }
-                    }}
-                  >
-                    {reply.content}
-                  </ReactMarkdown>
-                </div>
+                            className="max-w-full h-auto rounded-md my-1 border border-gray-200 dark:border-gray-600"
+                            style={{ maxHeight: '200px' }}
+                            onClick={(e) => e.stopPropagation()} 
+                          />
+                        ),
+                        // Override link rendering with special handling for file downloads
+                        a: ({ node, href, ...props }) => {
+                          // Check if this is a file download link
+                          const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
+                          
+                          return (
+                            <a 
+                              href={href}
+                              {...props} 
+                              className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // For file downloads, we want to trigger the download attribute
+                                if (isFileDownload) {
+                                  e.preventDefault();
+                                  window.open(href, '_blank');
+                                }
+                              }}
+                            >
+                              {isFileDownload && <span className="mr-1">📎</span>}
+                              {props.children}
+                            </a>
+                          );
+                        }
+                      }}
+                    >
+                      {reply.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
                 
                 {/* Reactions Display for Reply */}
                 <ReactionsDisplay 
@@ -206,6 +273,19 @@ export default function TimelineComments({
                     {replyingToId === reply.id ? "Cancel Reply" : "Reply"}
                   </button>
                   
+                  {canEditComment(reply) && editingId !== reply.id && (
+                    <button
+                      className="text-xs text-gray-300 hover:text-cyan-400 transition-colors flex items-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartEdit(reply);
+                      }}
+                      data-testid={`button-edit-comment-${reply.id}`}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  )}
+
                   {canDeleteComment(reply) && (
                     <button 
                       className="text-xs text-gray-300 hover:text-red-500 transition-colors flex items-center"
@@ -434,50 +514,80 @@ export default function TimelineComments({
                       </div>
 
 
-                      <div className="text-sm mb-3 leading-relaxed" style={{color: 'hsl(var(--comments-text))'}}>
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            // Override image rendering to add proper styling
-                            img: ({ node, ...props }) => (
-                              <img 
-                                {...props} 
-                                className="max-w-full h-auto rounded-md my-1 border border-gray-200 dark:border-gray-600"
-                                style={{ maxHeight: '300px' }}
-                                onClick={(e) => e.stopPropagation()} 
-                              />
-                            ),
-                            // Override link rendering with special handling for file downloads
-                            a: ({ node, href, ...props }) => {
-                              // Check if this is a file download link
-                              const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
-                              
-                              return (
-                                <a 
-                                  href={href}
+                      {editingId === comment.id ? (
+                        <div className="mb-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <Textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="min-h-[80px] text-sm bg-gray-800 border-gray-600 text-gray-100"
+                            data-testid={`textarea-edit-comment-${comment.id}`}
+                          />
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs"
+                              disabled={!editContent.trim() || updateCommentMutation.isPending}
+                              onClick={(e) => { e.stopPropagation(); handleSaveEdit(comment); }}
+                              data-testid={`button-save-edit-${comment.id}`}
+                            >
+                              <Check className="h-3 w-3 mr-1" /> Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs"
+                              onClick={(e) => { e.stopPropagation(); setEditingId(null); setEditContent(""); }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm mb-3 leading-relaxed" style={{color: 'hsl(var(--comments-text))'}}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              // Override image rendering to add proper styling
+                              img: ({ node, ...props }) => (
+                                <img 
                                   {...props} 
-                                  className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // For file downloads, we want to trigger the download attribute
-                                    if (isFileDownload) {
-                                      e.preventDefault();
-                                      window.open(href, '_blank');
-                                    }
-                                  }}
-                                >
-                                  {isFileDownload && <span className="mr-1">📎</span>}
-                                  {props.children}
-                                </a>
-                              );
-                            }
-                          }}
-                        >
-                          {comment.content}
-                        </ReactMarkdown>
-                      </div>
+                                  className="max-w-full h-auto rounded-md my-1 border border-gray-200 dark:border-gray-600"
+                                  style={{ maxHeight: '300px' }}
+                                  onClick={(e) => e.stopPropagation()} 
+                                />
+                              ),
+                              // Override link rendering with special handling for file downloads
+                              a: ({ node, href, ...props }) => {
+                                // Check if this is a file download link
+                                const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
+                                
+                                return (
+                                  <a 
+                                    href={href}
+                                    {...props} 
+                                    className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // For file downloads, we want to trigger the download attribute
+                                      if (isFileDownload) {
+                                        e.preventDefault();
+                                        window.open(href, '_blank');
+                                      }
+                                    }}
+                                  >
+                                    {isFileDownload && <span className="mr-1">📎</span>}
+                                    {props.children}
+                                  </a>
+                                );
+                              }
+                            }}
+                          >
+                            {comment.content}
+                          </ReactMarkdown>
+                        </div>
+                      )}
 
                       {/* Reactions Display */}
                       <ReactionsDisplay 
@@ -514,6 +624,20 @@ export default function TimelineComments({
                             disabled={toggleResolutionMutation.isPending}
                           >
                             {comment.isResolved ? "Unresolve" : "Resolve"}
+                          </Button>
+                        )}
+
+                        {canEditComment(comment) && editingId !== comment.id && (
+                          <Button
+                            variant="link"
+                            className="text-xs p-0 h-auto font-medium text-gray-300 hover:text-cyan-400 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEdit(comment);
+                            }}
+                            data-testid={`button-edit-comment-${comment.id}`}
+                          >
+                            Edit
                           </Button>
                         )}
 
