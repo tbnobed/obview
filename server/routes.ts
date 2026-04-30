@@ -1039,24 +1039,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Folder not found" });
       }
 
-      // Check if user has access to this folder. Global folders are
-      // visible to everyone.
-      const isAdminView = req.user.role === "admin";
-      if (!isAdminView && folder.createdById !== req.user.id && !folder.isGlobal) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-
-      let projects = await storage.getProjectsByFolder(folderId);
-
-      // Non-admins should only see the projects they actually have
-      // access to. Project membership is independent of folder
-      // visibility, so this is enforced for every folder, not just
-      // global ones.
-      if (!isAdminView) {
-        const userProjects = await storage.getProjectsByUser(req.user.id);
-        const userProjectIds = new Set(userProjects.map((p) => p.id));
-        projects = projects.filter((p) => userProjectIds.has(p.id));
-      }
+      // Folder contents are readable by any authenticated user (mirrors
+      // the loosened project read access).
+      const projects = await storage.getProjectsByFolder(folderId);
 
       res.json(projects);
     } catch (error) {
