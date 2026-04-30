@@ -16,6 +16,7 @@ import { useFolders } from "@/hooks/use-folders";
 
 interface ProjectFormProps {
   projectId?: number;
+  defaultFolderId?: number | null;
   onSuccess?: (projectId: number) => void;
   className?: string;
 }
@@ -34,6 +35,7 @@ type CreateProjectInput = z.infer<typeof createProjectSchema>;
 
 export default function ProjectForm({ 
   projectId,
+  defaultFolderId = null,
   onSuccess,
   className
 }: ProjectFormProps) {
@@ -54,7 +56,7 @@ export default function ProjectForm({
     defaultValues: {
       name: "",
       description: "",
-      folderId: null,
+      folderId: defaultFolderId ?? null,
       status: "in_progress",
     },
     values: project ? {

@@ -16,6 +16,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import ProjectPage from "@/pages/project-page";
 import ProjectsPage from "@/pages/projects-page";
 import NewProjectPage from "@/pages/new-project-page";
+import FolderPage from "@/pages/folder-page";
 import FileUploadPage from "@/pages/file-upload-page";
 import AdminPage from "@/pages/admin-page";
 import SettingsPage from "@/pages/settings-page";
@@ -38,6 +39,7 @@ function Router() {
       <ProtectedRoute path="/projects/:id/upload" component={FileUploadPage} />
       <ProtectedRoute path="/projects/:id" component={ProjectPage} />
       <ProtectedRoute path="/project/:id" component={ProjectPage} /> {/* Keep this for backward compatibility */}
+      <ProtectedRoute path="/folders/:id" component={FolderPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/debug" component={DebugPage} />

@@ -361,45 +361,59 @@ function SidebarFolderItem({ folder }: { folder: any }) {
 
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
+      <div
         className={cn(
           "group flex w-full items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors",
           "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-gray-900/70"
         )}
-        data-testid={`button-sidebar-folder-${folder.id}`}
+        data-testid={`row-sidebar-folder-${folder.id}`}
         title={folder.description || folder.name}
       >
-        <ChevronRight
-          className={cn(
-            "h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform",
-            open && "rotate-90"
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+          className="shrink-0 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
+          data-testid={`button-sidebar-folder-toggle-${folder.id}`}
+          aria-label={open ? "Collapse folder" : "Expand folder"}
+          aria-expanded={open}
+        >
+          <ChevronRight
+            className={cn(
+              "h-3.5 w-3.5 text-neutral-400 transition-transform",
+              open && "rotate-90"
+            )}
+          />
+        </button>
+        <Link
+          href={`/folders/${folder.id}`}
+          className="flex items-center gap-1.5 flex-1 min-w-0"
+          data-testid={`link-sidebar-folder-${folder.id}`}
+        >
+          {folder.isGlobal ? (
+            <Globe className="h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
+          ) : open ? (
+            <FolderOpen className="h-4 w-4 shrink-0 text-primary-600 dark:text-[#10a37f]" />
+          ) : (
+            <Folder className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-400" />
           )}
-        />
-        {folder.isGlobal ? (
-          <Globe className="h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
-        ) : open ? (
-          <FolderOpen className="h-4 w-4 shrink-0 text-primary-600 dark:text-[#10a37f]" />
-        ) : (
-          <Folder className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-400" />
-        )}
-        <span className="truncate flex-1 min-w-0 text-left">
-          {folder.name}
-          {folder.createdByUsername && (
-            <span className="ml-1.5 text-xs text-neutral-400 dark:text-neutral-500 font-normal group-hover:hidden">
-              · {folder.createdByUsername}
-            </span>
-          )}
-        </span>
+          <span className="truncate flex-1 min-w-0 text-left">
+            {folder.name}
+            {folder.createdByUsername && (
+              <span className="ml-1.5 text-xs text-neutral-400 dark:text-neutral-500 font-normal group-hover:hidden">
+                · {folder.createdByUsername}
+              </span>
+            )}
+          </span>
+        </Link>
         {canToggleGlobal && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <span
-                role="button"
+              <button
+                type="button"
                 onClick={(e) => e.stopPropagation()}
                 className="hidden group-hover:inline-flex shrink-0 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
                 title={folder.isGlobal ? "Make private" : "Make global"}
+                aria-label={folder.isGlobal ? "Make folder private" : "Make folder global"}
                 data-testid={`button-toggle-global-folder-${folder.id}`}
               >
                 {isToggling ? (
@@ -409,7 +423,7 @@ function SidebarFolderItem({ folder }: { folder: any }) {
                 ) : (
                   <Globe className="h-3.5 w-3.5 text-neutral-500" />
                 )}
-              </span>
+              </button>
             </AlertDialogTrigger>
             <AlertDialogContent
               onClick={(e) => e.stopPropagation()}
@@ -455,17 +469,18 @@ function SidebarFolderItem({ folder }: { folder: any }) {
           </AlertDialog>
         )}
         {canShare && (
-          <span
-            role="button"
+          <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
             className="hidden group-hover:inline-flex shrink-0 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
             title="Share folder"
+            aria-label="Share folder"
             data-testid={`button-share-folder-${folder.id}`}
           >
             <Share2 className="h-3.5 w-3.5 text-neutral-500" />
-          </span>
+          </button>
         )}
-      </button>
+      </div>
 
       {canShare && (
         <ShareLinksDialog
