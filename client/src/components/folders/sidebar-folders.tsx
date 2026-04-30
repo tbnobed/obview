@@ -7,6 +7,7 @@ import {
   useFolders,
   useCreateFolder,
   useFolderProjects,
+  useToggleFolderGlobal,
 } from "@/hooks/use-folders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,9 +37,21 @@ import {
   Globe,
   Loader2,
   Plus,
+  User as UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const createFolderSchema = z.object({
   name: z
@@ -339,8 +352,12 @@ function SidebarFolderItem({ folder }: { folder: any }) {
   const { data: projects, isLoading } = useFolderProjects(open ? folder.id : 0);
   const projectCount = projects?.length ?? 0;
   const { user } = useAuth();
-  const canShare = user && (user.role === "admin" || (folder.createdById === user.id && !folder.isGlobal));
+  const isAdmin = user?.role === "admin";
+  const canShare = user && (isAdmin || (folder.createdById === user.id && !folder.isGlobal));
   const [shareOpen, setShareOpen] = useState(false);
+  const toggleGlobal = useToggleFolderGlobal();
+  const isToggling =
+    toggleGlobal.isPending && toggleGlobal.variables?.folderId === folder.id;
 
   return (
     <div>
@@ -375,6 +392,68 @@ function SidebarFolderItem({ folder }: { folder: any }) {
             </span>
           )}
         </span>
+        {isAdmin && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <span
+                role="button"
+                onClick={(e) => e.stopPropagation()}
+                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
+                title={folder.isGlobal ? "Make private" : "Make global"}
+                data-testid={`button-toggle-global-folder-${folder.id}`}
+              >
+                {isToggling ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-500" />
+                ) : folder.isGlobal ? (
+                  <UserIcon className="h-3.5 w-3.5 text-neutral-500" />
+                ) : (
+                  <Globe className="h-3.5 w-3.5 text-neutral-500" />
+                )}
+              </span>
+            </AlertDialogTrigger>
+            <AlertDialogContent
+              onClick={(e) => e.stopPropagation()}
+              data-testid={`dialog-toggle-global-${folder.id}`}
+            >
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {folder.isGlobal ? "Make folder private?" : "Make folder global?"}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {folder.isGlobal ? (
+                    <>
+                      "{folder.name}" will become private. Only you and other admins
+                      will be able to see it. Other users will lose access.
+                    </>
+                  ) : (
+                    <>
+                      "{folder.name}" will become visible to all users on the
+                      platform. They will be able to see this folder and the
+                      projects inside it (subject to project-level access).
+                    </>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid={`button-cancel-toggle-global-${folder.id}`}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={isToggling}
+                  onClick={() =>
+                    toggleGlobal.mutate({
+                      folderId: folder.id,
+                      isGlobal: !folder.isGlobal,
+                    })
+                  }
+                  data-testid={`button-confirm-toggle-global-${folder.id}`}
+                >
+                  {folder.isGlobal ? "Make Private" : "Make Global"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
         {canShare && (
           <span
             role="button"
