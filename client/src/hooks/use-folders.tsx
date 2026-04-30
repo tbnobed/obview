@@ -70,6 +70,35 @@ export const useUpdateFolder = (folderId: number) => {
   });
 };
 
+// Generic per-folder update (folderId provided per-call). Used for quick
+// admin actions such as toggling a folder's global visibility.
+export const useToggleFolderGlobal = () => {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ folderId, isGlobal }: { folderId: number; isGlobal: boolean }) => {
+      return await apiRequest("PATCH", `/api/folders/${folderId}`, { isGlobal });
+    },
+    onSuccess: (_data, variables) => {
+      toast({
+        title: variables.isGlobal ? "Folder made global" : "Folder made private",
+        description: variables.isGlobal
+          ? "All users can now see this folder."
+          : "Only you (and admins) can see this folder now.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/folders/${variables.folderId}`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to change folder visibility",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useDeleteFolder = () => {
   const { toast } = useToast();
   

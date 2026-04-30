@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder, useFolderProjects } from "@/hooks/use-folders";
+import { useFolders, useCreateFolder, useUpdateFolder, useDeleteFolder, useFolderProjects, useToggleFolderGlobal } from "@/hooks/use-folders";
 import { useMediaFiles } from "@/hooks/use-media";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,7 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
   const createMutation = useCreateFolder();
   const updateMutation = useUpdateFolder(editingFolder?.id || 0);
   const deleteMutation = useDeleteFolder();
+  const toggleGlobalMutation = useToggleFolderGlobal();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
@@ -242,13 +243,20 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
                 key={folder.id}
                 folder={folder}
                 canMutate={canMutate}
+                isAdmin={isAdmin}
                 onClick={() => {
                   setSelectedFolder(folder);
                   setProjectsDialogOpen(true);
                 }}
                 onEdit={() => openEditDialog(folder)}
                 onDelete={() => handleDeleteFolder(folder.id)}
+                onToggleGlobal={() =>
+                  toggleGlobalMutation.mutate({ folderId: folder.id, isGlobal: !folder.isGlobal })
+                }
                 isDeleting={deleteMutation.isPending}
+                isTogglingGlobal={
+                  toggleGlobalMutation.isPending && toggleGlobalMutation.variables?.folderId === folder.id
+                }
               />
             );
           })}
@@ -390,13 +398,16 @@ export default function FoldersManagement({ className }: FoldersManagementProps)
 interface FolderCardProps {
   folder: any;
   canMutate: boolean;
+  isAdmin: boolean;
   onClick?: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onToggleGlobal: () => void;
   isDeleting: boolean;
+  isTogglingGlobal: boolean;
 }
 
-function FolderCard({ folder, canMutate, onClick, onEdit, onDelete, isDeleting }: FolderCardProps) {
+function FolderCard({ folder, canMutate, isAdmin, onClick, onEdit, onDelete, onToggleGlobal, isDeleting, isTogglingGlobal }: FolderCardProps) {
   const { data: projects } = useFolderProjects(folder.id);
   const projectCount = projects?.length || 0;
 
@@ -451,6 +462,64 @@ function FolderCard({ folder, canMutate, onClick, onEdit, onDelete, isDeleting }
           
           {canMutate ? (
           <div className="flex items-center gap-1">
+            {isAdmin && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isTogglingGlobal}
+                    onClick={(e) => e.stopPropagation()}
+                    title={folder.isGlobal ? "Make private" : "Make global"}
+                    data-testid={`button-toggle-global-folder-${folder.id}`}
+                  >
+                    {isTogglingGlobal ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : folder.isGlobal ? (
+                      <User className="h-4 w-4" />
+                    ) : (
+                      <Globe className="h-4 w-4" />
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent
+                  data-testid={`dialog-toggle-global-${folder.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {folder.isGlobal ? "Make folder private?" : "Make folder global?"}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {folder.isGlobal ? (
+                        <>
+                          "{folder.name}" will become private. Only you and other admins
+                          will be able to see it. Other users will lose access.
+                        </>
+                      ) : (
+                        <>
+                          "{folder.name}" will become visible to all users on the
+                          platform. They will be able to see this folder and the
+                          projects inside it (subject to project-level access).
+                        </>
+                      )}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel data-testid={`button-cancel-toggle-global-${folder.id}`}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={onToggleGlobal}
+                      disabled={isTogglingGlobal}
+                      data-testid={`button-confirm-toggle-global-${folder.id}`}
+                    >
+                      {folder.isGlobal ? "Make Private" : "Make Global"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <Button
               variant="ghost"
               size="sm"
