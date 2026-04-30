@@ -384,10 +384,10 @@ function SidebarFolderItem({ folder }: { folder: any }) {
         ) : (
           <Folder className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-400" />
         )}
-        <span className="truncate flex-1 text-left">
+        <span className="truncate flex-1 min-w-0 text-left">
           {folder.name}
           {folder.createdByUsername && (
-            <span className="ml-1.5 text-xs text-neutral-400 dark:text-neutral-500 font-normal">
+            <span className="ml-1.5 text-xs text-neutral-400 dark:text-neutral-500 font-normal group-hover:hidden">
               · {folder.createdByUsername}
             </span>
           )}
@@ -398,7 +398,7 @@ function SidebarFolderItem({ folder }: { folder: any }) {
               <span
                 role="button"
                 onClick={(e) => e.stopPropagation()}
-                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
+                className="hidden group-hover:inline-flex shrink-0 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
                 title={folder.isGlobal ? "Make private" : "Make global"}
                 data-testid={`button-toggle-global-folder-${folder.id}`}
               >
@@ -458,7 +458,7 @@ function SidebarFolderItem({ folder }: { folder: any }) {
           <span
             role="button"
             onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
-            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
+            className="hidden group-hover:inline-flex shrink-0 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
             title="Share folder"
             data-testid={`button-share-folder-${folder.id}`}
           >
