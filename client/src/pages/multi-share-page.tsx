@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,8 @@ import WatermarkOverlay from "@/components/media/watermark-overlay";
 
 type ShareInfo = {
   scopeType: "project" | "folder" | "file";
+  scopeId: number;
+  fileProjectId: number | null;
   name: string | null;
   scopeName: string;
   expired: boolean;
@@ -68,6 +71,7 @@ type ShareInfo = {
   watermarkText?: string | null;
   watermarkLabel?: string | null;
   unlocked: boolean;
+  viewerAuthenticated?: boolean;
 };
 
 type ManifestFile = {
@@ -178,6 +182,8 @@ function fileKind(t: string) {
 export default function MultiSharePage() {
   const params = useParams();
   const token = params.token as string;
+  const { user, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
 
   const infoQ = useQuery<ShareInfo>({
     queryKey: ["share-info", token],
@@ -188,6 +194,28 @@ export default function MultiSharePage() {
     },
     retry: false,
   });
+
+  // If the visitor is signed in, send them to the authenticated app view
+  // for the shared scope (project or file). Folder shares stay on this
+  // multi-share page since there's no folder-specific authenticated route.
+  useEffect(() => {
+    if (authLoading || !user || !infoQ.data) return;
+    const info = infoQ.data;
+    if (info.expired) return;
+    const search = new URLSearchParams(window.location.search);
+    const presetFile = search.get("file");
+    if (info.scopeType === "project") {
+      const target = presetFile
+        ? `/projects/${info.scopeId}?media=${presetFile}`
+        : `/projects/${info.scopeId}`;
+      setLocation(target, { replace: true });
+    } else if (info.scopeType === "file" && info.fileProjectId) {
+      setLocation(
+        `/projects/${info.fileProjectId}?media=${info.scopeId}`,
+        { replace: true },
+      );
+    }
+  }, [authLoading, user, infoQ.data, setLocation]);
 
   const [unlocked, setUnlocked] = useState(false);
   useEffect(() => {

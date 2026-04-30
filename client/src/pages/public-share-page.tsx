@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -115,6 +116,7 @@ interface SharedFile {
   filename: string;
   fileType: string;
   fileSize: number;
+  projectId: number;
   projectName: string;
   createdAt: string;
 }
@@ -167,6 +169,8 @@ const requestChangesSchema = z.object({
 export default function PublicSharePage() {
   const params = useParams<{ token: string }>();
   const token = params.token;
+  const { user, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const viewOnly =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("viewOnly") === "true";
@@ -187,6 +191,18 @@ export default function PublicSharePage() {
     enabled: !!token,
     retry: false,
   });
+
+  // Signed-in viewers are routed to the authenticated project view with
+  // the shared file pre-selected. Only logged-out reviewers see this
+  // public share page.
+  useEffect(() => {
+    if (authLoading || !user || !fileQ.data) return;
+    if (!fileQ.data.projectId) return;
+    setLocation(
+      `/projects/${fileQ.data.projectId}?media=${fileQ.data.id}`,
+      { replace: true },
+    );
+  }, [authLoading, user, fileQ.data, setLocation]);
 
   if (!token) {
     return (

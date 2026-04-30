@@ -307,6 +307,9 @@ export function registerShareLinkRoutes(
       if (!link || link.revokedAt) return res.status(404).json({ message: "Not found" });
       const expired = isExpired(link);
       let scopeName = "";
+      // For file shares, also expose the parent project id so an authenticated
+      // viewer can be redirected to /projects/:projectId?media=:fileId.
+      let fileProjectId: number | null = null;
       if (!expired) {
         if (link.scopeType === "project") {
           const p = await storage.getProject(link.scopeId);
@@ -317,10 +320,13 @@ export function registerShareLinkRoutes(
         } else if (link.scopeType === "file") {
           const f = await storage.getFile(link.scopeId);
           scopeName = f?.filename ?? "";
+          fileProjectId = f?.projectId ?? null;
         }
       }
       res.json({
         scopeType: link.scopeType,
+        scopeId: link.scopeId,
+        fileProjectId,
         name: link.name,
         scopeName,
         expired,
@@ -332,6 +338,7 @@ export function registerShareLinkRoutes(
         watermarkText: link.watermarkText,
         watermarkLabel: buildWatermarkLabel(req, link),
         unlocked: !expired && isUnlocked(req, link),
+        viewerAuthenticated: !!(req.isAuthenticated && req.isAuthenticated() && req.user),
       });
     } catch (e) { next(e); }
   });

@@ -263,7 +263,13 @@ function isAdmin(req: Request, res: Response, next: NextFunction) {
   res.status(403).json({ message: "Forbidden" });
 }
 
-// Middleware to check if user has access to a project
+// Middleware to check if user has access to view a project.
+// Read access is granted to any authenticated user — this lets logged-in
+// reviewers who receive a share link land on the full authenticated project
+// view instead of the public share page. Personal dashboards (`GET /api/projects`)
+// remain scoped to membership so other users' projects don't appear there.
+// Edit/mutation routes use `hasProjectEditAccess`, which still enforces
+// membership + editor/admin role.
 async function hasProjectAccess(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.isAuthenticated() || !req.user) {
@@ -275,15 +281,10 @@ async function hasProjectAccess(req: Request, res: Response, next: NextFunction)
       return res.status(400).json({ message: "Invalid project ID" });
     }
 
-    // Admin has access to all projects
-    if (req.user.role === "admin") {
-      return next();
-    }
-
-    // Check if user is a member of the project
-    const projectUser = await storage.getProjectUser(projectId, req.user.id);
-    if (!projectUser) {
-      return res.status(403).json({ message: "Forbidden" });
+    // Verify the project exists so we still 404 on bad IDs.
+    const project = await storage.getProject(projectId);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
     }
 
     next();
@@ -321,7 +322,9 @@ async function hasProjectEditAccess(req: Request, res: Response, next: NextFunct
   }
 }
 
-// Middleware to check if user has access to a file (by checking the file's project access)
+// Middleware to check if user has access to a file. Read access is granted
+// to any authenticated user (mirrors `hasProjectAccess`). Mutation routes
+// must use `hasFileEditAccess` instead.
 async function hasFileAccess(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.isAuthenticated() || !req.user) {
@@ -333,21 +336,43 @@ async function hasFileAccess(req: Request, res: Response, next: NextFunction) {
       return res.status(400).json({ message: "Invalid file ID" });
     }
 
-    // Get the file to find its project ID
     const file = await storage.getFile(fileId);
     if (!file) {
       return res.status(404).json({ message: "File not found" });
     }
 
-    // Admin has access to all files
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Mutation-level guard for file endpoints (reprocess, transcript regenerate,
+// summary regenerate, etc.). Requires the user to be an admin or an editor
+// member of the file's project.
+async function hasFileEditAccess(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const fileId = parseInt(req.params.id);
+    if (isNaN(fileId)) {
+      return res.status(400).json({ message: "Invalid file ID" });
+    }
+
+    const file = await storage.getFile(fileId);
+    if (!file) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
     if (req.user.role === "admin") {
       return next();
     }
 
-    // Check if user is a member of the file's project
     const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-    if (!projectUser) {
-      return res.status(403).json({ message: "Forbidden" });
+    if (!projectUser || (projectUser.role !== "editor" && projectUser.role !== "admin")) {
+      return res.status(403).json({ message: "Insufficient permissions" });
     }
 
     next();
@@ -1603,13 +1628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
-      }
+      // Read access is open to any authenticated user (see hasProjectAccess).
       
       res.json(file);
     } catch (error) {
@@ -1627,13 +1646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user && req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          return res.status(403).json({ message: "You don't have access to this file's project" });
-        }
-      }
+      // Read access is open to any authenticated user.
       
       const project = await storage.getProject(file.projectId);
       if (!project) {
@@ -1667,13 +1680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAvailable: file.isAvailable
       });
       
-      // Check if user has access to the project
-      if (req.user && req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
-      }
+      // Read access is open to any authenticated user.
       
       // Check if file is marked as unavailable
       if (file.isAvailable === false) {
@@ -1783,13 +1790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user && req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
-      }
+      // Read access is open to any authenticated user.
       
       // Check if file is marked as unavailable
       if (file.isAvailable === false) {
@@ -1855,7 +1856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============ VIDEO PROCESSING API ENDPOINTS ============
   
   // Trigger reprocessing of an existing video file
-  app.post("/api/files/:id/reprocess", isAuthenticated, hasFileAccess, async (req, res) => {
+  app.post("/api/files/:id/reprocess", isAuthenticated, hasFileEditAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
       if (isNaN(fileId)) {
@@ -2045,7 +2046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/files/:id/transcript/regenerate", isAuthenticated, hasFileAccess, async (req, res) => {
+  app.post("/api/files/:id/transcript/regenerate", isAuthenticated, hasFileEditAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
       if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
@@ -2064,7 +2065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/files/:id/summary/regenerate", isAuthenticated, hasFileAccess, async (req, res) => {
+  app.post("/api/files/:id/summary/regenerate", isAuthenticated, hasFileEditAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
       if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
@@ -2378,12 +2379,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Return file metadata with project name (excluding sensitive fields)
+      // Return file metadata with project name (excluding sensitive fields).
+      // `projectId` is included so the client can redirect signed-in users
+      // straight to the authenticated project view.
       return res.json({
         id: fileWithProject.id,
         filename: fileWithProject.filename,
         fileType: fileWithProject.fileType,
         fileSize: fileWithProject.fileSize,
+        projectId: fileWithProject.projectId,
         projectName: fileWithProject.projectName,
         createdAt: fileWithProject.createdAt
       });
@@ -3320,10 +3324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const file = await storage.getFile(fileId);
       if (!file) return res.status(404).json({ message: "File not found" });
 
-      if (req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) return res.status(403).json({ message: "You don't have access to this file" });
-      }
+      // Read access is open to any authenticated user.
 
       const comments = await storage.getUnifiedCommentsByFileV2(fileId);
       const topLevel = comments
@@ -3376,14 +3377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          console.log(`🔍 [COMMENT API] User ${req.user.id} has no access to project ${file.projectId}`);
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
-      }
+      // Read access is open to any authenticated user.
       
       console.log(`🔍 [COMMENT API] User ${req.user.id} authorized for file ${fileId}, fetching comments...`);
       
@@ -3417,14 +3411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          console.log(`🔍 [COMMENT API] User ${req.user.id} has no access to project ${file.projectId} for comment creation`);
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
-      }
+      // Any authenticated user may comment (Frame.io-style collaboration).
       
       console.log(`🔍 [COMMENT API] User ${req.user.id} authorized for file ${fileId}, validating comment data...`);
       
@@ -3898,13 +3885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
-      }
+      // Read access is open to any authenticated user.
       
       const approvals = await storage.getApprovalsByFile(fileId);
       
@@ -3941,13 +3922,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
-      }
+      // Any authenticated user may approve / request changes (Frame.io-style review).
       
       // Validate approval data
       const validationResult = insertApprovalSchema.safeParse({
@@ -4100,23 +4075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        
-        if (!projectUser) {
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
-        
-        // Make sure the user is at least an editor to approve/request changes
-        if (req.body.status && ["approved", "changes_requested"].includes(req.body.status) && 
-            projectUser.role !== "editor" && projectUser.role !== "admin") {
-          console.log(`User ${req.user.id} (role: ${projectUser.role}) attempted to ${req.body.status} file ${fileId}`);
-          return res.status(403).json({ 
-            message: "Only editors and administrators can approve or request changes to files" 
-          });
-        }
-      }
+      // Any authenticated user may approve / request changes (Frame.io-style review).
       
       // Format the data for the approval schema
       const approvalData = {
