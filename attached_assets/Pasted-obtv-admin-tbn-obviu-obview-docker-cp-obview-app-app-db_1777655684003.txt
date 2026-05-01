@@ -1,0 +1,66 @@
+obtv-admin@tbn-obviu:~/obview$ docker cp obview_app:/app/db-backups/pre-migration-20260430-180558.sql ./prelos s.sql
+docker cp obview_app:/app/db-backups/pre-migration-20260430-223155.sql ./postloss.sql
+
+for f in prelos s.sql postloss.sql; do
+  echo "=== $f ==="
+  for tbl in users folders projects files comments comments_unified project_users share_links; do
+    cnt=$(awk -v t="public.${tbl}" '
+      /^COPY / { copying = ($2 == t); next }
+      copying && /^\\\.$/ { copying = 0; next }
+      copying { c++ }
+      END { print c+0 }
+    ' "$f")
+    printf '  %-20s %s\n' "$tbl" "$cnt"
+  done
+done
+docker: 'docker cp' requires 2 arguments
+
+Usage:  docker cp [OPTIONS] CONTAINER:SRC_PATH DEST_PATH|-
+        docker cp [OPTIONS] SRC_PATH|- CONTAINER:DEST_PATH
+
+Run 'docker cp --help' for more information
+Successfully copied 369kB to /home/obtv-admin/obview/postloss.sql
+=== prelos ===
+awk: fatal: cannot open file `prelos' for reading: No such file or directory
+  users
+awk: fatal: cannot open file `prelos' for reading: No such file or directory
+  folders
+awk: fatal: cannot open file `prelos' for reading: No such file or directory
+  projects
+awk: fatal: cannot open file `prelos' for reading: No such file or directory
+  files
+awk: fatal: cannot open file `prelos' for reading: No such file or directory
+  comments
+awk: fatal: cannot open file `prelos' for reading: No such file or directory
+  comments_unified
+awk: fatal: cannot open file `prelos' for reading: No such file or directory
+  project_users
+awk: fatal: cannot open file `prelos' for reading: No such file or directory
+  share_links
+=== s.sql ===
+awk: fatal: cannot open file `s.sql' for reading: No such file or directory
+  users
+awk: fatal: cannot open file `s.sql' for reading: No such file or directory
+  folders
+awk: fatal: cannot open file `s.sql' for reading: No such file or directory
+  projects
+awk: fatal: cannot open file `s.sql' for reading: No such file or directory
+  files
+awk: fatal: cannot open file `s.sql' for reading: No such file or directory
+  comments
+awk: fatal: cannot open file `s.sql' for reading: No such file or directory
+  comments_unified
+awk: fatal: cannot open file `s.sql' for reading: No such file or directory
+  project_users
+awk: fatal: cannot open file `s.sql' for reading: No such file or directory
+  share_links
+=== postloss.sql ===
+  users                17
+  folders              9
+  projects             3
+  files                3
+  comments             0
+  comments_unified     29
+  project_users        3
+  share_links          3
+obtv-admin@tbn-obviu:~/obview$
