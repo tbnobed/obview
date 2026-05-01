@@ -172,11 +172,11 @@ export interface IStorage {
   getCommentReactionsWithUsers(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean; users: { name: string; isCurrentUser: boolean }[] }[]>;
 
   // Share Links
-  createShareLink(data: { id: string; token: string; scopeType: string; scopeId: number; name?: string | null; passwordHash?: string | null; expiresAt?: Date | null; allowDownloads: boolean; allowComments: boolean; requireEmail: boolean; createdById: number }): Promise<ShareLink>;
+  createShareLink(data: { id: string; token: string; scopeType: string; scopeId: number; name?: string | null; passwordHash?: string | null; expiresAt?: Date | null; allowDownloads: boolean; allowComments: boolean; requireEmail: boolean; watermarkEnabled?: boolean; watermarkText?: string | null; createdById: number }): Promise<ShareLink>;
   getShareLink(id: string): Promise<ShareLink | undefined>;
   getShareLinkByToken(token: string): Promise<ShareLink | undefined>;
   listShareLinksForScope(scopeType: string, scopeId: number): Promise<ShareLink[]>;
-  updateShareLink(id: string, data: Partial<{ name: string | null; passwordHash: string | null; expiresAt: Date | null; allowDownloads: boolean; allowComments: boolean; requireEmail: boolean; revokedAt: Date | null }>): Promise<ShareLink | undefined>;
+  updateShareLink(id: string, data: Partial<{ name: string | null; passwordHash: string | null; expiresAt: Date | null; allowDownloads: boolean; allowComments: boolean; requireEmail: boolean; watermarkEnabled: boolean; watermarkText: string | null; revokedAt: Date | null }>): Promise<ShareLink | undefined>;
   revokeShareLink(id: string): Promise<boolean>;
 
   // Session store
@@ -1303,6 +1303,8 @@ export class MemStorage implements IStorage {
       name: data.name ?? null, passwordHash: data.passwordHash ?? null,
       expiresAt: data.expiresAt ?? null, allowDownloads: !!data.allowDownloads,
       allowComments: data.allowComments !== false, requireEmail: !!data.requireEmail,
+      watermarkEnabled: !!data.watermarkEnabled,
+      watermarkText: data.watermarkText ?? null,
       revokedAt: null, createdById: data.createdById, createdAt: new Date(),
     };
     this.shareLinksMem.set(link.id, link);
@@ -1310,7 +1312,7 @@ export class MemStorage implements IStorage {
   }
   async getShareLink(id: string): Promise<ShareLink | undefined> { return this.shareLinksMem.get(id); }
   async getShareLinkByToken(token: string): Promise<ShareLink | undefined> {
-    for (const l of this.shareLinksMem.values()) if (l.token === token) return l;
+    for (const l of Array.from(this.shareLinksMem.values())) if (l.token === token) return l;
     return undefined;
   }
   async listShareLinksForScope(scopeType: string, scopeId: number): Promise<ShareLink[]> {
@@ -2781,6 +2783,8 @@ export class DatabaseStorage implements IStorage {
       allowDownloads: !!data.allowDownloads,
       allowComments: data.allowComments !== false,
       requireEmail: !!data.requireEmail,
+      watermarkEnabled: !!data.watermarkEnabled,
+      watermarkText: data.watermarkText ?? null,
       createdById: data.createdById,
     }).returning();
     return row;

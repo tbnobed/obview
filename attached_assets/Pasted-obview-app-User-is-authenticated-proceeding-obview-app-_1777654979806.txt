@@ -1,0 +1,95 @@
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/72/comments requested by user 4
+obview_app  | 🔍 [COMMENT API] User 4 authorized for file 72, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 19 comments for file 72
+obview_app  | Starting file system scan on /app/uploads
+obview_app  | [SCAN] Starting scan of uploads directory: /app/uploads
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads
+obview_app  | [DEBUG] File exists check success for: /app/uploads
+obview_app  | [SCAN] Found 42 files in uploads directory
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1776962685388-922995572.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1776962685388-922995572.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777061370115-525641550.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777061370115-525641550.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777498681670-596112811.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777498681670-596112811.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777582364274-801646783.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777582364274-801646783.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777582664945-59901280.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777582664945-59901280.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777582766249-372456525.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777582766249-372456525.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777582787643-260690936.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777582787643-260690936.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777582845586-348552498.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777582845586-348552498.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777582926008-229255096.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777582926008-229255096.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777583019857-953320455.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777583019857-953320455.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777583109868-440026491.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777583109868-440026491.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777583136210-387418020.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777583136210-387418020.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777583172740-192831532.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777583172740-192831532.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777583196215-131725127.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777583196215-131725127.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777583235885-109923488.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777583235885-109923488.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777583256223-866407618.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777583256223-866407618.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777583291091-838179957.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777583291091-838179957.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/1777583376311-677004295.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/1777583376311-677004295.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/10/qualities/Dobson Best Of Exprt_1080p.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/10/qualities/Dobson Best Of Exprt_1080p.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/10/qualities/Dobson Best Of Exprt_360p.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/10/qualities/Dobson Best Of Exprt_360p.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/10/qualities/Dobson Best Of Exprt_720p.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/10/qualities/Dobson Best Of Exprt_720p.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/10/scrub/Dobson Best Of Exprt_scrub.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/10/scrub/Dobson Best Of Exprt_scrub.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/10/thumbnails/Dobson Best Of Exprt_sprite.jpg
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/10/thumbnails/Dobson Best Of Exprt_sprite.jpg
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/10/thumbnails/Dobson Best Of Exprt_sprite.json
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/10/thumbnails/Dobson Best Of Exprt_sprite.json
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/70/qualities/AI REEL NEW_720p.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/70/qualities/AI REEL NEW_720p.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/70/scrub/AI REEL NEW_scrub.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/70/scrub/AI REEL NEW_scrub.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/70/thumbnails/AI REEL NEW_sprite.jpg
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/70/thumbnails/AI REEL NEW_sprite.jpg
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/70/thumbnails/AI REEL NEW_sprite.json
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/70/thumbnails/AI REEL NEW_sprite.json
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/71/qualities/BigStick_720p.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/71/qualities/BigStick_720p.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/71/scrub/BigStick_scrub.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/71/scrub/BigStick_scrub.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/71/thumbnails/BigStick_sprite.jpg
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/71/thumbnails/BigStick_sprite.jpg
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/71/thumbnails/BigStick_sprite.json
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/71/thumbnails/BigStick_sprite.json
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/72/qualities/HD-P260506_JB_QC_V1_720p.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/72/qualities/HD-P260506_JB_QC_V1_720p.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/72/scrub/HD-P260506_JB_QC_V1_scrub.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/72/scrub/HD-P260506_JB_QC_V1_scrub.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/72/thumbnails/HD-P260506_JB_QC_V1_sprite.jpg
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/72/thumbnails/HD-P260506_JB_QC_V1_sprite.jpg
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/72/thumbnails/HD-P260506_JB_QC_V1_sprite.json
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/72/thumbnails/HD-P260506_JB_QC_V1_sprite.json
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/9/qualities/bigbuck_1080p.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/9/qualities/bigbuck_1080p.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/9/qualities/bigbuck_360p.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/9/qualities/bigbuck_360p.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/9/qualities/bigbuck_720p.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/9/qualities/bigbuck_720p.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/9/scrub/bigbuck_scrub.mp4
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/9/scrub/bigbuck_scrub.mp4
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/9/thumbnails/bigbuck_sprite.jpg
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/9/thumbnails/bigbuck_sprite.jpg
+obview_app  | [DEBUG] Checking file existence for path: /app/uploads/processed/9/thumbnails/bigbuck_sprite.json
+obview_app  | [DEBUG] File exists check success for: /app/uploads/processed/9/thumbnails/bigbuck_sprite.json
+obview_app  | [SCAN] Scan complete. Found 42 existing files and 0 missing files
+obview_app  | Found 3 files in database
