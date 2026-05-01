@@ -25,7 +25,7 @@ interface ProjectFormProps {
 const createProjectSchema = z.object({
   name: z.string()
     .min(1, "Project name is required")
-    .max(20, "Project name must be 20 characters or less"),
+    .max(30, "Project name must be 30 characters or less"),
   description: z.string().nullable().optional(),
   folderId: z.number().nullable().optional(),
   status: z.string().default("in_progress")
@@ -146,7 +146,7 @@ export default function ProjectForm({
               <FormLabel>Project Name</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Enter project name (max 20 characters)"
+                  placeholder="Enter project name (max 30 characters)"
                   {...field}
                   onChange={(e) => {
                     field.onChange(e);
@@ -155,7 +155,7 @@ export default function ProjectForm({
                 />
               </FormControl>
               <FormDescription className="flex justify-end">
-                {field.value ? field.value.length : 0}/20 characters
+                {field.value ? field.value.length : 0}/30 characters
               </FormDescription>
               <FormMessage />
             </FormItem>
