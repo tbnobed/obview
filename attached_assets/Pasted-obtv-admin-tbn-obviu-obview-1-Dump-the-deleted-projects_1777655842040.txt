@@ -1,0 +1,60 @@
+obtv-admin@tbn-obviu:~/obview$ # 1. Dump the deleted projects as raw TAB-separated rows
+echo "=== DELETED PROJECTS (full rows) ==="
+awk -F'\t' '/^COPY public.projects /{f=1;next} /^\\\.$/{f=0} f && ($1==25 || $1==26)' preloss.sql
+
+# 2. Dump the deleted files as raw TAB-separated rows
+echo "=== DELETED FILES (full rows) ==="
+awk -F'\t' '/^COPY public.files /{f=1;next} /^\\\.$/{f=0} f && ($1>=60 && $1<=69)' preloss.sql
+
+# 3. Dump project_users for the deleted projects
+echo "=== DELETED project_users ==="
+awk -F'\t' '/^COPY public.project_users /{f=1;next} /^\\\.$/{f=0} f && ($2==25 || $2==26)' preloss.sql
+
+# 4. Dump comments_unified for the deleted file IDs
+echo "=== DELETED comments_unified ==="
+awk -F'\t' '/^COPY public.comments_unified /{f=1;next} /^\\\.$/{f=0} f && ($2==60 || $2==61 || $2==62 || $2==65 || $2==66 || $2==69)' preloss.sql
+
+# 5. Verify the disk files still exist for the deleted IDs
+echo "=== DISK CHECK ==="
+docker exec obview_app sh -c '
+  for id in 60 61 62 65 66 69; do
+    echo "--- file id=$id ---"
+    ls -la /app/uploads/processed/$id/ 2>/dev/null | head -3
+  done
+'
+
+# 6. Did anyone trigger the delete? Check activity_logs around the loss window
+echo "=== ACTIVITY LOGS around deletion window ==="
+docker exec obview_app psql "$DATABASE_URL" -c "
+  SELECT action, entity_type, entity_id, user_id, created_at, metadata
+  FROM activity_logs
+  WHERE created_at BETWEEN '2026-04-30 18:00:00' AND '2026-04-30 23:00:00'
+  ORDER BY created_at;
+" 2>/dev/null || echo "(activity_logs query failed; may not have DATABASE_URL in shell)"
+=== DELETED PROJECTS (full rows) ===
+25      Obed Test 2     \N      in_progress     1       2026-04-17 04:05:25.343309      2026-04-17 04:05:25.343309      5
+26      Tara-Leigh-Cobble       Praise - Sheila Walsh and Tara Leigh Cobble discuss The Bible Recap.    in_progress     15      2026-04-22 20:37:04.968688      2026-04-22 20:37:04.968688      \N
+=== DELETED FILES (full rows) ===
+60      Praise_P260113R4_English.mp4    video   732188285       /app/uploads/1776448437753-949177254.mp4        25      1       1       t       c12566c1fd71cfce4338dfdc1e2cf9fe27a08bc0dc164e6eb06b08f865564e0d        2026-04-17 17:54:10.181729      t
+61      Sequence 01.mp4 video   489831015       /app/uploads/1776448729726-738458613.mp4        25      1       1       t       \N      2026-04-17 17:58:57.841129      t
+62      GodWithUs_Episode 102.mp4       video   836763338       /app/uploads/1776521753835-468447258.mp4        25      1       1       t       \N      2026-04-18 14:16:07.775362      t
+65      TARA-LEIGH-COBBLE_READING IN ORDER.mp4  video   105311213       /app/uploads/1776893567986-382085523.mp4        26      15      1       t       28a7d318e6ba545be3d02623a96bd9c5d8ed6ca49631947d405fa97d165b77b8        2026-04-22 21:32:52.876714      t
+66      TARA-LEIGH-COBBLE_READING THROUGH LENSE.mp4     video   145058575       /app/uploads/1776893577855-327993069.mp4        26      15      1       t       b0cd2f2eb6e6d3bfb16dca3e21923604e516a2016508c53b9d1ad7130e2d43ab        2026-04-22 21:33:09.662636      t
+69      TARA-LEIGH-COBBLE_READING IN ORDER(1).mp4       video   105311213       /app/uploads/1776959035633-633495142.mp4        25      2       1       t       \N      2026-04-23 15:43:57.474922      t
+=== DELETED project_users ===
+28      25      1       editor  2026-04-17 04:05:25.349482
+29      26      15      editor  2026-04-22 20:37:04.972243
+=== DELETED comments_unified ===
+17a3a113-0efe-4e4f-a3fe-8ac7b9d05273    62      1       f       Administrator   obed@obedtv.com \N      \N      asdfasf 18      f       2026-04-22 22:49:05.755303+00   \N
+587d66ef-9ca0-4a0e-b365-339e9530f0ed    62      1       f       Administrator   obed@obedtv.com \N      \N      Hello   886     f       2026-04-22 22:49:19.612129+00   [{"type":"freehand","points":[[0.3492621222768798,0.22515952597994532],[0.3408292340126493,0.23701002734731086],[0.32958538299367535,0.25250683682771197],[0.32115249472944485,0.268003646308113],[0.3155305692199578,0.2871467639015497],[0.31131412508784256,0.3081130355515041],[0.31131412508784256,0.3445761166818596],[0.3190442726633872,0.3682771194165907],[0.33309908643710473,0.39471285323609845],[0.35137034434293746,0.4211485870556062],[0.39985945186226285,0.4603463992707384],[0.4342937456078707,0.4731084776663628],[0.4680252986647927,0.47675478577939834],[0.5101897399859452,0.47675478577939834],[0.5446240337315531,0.47128532360984504],[0.5783555867884751,0.4567000911577028],[0.6120871398453971,0.4266180492251595],[0.6191145467322557,0.41020966271649956],[0.6226282501756851,0.3892433910665451],[0.6226282501756851,0.3701002734731085],[0.6198172874209417,0.35004557885141296],[0.6099789177793394,0.3081130355515041],[0.6078706957132818,0.29899726526891524],[0.5966268446943078,0.26618049225159524],[0.5825720309205903,0.2397447584320875],[0.5741391426563598,0.22971741112123975],[0.5692199578355587,0.22515952597994532],[0.5607870695713282,0.2187784867821331],[0.5291637385804638,0.20510483135824978],[0.5193253689388616,0.2014585232452142],[0.5066760365425158,0.19872379216043756],[0.5024595924104006,0.19781221513217867],[0.44905130007027405,0.19325432999088424],[0.43359100491918484,0.1959890610756609],[0.42375263527758256,0.19963536918869645],[0.4139142656359803,0.2023701002734731],[0.39142656359803235,0.2105742935278031],[0.38299367533380185,0.21330902461257975],[0.3724525650035137,0.21604375569735643],[0.36191145467322555,0.21969006381039197],[0.3457484188334505,0.22607110300820418],[0.3338018271257906,0.2333637192342753],[0.3302881236823612,0.23609845031905197],[0.32817990161630356,0.23701002734731086],[0.31623330990864373,0.2488605287146764],[0.31482782853127195,0.2515952597994531]],"color":"#ef4444"}]
+f253c4f3-6fb8-4676-9f09-8cfd98f5ba3a    60      \N      t       angelAngeleaea  \N      2fcebd67d3dc6cc82d4100e191495f238860bb1c7f83a794ee1498fee9f26b17        \N      Test   2f       2026-04-30 17:46:51.253413+00   \N
+f844fc2a-0e49-41f5-98ff-e352d6352c62    60      7       f       Brenda Pena     bpena@tbn.tv    \N      f253c4f3-6fb8-4676-9f09-8cfd98f5ba3a    This is great   \N      f      2026-04-30 17:47:10.936435+00    \N
+=== DISK CHECK ===
+--- file id=60 ---
+--- file id=61 ---
+--- file id=62 ---
+--- file id=65 ---
+--- file id=66 ---
+--- file id=69 ---
+=== ACTIVITY LOGS around deletion window ===
+(activity_logs query failed; may not have DATABASE_URL in shell)
