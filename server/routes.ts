@@ -46,9 +46,10 @@ import {
   insertProjectUserSchema,
   insertApprovalSchema,
   users as usersTable,
+  projects as projectsTable,
 } from "@shared/schema";
 import { db } from "./db";
-import { sql, inArray } from "drizzle-orm";
+import { sql, inArray, eq } from "drizzle-orm";
 import { VideoProcessor } from "./video-processor";
 import {
   transcribeFile,
@@ -1204,69 +1205,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete a project
+  // Soft-delete a project. The DB row stays (deleted_at timestamp), file
+  // rows stay, and the on-disk files are LEFT UNTOUCHED so an admin can
+  // restore the project from /api/admin/trash. To permanently remove
+  // a project + its disk files, an admin uses
+  // DELETE /api/admin/trash/projects/:id.
   app.delete("/api/projects/:projectId", hasProjectEditAccess, async (req, res, next) => {
     try {
       const projectId = parseInt(req.params.projectId);
       const project = await storage.getProject(projectId);
-      
+
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
-      
-      // Log activity before deleting
+
+      const projectFiles = await storage.getFilesByProject(projectId);
+
       await storage.logActivity({
-        action: "delete",
+        action: "soft_delete",
         entityType: "project",
         entityId: projectId,
         userId: req.user.id,
-        metadata: { projectName: project.name },
+        metadata: { projectName: project.name, fileCount: projectFiles.length },
       });
-      
-      // Get all files for this project before deletion
-      console.log(`[PROJECT DELETE] Starting comprehensive cleanup for project ${projectId}: ${project.name}`);
-      const projectFiles = await storage.getFilesByProject(projectId);
-      console.log(`[PROJECT DELETE] Found ${projectFiles.length} files to cleanup`);
-      
-      // Comprehensive filesystem cleanup for all project files with concurrency limit
-      let filesystemErrors: string[] = [];
-      if (projectFiles.length > 0) {
-        const cleanupResults = await fileSystem.removeMultipleFiles(
-          projectFiles.map(f => ({ id: f.id, filePath: f.filePath })),
-          3 // Concurrency limit
-        );
-        
-        // Summarize cleanup results
-        const summary = fileSystem.summarizeCleanupResults(cleanupResults);
-        filesystemErrors = summary.totalErrors;
-        
-        // Check for critical filesystem failures
-        if (summary.failed > 0 && summary.successful === 0) {
-          console.error(`[PROJECT DELETE] Critical filesystem cleanup failure for project ${projectId}`);
-          return res.status(409).json({ 
-            message: `Failed to remove project files from filesystem. Database not modified to prevent orphaned records. Errors: ${filesystemErrors.slice(0, 3).join(', ')}`
-          });
-        }
-        
-        if (filesystemErrors.length > 0) {
-          console.warn(`[PROJECT DELETE] Some filesystem cleanup warnings for project ${projectId}:`, filesystemErrors);
-        }
-      }
-      
-      // Delete project record from database (this will cascade to related records with our schema)
+
       const success = await storage.deleteProject(projectId);
-      
       if (!success) {
         return res.status(404).json({ message: "Project not found" });
       }
-      
-      console.log(`[PROJECT DELETE] ✅ Successfully deleted project ${projectId}: ${project.name}`);
-      
-      // If there were filesystem warnings but deletion succeeded, log them
-      if (filesystemErrors.length > 0) {
-        console.log(`[PROJECT DELETE] Note: Some files may remain on disk despite successful deletion. Manual cleanup may be needed.`);
-      }
-      
+
+      console.log(`[PROJECT SOFT-DELETE] project ${projectId} (${project.name}) marked deleted; ${projectFiles.length} files preserved on disk and recoverable via admin trash`);
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -4208,7 +4176,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Run a file integrity scan to update database with correct file availability
+  // ----------------------------------------------------------------------
+  // Admin trash: list / restore / permanent-purge soft-deleted projects.
+  // Folders use the same pattern. Only admins can see or act on the trash.
+  // ----------------------------------------------------------------------
+  app.get("/api/admin/trash", isAdmin, async (_req, res, next) => {
+    try {
+      const [trashedProjects, trashedFolders] = await Promise.all([
+        storage.getDeletedProjects(),
+        storage.getDeletedFolders(),
+      ]);
+
+      // Attach file counts per project so the trash UI can warn the admin
+      // before a permanent purge.
+      const projectsWithCounts = await Promise.all(trashedProjects.map(async (p) => {
+        const projectFiles = await storage.getFilesByProject(p.id);
+        return { ...p, fileCount: projectFiles.length };
+      }));
+
+      res.json({ projects: projectsWithCounts, folders: trashedFolders });
+    } catch (e) { next(e); }
+  });
+
+  app.post("/api/admin/trash/projects/:id/restore", isAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const ok = await storage.restoreProject(id);
+      if (!ok) return res.status(404).json({ message: "Project not in trash" });
+      await storage.logActivity({
+        action: "restore",
+        entityType: "project",
+        entityId: id,
+        userId: req.user.id,
+        metadata: {},
+      });
+      res.json({ ok: true });
+    } catch (e) { next(e); }
+  });
+
+  app.delete("/api/admin/trash/projects/:id", isAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+
+      // SAFETY GATE: only purge projects that are actually in the trash.
+      // storage.purgeProject also enforces this with a SQL guard, but we
+      // verify here too so that we never unlink files belonging to a live
+      // project even if the storage method ever changes. A direct DB read
+      // is required because storage.getProject filters out trashed rows.
+      const [target] = await db
+        .select({ id: projectsTable.id, deletedAt: projectsTable.deletedAt })
+        .from(projectsTable)
+        .where(eq(projectsTable.id, id));
+      if (!target) return res.status(404).json({ message: "Project not found" });
+      if (!target.deletedAt) {
+        return res.status(409).json({
+          message: "Project is not in the trash. Soft-delete it first via DELETE /api/projects/:id.",
+        });
+      }
+
+      // Pull file paths BEFORE the row is gone — we need them to unlink later.
+      // We bypass storage.getFilesByProject because the project is soft-
+      // deleted, so we fetch directly.
+      const filesToRemove = await db.select().from(filesTable).where(sql`${filesTable.projectId} = ${id}`);
+
+      // RACE-SAFE ORDER: delete the DB row FIRST. storage.purgeProject runs a
+      // single SQL DELETE guarded by `deletedAt IS NOT NULL`, so it is
+      // atomic against a concurrent restore. If it returns false, someone
+      // restored the project in between and we MUST NOT unlink any files —
+      // doing so would silently destroy media for a now-live project.
+      const ok = await storage.purgeProject(id);
+      if (!ok) {
+        return res.status(409).json({
+          message: "Project was restored by another admin while purge was running. No files were deleted.",
+        });
+      }
+
+      // Row is gone; cascade has removed file rows. Now safe to unlink disk
+      // files. Failures here are reported but cannot be rolled back.
+      let filesystemErrors: string[] = [];
+      if (filesToRemove.length > 0) {
+        const cleanupResults = await fileSystem.removeMultipleFiles(
+          filesToRemove.map(f => ({ id: f.id, filePath: f.filePath })),
+          3,
+        );
+        const summary = fileSystem.summarizeCleanupResults(cleanupResults);
+        filesystemErrors = summary.totalErrors;
+      }
+
+      await storage.logActivity({
+        action: "purge",
+        entityType: "project",
+        entityId: id,
+        userId: req.user.id,
+        metadata: { fileCount: filesToRemove.length, filesystemErrors },
+      });
+
+      res.json({ ok: true, filesRemoved: filesToRemove.length, filesystemErrors });
+    } catch (e) { next(e); }
+  });
+
+  app.post("/api/admin/trash/folders/:id/restore", isAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const ok = await storage.restoreFolder(id);
+      if (!ok) return res.status(404).json({ message: "Folder not in trash" });
+      res.json({ ok: true });
+    } catch (e) { next(e); }
+  });
+
+  app.delete("/api/admin/trash/folders/:id", isAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const ok = await storage.purgeFolder(id);
+      if (!ok) return res.status(404).json({ message: "Folder not found" });
+      res.json({ ok: true });
+    } catch (e) { next(e); }
+  });
+
+  // ----------------------------------------------------------------------
+  // Project subfolders (T005): folders nested inside a single project. Reuse
+  // the existing access middleware. Top-level project-grouping folders are
+  // unaffected (they have project_id = NULL).
+  // ----------------------------------------------------------------------
+  app.get("/api/projects/:projectId/folders", hasProjectAccess, async (req, res, next) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const subfolders = await storage.getProjectFolders(projectId);
+      res.json(subfolders);
+    } catch (e) { next(e); }
+  });
+
+  app.post("/api/projects/:projectId/folders", hasProjectEditAccess, async (req, res, next) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const schema = z.object({
+        name: z.string().min(1).max(60),
+        parentFolderId: z.number().int().positive().nullable().optional(),
+      });
+      const parsed = schema.parse(req.body);
+      // Validate parent (if given) belongs to the same project.
+      if (parsed.parentFolderId) {
+        const parent = await storage.getFolder(parsed.parentFolderId);
+        if (!parent || parent.projectId !== projectId) {
+          return res.status(400).json({ message: "Parent folder does not belong to this project" });
+        }
+      }
+      const folder = await storage.createProjectFolder({
+        projectId,
+        parentFolderId: parsed.parentFolderId ?? null,
+        name: parsed.name,
+        createdById: req.user.id,
+      });
+      res.status(201).json(folder);
+    } catch (e) { next(e); }
+  });
+
+  // Move a file into a subfolder (or to project root by passing folderId: null).
+  app.patch("/api/files/:fileId/move", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+
+      const project = await storage.getProject(file.projectId);
+      if (!project) return res.status(404).json({ message: "Project not found" });
+
+      const isAdminUser = req.user.role === "admin";
+      const projectUsersList = await storage.getProjectUsers(file.projectId);
+      const isMember = projectUsersList.some(pu => pu.userId === req.user.id && (pu.role === "admin" || pu.role === "editor"));
+      if (!isAdminUser && !isMember) {
+        return res.status(403).json({ message: "You don't have edit access to this project" });
+      }
+
+      const schema = z.object({ folderId: z.number().int().positive().nullable() });
+      const { folderId } = schema.parse(req.body);
+      if (folderId !== null) {
+        const target = await storage.getFolder(folderId);
+        if (!target || target.projectId !== file.projectId) {
+          return res.status(400).json({ message: "Target folder does not belong to this project" });
+        }
+      }
+
+      const updated = await storage.updateFile(fileId, { folderId } as any);
+      res.json(updated);
+    } catch (e) { next(e); }
+  });
+
   app.post("/api/admin/scan-files", isAdmin, async (req, res, next) => {
     try {
       const uploadsDir = path.join(process.cwd(), 'uploads');

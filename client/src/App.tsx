@@ -19,6 +19,7 @@ import NewProjectPage from "@/pages/new-project-page";
 import FolderPage from "@/pages/folder-page";
 import FileUploadPage from "@/pages/file-upload-page";
 import AdminPage from "@/pages/admin-page";
+import AdminTrashPage from "@/pages/admin-trash-page";
 import SettingsPage from "@/pages/settings-page";
 import InvitePage from "@/pages/invite-page";
 import ResetPasswordPage from "@/pages/reset-password-page";
@@ -41,6 +42,7 @@ function Router() {
       <ProtectedRoute path="/project/:id" component={ProjectPage} /> {/* Keep this for backward compatibility */}
       <ProtectedRoute path="/folders/:id" component={FolderPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
+      <ProtectedRoute path="/admin/trash" component={AdminTrashPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/debug" component={DebugPage} />
       <Route path="/auth" component={AuthPage} />

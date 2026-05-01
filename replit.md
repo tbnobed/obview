@@ -72,7 +72,21 @@ Preferred communication style: Simple, everyday language.
 - **Database Initialization**: Automated schema setup and admin user creation on first run
 - **Migration Handling**: Robust migration system that handles both fresh installs and updates
 - **Health Checks**: Database connectivity verification before application startup
-- **Volume Management**: Persistent volumes for database data and uploaded files
+- **Volume Management**: Persistent volumes for database data, uploads, and `db_backups` (mounted at `/app/db-backups`)
+- **Backups**:
+  - Pre-migration: `scripts/docker-entrypoint.sh` runs `pg_dump` on every container start (last 10 retained, prefix `pre-migration-`).
+  - Daily: `dcron` schedules `scripts/backup-cron.sh` at 03:00. Writes `/app/db-backups/daily-YYYYMMDD-HHMMSS.sql` and prunes files older than `BACKUP_RETENTION_DAYS` (default 30). Crond does not inherit env, so the entrypoint persists `DATABASE_URL`/`BACKUP_*` to `/etc/cron-env.sh` (mode 600), which the cron script sources.
+
+### Soft-delete + Trash (admin)
+- `projects.deleted_at` and `folders.deleted_at` mark soft-deleted rows. All read paths (`getProject*`, `getAllProjects*`, `getFile`, `getFolder*`) filter `deleted_at IS NULL`.
+- `DELETE /api/projects/:id` is now a soft delete (no disk unlink, no FK cascade). Files stay on disk and can be recovered from the admin trash.
+- Admin endpoints (`GET /api/admin/trash`, `POST /api/admin/trash/projects/:id/restore`, `DELETE /api/admin/trash/projects/:id`, plus folder equivalents) power `/admin/trash`. Permanent delete (`DELETE`) hard-removes the DB row and unlinks the underlying files via `removeMultipleFiles`.
+- The project delete dialog (`client/src/components/projects/project-card.tsx`) requires the user to type the exact project name; for admins deleting projects owned by someone else it shows an extra warning.
+
+### Subfolders inside projects
+- `folders.project_id` (NULL for top-level/legacy folders) and `folders.parent_folder_id` model nested folders. `files.folder_id` (NULL = project root) places a file in a subfolder. Both FKs are `ON DELETE CASCADE`/`SET NULL` respectively. `getAllFolders` excludes project subfolders so the global sidebar still works.
+- Endpoints: `GET/POST /api/projects/:projectId/folders`, `PATCH /api/files/:fileId/move`.
+- UI: `client/src/components/projects/project-folders.tsx` adds a breadcrumb + subfolder strip and a “Move to folder…” dialog driven from `MediaCard`’s dropdown.
 
 ## Future / Tabled Roadmap
 

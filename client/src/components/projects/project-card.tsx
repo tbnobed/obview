@@ -3,17 +3,34 @@ import { Project, File } from "@shared/schema";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatTimeAgo } from "@/lib/utils/formatters";
-import { Trash2, PlayCircle } from "lucide-react";
+import { Trash2, PlayCircle, User as UserIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
-// Extended Project type with latest video file
-type ProjectWithVideo = Project & { latestVideoFile?: File };
+// Extended Project type with latest video file + admin metadata returned
+// by /api/projects (creator name/username + file count). These fields are
+// optional so non-admin payloads still type-check.
+type ProjectWithVideo = Project & {
+  latestVideoFile?: File;
+  creatorUsername?: string | null;
+  creatorName?: string | null;
+  fileCount?: number;
+};
 
 interface ProjectCardProps {
   project: ProjectWithVideo;
@@ -69,19 +86,32 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     user.id === project.createdById ||
     user.role === "admin"
   );
-  
-  // Handle delete project
-  const handleDeleteProject = (e: React.MouseEvent) => {
-    e.preventDefault(); // Stop event propagation to prevent navigation
+
+  // Confirmation dialog state. Requires the user to type the exact project
+  // name before the destructive action becomes available — guards against
+  // the accidental "click delete on someone else's project" class of bug
+  // that wiped projects 25/26/31 in production on 2026-04-30.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [typedName, setTypedName] = useState("");
+  const isAdmin = user?.role === "admin";
+  const isOwner = user?.id === project.createdById;
+  const ownerLabel = project.creatorName || project.creatorUsername || `user #${project.createdById}`;
+
+  const openDeleteDialog = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    
-    if (window.confirm(`Are you sure you want to delete the project "${project.name}"? This action cannot be undone and will remove all files and comments associated with this project.`)) {
-      deleteProjectMutation.mutate(project.id, {
-        onSuccess: () => {
-          navigate('/projects');
-        }
-      });
-    }
+    setTypedName("");
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (typedName.trim() !== project.name) return;
+    deleteProjectMutation.mutate(project.id, {
+      onSuccess: () => {
+        setConfirmOpen(false);
+        navigate('/projects');
+      },
+    });
   };
   
   // Determine status badge color
@@ -101,10 +131,25 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     <Link href={`/projects/${project.id}`}>
       <Card className="cursor-pointer transition-shadow hover:shadow-md text-sm">
         <CardHeader className="pb-1 px-3 pt-3">
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start gap-2">
             <CardTitle className="text-sm font-semibold line-clamp-1">{project.name}</CardTitle>
             {getStatusBadge(project.status)}
           </div>
+          {/* Owner badge: shown to admins on every card so a project's owner
+              is visible at a glance from the dashboard. Owners themselves
+              don't need to see "owned by you". */}
+          {isAdmin && !isOwner && (
+            <div className="mt-1">
+              <Badge
+                variant="outline"
+                className="text-[10px] font-normal py-0 px-1.5 gap-1"
+                data-testid={`project-owner-badge-${project.id}`}
+              >
+                <UserIcon className="h-2.5 w-2.5" />
+                {ownerLabel}
+              </Badge>
+            </div>
+          )}
         </CardHeader>
         
         {/* Video Preview Section */}
@@ -274,8 +319,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
                 variant="ghost"
                 size="sm"
                 className="h-7 px-1.5 text-destructive hover:bg-destructive/10"
-                onClick={handleDeleteProject}
+                onClick={openDeleteDialog}
                 disabled={deleteProjectMutation.isPending}
+                data-testid={`delete-project-button-${project.id}`}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -283,6 +329,76 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </div>
         </CardFooter>
       </Card>
+
+      <Dialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          if (!open) setTypedName("");
+          setConfirmOpen(open);
+        }}
+      >
+        <DialogContent
+          // Prevent the wrapping <Link> from receiving the click and
+          // navigating to the project when the user interacts with the
+          // dialog (the Dialog renders inside the Link in this card).
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onPointerDownCapture={(e) => e.stopPropagation()}
+        >
+          <DialogHeader>
+            <DialogTitle>Delete project?</DialogTitle>
+            <DialogDescription>
+              This moves <span className="font-semibold">{project.name}</span> to the admin trash. The project,
+              its {typeof project.fileCount === "number" ? project.fileCount : "associated"} file
+              {project.fileCount === 1 ? "" : "s"}, and all comments will be hidden but preserved on disk so an admin can
+              restore them. To permanently remove them, an admin must purge from the trash.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="text-xs space-y-1 rounded-md border bg-muted/40 p-3">
+            <div><span className="text-muted-foreground">Owner:</span> <span className="font-medium">{ownerLabel}</span></div>
+            {typeof project.fileCount === "number" && (
+              <div><span className="text-muted-foreground">Files:</span> <span className="font-medium">{project.fileCount}</span></div>
+            )}
+            {isAdmin && !isOwner && (
+              <div className="text-amber-600 dark:text-amber-400 pt-1">
+                You are deleting a project owned by someone else.
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`confirm-name-${project.id}`} className="text-xs">
+              Type <span className="font-semibold">{project.name}</span> to confirm
+            </Label>
+            <Input
+              id={`confirm-name-${project.id}`}
+              value={typedName}
+              onChange={(e) => setTypedName(e.target.value)}
+              placeholder={project.name}
+              autoComplete="off"
+              autoFocus
+              data-testid={`delete-confirm-input-${project.id}`}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmOpen(false); }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={typedName.trim() !== project.name || deleteProjectMutation.isPending}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); confirmDelete(); }}
+              data-testid={`delete-confirm-button-${project.id}`}
+            >
+              {deleteProjectMutation.isPending ? "Deleting…" : "Move to trash"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Link>
   );
 }

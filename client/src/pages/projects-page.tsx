@@ -17,22 +17,29 @@ export default function ProjectsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  
+  // Admin-only ownership scope. Defaults to "all" so an admin loading the
+  // dashboard immediately sees every team's project (this is the visibility
+  // gap that contributed to the 04-30 accidental delete).
+  const [ownerScope, setOwnerScope] = useState<"all" | "mine">("all");
+
   const { data: projects, isLoading, error } = useProjects();
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     document.title = "Projects | Obviu.io";
   }, []);
 
-  // Filter projects by search term and status
+  // Filter projects by search term, status, and (admin-only) ownership scope.
   const filteredProjects = projects?.filter(project => {
-    const matchesSearch = searchTerm === "" || 
+    const matchesSearch = searchTerm === "" ||
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (project.description?.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     const matchesStatus = statusFilter === null || project.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+
+    const matchesOwner = !isAdmin || ownerScope === "all" || project.createdById === user?.id;
+
+    return matchesSearch && matchesStatus && matchesOwner;
   });
 
   const isEditor = user?.role === "admin" || user?.role === "editor";
@@ -48,12 +55,19 @@ export default function ProjectsPage() {
             </p>
           </div>
           
-          {isEditor && (
-            <Button onClick={() => navigate("/projects/new")}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {isAdmin && (
+              <Button variant="outline" onClick={() => navigate("/admin/trash")} data-testid="open-trash-button">
+                Trash
+              </Button>
+            )}
+            {isEditor && (
+              <Button onClick={() => navigate("/projects/new")}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Project
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
@@ -67,6 +81,28 @@ export default function ProjectsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          {isAdmin && (
+            <div className="flex gap-2 items-center" data-testid="owner-scope-filter">
+              <Button
+                variant={ownerScope === "mine" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setOwnerScope("mine")}
+                className={ownerScope === "mine" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
+                data-testid="owner-scope-mine"
+              >
+                Mine
+              </Button>
+              <Button
+                variant={ownerScope === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setOwnerScope("all")}
+                className={ownerScope === "all" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
+                data-testid="owner-scope-all"
+              >
+                All projects
+              </Button>
+            </div>
+          )}
           <div className="flex gap-2">
             <Button 
               variant={statusFilter === null ? "default" : "outline"} 

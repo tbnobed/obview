@@ -24,9 +24,15 @@ export const folders = pgTable("folders", {
   description: text("description"),
   color: text("color").default("#6366f1"), // Hex color for folder
   isGlobal: boolean("is_global").notNull().default(false), // Global folders are visible to all users; only admins can create/edit/delete them
+  // Subfolders within a project: when projectId is set this folder lives inside
+  // that project; parentFolderId nests the folder under another folder.
+  // Existing top-level "project container" folders keep both as NULL.
+  projectId: integer("project_id"),
+  parentFolderId: integer("parent_folder_id"),
   createdById: integer("created_by_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"), // Soft delete: NULL = live, NOT NULL = trashed
 });
 
 export const insertFolderSchema = createInsertSchema(folders)
@@ -48,6 +54,7 @@ export const projects = pgTable("projects", {
   createdById: integer("created_by_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"), // Soft delete: NULL = live, NOT NULL = trashed (admins can restore from trash)
 });
 
 export const insertProjectSchema = createInsertSchema(projects)
@@ -65,6 +72,8 @@ export const files = pgTable("files", {
   fileSize: bigint("file_size", { mode: "number" }).notNull(),
   filePath: text("file_path").notNull(),
   projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  // Optional sub-folder within the project. NULL = file lives at the project root.
+  folderId: integer("folder_id"),
   uploadedById: integer("uploaded_by_id").notNull().references(() => users.id),
   version: integer("version").notNull().default(1),
   isLatestVersion: boolean("is_latest_version").notNull().default(true),

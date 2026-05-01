@@ -18,6 +18,7 @@ interface MediaCardGridProps {
   files: StorageFile[];
   onSelectFile: (fileId: number) => void;
   projectId: number;
+  onMoveFile?: (file: StorageFile) => void;
 }
 
 // Format duration from seconds to MM:SS or HH:MM:SS
@@ -65,9 +66,10 @@ const getProcessingStatus = (fileId: number) => {
 interface MediaCardProps {
   file: StorageFile;
   onSelect: (fileId: number) => void;
+  onMove?: (file: StorageFile) => void;
 }
 
-function MediaCard({ file, onSelect }: MediaCardProps) {
+function MediaCard({ file, onSelect, onMove }: MediaCardProps) {
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -597,6 +599,15 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
                   <Share2 className="h-4 w-4 mr-2" />
                   Share Link
                 </DropdownMenuItem>
+                {onMove && (
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); onMove(file); }}
+                    data-testid={`move-file-${file.id}`}
+                  >
+                    <FileVideo className="h-4 w-4 mr-2" />
+                    Move to folder…
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={handleDelete}
@@ -732,7 +743,7 @@ function MediaCard({ file, onSelect }: MediaCardProps) {
   );
 }
 
-export default function MediaCardGrid({ files, onSelectFile, projectId }: MediaCardGridProps) {
+export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFile }: MediaCardGridProps) {
   return (
     <div className="p-6">
       {/* Header */}
@@ -753,10 +764,11 @@ export default function MediaCardGrid({ files, onSelectFile, projectId }: MediaC
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
         {files.map((file) => (
-          <MediaCard 
-            key={file.id} 
-            file={file} 
+          <MediaCard
+            key={file.id}
+            file={file}
             onSelect={onSelectFile}
+            onMove={onMoveFile}
           />
         ))}
       </div>

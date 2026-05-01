@@ -48,7 +48,8 @@ FROM node:20-alpine as production
 
 # Install PostgreSQL client for health checks and utilities, plus FFmpeg for video processing
 # libstdc++ is required by the whisper-cpp binary
-RUN apk add --no-cache postgresql-client curl ffmpeg libstdc++ libgcc
+# dcron + busybox provide the in-container scheduler used by scripts/backup-cron.sh
+RUN apk add --no-cache postgresql-client curl ffmpeg libstdc++ libgcc dcron
 
 WORKDIR /app
 
@@ -87,6 +88,18 @@ COPY --from=builder /app/.env* ./
 
 # Make scripts executable
 RUN chmod +x ./scripts/*.sh
+
+# Install daily backup crontab. Runs at 03:00 server time.
+# DATABASE_URL must be exported by the entrypoint before crond starts so the
+# job inherits it (alpine crond uses /var/spool/cron/crontabs/root).
+RUN mkdir -p /var/spool/cron/crontabs && \
+    printf '0 3 * * * /app/scripts/backup-cron.sh >> /var/log/backup-cron.log 2>&1\n' \
+      > /var/spool/cron/crontabs/root && \
+    chmod 600 /var/spool/cron/crontabs/root && \
+    touch /var/log/backup-cron.log && chmod 644 /var/log/backup-cron.log
+
+# Persist daily backups across container recreation by mounting db-backups
+VOLUME /app/db-backups
 
 # Expose port
 EXPOSE 5000

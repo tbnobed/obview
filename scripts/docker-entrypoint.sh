@@ -267,6 +267,32 @@ fi
 # Test write permissions
 touch /app/uploads/.test_write 2>/dev/null && rm -f /app/uploads/.test_write && echo "✅ Upload directory write permissions verified" || echo "⚠️  Warning: Upload directory may not be writable"
 
+# Start the daily backup scheduler (alpine dcron) in the background.
+# Skip when crond is not installed (e.g. dev), and skip if it's already running.
+if command -v crond >/dev/null 2>&1; then
+  mkdir -p /app/db-backups
+  # Crond does NOT inherit the entrypoint's environment, so persist the few
+  # vars the backup script needs into a sourced file. Mode 600 to protect
+  # the connection string.
+  CRON_ENV_FILE="/etc/cron-env.sh"
+  {
+    echo "#!/bin/sh"
+    echo "export DATABASE_URL='${DATABASE_URL:-}'"
+    echo "export BACKUP_DIR='${BACKUP_DIR:-/app/db-backups}'"
+    echo "export BACKUP_RETENTION_DAYS='${BACKUP_RETENTION_DAYS:-30}'"
+  } > "$CRON_ENV_FILE"
+  chmod 600 "$CRON_ENV_FILE"
+
+  if ! pgrep -x crond >/dev/null 2>&1; then
+    echo "Starting crond for daily database backups..."
+    # -b = background, -L logs to file. Crontab is /var/spool/cron/crontabs/root
+    # (installed by the Dockerfile).
+    crond -b -L /var/log/backup-cron.log || echo "⚠️  Warning: crond failed to start; daily backups will not run."
+  fi
+else
+  echo "ℹ️  crond not installed in this image; skipping daily backup scheduler."
+fi
+
 # Find a valid entry point for the server - prefer built JS over TypeScript source  
 find_server_entry() {
   # First priority: built server file from npm run build (check the file the build actually creates)

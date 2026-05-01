@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/sheet";
 import MediaPlayer from "@/components/media/media-player";
 import MediaCardGrid from "@/components/media/media-card-grid";
+import { ProjectFoldersStrip, MoveFileDialog } from "@/components/projects/project-folders";
+import type { File as StorageFile } from "@shared/schema";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
@@ -79,6 +81,8 @@ export default function ProjectPage() {
   const [settingsSheetOpen, setSettingsSheetOpen] = useState(false);
   const [showUsersDropdown, setShowUsersDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentSubfolderId, setCurrentSubfolderId] = useState<number | null>(null);
+  const [movingFile, setMovingFile] = useState<StorageFile | null>(null);
   
 
   
@@ -555,16 +559,33 @@ export default function ProjectPage() {
             ? "bg-black flex-1 min-h-0 flex flex-col"
             : "bg-card border border-border/50 rounded-xl"
         )}>
-          {filesLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : files && files.length > 0 ? (
+          {viewMode === 'grid' && (
+            <ProjectFoldersStrip
+              projectId={projectId}
+              currentFolderId={currentSubfolderId}
+              onSelectFolder={setCurrentSubfolderId}
+              canEdit={isEditor}
+            />
+          )}
+          {(() => {
+            const visibleFiles = (files ?? []).filter(
+              (f) => (f.folderId ?? null) === currentSubfolderId,
+            );
+            if (filesLoading) {
+              return (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              );
+            }
+            if (files && files.length > 0) {
+              return (
             <>
               {viewMode === 'grid' && (
                 <MediaCardGrid
-                  files={files}
+                  files={visibleFiles}
                   projectId={projectId}
+                  onMoveFile={isEditor ? (f) => setMovingFile(f) : undefined}
                   onSelectFile={(fileId) => {
                     setSelectedFileId(fileId);
                     setViewMode('player');
@@ -603,24 +624,33 @@ export default function ProjectPage() {
                 </div>
               )}
             </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 lg:py-20">
-              <div className="h-12 w-12 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-3 lg:h-16 lg:w-16 lg:mb-4">
-                <FileVideo className="h-6 w-6 text-primary-400 lg:h-8 lg:w-8" />
+              );
+            }
+            return (
+              <div className="flex flex-col items-center justify-center py-12 lg:py-20">
+                <div className="h-12 w-12 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-3 lg:h-16 lg:w-16 lg:mb-4">
+                  <FileVideo className="h-6 w-6 text-primary-400 lg:h-8 lg:w-8" />
+                </div>
+                <h3 className="text-base font-medium text-neutral-900 dark:text-teal-300 mb-2 lg:text-lg">No media files yet</h3>
+                <p className="text-sm text-neutral-500 dark:text-gray-400 text-center mb-4 max-w-sm px-4 lg:text-base lg:mb-6 lg:max-w-md lg:px-0">
+                  Upload your first media file to start the review process
+                </p>
+                {isEditor && (
+                  <Button onClick={() => navigate(`/projects/${projectId}/upload`)}>
+                    Upload Media
+                  </Button>
+                )}
               </div>
-              <h3 className="text-base font-medium text-neutral-900 dark:text-teal-300 mb-2 lg:text-lg">No media files yet</h3>
-              <p className="text-sm text-neutral-500 dark:text-gray-400 text-center mb-4 max-w-sm px-4 lg:text-base lg:mb-6 lg:max-w-md lg:px-0">
-                Upload your first media file to start the review process
-              </p>
-              {isEditor && (
-                <Button onClick={() => navigate(`/projects/${projectId}/upload`)}>
-                  Upload Media
-                </Button>
-              )}
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
+
+      <MoveFileDialog
+        projectId={projectId}
+        file={movingFile}
+        onClose={() => setMovingFile(null)}
+      />
 
       {/* Activity Sheet */}
       <Sheet open={activitySheetOpen} onOpenChange={setActivitySheetOpen}>

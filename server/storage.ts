@@ -51,7 +51,7 @@ import {
 import createMemoryStore from "memorystore";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, isNull, isNotNull, inArray } from "drizzle-orm";
 import { db, pool } from "./db";
 
 const MemoryStore = createMemoryStore(session);
@@ -67,24 +67,33 @@ export interface IStorage {
   updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
 
-  // Folder management
+  // Folder management (top-level folders that group projects)
   getFolder(id: number): Promise<Folder | undefined>;
   getAllFolders(): Promise<Folder[]>;
   getFoldersByUser(userId: number): Promise<Folder[]>;
   createFolder(folder: InsertFolder): Promise<Folder>;
   updateFolder(id: number, data: Partial<InsertFolder>): Promise<Folder | undefined>;
   deleteFolder(id: number): Promise<boolean>;
+  restoreFolder(id: number): Promise<boolean>;
+  purgeFolder(id: number): Promise<boolean>;
+  // Sub-folders inside a project
+  getProjectFolders(projectId: number): Promise<Folder[]>;
+  createProjectFolder(data: { projectId: number; parentFolderId: number | null; name: string; createdById: number }): Promise<Folder>;
 
   // Project management
   getProject(id: number): Promise<Project | undefined>;
   getAllProjects(): Promise<Project[]>;
   getProjectsByUser(userId: number): Promise<Project[]>;
   getProjectsByFolder(folderId: number): Promise<Project[]>;
-  getAllProjectsWithLatestVideo(): Promise<(Project & { latestVideoFile?: File })[]>;
-  getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File })[]>;
+  getAllProjectsWithLatestVideo(): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]>;
+  getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]>;
+  getDeletedProjects(): Promise<(Project & { creatorUsername?: string | null; creatorName?: string | null })[]>;
+  getDeletedFolders(): Promise<(Folder & { creatorUsername?: string | null; creatorName?: string | null })[]>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, data: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: number): Promise<boolean>;
+  restoreProject(id: number): Promise<boolean>;
+  purgeProject(id: number): Promise<boolean>;
 
   // File management
   getFile(id: number): Promise<File | undefined>;
@@ -339,6 +348,15 @@ export class MemStorage implements IStorage {
   async deleteFolder(id: number): Promise<boolean> {
     return this.folders.delete(id);
   }
+
+  async restoreFolder(_id: number): Promise<boolean> { return false; }
+  async purgeFolder(id: number): Promise<boolean> { return this.folders.delete(id); }
+  async getProjectFolders(_projectId: number): Promise<Folder[]> { return []; }
+  async createProjectFolder(_data: any): Promise<Folder> { throw new Error("not implemented in MemStorage"); }
+  async getDeletedProjects(): Promise<any[]> { return []; }
+  async getDeletedFolders(): Promise<any[]> { return []; }
+  async restoreProject(_id: number): Promise<boolean> { return false; }
+  async purgeProject(id: number): Promise<boolean> { return this.projects.delete(id); }
 
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {
@@ -1387,19 +1405,43 @@ export class DatabaseStorage implements IStorage {
 
   // Folder methods
   async getFolder(id: number): Promise<Folder | undefined> {
-    const [folder] = await db.select().from(folders).where(eq(folders.id, id));
+    const [folder] = await db.select().from(folders)
+      .where(and(eq(folders.id, id), isNull(folders.deletedAt)));
     return folder;
   }
 
   async getAllFolders(): Promise<Folder[]> {
-    return await db.select().from(folders);
+    // Only top-level (project-grouping) folders, not sub-folders of projects.
+    return await db.select().from(folders)
+      .where(and(isNull(folders.deletedAt), isNull(folders.projectId)));
   }
 
   async getFoldersByUser(userId: number): Promise<Folder[]> {
     return await db
       .select()
       .from(folders)
-      .where(eq(folders.createdById, userId));
+      .where(and(
+        eq(folders.createdById, userId),
+        isNull(folders.deletedAt),
+        isNull(folders.projectId),
+      ));
+  }
+
+  // Sub-folders inside a project
+  async getProjectFolders(projectId: number): Promise<Folder[]> {
+    return await db.select().from(folders)
+      .where(and(eq(folders.projectId, projectId), isNull(folders.deletedAt)));
+  }
+
+  async createProjectFolder(data: { projectId: number; parentFolderId: number | null; name: string; createdById: number }): Promise<Folder> {
+    const [row] = await db.insert(folders).values({
+      name: data.name,
+      projectId: data.projectId,
+      parentFolderId: data.parentFolderId,
+      createdById: data.createdById,
+      isGlobal: false,
+    }).returning();
+    return row;
   }
 
   async createFolder(insertFolder: InsertFolder): Promise<Folder> {
@@ -1420,21 +1462,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteFolder(id: number): Promise<boolean> {
+    // Soft delete only — preserves all child data so it can be restored from trash.
+    const result = await db
+      .update(folders)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(folders.id, id), isNull(folders.deletedAt)))
+      .returning({ id: folders.id });
+    return result.length > 0;
+  }
+
+  async restoreFolder(id: number): Promise<boolean> {
+    // Only restore rows that are actually in the trash. Restoring an
+    // already-active row is a no-op (returns false) so a leaky route can't
+    // accidentally rewrite deletedAt on live data.
+    const result = await db
+      .update(folders)
+      .set({ deletedAt: null })
+      .where(and(eq(folders.id, id), isNotNull(folders.deletedAt)))
+      .returning({ id: folders.id });
+    return result.length > 0;
+  }
+
+  async purgeFolder(id: number): Promise<boolean> {
+    // Hard delete — only permitted on rows already in the trash, otherwise
+    // a stray DELETE on /api/admin/trash/folders/:id could permanently
+    // destroy active folders.
     const result = await db
       .delete(folders)
-      .where(eq(folders.id, id))
-      .returning({ deletedId: folders.id });
+      .where(and(eq(folders.id, id), isNotNull(folders.deletedAt)))
+      .returning({ id: folders.id });
     return result.length > 0;
   }
 
   // Project methods
   async getProject(id: number): Promise<Project | undefined> {
-    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    const [project] = await db.select().from(projects)
+      .where(and(eq(projects.id, id), isNull(projects.deletedAt)));
     return project;
   }
 
   async getAllProjects(): Promise<Project[]> {
-    return await db.select().from(projects);
+    return await db.select().from(projects).where(isNull(projects.deletedAt));
   }
 
   async getProjectsByUser(userId: number): Promise<Project[]> {
@@ -1444,7 +1512,10 @@ export class DatabaseStorage implements IStorage {
       })
       .from(projectUsers)
       .where(eq(projectUsers.userId, userId))
-      .innerJoin(projects, eq(projectUsers.projectId, projects.id));
+      .innerJoin(projects, and(
+        eq(projectUsers.projectId, projects.id),
+        isNull(projects.deletedAt),
+      ));
 
     return userProjects.map((up: { project: Project }) => up.project);
   }
@@ -1453,7 +1524,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(projects)
-      .where(eq(projects.folderId, folderId));
+      .where(and(eq(projects.folderId, folderId), isNull(projects.deletedAt)));
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
@@ -1474,63 +1545,158 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProject(id: number): Promise<boolean> {
+    // Soft delete: marks deleted_at. Files on disk and DB rows are left intact
+    // so admins can restore from /api/admin/trash. Use purgeProject for the
+    // permanent variant (which also unlinks files from disk).
     const result = await db
-      .delete(projects)
-      .where(eq(projects.id, id))
-      .returning({ deletedId: projects.id });
+      .update(projects)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(projects.id, id), isNull(projects.deletedAt)))
+      .returning({ id: projects.id });
     return result.length > 0;
   }
 
-  async getAllProjectsWithLatestVideo(): Promise<(Project & { latestVideoFile?: File })[]> {
-    const allProjects = await db.select().from(projects);
-    
-    const projectsWithVideo = await Promise.all(allProjects.map(async (project) => {
-      const latestVideoFiles = await db
-        .select()
-        .from(files)
-        .where(and(eq(files.projectId, project.id), eq(files.fileType, 'video')))
-        .orderBy(desc(files.createdAt))
-        .limit(1);
-      
-      return {
-        ...project,
-        latestVideoFile: latestVideoFiles[0] || undefined
-      };
-    }));
-    
-    return projectsWithVideo;
+  async restoreProject(id: number): Promise<boolean> {
+    // Restore is only valid for trashed rows. Returning false for an active
+    // row keeps the route from silently no-op'ing on real projects.
+    const result = await db
+      .update(projects)
+      .set({ deletedAt: null })
+      .where(and(eq(projects.id, id), isNotNull(projects.deletedAt)))
+      .returning({ id: projects.id });
+    return result.length > 0;
   }
 
-  async getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File })[]> {
-    const userProjects = await db
-      .select({
-        project: projects
-      })
-      .from(projectUsers)
-      .where(eq(projectUsers.userId, userId))
-      .innerJoin(projects, eq(projectUsers.projectId, projects.id));
+  async purgeProject(id: number): Promise<boolean> {
+    // Hard delete — STRICTLY only permitted for rows already in the trash.
+    // Without this guard, the admin trash purge endpoint could be coerced
+    // into permanently destroying live projects (and via FK cascade, all
+    // their files/comments/approvals). The route also unlinks files from
+    // disk BEFORE calling this method.
+    const result = await db
+      .delete(projects)
+      .where(and(eq(projects.id, id), isNotNull(projects.deletedAt)))
+      .returning({ id: projects.id });
+    return result.length > 0;
+  }
 
-    const projectsWithVideo = await Promise.all(userProjects.map(async (up) => {
-      const latestVideoFiles = await db
+  async getDeletedProjects(): Promise<(Project & { creatorUsername?: string | null; creatorName?: string | null })[]> {
+    const rows = await db
+      .select({
+        project: projects,
+        creatorUsername: users.username,
+        creatorName: users.name,
+      })
+      .from(projects)
+      .leftJoin(users, eq(users.id, projects.createdById))
+      .where(isNotNull(projects.deletedAt))
+      .orderBy(desc(projects.deletedAt));
+    return rows.map(r => ({
+      ...r.project,
+      creatorUsername: r.creatorUsername ?? null,
+      creatorName: r.creatorName ?? null,
+    }));
+  }
+
+  async getDeletedFolders(): Promise<(Folder & { creatorUsername?: string | null; creatorName?: string | null })[]> {
+    const rows = await db
+      .select({
+        folder: folders,
+        creatorUsername: users.username,
+        creatorName: users.name,
+      })
+      .from(folders)
+      .leftJoin(users, eq(users.id, folders.createdById))
+      .where(isNotNull(folders.deletedAt))
+      .orderBy(desc(folders.deletedAt));
+    return rows.map(r => ({
+      ...r.folder,
+      creatorUsername: r.creatorUsername ?? null,
+      creatorName: r.creatorName ?? null,
+    }));
+  }
+
+  async getAllProjectsWithLatestVideo(): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]> {
+    const rows = await db
+      .select({
+        project: projects,
+        creatorUsername: users.username,
+        creatorName: users.name,
+      })
+      .from(projects)
+      .leftJoin(users, eq(users.id, projects.createdById))
+      .where(isNull(projects.deletedAt));
+
+    return await Promise.all(rows.map(async (r) => {
+      const [latestVideoFile] = await db
         .select()
         .from(files)
-        .where(and(eq(files.projectId, up.project.id), eq(files.fileType, 'video')))
+        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video')))
         .orderBy(desc(files.createdAt))
         .limit(1);
-      
+      const [{ count: fileCount }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(files)
+        .where(eq(files.projectId, r.project.id));
       return {
-        ...up.project,
-        latestVideoFile: latestVideoFiles[0] || undefined
+        ...r.project,
+        latestVideoFile: latestVideoFile || undefined,
+        creatorUsername: r.creatorUsername ?? null,
+        creatorName: r.creatorName ?? null,
+        fileCount: Number(fileCount) || 0,
       };
     }));
-    
-    return projectsWithVideo;
+  }
+
+  async getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]> {
+    const rows = await db
+      .select({
+        project: projects,
+        creatorUsername: users.username,
+        creatorName: users.name,
+      })
+      .from(projectUsers)
+      .innerJoin(projects, and(
+        eq(projectUsers.projectId, projects.id),
+        isNull(projects.deletedAt),
+      ))
+      .leftJoin(users, eq(users.id, projects.createdById))
+      .where(eq(projectUsers.userId, userId));
+
+    return await Promise.all(rows.map(async (r) => {
+      const [latestVideoFile] = await db
+        .select()
+        .from(files)
+        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video')))
+        .orderBy(desc(files.createdAt))
+        .limit(1);
+      const [{ count: fileCount }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(files)
+        .where(eq(files.projectId, r.project.id));
+      return {
+        ...r.project,
+        latestVideoFile: latestVideoFile || undefined,
+        creatorUsername: r.creatorUsername ?? null,
+        creatorName: r.creatorName ?? null,
+        fileCount: Number(fileCount) || 0,
+      };
+    }));
   }
 
   // File methods
   async getFile(id: number): Promise<File | undefined> {
-    const [file] = await db.select().from(files).where(eq(files.id, id));
-    return file;
+    // Files belonging to soft-deleted projects are treated as gone for
+    // normal reads — they reappear when the project is restored.
+    const [row] = await db
+      .select({ file: files })
+      .from(files)
+      .innerJoin(projects, and(
+        eq(projects.id, files.projectId),
+        isNull(projects.deletedAt),
+      ))
+      .where(eq(files.id, id));
+    return row?.file;
   }
 
   async getFilesByProject(projectId: number): Promise<File[]> {
@@ -1538,7 +1704,14 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getAllFiles(): Promise<File[]> {
-    return await db.select().from(files);
+    const rows = await db
+      .select({ file: files })
+      .from(files)
+      .innerJoin(projects, and(
+        eq(projects.id, files.projectId),
+        isNull(projects.deletedAt),
+      ));
+    return rows.map(r => r.file);
   }
 
   async createFile(insertFile: InsertFile): Promise<File> {
@@ -2345,11 +2518,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFileByShareToken(token: string): Promise<File | undefined> {
+    // Share tokens for files belonging to soft-deleted projects must NOT
+    // resolve — otherwise an admin "delete" still leaves the public review
+    // link live, leaking content the owner thought was gone.
     const [file] = await db
-      .select()
+      .select({
+        id: files.id,
+        filename: files.filename,
+        fileType: files.fileType,
+        fileSize: files.fileSize,
+        filePath: files.filePath,
+        projectId: files.projectId,
+        folderId: files.folderId,
+        uploadedById: files.uploadedById,
+        version: files.version,
+        isLatestVersion: files.isLatestVersion,
+        isAvailable: files.isAvailable,
+        shareToken: files.shareToken,
+        createdAt: files.createdAt,
+      })
       .from(files)
-      .where(eq(files.shareToken, token));
-    return file;
+      .innerJoin(projects, eq(files.projectId, projects.id))
+      .where(and(
+        eq(files.shareToken, token),
+        isNull(projects.deletedAt),
+      ));
+    return file as unknown as File | undefined;
   }
 
   async getFileWithProjectByShareToken(token: string): Promise<(File & { projectName: string }) | undefined> {
@@ -2361,6 +2555,7 @@ export class DatabaseStorage implements IStorage {
         fileSize: files.fileSize,
         filePath: files.filePath,
         projectId: files.projectId,
+        folderId: files.folderId,
         uploadedById: files.uploadedById,
         version: files.version,
         isLatestVersion: files.isLatestVersion,
@@ -2371,9 +2566,12 @@ export class DatabaseStorage implements IStorage {
       })
       .from(files)
       .innerJoin(projects, eq(files.projectId, projects.id))
-      .where(eq(files.shareToken, token));
-    
-    return result[0];
+      .where(and(
+        eq(files.shareToken, token),
+        isNull(projects.deletedAt),
+      ));
+
+    return result[0] as unknown as (File & { projectName: string }) | undefined;
   }
 
   // New Unified Comment methods (UUID-based) for DatabaseStorage
