@@ -77,7 +77,7 @@ export function ActivityLogList() {
     if (action.includes('approve')) return <Check className="h-4 w-4" />;
     if (action.includes('reject') || action.includes('change')) return <X className="h-4 w-4" />;
     if (action.includes('settings')) return <Settings className="h-4 w-4" />;
-    
+
     switch (entityType) {
       case 'user':
         return <Users className="h-4 w-4" />;
@@ -90,40 +90,116 @@ export function ActivityLogList() {
     }
   };
 
-  // Helper to format activity text
+  // Build a friendly summary line. The server normalizes action names to
+  // short verbs (`upload`, `create`, `delete`, ...), so we key off
+  // (action, entityType) and surface the resolved entityName / projectName
+  // / targetUserName so admins can see exactly what was touched.
   const getActivityText = (activity: any) => {
-    const actor = activity.user?.name || 'A user';
-    
-    switch (activity.action) {
-      case 'invited_user_to_system':
-        return `${actor} invited a new user to join the system`;
-      case 'invited_user':
-        return `${actor} invited a user to a project`;
-      case 'create_project':
-        return `${actor} created a new project`;
-      case 'update_project':
-        return `${actor} updated a project`;
-      case 'upload_file':
-        return `${actor} uploaded a new file`;
-      case 'comment':
-        return `${actor} added a comment`;
-      case 'resolve_comment':
-        return `${actor} resolved a comment`;
-      case 'unresolve_comment':
-        return `${actor} reopened a comment`;
-      case 'approve_file':
-        return `${actor} approved a file`;
-      case 'request_changes':
-        return `${actor} requested changes on a file`;
-      case 'resent_invitation_email':
-        return `${actor} resent an invitation email`;
-      case 'user_joined':
-        return `A new user joined the system`;
-      case 'accept_invitation':
-        return `A user accepted an invitation`;
+    const actor = activity.user?.name || activity.user?.username || 'A user';
+    const meta = activity.metadata || {};
+    const entityName: string | null = activity.entityName ?? null;
+    const projectName: string | null = activity.projectName ?? null;
+    const targetUser: string | null = activity.targetUserName ?? null;
+
+    const fileLabel = entityName ? `file "${entityName}"` : 'a file';
+    const projectLabel = entityName ? `project "${entityName}"` : 'a project';
+    const folderLabel = entityName ? `folder "${entityName}"` : 'a folder';
+    const inProject = projectName ? ` in "${projectName}"` : '';
+
+    const key = `${activity.action}:${activity.entityType}`;
+    switch (key) {
+      // Files
+      case 'upload:file':
+        return `${actor} uploaded ${fileLabel}${meta.version && meta.version > 1 ? ` (v${meta.version})` : ''}${inProject}`;
+      case 'delete:file':
+        return `${actor} deleted ${fileLabel}${inProject}`;
+      case 'approve:file':
+        return `${actor} approved ${fileLabel}${inProject}`;
+      case 'request_changes:file':
+        return `${actor} requested changes on ${fileLabel}${inProject}`;
+      case 'comment:file':
+        return `${actor} ${meta.isReply ? 'replied to a comment' : 'commented'} on ${fileLabel}${inProject}`;
+
+      // Comments (entityId points at fileId for these)
+      case 'resolve_comment:comment':
+        return `${actor} resolved a comment on ${fileLabel}${inProject}`;
+      case 'unresolve_comment:comment':
+        return `${actor} reopened a comment on ${fileLabel}${inProject}`;
+      case 'delete_comment:comment':
+        return `${actor} deleted a comment on ${fileLabel}${inProject}`;
+
+      // Projects
+      case 'create:project':
+        return `${actor} created ${projectLabel}`;
+      case 'update:project':
+        return `${actor} updated ${projectLabel}`;
+      case 'soft_delete:project':
+        return `${actor} moved ${projectLabel} to trash${meta.fileCount != null ? ` (${meta.fileCount} files)` : ''}`;
+      case 'restore:project':
+        return `${actor} restored ${projectLabel} from trash`;
+      case 'purge:project':
+        return `${actor} permanently deleted ${projectLabel}${meta.fileCount != null ? ` (${meta.fileCount} files)` : ''}`;
+      case 'add_user:project':
+        return `${actor} added ${targetUser ?? 'a user'}${meta.role ? ` as ${meta.role}` : ''} to ${projectLabel}`;
+      case 'remove_user:project':
+        return `${actor} removed ${targetUser ?? 'a user'} from ${projectLabel}`;
+      case 'update_role:project_user':
+        return `${actor} changed ${targetUser ?? "a user"}'s role to ${meta.role ?? 'a new role'}${projectName ? ` in "${projectName}"` : ''}`;
+
+      // Folders (top-level libraries)
+      case 'create:folder':
+        return `${actor} created ${folderLabel}`;
+      case 'update:folder':
+        return `${actor} renamed ${folderLabel}`;
+      case 'delete:folder':
+        return `${actor} deleted ${folderLabel}`;
+
+      // Users / invitations
+      case 'create:user':
+        return `${actor} created user ${entityName ? `"${entityName}"` : ''}`.trim();
       default:
-        return `${actor} performed action "${activity.action}" on ${activity.entityType}`;
+        // Legacy / unmapped — keep the action name visible so it's obvious
+        // when something new needs a friendly mapping.
+        if (activity.action === 'invited_user_to_system')
+          return `${actor} invited ${meta.inviteeEmail ?? 'a new user'} to join the system`;
+        if (activity.action === 'invited_user')
+          return `${actor} invited ${meta.inviteeEmail ?? 'a user'} to a project`;
+        if (activity.action === 'resent_invitation_email')
+          return `${actor} resent an invitation email${meta.inviteeEmail ? ` to ${meta.inviteeEmail}` : ''}`;
+        if (activity.action === 'cancelled_invitation' || activity.action === 'cancelled_system_invitation')
+          return `${actor} cancelled an invitation${meta.inviteeEmail ? ` to ${meta.inviteeEmail}` : ''}`;
+        if (activity.action === 'accepted_system_role' || activity.action === 'accept_invitation')
+          return `${actor} accepted an invitation`;
+        if (activity.action === 'joined_project')
+          return `${actor} joined ${projectLabel}`;
+        return `${actor} performed "${activity.action}" on ${activity.entityType}${entityName ? ` "${entityName}"` : ''}`;
     }
+  };
+
+  // Render the small secondary line under the main message.
+  const getActivityDetails = (activity: any) => {
+    const meta = activity.metadata || {};
+    const bits: string[] = [];
+
+    if (meta.inviteeEmail) bits.push(`Email: ${meta.inviteeEmail}`);
+    if (meta.role && activity.action !== 'add_user' && activity.action !== 'update_role') {
+      bits.push(`Role: ${meta.role}`);
+    }
+    if (
+      activity.entityType === 'file' &&
+      activity.projectName &&
+      // already shown inline in the main line — skip duplicates
+      !['upload', 'delete', 'comment', 'approve', 'request_changes'].includes(activity.action)
+    ) {
+      bits.push(`Project: ${activity.projectName}`);
+    }
+    if (typeof meta.fileCount === 'number' && activity.action !== 'soft_delete' && activity.action !== 'purge') {
+      bits.push(`${meta.fileCount} files`);
+    }
+    if (Array.isArray(meta.filesystemErrors) && meta.filesystemErrors.length > 0) {
+      bits.push(`${meta.filesystemErrors.length} filesystem error(s)`);
+    }
+    return bits.join(' · ');
   };
 
   return (
@@ -151,16 +227,12 @@ export function ActivityLogList() {
               </TableCell>
               <TableCell>
                 <div className="font-medium">{getActivityText(activity)}</div>
-                {activity.metadata && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {activity.metadata.inviteeEmail && (
-                      <span>Email: {activity.metadata.inviteeEmail}</span>
-                    )}
-                    {activity.metadata.role && (
-                      <span className="ml-2">Role: {activity.metadata.role}</span>
-                    )}
-                  </div>
-                )}
+                {(() => {
+                  const detail = getActivityDetails(activity);
+                  return detail ? (
+                    <div className="text-xs text-muted-foreground mt-1">{detail}</div>
+                  ) : null;
+                })()}
               </TableCell>
               <TableCell>
                 <Badge variant="outline" className="flex items-center gap-1">

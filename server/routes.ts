@@ -47,6 +47,7 @@ import {
   insertApprovalSchema,
   users as usersTable,
   projects as projectsTable,
+  folders as foldersTable,
 } from "@shared/schema";
 import { db } from "./db";
 import { sql, inArray, eq } from "drizzle-orm";
@@ -4817,58 +4818,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // ===== ACTIVITY LOG ROUTES =====
+  // Enrich a list of activity rows with the actor user, the entity name
+  // (file/project/folder/user), and a project name for file-scoped events.
+  // We bypass storage.getProject/getFolder so soft-deleted entities still
+  // resolve to their original name — the audit trail must remain readable
+  // after a project is trashed.
+  async function enrichActivities(activities: any[]) {
+    if (activities.length === 0) return [];
+
+    const userIds = new Set<number>();
+    const fileIds = new Set<number>();
+    const projectIds = new Set<number>();
+    const folderIds = new Set<number>();
+    const targetUserIds = new Set<number>();
+
+    for (const a of activities) {
+      if (a.userId) userIds.add(a.userId);
+      const meta = (a.metadata || {}) as Record<string, any>;
+      if (typeof meta.projectId === "number") projectIds.add(meta.projectId);
+      if (typeof meta.fileId === "number") fileIds.add(meta.fileId);
+      if (typeof meta.addedUserId === "number") targetUserIds.add(meta.addedUserId);
+      if (typeof meta.removedUserId === "number") targetUserIds.add(meta.removedUserId);
+      if (typeof meta.targetUserId === "number") targetUserIds.add(meta.targetUserId);
+      switch (a.entityType) {
+        case "file":
+          if (a.entityId) fileIds.add(a.entityId);
+          break;
+        case "project":
+          if (a.entityId) projectIds.add(a.entityId);
+          break;
+        case "folder":
+          if (a.entityId) folderIds.add(a.entityId);
+          break;
+        case "user":
+          if (a.entityId) targetUserIds.add(a.entityId);
+          break;
+      }
+    }
+
+    const allUserIds = [...new Set([...userIds, ...targetUserIds])];
+
+    const [userRows, fileRows, projectRows, folderRows] = await Promise.all([
+      allUserIds.length
+        ? db.select().from(usersTable).where(inArray(usersTable.id, allUserIds))
+        : Promise.resolve([] as any[]),
+      fileIds.size
+        ? db.select().from(filesTable).where(inArray(filesTable.id, [...fileIds]))
+        : Promise.resolve([] as any[]),
+      projectIds.size
+        ? db.select().from(projectsTable).where(inArray(projectsTable.id, [...projectIds]))
+        : Promise.resolve([] as any[]),
+      folderIds.size
+        ? db.select().from(foldersTable).where(inArray(foldersTable.id, [...folderIds]))
+        : Promise.resolve([] as any[]),
+    ]);
+
+    const userMap = new Map<number, any>(userRows.map((u: any) => [u.id, u]));
+    const fileMap = new Map<number, any>(fileRows.map((f: any) => [f.id, f]));
+    // Project lookups also need to surface the file's parent project.
+    for (const f of fileRows as any[]) {
+      if (typeof f.projectId === "number") projectIds.add(f.projectId);
+    }
+    if (projectRows.length === 0 && projectIds.size > 0) {
+      const extra = await db
+        .select()
+        .from(projectsTable)
+        .where(inArray(projectsTable.id, [...projectIds]));
+      for (const p of extra) projectRows.push(p);
+    } else if (projectIds.size > projectRows.length) {
+      const have = new Set(projectRows.map((p: any) => p.id));
+      const missing = [...projectIds].filter((id) => !have.has(id));
+      if (missing.length) {
+        const extra = await db
+          .select()
+          .from(projectsTable)
+          .where(inArray(projectsTable.id, missing));
+        for (const p of extra) projectRows.push(p);
+      }
+    }
+    const projectMap = new Map<number, any>(projectRows.map((p: any) => [p.id, p]));
+    const folderMap = new Map<number, any>(folderRows.map((f: any) => [f.id, f]));
+
+    return activities.map((a) => {
+      const meta = (a.metadata || {}) as Record<string, any>;
+      const actor = userMap.get(a.userId);
+      const actorClean = actor
+        ? (() => { const { password, ...rest } = actor; return rest; })()
+        : null;
+
+      let entityName: string | null = null;
+      let projectName: string | null = null;
+      let projectId: number | null = null;
+
+      switch (a.entityType) {
+        case "file": {
+          const f = fileMap.get(a.entityId);
+          entityName = f?.filename ?? meta.filename ?? null;
+          projectId = f?.projectId ?? meta.projectId ?? null;
+          break;
+        }
+        case "project": {
+          const p = projectMap.get(a.entityId);
+          entityName = p?.name ?? meta.projectName ?? null;
+          projectId = a.entityId ?? null;
+          break;
+        }
+        case "folder": {
+          const f = folderMap.get(a.entityId);
+          entityName = f?.name ?? meta.folderName ?? null;
+          break;
+        }
+        case "user": {
+          const u = userMap.get(a.entityId);
+          entityName = u?.name ?? u?.username ?? meta.createdUsername ?? null;
+          break;
+        }
+        case "comment": {
+          // entityId is the file id for comment activities; surface the file name.
+          const f = fileMap.get(a.entityId);
+          entityName = f?.filename ?? null;
+          projectId = f?.projectId ?? meta.projectId ?? null;
+          break;
+        }
+        default:
+          entityName = meta.projectName ?? meta.filename ?? meta.folderName ?? null;
+      }
+
+      if (projectId != null && projectName == null) {
+        const p = projectMap.get(projectId);
+        projectName = p?.name ?? meta.projectName ?? null;
+      }
+
+      // Resolve target user names referenced by metadata.
+      const targetUserName =
+        meta.addedUserName ??
+        (meta.addedUserId && userMap.get(meta.addedUserId)?.name) ??
+        (meta.removedUserId && userMap.get(meta.removedUserId)?.name) ??
+        (meta.targetUserId && userMap.get(meta.targetUserId)?.name) ??
+        null;
+
+      return {
+        ...a,
+        user: actorClean ?? a.user,
+        entityName,
+        projectName,
+        projectId: projectId ?? meta.projectId ?? null,
+        targetUserName,
+      };
+    });
+  }
+
   // Get all activity logs (admin only)
   app.get("/api/activities", isAdmin, async (req, res, next) => {
     try {
       const activities = await storage.getAllActivities();
-      
-      // Get user details for each activity
-      const activitiesWithUsers = await Promise.all(
-        activities.map(async (activity) => {
-          const user = await storage.getUser(activity.userId);
-          
-          if (!user) return activity;
-          
-          // Remove password from user object
-          const { password, ...userWithoutPassword } = user;
-          
-          return {
-            ...activity,
-            user: userWithoutPassword,
-          };
-        })
-      );
-      
-      res.json(activitiesWithUsers);
+      const enriched = await enrichActivities(activities);
+      res.json(enriched);
     } catch (error) {
       next(error);
     }
   });
-  
+
   // Get activity logs for a project
   app.get("/api/projects/:projectId/activities", hasProjectAccess, async (req, res, next) => {
     try {
       const projectId = parseInt(req.params.projectId);
       const activities = await storage.getActivitiesByProject(projectId);
-      
-      // Get user details for each activity
-      const activitiesWithUsers = await Promise.all(
-        activities.map(async (activity) => {
-          const user = await storage.getUser(activity.userId);
-          
-          if (!user) return activity;
-          
-          // Remove password from user object
-          const { password, ...userWithoutPassword } = user;
-          
-          return {
-            ...activity,
-            user: userWithoutPassword,
-          };
-        })
-      );
-      
-      res.json(activitiesWithUsers);
+      const enriched = await enrichActivities(activities);
+      res.json(enriched);
     } catch (error) {
       next(error);
     }
