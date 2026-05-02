@@ -7,6 +7,7 @@ import AdminInviteForm from "@/components/admin/admin-invite-form";
 import ActivityLogList from "@/components/admin/activity-log-list";
 import SystemSettings from "@/components/admin/system-settings";
 import FileManager from "@/components/admin/file-manager";
+import DiagnosticsPanel from "@/components/admin/diagnostics-panel";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -172,6 +173,7 @@ export default function AdminPage() {
             <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>
             <TabsTrigger value="settings">System Settings</TabsTrigger>
+            <TabsTrigger value="diagnostics" data-testid="tab-diagnostics">Diagnostics</TabsTrigger>
           </TabsList>
           
           <TabsContent value="users">
@@ -303,6 +305,23 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <SystemSettings />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="diagnostics">
+            <Card>
+              <CardHeader className="border-b dark:border-gray-800">
+                <CardTitle className="text-primary-600 dark:text-primary-400">Host Diagnostics</CardTitle>
+                <CardDescription className="dark:text-gray-400">
+                  Read-only snapshot of the Obviu host: CPU, GPUs (Tesla T4), FFmpeg/NVENC support,
+                  uploads/ storage and mount, Postgres, plus reachability of the DGX Spark over the
+                  in-rack 200Gb link. Used to validate AI-hardware setup before unfreezing the
+                  GPU/transcription pipeline.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DiagnosticsPanel />
               </CardContent>
             </Card>
           </TabsContent>

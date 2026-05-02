@@ -58,6 +58,7 @@ import {
   segmentsToSrt,
   isTranscriptionAvailable,
 } from "./transcription";
+import { collectDiagnostics } from "./diagnostics";
 
 /**
  * Resume any video processing rows that were stuck mid-encode by a previous
@@ -430,6 +431,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
   registerShareLinkRoutes(app, isAuthenticated);
+
+  // Admin diagnostics: read-only snapshot of the host (CPU/RAM, GPUs via
+  // nvidia-smi, FFmpeg + NVENC encoders, uploads/ mount + free space, NFS/
+  // RDMA detection, optional DGX Spark reachability via SPARK_HOST /
+  // SPARK_DIAG_URL). Used to validate the AI-hardware setup before
+  // unfreezing the GPU/transcription pipeline.
+  app.get("/api/admin/diag", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const report = await collectDiagnostics();
+      res.json(report);
+    } catch (err: any) {
+      res.status(500).json({
+        ok: false,
+        error: err?.message || String(err),
+      });
+    }
+  });
   
   // Test authentication endpoint
   app.get('/api/test-auth', (req, res) => {
