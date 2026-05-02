@@ -11,6 +11,45 @@ import {
   useToggleFolderGlobal,
 } from "@/hooks/use-folders";
 import { buildFolderTree, type FolderNode } from "@/lib/folder-tree";
+
+// Sidebar open-state persistence. Each page wraps itself in <AppLayout>,
+// so navigating from one route to another remounts the whole sidebar
+// and would otherwise wipe local useState. We persist expanded state in
+// localStorage keyed by a stable id so the tree the user opened stays
+// open as they click around.
+const SIDEBAR_OPEN_KEY = "obviu:sidebar:open-v1";
+function readOpenMap(): Record<string, true> {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_OPEN_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+function writeOpenMap(m: Record<string, true>) {
+  try {
+    localStorage.setItem(SIDEBAR_OPEN_KEY, JSON.stringify(m));
+  } catch {}
+}
+function usePersistentOpen(key: string, defaultOpen: boolean) {
+  const [open, setOpenState] = useState<boolean>(() => {
+    const m = readOpenMap();
+    return key in m ? !!m[key] : defaultOpen;
+  });
+  const setOpen = (next: boolean | ((prev: boolean) => boolean)) => {
+    setOpenState((prev) => {
+      const value = typeof next === "function" ? (next as (p: boolean) => boolean)(prev) : next;
+      const m = readOpenMap();
+      if (value) m[key] = true;
+      else delete m[key];
+      writeOpenMap(m);
+      return value;
+    });
+  };
+  return [open, setOpen] as const;
+}
 import {
   setDragPayload,
   getDragPayload,
@@ -306,7 +345,7 @@ function FolderSection({
   defaultOpen: boolean;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = usePersistentOpen(`section:${label}`, defaultOpen);
   return (
     <div>
       <button
@@ -328,7 +367,7 @@ function FolderSection({
 }
 
 function OwnerGroup({ owner }: { owner: { ownerId: number; ownerName: string; roots: FolderNode[] } }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePersistentOpen(`owner:${owner.ownerId}`, false);
   return (
     <div>
       <button
@@ -426,7 +465,7 @@ function SidebarProjectRow({ project, location }: { project: any; location: stri
 function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: number }) {
   const children: FolderNode[] = (folder as any).children || [];
   const hasChildren = children.length > 0;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = usePersistentOpen(`folder:${folder.id}`, false);
   const [location] = useLocation();
   const { data: projects, isLoading } = useFolderProjects(open ? folder.id : 0);
   const projectCount = projects?.length ?? 0;
