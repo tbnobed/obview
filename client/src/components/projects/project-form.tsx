@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFolders } from "@/hooks/use-folders";
+import { buildFolderTree, type FolderNode } from "@/lib/folder-tree";
 
 interface ProjectFormProps {
   projectId?: number;
@@ -202,15 +203,32 @@ export default function ProjectForm({
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="none">No folder (unorganized)</SelectItem>
-                  {folders && folders.map((folder) => (
-                    <SelectItem 
-                      key={folder.id} 
-                      value={folder.id.toString()}
-                      data-testid={`select-folder-${folder.id}`}
-                    >
-                      {folder.name}
-                    </SelectItem>
-                  ))}
+                  {(() => {
+                    // Render every folder as its full path ("Post Production / Podcasts")
+                    // so the user knows exactly which level they're picking. The folder
+                    // dropdown collapses the global / private distinction into a single
+                    // sorted tree walk so deeply nested options stay grouped under their
+                    // parent.
+                    const tree = buildFolderTree(folders);
+                    const items: { id: number; label: string; depth: number }[] = [];
+                    const walk = (nodes: FolderNode[], trail: string[]) => {
+                      for (const n of nodes) {
+                        const nextTrail = [...trail, n.name];
+                        items.push({ id: n.id, label: nextTrail.join(" / "), depth: trail.length });
+                        if (n.children.length) walk(n.children, nextTrail);
+                      }
+                    };
+                    walk(tree, []);
+                    return items.map((it) => (
+                      <SelectItem
+                        key={it.id}
+                        value={it.id.toString()}
+                        data-testid={`select-folder-${it.id}`}
+                      >
+                        {it.label}
+                      </SelectItem>
+                    ));
+                  })()}
                 </SelectContent>
               </Select>
               <FormDescription>

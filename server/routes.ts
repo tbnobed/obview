@@ -873,11 +873,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Shared helper: validate a proposed parentFolderId for the actor.
+  // Returns { ok: true, parent } | { ok: false, status, message }.
+  // Rules:
+  //   - parent must exist and not be soft-deleted
+  //   - parent must not be a project-scoped folder (those live inside a project)
+  //   - non-admins must own the parent OR the parent must be global
+  //   - if parent is global, the child is forced to be global too (so it
+  //     stays visible to everyone who can see the parent)
+  async function validateFolderParent(
+    parentId: number,
+    actor: { id: number; role: string },
+  ): Promise<
+    | { ok: true; parent: any; forceGlobal: boolean }
+    | { ok: false; status: number; message: string }
+  > {
+    const parent = await storage.getFolder(parentId);
+    if (!parent) return { ok: false, status: 400, message: "Parent folder not found" };
+    if (parent.projectId) {
+      return { ok: false, status: 400, message: "Cannot nest a top-level folder under a project subfolder" };
+    }
+    const isAdmin = actor.role === "admin";
+    if (!isAdmin && !parent.isGlobal && parent.createdById !== actor.id) {
+      return { ok: false, status: 403, message: "You don't have access to that parent folder" };
+    }
+    return { ok: true, parent, forceGlobal: !!parent.isGlobal };
+  }
+
   // Create a new folder
   app.post("/api/folders", isAuthenticated, async (req, res, next) => {
     try {
       // Any authenticated user may create a global folder.
       const incoming = { ...req.body };
+
+      // If creating a subfolder, validate the parent up-front so we can
+      // (a) reject bad input cleanly and (b) inherit isGlobal from the
+      // parent — the parent's audience is the source of truth, otherwise
+      // a private subfolder under a global parent would be invisible to
+      // everyone who can see the parent.
+      if (incoming.parentFolderId != null) {
+        // Coerce defensively: bare Number() turns "abc" into NaN and would
+        // happily pass through to storage.getFolder, where the DB driver
+        // could throw a 500 instead of returning a clean 400.
+        const parentNum = Number(incoming.parentFolderId);
+        if (!Number.isInteger(parentNum) || parentNum <= 0) {
+          return res.status(400).json({ message: "Invalid parentFolderId" });
+        }
+        const check = await validateFolderParent(parentNum, req.user);
+        if (!check.ok) return res.status(check.status).json({ message: check.message });
+        if (check.forceGlobal) incoming.isGlobal = true;
+        incoming.parentFolderId = parentNum;
+      }
+
       // Validate input using Zod schema
       const validatedData = insertFolderSchema.parse({
         ...incoming,
@@ -963,6 +1010,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const incoming = { ...req.body };
+
+      // If parentFolderId is changing, validate the new parent and walk
+      // up the chain to refuse cycles. Without this guard, the UI could
+      // (e.g.) drop folder A under its own descendant B and orphan an
+      // entire subtree from every read query.
+      if ("parentFolderId" in incoming && incoming.parentFolderId != null) {
+        const newParentId = Number(incoming.parentFolderId);
+        if (!Number.isInteger(newParentId) || newParentId <= 0) {
+          return res.status(400).json({ message: "Invalid parentFolderId" });
+        }
+        if (newParentId === folderId) {
+          return res.status(400).json({ message: "A folder cannot be its own parent" });
+        }
+        const check = await validateFolderParent(newParentId, req.user);
+        if (!check.ok) return res.status(check.status).json({ message: check.message });
+        // Walk up: refuse if folderId appears anywhere above newParentId.
+        let cursorId: number | null = newParentId;
+        const seen = new Set<number>();
+        while (cursorId != null) {
+          if (seen.has(cursorId)) break; // existing data already cyclic; bail
+          seen.add(cursorId);
+          if (cursorId === folderId) {
+            return res.status(400).json({ message: "Cannot move a folder into one of its own subfolders" });
+          }
+          const cursor: any = await storage.getFolder(cursorId);
+          cursorId = cursor?.parentFolderId ?? null;
+        }
+        // Inherit isGlobal from the new parent if the parent is global.
+        if (check.forceGlobal) incoming.isGlobal = true;
+        // Write the coerced number back so string inputs (e.g. "12")
+        // pass `insertFolderSchema.partial()` which expects a number.
+        incoming.parentFolderId = newParentId;
+      }
 
       // Validate input
       const validatedData = insertFolderSchema.partial().parse(incoming);

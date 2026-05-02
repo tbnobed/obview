@@ -10,6 +10,7 @@ import {
   useFolderProjects,
   useToggleFolderGlobal,
 } from "@/hooks/use-folders";
+import { buildFolderTree, type FolderNode } from "@/lib/folder-tree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -228,22 +229,28 @@ function FolderGroups({
   currentUserId?: number;
   isAdmin: boolean;
 }) {
-  const global = folders.filter((f) => f.isGlobal);
-  const mine = folders.filter((f) => !f.isGlobal && f.createdById === currentUserId);
-  const others = folders.filter((f) => !f.isGlobal && f.createdById !== currentUserId);
+  // Build a single tree from the flat list; each section then picks the
+  // root folders that belong to it. Children of a global root stay nested
+  // under that root regardless of who created them, which matches the
+  // mental model: "I'm browsing inside Post Production, show me what's in here."
+  const tree = buildFolderTree(folders);
 
-  // Group "others" by owner
-  const ownerMap = new Map<number, { ownerId: number; ownerName: string; folders: any[] }>();
-  for (const f of others) {
+  const globalRoots = tree.filter((n) => n.isGlobal);
+  const mineRoots = tree.filter((n) => !n.isGlobal && n.createdById === currentUserId);
+  const otherRoots = tree.filter((n) => !n.isGlobal && n.createdById !== currentUserId);
+
+  // Group "others" by owner.
+  const ownerMap = new Map<number, { ownerId: number; ownerName: string; roots: FolderNode[] }>();
+  for (const f of otherRoots) {
     const id = f.createdById;
     if (!ownerMap.has(id)) {
       ownerMap.set(id, {
         ownerId: id,
-        ownerName: f.createdByUsername || `User ${id}`,
-        folders: [],
+        ownerName: (f as any).createdByUsername || `User ${id}`,
+        roots: [],
       });
     }
-    ownerMap.get(id)!.folders.push(f);
+    ownerMap.get(id)!.roots.push(f);
   }
   const owners = Array.from(ownerMap.values()).sort((a, b) =>
     a.ownerName.localeCompare(b.ownerName)
@@ -251,18 +258,18 @@ function FolderGroups({
 
   return (
     <div className="space-y-2">
-      {global.length > 0 && (
+      {globalRoots.length > 0 && (
         <FolderSection label="Global" defaultOpen>
-          {global.map((f) => (
-            <SidebarFolderItem key={f.id} folder={f} />
+          {globalRoots.map((f) => (
+            <SidebarFolderItem key={f.id} folder={f} depth={0} />
           ))}
         </FolderSection>
       )}
 
-      {mine.length > 0 && (
+      {mineRoots.length > 0 && (
         <FolderSection label="My folders" defaultOpen>
-          {mine.map((f) => (
-            <SidebarFolderItem key={f.id} folder={f} />
+          {mineRoots.map((f) => (
+            <SidebarFolderItem key={f.id} folder={f} depth={0} />
           ))}
         </FolderSection>
       )}
@@ -308,7 +315,7 @@ function FolderSection({
   );
 }
 
-function OwnerGroup({ owner }: { owner: { ownerId: number; ownerName: string; folders: any[] } }) {
+function OwnerGroup({ owner }: { owner: { ownerId: number; ownerName: string; roots: FolderNode[] } }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
@@ -331,14 +338,14 @@ function OwnerGroup({ owner }: { owner: { ownerId: number; ownerName: string; fo
         <span className="truncate flex-1 text-left">
           {owner.ownerName}
           <span className="ml-1.5 text-xs text-neutral-400 dark:text-neutral-500 font-normal">
-            · {owner.folders.length}
+            · {owner.roots.length}
           </span>
         </span>
       </button>
       {open && (
         <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-neutral-200 dark:border-gray-800 pl-2">
-          {owner.folders.map((f) => (
-            <SidebarFolderItem key={f.id} folder={f} />
+          {owner.roots.map((f) => (
+            <SidebarFolderItem key={f.id} folder={f} depth={0} />
           ))}
         </div>
       )}
@@ -346,7 +353,9 @@ function OwnerGroup({ owner }: { owner: { ownerId: number; ownerName: string; fo
   );
 }
 
-function SidebarFolderItem({ folder }: { folder: any }) {
+function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: number }) {
+  const children: FolderNode[] = (folder as any).children || [];
+  const hasChildren = children.length > 0;
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
   const { data: projects, isLoading } = useFolderProjects(open ? folder.id : 0);
@@ -555,6 +564,12 @@ function SidebarFolderItem({ folder }: { folder: any }) {
 
       {open && (
         <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-neutral-200 dark:border-gray-800 pl-2">
+          {/* Child subfolders render above the projects list so the user
+              can drill straight down through the tree without losing
+              their place. */}
+          {hasChildren && children.map((child) => (
+            <SidebarFolderItem key={child.id} folder={child} depth={depth + 1} />
+          ))}
           {isLoading ? (
             <div className="flex justify-center py-2">
               <Loader2 className="h-3 w-3 animate-spin text-neutral-400" />
@@ -579,11 +594,11 @@ function SidebarFolderItem({ folder }: { folder: any }) {
                 </Link>
               );
             })
-          ) : (
+          ) : !hasChildren ? (
             <div className="px-2 py-1 text-xs text-neutral-400 dark:text-neutral-500 italic">
               Empty folder
             </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>

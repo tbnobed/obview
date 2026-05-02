@@ -1,19 +1,41 @@
 import { useEffect, useState } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProjectCard from "@/components/projects/project-card";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
-import { useFolder, useFolderProjects, useDeleteFolder } from "@/hooks/use-folders";
+import { useFolder, useFolderProjects, useDeleteFolder, useFolders, useCreateFolder } from "@/hooks/use-folders";
 import { useAuth } from "@/hooks/use-auth";
+import { getFolderPath, getDirectSubfolders } from "@/lib/folder-tree";
 import type { Folder, Project, File as MediaFile } from "@shared/schema";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type ProjectWithVideo = Project & { latestVideoFile?: MediaFile };
 import {
   ArrowLeft,
+  ChevronRight,
   FileVideo,
   Folder as FolderIcon,
+  FolderPlus,
   Globe,
   Loader2,
   Plus,
@@ -45,12 +67,50 @@ export default function FolderPage() {
     useFolder(folderId) as { data: Folder | undefined; isLoading: boolean; error: Error | null };
   const { data: projects, isLoading: projectsLoading } =
     useFolderProjects(folderId) as { data: ProjectWithVideo[] | undefined; isLoading: boolean };
+  const { data: allFolders } = useFolders();
 
   const isAdmin = user?.role === "admin";
   const isOwner = !!user && folder && folder.createdById === user.id;
   const canShare = !!user && (isAdmin || isOwner);
   const canDelete = !!user && (isAdmin || isOwner);
+  // Subfolder creation follows the same access rule as POST /api/folders:
+  // any authenticated user can create one inside a global folder; private
+  // folders are limited to admins or the owner.
+  const canCreateSubfolder = !!user && !!folder && (isAdmin || isOwner || folder.isGlobal);
   const deleteFolder = useDeleteFolder();
+  const createFolder = useCreateFolder();
+  const [createSubOpen, setCreateSubOpen] = useState(false);
+
+  const breadcrumbs = folder ? getFolderPath(allFolders, folder.id) : [];
+  const subfolders = getDirectSubfolders(allFolders, folderId);
+
+  const subfolderForm = useForm<{ name: string; description?: string | null }>({
+    resolver: zodResolver(
+      z.object({
+        name: z.string().min(1, "Folder name is required").max(50, "50 characters max"),
+        description: z.string().nullable().optional(),
+      }),
+    ),
+    defaultValues: { name: "", description: "" },
+  });
+
+  const handleCreateSubfolder = async (values: { name: string; description?: string | null }) => {
+    if (!folder) return;
+    try {
+      await createFolder.mutateAsync({
+        name: values.name,
+        description: values.description || undefined,
+        parentFolderId: folder.id,
+        // Server forces isGlobal to match the parent when parent is global,
+        // but sending it here keeps the optimistic UX accurate.
+        isGlobal: folder.isGlobal,
+      });
+      subfolderForm.reset();
+      setCreateSubOpen(false);
+    } catch (err) {
+      console.error("Error creating subfolder:", err);
+    }
+  };
 
   useEffect(() => {
     if (folder?.name) {
@@ -88,6 +148,34 @@ export default function FolderPage() {
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
+
+        {/* Breadcrumb chain shows the full ancestor path so the user
+            always knows where they are in a nested folder tree and can
+            jump back up with one click. */}
+        {breadcrumbs.length > 1 && (
+          <nav className="flex items-center flex-wrap gap-1 text-sm text-neutral-500 dark:text-gray-400" aria-label="Folder breadcrumbs">
+            {breadcrumbs.map((b, i) => {
+              const isLast = i === breadcrumbs.length - 1;
+              return (
+                <span key={b.id} className="flex items-center gap-1">
+                  {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-neutral-400 dark:text-gray-600" />}
+                  {isLast ? (
+                    <span className="font-medium text-neutral-900 dark:text-teal-300 truncate max-w-[200px]" title={b.name}>{b.name}</span>
+                  ) : (
+                    <Link
+                      href={`/folders/${b.id}`}
+                      className="hover:text-primary-600 dark:hover:text-[#10a37f] truncate max-w-[160px]"
+                      title={b.name}
+                      data-testid={`link-breadcrumb-folder-${b.id}`}
+                    >
+                      {b.name}
+                    </Link>
+                  )}
+                </span>
+              );
+            })}
+          </nav>
+        )}
 
         {folderLoading ? (
           <div className="flex justify-center py-12">
@@ -187,6 +275,16 @@ export default function FolderPage() {
                     </AlertDialogContent>
                   </AlertDialog>
                 )}
+                {canCreateSubfolder && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setCreateSubOpen(true)}
+                    data-testid="button-folder-page-new-subfolder"
+                  >
+                    <FolderPlus className="mr-2 h-4 w-4" />
+                    New Subfolder
+                  </Button>
+                )}
                 <Button
                   onClick={() => navigate(`/projects/new?folderId=${folder.id}`)}
                   data-testid="button-folder-page-new-project"
@@ -207,6 +305,39 @@ export default function FolderPage() {
                 data-testid="input-folder-page-search"
               />
             </div>
+
+            {/* Subfolders grid renders directly inside the parent folder
+                view so users can drill straight into nested folders the
+                way they would in a file explorer. */}
+            {subfolders.length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  Subfolders
+                </h2>
+                <div
+                  className="grid gap-3"
+                  style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}
+                >
+                  {subfolders.map((sf) => (
+                    <Link
+                      key={sf.id}
+                      href={`/folders/${sf.id}`}
+                      data-testid={`link-subfolder-${sf.id}`}
+                      className="group flex items-center gap-2 px-3 py-3 rounded-lg border border-neutral-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-primary-300 dark:hover:border-[#10a37f] hover:bg-primary-50/40 dark:hover:bg-[#10a37f]/10 transition-colors"
+                    >
+                      {sf.isGlobal ? (
+                        <Globe className="h-5 w-5 shrink-0 text-sky-600 dark:text-sky-400" />
+                      ) : (
+                        <FolderIcon className="h-5 w-5 shrink-0 text-primary-600 dark:text-[#10a37f]" />
+                      )}
+                      <span className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                        {sf.name}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {projectsLoading ? (
               <div className="flex justify-center py-12">
@@ -267,6 +398,68 @@ export default function FolderPage() {
                 scopeName={folder.name}
               />
             )}
+
+            <Dialog open={createSubOpen} onOpenChange={setCreateSubOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create subfolder in "{folder.name}"</DialogTitle>
+                  <DialogDescription>
+                    {folder.isGlobal
+                      ? "This subfolder will inherit global visibility from its parent."
+                      : "This subfolder will live inside the current private folder."}
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...subfolderForm}>
+                  <form onSubmit={subfolderForm.handleSubmit(handleCreateSubfolder)} className="space-y-4">
+                    <FormField
+                      control={subfolderForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g. Podcasts"
+                              {...field}
+                              data-testid="input-folder-page-subfolder-name"
+                              autoFocus
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={subfolderForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description (optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Describe this subfolder..."
+                              {...field}
+                              value={field.value || ""}
+                              data-testid="input-folder-page-subfolder-description"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setCreateSubOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createFolder.isPending} data-testid="button-folder-page-create-subfolder">
+                        {createFolder.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Create
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </div>
