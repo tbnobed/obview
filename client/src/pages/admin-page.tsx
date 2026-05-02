@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import UserForm from "@/components/admin/user-form";
 import { PendingInvitations } from "@/components/admin/pending-invitations";
-import { Plus, Users, FileText, Activity, Settings, ShieldAlert, Loader2, HardDrive, FolderOpen, Mail } from "lucide-react";
+import { Plus, Users, FileText, Activity, Settings, ShieldAlert, Loader2, HardDrive, FolderOpen, Mail, Trash2 } from "lucide-react";
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -67,6 +67,14 @@ export default function AdminPage() {
           </div>
           
           <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/admin/trash")}
+              data-testid="open-trash-button-admin"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Trash
+            </Button>
             <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
