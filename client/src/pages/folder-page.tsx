@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProjectCard from "@/components/projects/project-card";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
-import { useFolder, useFolderProjects } from "@/hooks/use-folders";
+import { useFolder, useFolderProjects, useDeleteFolder } from "@/hooks/use-folders";
 import { useAuth } from "@/hooks/use-auth";
 import type { Folder, Project, File as MediaFile } from "@shared/schema";
 
@@ -19,7 +19,19 @@ import {
   Plus,
   Search,
   Share2,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function FolderPage() {
   const params = useParams<{ id: string }>();
@@ -37,6 +49,8 @@ export default function FolderPage() {
   const isAdmin = user?.role === "admin";
   const isOwner = !!user && folder && folder.createdById === user.id;
   const canShare = !!user && (isAdmin || isOwner);
+  const canDelete = !!user && (isAdmin || isOwner);
+  const deleteFolder = useDeleteFolder();
 
   useEffect(() => {
     if (folder?.name) {
@@ -122,6 +136,56 @@ export default function FolderPage() {
                     <Share2 className="mr-2 h-4 w-4" />
                     Share
                   </Button>
+                )}
+                {canDelete && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        data-testid="button-folder-page-delete"
+                      >
+                        {deleteFolder.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="mr-2 h-4 w-4" />
+                        )}
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent data-testid="dialog-folder-page-delete">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete folder "{folder.name}"?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {projects && projects.length > 0 ? (
+                            <>
+                              This folder contains <strong>{projects.length} project{projects.length === 1 ? "" : "s"}</strong>.
+                              The folder <strong>and every project inside it</strong> will be deleted.
+                              An admin can still restore them from the trash.
+                            </>
+                          ) : (
+                            <>The folder will be deleted. It is empty so nothing else changes.</>
+                          )}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel data-testid="button-folder-page-cancel-delete">
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          disabled={deleteFolder.isPending}
+                          onClick={async () => {
+                            await deleteFolder.mutateAsync(folder.id);
+                            navigate("/");
+                          }}
+                          className="bg-red-600 hover:bg-red-700"
+                          data-testid="button-folder-page-confirm-delete"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
                 <Button
                   onClick={() => navigate(`/projects/new?folderId=${folder.id}`)}

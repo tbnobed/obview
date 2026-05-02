@@ -101,18 +101,28 @@ export const useToggleFolderGlobal = () => {
 
 export const useDeleteFolder = () => {
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async (folderId: number) => {
-      await apiRequest("DELETE", `/api/folders/${folderId}`);
+      const res = await apiRequest("DELETE", `/api/folders/${folderId}`);
+      if (res.status === 204) return { deletedProjectsCount: 0 };
+      try {
+        return (await res.json()) as { deletedProjectsCount?: number };
+      } catch {
+        return { deletedProjectsCount: 0 };
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const deleted = data?.deletedProjectsCount ?? 0;
       toast({
         title: "Folder deleted",
-        description: "Your folder has been deleted successfully",
+        description:
+          deleted > 0
+            ? `Folder and ${deleted} project${deleted === 1 ? "" : "s"} moved to trash. Admins can restore them.`
+            : "Your folder has been deleted successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] }); // Also refresh projects in case they were in this folder
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
     },
     onError: (error: Error) => {
       toast({

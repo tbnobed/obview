@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   useFolders,
   useCreateFolder,
+  useDeleteFolder,
   useFolderProjects,
   useToggleFolderGlobal,
 } from "@/hooks/use-folders";
@@ -37,6 +38,7 @@ import {
   Globe,
   Loader2,
   Plus,
+  Trash2,
   User as UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -354,10 +356,14 @@ function SidebarFolderItem({ folder }: { folder: any }) {
   const isOwner = !!user && folder.createdById === user.id;
   const canShare = user && (isAdmin || isOwner);
   const canToggleGlobal = isAdmin || isOwner;
+  const canDelete = isAdmin || isOwner;
   const [shareOpen, setShareOpen] = useState(false);
   const toggleGlobal = useToggleFolderGlobal();
+  const deleteFolder = useDeleteFolder();
   const isToggling =
     toggleGlobal.isPending && toggleGlobal.variables?.folderId === folder.id;
+  const isDeleting =
+    deleteFolder.isPending && deleteFolder.variables === folder.id;
 
   return (
     <div>
@@ -479,6 +485,61 @@ function SidebarFolderItem({ folder }: { folder: any }) {
           >
             <Share2 className="h-3.5 w-3.5 text-neutral-500" />
           </button>
+        )}
+        {canDelete && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className="hidden group-hover:inline-flex shrink-0 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30"
+                title="Delete folder"
+                aria-label="Delete folder"
+                data-testid={`button-delete-folder-${folder.id}`}
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-red-500" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                )}
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent
+              onClick={(e) => e.stopPropagation()}
+              data-testid={`dialog-delete-folder-${folder.id}`}
+            >
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete folder "{folder.name}"?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {open && projectCount > 0 ? (
+                    <>
+                      This folder contains <strong>{projectCount} project{projectCount === 1 ? "" : "s"}</strong>.
+                      The folder <strong>and every project inside it</strong> will be deleted.
+                      An admin can still restore them from the trash.
+                    </>
+                  ) : (
+                    <>
+                      The folder will be deleted. Any projects inside it will also be deleted
+                      (admins can restore them from the trash).
+                    </>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid={`button-cancel-delete-folder-${folder.id}`}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={isDeleting}
+                  onClick={() => deleteFolder.mutate(folder.id)}
+                  className="bg-red-600 hover:bg-red-700"
+                  data-testid={`button-confirm-delete-folder-${folder.id}`}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
 

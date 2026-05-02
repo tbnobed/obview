@@ -692,14 +692,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedUser = await storage.updateUser(userId, updateData);
-      
+
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
+      // Log role changes explicitly so the audit trail makes them
+      // discoverable. Without this, investigating "did this user used
+      // to be an admin?" requires guessing — exactly the dead end we
+      // hit while diagnosing project 30.
+      if (req.body.role && req.body.role !== user.role) {
+        await storage.logActivity({
+          action: "update",
+          entityType: "user",
+          entityId: userId,
+          userId: req.user.id,
+          metadata: {
+            username: updatedUser.username,
+            reason: "role_change",
+            changes: { role: { from: user.role, to: req.body.role } },
+          },
+        });
+      }
+
       // Remove password from response
       const { password: pwd, ...userWithoutPassword } = updatedUser;
-      
+
       res.json(userWithoutPassword);
     } catch (error) {
       next(error);
@@ -948,9 +966,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate input
       const validatedData = insertFolderSchema.partial().parse(incoming);
-      
+
+      // Compute a real before/after diff so the activity log records WHAT
+      // changed, not just that something changed. Without this the only
+      // way to investigate a "where did my project go?" report is to
+      // triangulate from indirect evidence — exactly the bug that
+      // stranded project 30 inside folder 8 on 2026-05-01.
+      const trackedFields: (keyof typeof validatedData)[] = [
+        "name",
+        "isGlobal",
+        "parentFolderId",
+        "projectId",
+      ];
+      const changes: Record<string, { from: unknown; to: unknown }> = {};
+      for (const field of trackedFields) {
+        if (field in validatedData) {
+          const next = (validatedData as any)[field];
+          const prev = (existingFolder as any)[field];
+          if (prev !== next) changes[field as string] = { from: prev, to: next };
+        }
+      }
+
+      // When a folder flips from global → private, any projects inside it
+      // that belong to OTHER users would silently disappear from those
+      // users' dashboards (the project still lives in the folder, but the
+      // folder is no longer visible to them). Auto-move those projects
+      // back to root so their owners don't lose them. Projects owned by
+      // the actor stay where they are.
+      let movedProjects: Array<{ id: number; name: string; ownerId: number }> = [];
+      const isGoingPrivate =
+        existingFolder.isGlobal === true &&
+        validatedData.isGlobal === false;
+      if (isGoingPrivate) {
+        const projectsInFolder = await storage.getProjectsByFolder(folderId);
+        const orphanCandidates = projectsInFolder.filter(
+          (p) => p.createdById !== existingFolder.createdById && p.createdById !== req.user.id,
+        );
+        for (const p of orphanCandidates) {
+          await storage.updateProject(p.id, { folderId: null });
+          await storage.logActivity({
+            action: "update",
+            entityType: "project",
+            entityId: p.id,
+            userId: req.user.id,
+            metadata: {
+              projectName: p.name,
+              reason: "folder_made_private",
+              changes: { folderId: { from: folderId, to: null } },
+              folderId,
+              folderName: existingFolder.name,
+            },
+          });
+          movedProjects.push({ id: p.id, name: p.name, ownerId: p.createdById });
+        }
+      }
+
       const updatedFolder = await storage.updateFolder(folderId, validatedData);
-      
+
       if (!updatedFolder) {
         return res.status(404).json({ message: "Folder not found" });
       }
@@ -961,10 +1033,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityType: "folder",
         entityId: folderId,
         userId: req.user.id,
-        metadata: { folderName: updatedFolder.name },
+        metadata: {
+          folderName: updatedFolder.name,
+          changes,
+          movedProjectsCount: movedProjects.length,
+          movedProjects: movedProjects.length > 0 ? movedProjects : undefined,
+        },
       });
 
-      res.json(updatedFolder);
+      res.json({ ...updatedFolder, movedProjects });
     } catch (error) {
       if (error.name === "ZodError") {
         return res.status(400).json({ 
@@ -997,16 +1074,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Forbidden" });
       }
 
-      // Check if folder has projects - prevent deletion if it does
+      // Deleting a folder also soft-deletes every project inside it. The
+      // projects (and the folder itself) remain recoverable from
+      // /api/admin/trash, but they disappear from every dashboard view
+      // immediately. This matches the user's expectation that "delete the
+      // folder" means "delete the contents too" rather than orphaning the
+      // projects to the root.
       const projectsInFolder = await storage.getProjectsByFolder(folderId);
-      if (projectsInFolder.length > 0) {
-        return res.status(400).json({ 
-          message: "Cannot delete folder that contains projects. Move or delete projects first." 
+      const deletedProjects: { id: number; name: string; ownerId: number }[] = [];
+      for (const p of projectsInFolder) {
+        const ok = await storage.deleteProject(p.id);
+        if (!ok) continue;
+        await storage.logActivity({
+          action: "delete",
+          entityType: "project",
+          entityId: p.id,
+          userId: req.user.id,
+          metadata: {
+            projectName: p.name,
+            ownerId: p.createdById,
+            reason: "parent_folder_deleted",
+            folderId,
+            folderName: existingFolder.name,
+          },
         });
+        deletedProjects.push({ id: p.id, name: p.name, ownerId: p.createdById });
       }
 
       const success = await storage.deleteFolder(folderId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Folder not found" });
       }
@@ -1017,10 +1113,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entityType: "folder",
         entityId: folderId,
         userId: req.user.id,
-        metadata: { folderName: existingFolder.name },
+        metadata: {
+          folderName: existingFolder.name,
+          deletedProjectsCount: deletedProjects.length,
+          deletedProjects: deletedProjects.length > 0 ? deletedProjects : undefined,
+        },
       });
 
-      res.status(204).end();
+      res.status(200).json({
+        success: true,
+        deletedProjectsCount: deletedProjects.length,
+      });
     } catch (error) {
       next(error);
     }
@@ -1094,10 +1197,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Make sure createdById exists in the request
+      // The project creator is ALWAYS the authenticated user. Never trust
+      // a client-supplied createdById — accepting it would let any user
+      // attribute a project to anyone else (e.g. an editor could spoof a
+      // project as if an admin had created it). Strip it from req.body.
+      const { createdById: _ignoredCreatedById, ...safeBody } = req.body;
       const projectData = {
-        ...req.body,
-        createdById: req.body.createdById || req.user.id,
+        ...safeBody,
+        createdById: req.user.id,
       };
       
       // Validate the request body
