@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
 
 // Extended Project type with latest video file + admin metadata returned
 // by /api/projects (creator name/username + file count). These fields are
@@ -127,9 +128,29 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     }
   };
 
+  // Whole-card drag. We attach the drag handlers on the Card itself so
+  // the user gets the natural "grab the tile" feeling, and we pair it
+  // with `data-dragging` styling so the source feels lifted while the
+  // user is dragging it. The wrapping <Link> keeps working for plain
+  // clicks because dragstart suppresses the click that follows it.
+  const onDragStart = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setDragPayload(e, {
+      type: "project",
+      id: project.id,
+      sourceFolderId: project.folderId ?? null,
+    });
+  };
+
   return (
     <Link href={`/projects/${project.id}`}>
-      <Card className="cursor-pointer transition-shadow hover:shadow-md text-sm">
+      <Card
+        className="cursor-pointer transition-shadow hover:shadow-md text-sm active:opacity-70"
+        draggable
+        onDragStart={onDragStart}
+        onDragEnd={clearDragPayload}
+        data-testid={`project-card-${project.id}`}
+      >
         <CardHeader className="pb-1 px-3 pt-3">
           <div className="flex justify-between items-start gap-2">
             <CardTitle className="text-sm font-semibold line-clamp-1">{project.name}</CardTitle>

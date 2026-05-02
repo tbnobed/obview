@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 import { File as StorageFile } from "@shared/schema";
 import MediaInfoDialog from "./media-info-dialog";
+import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
 
 interface MediaCardGridProps {
   files: StorageFile[];
@@ -357,8 +358,16 @@ function MediaCard({ file, onSelect, onMove }: MediaCardProps) {
 
   return (
     <Card 
-      className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-[#1a1f26] border-gray-700 hover:border-gray-600"
+      className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-[#1a1f26] border-gray-700 hover:border-gray-600 active:opacity-70"
       onClick={handleCardClick}
+      draggable
+      onDragStart={(e) => {
+        // Carry source project id so drop targets can avoid no-op moves
+        // and so the server can reject same-project drops cleanly.
+        e.stopPropagation();
+        setDragPayload(e, { type: "file", id: file.id, sourceProjectId: file.projectId });
+      }}
+      onDragEnd={clearDragPayload}
       data-testid={`media-card-${file.id}`}
     >
       <CardContent className="p-0">

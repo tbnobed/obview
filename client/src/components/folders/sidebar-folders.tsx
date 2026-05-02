@@ -11,6 +11,18 @@ import {
   useToggleFolderGlobal,
 } from "@/hooks/use-folders";
 import { buildFolderTree, type FolderNode } from "@/lib/folder-tree";
+import {
+  setDragPayload,
+  getDragPayload,
+  peekDragPayload,
+  clearDragPayload,
+  type DragPayload,
+} from "@/lib/drag-drop";
+import {
+  useMoveProjectToFolder,
+  useMoveFolderUnderParent,
+  useMoveFileToProject,
+} from "@/hooks/use-drag-move";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -353,6 +365,64 @@ function OwnerGroup({ owner }: { owner: { ownerId: number; ownerName: string; ro
   );
 }
 
+// Sidebar project row — drag source (project) AND drop target for files
+// being moved into this project.
+function SidebarProjectRow({ project, location }: { project: any; location: string }) {
+  const active = location === `/project/${project.id}`;
+  const moveFile = useMoveFileToProject();
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const onDragStart = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setDragPayload(e, {
+      type: "project",
+      id: project.id,
+      sourceFolderId: project.folderId ?? null,
+    });
+  };
+  const accepts = (p: DragPayload | null) =>
+    !!p && p.type === "file" && p.sourceProjectId !== project.id;
+  const onDragOver = (e: React.DragEvent) => {
+    if (!accepts(peekDragPayload(e))) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!isDragOver) setIsDragOver(true);
+  };
+  const onDrop = (e: React.DragEvent) => {
+    const p = getDragPayload(e);
+    if (!accepts(p)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    clearDragPayload();
+    moveFile.mutate({ fileId: p!.id, projectId: project.id });
+  };
+
+  return (
+    <Link href={`/project/${project.id}`}>
+      <div
+        className={cn(
+          "px-2 py-1 text-xs rounded-md cursor-pointer truncate transition-colors",
+          active
+            ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400"
+            : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-gray-900/70",
+          isDragOver && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15",
+        )}
+        draggable
+        onDragStart={onDragStart}
+        onDragEnd={clearDragPayload}
+        onDragOver={onDragOver}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={onDrop}
+        title={project.name}
+        data-testid={`link-sidebar-folder-project-${project.id}`}
+      >
+        {project.name}
+      </div>
+    </Link>
+  );
+}
+
 function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: number }) {
   const children: FolderNode[] = (folder as any).children || [];
   const hasChildren = children.length > 0;
@@ -369,18 +439,73 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
   const [shareOpen, setShareOpen] = useState(false);
   const toggleGlobal = useToggleFolderGlobal();
   const deleteFolder = useDeleteFolder();
+  const moveProject = useMoveProjectToFolder();
+  const moveFolder = useMoveFolderUnderParent();
   const isToggling =
     toggleGlobal.isPending && toggleGlobal.variables?.folderId === folder.id;
   const isDeleting =
     deleteFolder.isPending && deleteFolder.variables === folder.id;
+
+  // Drag-and-drop wiring. The folder row is BOTH a drag source (you can
+  // pick a folder up and drop it into another folder to re-parent it)
+  // and a drop target (projects, folders, and files can land here).
+  const [isDragOver, setIsDragOver] = useState(false);
+  const onRowDragStart = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setDragPayload(e, {
+      type: "folder",
+      id: folder.id,
+      sourceParentFolderId: (folder as any).parentFolderId ?? null,
+      isGlobal: !!folder.isGlobal,
+    });
+  };
+  const acceptsPayload = (p: DragPayload | null): boolean => {
+    if (!p) return false;
+    if (p.type === "project") return p.sourceFolderId !== folder.id;
+    if (p.type === "folder") {
+      // Refuse self-drop. Server also blocks descendant cycles, but we
+      // can avoid the round-trip when the new parent is the same.
+      if (p.id === folder.id) return false;
+      if (p.sourceParentFolderId === folder.id) return false;
+      return true;
+    }
+    return false; // files only land on projects, not folders
+  };
+  const onRowDragOver = (e: React.DragEvent) => {
+    if (!acceptsPayload(peekDragPayload(e))) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!isDragOver) setIsDragOver(true);
+  };
+  const onRowDragLeave = () => setIsDragOver(false);
+  const onRowDrop = (e: React.DragEvent) => {
+    const payload = getDragPayload(e);
+    if (!acceptsPayload(payload)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    clearDragPayload();
+    if (payload!.type === "project") {
+      moveProject.mutate({ projectId: payload!.id, folderId: folder.id });
+    } else if (payload!.type === "folder") {
+      moveFolder.mutate({ folderId: payload!.id, parentFolderId: folder.id });
+    }
+  };
 
   return (
     <div>
       <div
         className={cn(
           "group flex w-full items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors",
-          "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-gray-900/70"
+          "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-gray-900/70",
+          isDragOver && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15",
         )}
+        draggable
+        onDragStart={onRowDragStart}
+        onDragEnd={clearDragPayload}
+        onDragOver={onRowDragOver}
+        onDragLeave={onRowDragLeave}
+        onDrop={onRowDrop}
         data-testid={`row-sidebar-folder-${folder.id}`}
         title={folder.description || folder.name}
       >
@@ -575,25 +700,9 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
               <Loader2 className="h-3 w-3 animate-spin text-neutral-400" />
             </div>
           ) : projectCount > 0 ? (
-            projects!.map((project: any) => {
-              const active = location === `/project/${project.id}`;
-              return (
-                <Link key={project.id} href={`/project/${project.id}`}>
-                  <div
-                    className={cn(
-                      "px-2 py-1 text-xs rounded-md cursor-pointer truncate transition-colors",
-                      active
-                        ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400"
-                        : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-gray-900/70"
-                    )}
-                    title={project.name}
-                    data-testid={`link-sidebar-folder-project-${project.id}`}
-                  >
-                    {project.name}
-                  </div>
-                </Link>
-              );
-            })
+            projects!.map((project: any) => (
+              <SidebarProjectRow key={project.id} project={project} location={location} />
+            ))
           ) : !hasChildren ? (
             <div className="px-2 py-1 text-xs text-neutral-400 dark:text-neutral-500 italic">
               Empty folder

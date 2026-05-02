@@ -11,6 +11,18 @@ import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { useFolder, useFolderProjects, useDeleteFolder, useFolders, useCreateFolder } from "@/hooks/use-folders";
 import { useAuth } from "@/hooks/use-auth";
 import { getFolderPath, getDirectSubfolders } from "@/lib/folder-tree";
+import { cn } from "@/lib/utils";
+import {
+  setDragPayload,
+  getDragPayload,
+  peekDragPayload,
+  clearDragPayload,
+  type DragPayload,
+} from "@/lib/drag-drop";
+import {
+  useMoveProjectToFolder,
+  useMoveFolderUnderParent,
+} from "@/hooks/use-drag-move";
 import type { Folder, Project, File as MediaFile } from "@shared/schema";
 import {
   Form,
@@ -30,6 +42,71 @@ import {
 } from "@/components/ui/dialog";
 
 type ProjectWithVideo = Project & { latestVideoFile?: MediaFile };
+
+// Subfolder card on the folder page. Both a drag source (re-parent) and
+// a drop target (drop projects/folders into it).
+function SubfolderDropCard({ sf }: { sf: Folder }) {
+  const moveProject = useMoveProjectToFolder();
+  const moveFolder = useMoveFolderUnderParent();
+  const [isOver, setIsOver] = useState(false);
+  const accepts = (p: DragPayload | null): boolean => {
+    if (!p) return false;
+    if (p.type === "project") return p.sourceFolderId !== sf.id;
+    if (p.type === "folder") {
+      if (p.id === sf.id) return false;
+      if (p.sourceParentFolderId === sf.id) return false;
+      return true;
+    }
+    return false;
+  };
+  return (
+    <Link
+      href={`/folders/${sf.id}`}
+      data-testid={`link-subfolder-${sf.id}`}
+      className={cn(
+        "group flex items-center gap-2 px-3 py-3 rounded-lg border border-neutral-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-primary-300 dark:hover:border-[#10a37f] hover:bg-primary-50/40 dark:hover:bg-[#10a37f]/10 transition-colors",
+        isOver && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15",
+      )}
+      draggable
+      onDragStart={(e) => {
+        e.stopPropagation();
+        setDragPayload(e, {
+          type: "folder",
+          id: sf.id,
+          sourceParentFolderId: (sf as any).parentFolderId ?? null,
+          isGlobal: !!sf.isGlobal,
+        });
+      }}
+      onDragEnd={clearDragPayload}
+      onDragOver={(e) => {
+        if (!accepts(peekDragPayload(e))) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (!isOver) setIsOver(true);
+      }}
+      onDragLeave={() => setIsOver(false)}
+      onDrop={(e) => {
+        const p = getDragPayload(e);
+        if (!accepts(p)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOver(false);
+        clearDragPayload();
+        if (p!.type === "project") moveProject.mutate({ projectId: p!.id, folderId: sf.id });
+        else if (p!.type === "folder") moveFolder.mutate({ folderId: p!.id, parentFolderId: sf.id });
+      }}
+    >
+      {sf.isGlobal ? (
+        <Globe className="h-5 w-5 shrink-0 text-sky-600 dark:text-sky-400" />
+      ) : (
+        <FolderIcon className="h-5 w-5 shrink-0 text-primary-600 dark:text-[#10a37f]" />
+      )}
+      <span className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
+        {sf.name}
+      </span>
+    </Link>
+  );
+}
 import {
   ArrowLeft,
   ChevronRight,
@@ -83,6 +160,39 @@ export default function FolderPage() {
 
   const breadcrumbs = folder ? getFolderPath(allFolders, folder.id) : [];
   const subfolders = getDirectSubfolders(allFolders, folderId);
+
+  // Drop handling for the current folder page. The page itself is a drop
+  // target so a user can drag a project (or folder) anywhere in the
+  // grid and it will land inside the folder they're viewing.
+  const moveProject = useMoveProjectToFolder();
+  const moveFolderUnderParent = useMoveFolderUnderParent();
+  const [isPageDragOver, setIsPageDragOver] = useState(false);
+  const acceptsAtPageLevel = (p: DragPayload | null): boolean => {
+    if (!p || !folder) return false;
+    if (p.type === "project") return p.sourceFolderId !== folder.id;
+    if (p.type === "folder") {
+      if (p.id === folder.id) return false;
+      if (p.sourceParentFolderId === folder.id) return false;
+      return true;
+    }
+    return false;
+  };
+  const onPageDragOver = (e: React.DragEvent) => {
+    if (!acceptsAtPageLevel(peekDragPayload(e))) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!isPageDragOver) setIsPageDragOver(true);
+  };
+  const onPageDrop = (e: React.DragEvent) => {
+    if (!folder) return;
+    const p = getDragPayload(e);
+    if (!acceptsAtPageLevel(p)) return;
+    e.preventDefault();
+    setIsPageDragOver(false);
+    clearDragPayload();
+    if (p!.type === "project") moveProject.mutate({ projectId: p!.id, folderId: folder.id });
+    else if (p!.type === "folder") moveFolderUnderParent.mutate({ folderId: p!.id, parentFolderId: folder.id });
+  };
 
   const subfolderForm = useForm<{ name: string; description?: string | null }>({
     resolver: zodResolver(
@@ -139,7 +249,15 @@ export default function FolderPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
+      <div
+        className={cn(
+          "p-6 space-y-6 min-h-[calc(100vh-4rem)] transition-colors",
+          isPageDragOver && "bg-primary-50/40 dark:bg-[#10a37f]/10",
+        )}
+        onDragOver={onPageDragOver}
+        onDragLeave={() => setIsPageDragOver(false)}
+        onDrop={onPageDrop}
+      >
         <Button
           variant="ghost"
           className="gap-1 -ml-2"
@@ -319,21 +437,7 @@ export default function FolderPage() {
                   style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}
                 >
                   {subfolders.map((sf) => (
-                    <Link
-                      key={sf.id}
-                      href={`/folders/${sf.id}`}
-                      data-testid={`link-subfolder-${sf.id}`}
-                      className="group flex items-center gap-2 px-3 py-3 rounded-lg border border-neutral-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-primary-300 dark:hover:border-[#10a37f] hover:bg-primary-50/40 dark:hover:bg-[#10a37f]/10 transition-colors"
-                    >
-                      {sf.isGlobal ? (
-                        <Globe className="h-5 w-5 shrink-0 text-sky-600 dark:text-sky-400" />
-                      ) : (
-                        <FolderIcon className="h-5 w-5 shrink-0 text-primary-600 dark:text-[#10a37f]" />
-                      )}
-                      <span className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                        {sf.name}
-                      </span>
-                    </Link>
+                    <SubfolderDropCard key={sf.id} sf={sf} />
                   ))}
                 </div>
               </div>

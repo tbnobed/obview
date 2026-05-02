@@ -4523,34 +4523,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (e) { next(e); }
   });
 
-  // Move a file into a subfolder (or to project root by passing folderId: null).
+  // Move a file. Two modes:
+  //   - { folderId } : move into a subfolder of the SAME project (or to
+  //     project root with folderId: null).
+  //   - { projectId } : move the file to a DIFFERENT project. The user
+  //     must have edit access on BOTH the source and target projects.
+  //     Cross-project moves clear folderId because folders are scoped to
+  //     a single project, so any existing folder reference would dangle.
   app.patch("/api/files/:fileId/move", isAuthenticated, async (req, res, next) => {
     try {
       const fileId = parseInt(req.params.fileId);
       const file = await storage.getFile(fileId);
       if (!file) return res.status(404).json({ message: "File not found" });
 
-      const project = await storage.getProject(file.projectId);
-      if (!project) return res.status(404).json({ message: "Project not found" });
+      const sourceProject = await storage.getProject(file.projectId);
+      if (!sourceProject) return res.status(404).json({ message: "Source project not found" });
 
       const isAdminUser = req.user.role === "admin";
-      const projectUsersList = await storage.getProjectUsers(file.projectId);
-      const isMember = projectUsersList.some(pu => pu.userId === req.user.id && (pu.role === "admin" || pu.role === "editor"));
-      if (!isAdminUser && !isMember) {
+      const hasEditAccess = async (projectId: number) => {
+        if (isAdminUser) return true;
+        const members = await storage.getProjectUsers(projectId);
+        return members.some(
+          (pu) => pu.userId === req.user.id && (pu.role === "admin" || pu.role === "editor"),
+        );
+      };
+
+      if (!(await hasEditAccess(file.projectId))) {
         return res.status(403).json({ message: "You don't have edit access to this project" });
       }
 
-      const schema = z.object({ folderId: z.number().int().positive().nullable() });
-      const { folderId } = schema.parse(req.body);
-      if (folderId !== null) {
-        const target = await storage.getFolder(folderId);
-        if (!target || target.projectId !== file.projectId) {
-          return res.status(400).json({ message: "Target folder does not belong to this project" });
+      const schema = z.object({
+        folderId: z.number().int().positive().nullable().optional(),
+        projectId: z.number().int().positive().optional(),
+      });
+      const body = schema.parse(req.body);
+
+      // Cross-project move
+      if (body.projectId != null && body.projectId !== file.projectId) {
+        const target = await storage.getProject(body.projectId);
+        if (!target) return res.status(400).json({ message: "Target project not found" });
+        if (!(await hasEditAccess(body.projectId))) {
+          return res.status(403).json({ message: "You don't have edit access to the target project" });
         }
+        // Clear folderId on cross-project moves — folders belong to a
+        // single project so the old folder reference would dangle.
+        const updated = await storage.updateFile(fileId, {
+          projectId: body.projectId,
+          folderId: null,
+        } as any);
+        await storage.logActivity({
+          action: "move",
+          entityType: "file",
+          entityId: fileId,
+          userId: req.user.id,
+          metadata: {
+            fromProjectId: file.projectId,
+            toProjectId: body.projectId,
+          },
+        });
+        return res.json(updated);
       }
 
-      const updated = await storage.updateFile(fileId, { folderId } as any);
-      res.json(updated);
+      // Same-project folder move (legacy behaviour)
+      if (body.folderId !== undefined) {
+        if (body.folderId !== null) {
+          const targetFolder = await storage.getFolder(body.folderId);
+          if (!targetFolder || targetFolder.projectId !== file.projectId) {
+            return res.status(400).json({ message: "Target folder does not belong to this project" });
+          }
+        }
+        const updated = await storage.updateFile(fileId, { folderId: body.folderId } as any);
+        return res.json(updated);
+      }
+
+      return res.status(400).json({ message: "Provide folderId or projectId to move the file" });
     } catch (e) { next(e); }
   });
 
