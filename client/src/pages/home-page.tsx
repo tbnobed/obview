@@ -90,7 +90,7 @@ export default function HomePage() {
         (a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       )
-      .slice(0, 4);
+      .slice(0, 10);
   }, [projects]);
 
   const firstName = user?.name?.split(" ")[0] ?? user?.username ?? "there";
@@ -200,7 +200,10 @@ export default function HomePage() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : recentProjects.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div
+              className="grid gap-4"
+              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
+            >
               {recentProjects.map((project) => (
                 <ProjectCard key={project.id} project={project} />
               ))}
