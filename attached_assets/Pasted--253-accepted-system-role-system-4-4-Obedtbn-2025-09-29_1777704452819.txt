@@ -1,0 +1,20 @@
+ 253 | accepted_system_role | system      |         4 |       4 | Obedtbn         | 2025-09-29 17:33:46.446174 | {"invitationId":4,"role":"editor"}
+ 258 | accepted_system_role | system      |         5 |       5 | Morales         | 2025-09-29 18:01:59.284812 | {"invitationId":5,"role":"admin"}
+ 260 | accepted_system_role | system      |         6 |       6 | Ncasoria        | 2025-09-29 18:03:08.236909 | {"invitationId":6,"role":"viewer"}
+ 265 | accepted_system_role | system      |         8 |       7 | bpena           | 2025-09-29 18:19:36.808928 | {"invitationId":8,"role":"admin"}
+ 273 | accepted_system_role | system      |         9 |       8 | janderson       | 2025-09-29 18:35:33.677123 | {"invitationId":9,"role":"admin"}
+ 275 | accepted_system_role | system      |         7 |       9 | dharvilla       | 2025-09-29 18:38:37.518502 | {"invitationId":7,"role":"admin"}
+ 316 | create               | user        |        12 |      12 | scottdrown      | 2025-10-27 19:30:13.64052  | {"username":"scottdrown"}
+ 317 | accepted_system_role | system      |        19 |      12 | scottdrown      | 2025-10-27 19:30:13.894132 | {"invitationId":19,"role":"editor"}
+ 319 | accepted_system_role | system      |        21 |      13 | Jtolliver       | 2025-10-27 19:35:47.08766  | {"invitationId":21,"role":"editor"}
+ 378 | accepted_system_role | system      |        24 |      14 | jlightle        | 2026-04-17 14:12:18.101259 | {"invitationId":24,"role":"admin"}
+ 389 | accepted_system_role | system      |        25 |      15 | rdelucia@tbn.tv | 2026-04-22 15:32:28.998616 | {"invitationId":25,"role":"editor"}
+ 411 | accepted_system_role | system      |        26 |      16 | AdamO           | 2026-04-23 16:07:56.900772 | {"invitationId":26,"role":"editor"}
+ 413 | accepted_system_role | system      |        28 |      17 | rboles          | 2026-04-23 16:15:49.701608 | {"invitationId":28,"role":"editor"}
+ 416 | accepted_system_role | system      |        29 |      18 | mtermale        | 2026-04-23 16:38:20.267809 | {"invitationId":29,"role":"editor"}
+ 454 | accepted_system_role | system      |        30 |      19 | Angelea Floyd   | 2026-04-30 18:12:44.088785 | {"invitationId":30,"role":"editor"}
+ 467 | accepted_system_role | system      |        32 |      20 | afalcon         | 2026-04-30 22:42:03.890521 | {"invitationId":32,"role":"editor"}
+ 498 | accepted_system_role | system      |        34 |      21 | Elizabeth       | 2026-05-01 20:15:25.322775 | {"invitationId":34,"role":"editor"}
+ 502 | accepted_system_role | system      |        35 |      22 | smoreno         | 2026-05-01 20:33:55.369754 | {"invitationId":35,"role":"editor"}
+ 509 | accepted_system_role | system      |        31 |      23 | jmccoy          | 2026-05-01 20:39:17.209512 | {"invitationId":31,"role":"editor"}
+(19 rows)
