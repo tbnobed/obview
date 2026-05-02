@@ -85,6 +85,7 @@ export interface IStorage {
   getAllProjects(): Promise<Project[]>;
   getProjectsByUser(userId: number): Promise<Project[]>;
   getProjectsByFolder(folderId: number): Promise<Project[]>;
+  getProjectsByFolderWithLatestVideo(folderId: number): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]>;
   getAllProjectsWithLatestVideo(): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]>;
   getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]>;
   getDeletedProjects(): Promise<(Project & { creatorUsername?: string | null; creatorName?: string | null })[]>;
@@ -381,6 +382,29 @@ export class MemStorage implements IStorage {
     return Array.from(this.projects.values()).filter(
       (project) => project.folderId === folderId
     );
+  }
+
+  async getProjectsByFolderWithLatestVideo(folderId: number): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]> {
+    const folderProjects = Array.from(this.projects.values()).filter(
+      (project) => project.folderId === folderId
+    );
+    return folderProjects.map(project => {
+      const projectFiles = Array.from(this.files.values()).filter(
+        file => file.projectId === project.id
+      );
+      const videos = projectFiles.filter(f => f.fileType === 'video');
+      const latestVideoFile = videos.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )[0];
+      const creator = this.users.get(project.createdById);
+      return {
+        ...project,
+        latestVideoFile,
+        creatorUsername: creator?.username ?? null,
+        creatorName: creator?.name ?? null,
+        fileCount: projectFiles.length,
+      };
+    });
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
@@ -1525,6 +1549,38 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(projects)
       .where(and(eq(projects.folderId, folderId), isNull(projects.deletedAt)));
+  }
+
+  async getProjectsByFolderWithLatestVideo(folderId: number): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]> {
+    const rows = await db
+      .select({
+        project: projects,
+        creatorUsername: users.username,
+        creatorName: users.name,
+      })
+      .from(projects)
+      .leftJoin(users, eq(users.id, projects.createdById))
+      .where(and(eq(projects.folderId, folderId), isNull(projects.deletedAt)));
+
+    return await Promise.all(rows.map(async (r) => {
+      const [latestVideoFile] = await db
+        .select()
+        .from(files)
+        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video')))
+        .orderBy(desc(files.createdAt))
+        .limit(1);
+      const [{ count: fileCount }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(files)
+        .where(eq(files.projectId, r.project.id));
+      return {
+        ...r.project,
+        latestVideoFile: latestVideoFile || undefined,
+        creatorUsername: r.creatorUsername ?? null,
+        creatorName: r.creatorName ?? null,
+        fileCount: Number(fileCount) || 0,
+      };
+    }));
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {

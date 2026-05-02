@@ -1145,8 +1145,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Folder contents are readable by any authenticated user (mirrors
-      // the loosened project read access).
-      const projects = await storage.getProjectsByFolder(folderId);
+      // the loosened project read access). Use the enriched query so
+      // the folder page can render thumbnails / sprites / file counts
+      // identically to the dashboard and projects page.
+      const projects = await storage.getProjectsByFolderWithLatestVideo(folderId);
 
       res.json(projects);
     } catch (error) {
