@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Project, File } from "@shared/schema";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -128,11 +128,12 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     }
   };
 
-  // Whole-card drag. We attach the drag handlers on the Card itself so
-  // the user gets the natural "grab the tile" feeling, and we pair it
-  // with `data-dragging` styling so the source feels lifted while the
-  // user is dragging it. The wrapping <Link> keeps working for plain
-  // clicks because dragstart suppresses the click that follows it.
+  // Whole-card drag. We attach drag handlers on the Card and navigate
+  // programmatically on click. We deliberately do NOT wrap this in a
+  // wouter <Link> — the anchor's native drag (text/uri-list) fights
+  // with our custom drag MIME and the drop target ends up rejecting
+  // the payload. dragstart suppresses the click that would otherwise
+  // follow, so plain clicks still navigate as expected.
   const onDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
     setDragPayload(e, {
@@ -141,14 +142,22 @@ export default function ProjectCard({ project }: ProjectCardProps) {
       sourceFolderId: project.folderId ?? null,
     });
   };
+  const onCardClick = (e: React.MouseEvent) => {
+    // Avoid navigating when the click bubbled from a button/dialog
+    // inside the card.
+    const target = e.target as HTMLElement;
+    if (target.closest("button, [role='dialog'], a")) return;
+    navigate(`/projects/${project.id}`);
+  };
 
   return (
-    <Link href={`/projects/${project.id}`}>
+    <>
       <Card
         className="cursor-pointer transition-shadow hover:shadow-md text-sm active:opacity-70"
         draggable
         onDragStart={onDragStart}
         onDragEnd={clearDragPayload}
+        onClick={onCardClick}
         data-testid={`project-card-${project.id}`}
       >
         <CardHeader className="pb-1 px-3 pt-3">
@@ -420,6 +429,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Link>
+    </>
   );
 }
