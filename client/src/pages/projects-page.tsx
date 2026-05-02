@@ -1,15 +1,50 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { useProjects } from "@/hooks/use-projects";
+import { useFolders } from "@/hooks/use-folders";
 import ProjectCard from "@/components/projects/project-card";
+import OwnerChip from "@/components/projects/owner-chip";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Search, FileVideo, Loader2 } from "lucide-react";
+import { Plus, Search, FileVideo, Loader2, ChevronRight, Globe, User as UserIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import ProjectForm from "@/components/projects/project-form";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+// Sticky open-state for the grouped sections so the user's expand/collapse
+// choices survive page navigation and reload.
+const GROUPS_OPEN_KEY = "obviu:projects:open-groups-v1";
+function readOpenMap(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(GROUPS_OPEN_KEY);
+    if (!raw) return {};
+    const p = JSON.parse(raw);
+    return typeof p === "object" && p ? p : {};
+  } catch {
+    return {};
+  }
+}
+function writeOpenMap(m: Record<string, boolean>) {
+  try {
+    localStorage.setItem(GROUPS_OPEN_KEY, JSON.stringify(m));
+  } catch {}
+}
+function useGroupOpen(key: string, defaultOpen: boolean) {
+  const [open, setOpenState] = useState<boolean>(() => {
+    const m = readOpenMap();
+    return key in m ? !!m[key] : defaultOpen;
+  });
+  const setOpen = (next: boolean | ((prev: boolean) => boolean)) => {
+    setOpenState((prev) => {
+      const v = typeof next === "function" ? (next as (p: boolean) => boolean)(prev) : next;
+      const m = readOpenMap();
+      m[key] = v;
+      writeOpenMap(m);
+      return v;
+    });
+  };
+  return [open, setOpen] as const;
+}
 
 export default function ProjectsPage() {
   const [_, navigate] = useLocation();
@@ -23,7 +58,17 @@ export default function ProjectsPage() {
   const [ownerScope, setOwnerScope] = useState<"all" | "mine">("all");
 
   const { data: projects, isLoading, error } = useProjects();
+  const { data: folders, isLoading: foldersLoading } = useFolders();
   const isAdmin = user?.role === "admin";
+
+  // Set of folder ids that are global so we can split projects sitting
+  // inside a global folder into their own group regardless of who owns
+  // them. Memoised to avoid rebuilding on every keystroke in the search
+  // box.
+  const globalFolderIds = useMemo(
+    () => new Set((folders || []).filter((f) => f.isGlobal).map((f) => f.id)),
+    [folders]
+  );
 
   useEffect(() => {
     document.title = "Projects | Obviu.io";
@@ -43,6 +88,58 @@ export default function ProjectsPage() {
   });
 
   const isEditor = user?.role === "admin" || user?.role === "editor";
+
+  // Build the grouped view: Yours first, then Global (any owner, in a
+  // global folder), then one section per other owner, sorted by name.
+  // Yours-owned global projects still go under "Yours" so the user
+  // doesn't see the same project in two places.
+  // Server augments admin payloads with creatorName/creatorUsername; the
+  // base Project type doesn't carry those, so we widen here for the
+  // grouping logic below.
+  type ProjectItem = NonNullable<typeof filteredProjects>[number] & {
+    creatorName?: string | null;
+    creatorUsername?: string | null;
+  };
+  const groups = useMemo(() => {
+    const yours: ProjectItem[] = [];
+    const globalProjects: ProjectItem[] = [];
+    const ownerMap = new Map<
+      number,
+      { ownerId: number; ownerName: string; items: ProjectItem[] }
+    >();
+    for (const raw of filteredProjects ?? []) {
+      const p = raw as ProjectItem;
+      const isYours = user?.id != null && p.createdById === user.id;
+      const isGlobal = p.folderId != null && globalFolderIds.has(p.folderId);
+      if (isYours) {
+        yours.push(p);
+      } else if (isGlobal) {
+        globalProjects.push(p);
+      } else {
+        const name =
+          p.creatorName || p.creatorUsername || `user #${p.createdById}`;
+        const existing = ownerMap.get(p.createdById) || {
+          ownerId: p.createdById,
+          ownerName: name,
+          items: [] as ProjectItem[],
+        };
+        existing.items.push(p);
+        ownerMap.set(p.createdById, existing);
+      }
+    }
+    const others = Array.from(ownerMap.values()).sort((a, b) =>
+      a.ownerName.localeCompare(b.ownerName)
+    );
+    return { yours, global: globalProjects, others };
+  }, [filteredProjects, user?.id, globalFolderIds]);
+
+  // Group only when the user is browsing the full list; "Mine" mode is
+  // always one bucket so grouping headers would just be noise.
+  const ownerCount =
+    (groups.yours.length > 0 ? 1 : 0) +
+    (groups.global.length > 0 ? 1 : 0) +
+    groups.others.length;
+  const showGroups = ownerScope === "all" && ownerCount > 1;
 
   return (
     <AppLayout>
@@ -140,7 +237,7 @@ export default function ProjectsPage() {
         </div>
 
         {/* Project list */}
-        {isLoading ? (
+        {isLoading || foldersLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-[#026d55]" />
           </div>
@@ -149,14 +246,82 @@ export default function ProjectsPage() {
             Error loading projects: {error.message}
           </div>
         ) : filteredProjects && filteredProjects.length > 0 ? (
-          <div
-            className="grid gap-4"
-            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
-          >
-            {filteredProjects.map(project => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
+          showGroups ? (
+            <div className="space-y-6">
+              {groups.yours.length > 0 && (
+                <ProjectGroup
+                  groupKey="yours"
+                  defaultOpen
+                  header={
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                        style={{ backgroundColor: "#026d55" }}
+                      >
+                        Y
+                      </span>
+                      <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+                        Yours
+                      </span>
+                    </div>
+                  }
+                  count={groups.yours.length}
+                  accent="#026d55"
+                  items={groups.yours}
+                />
+              )}
+              {groups.global.length > 0 && (
+                <ProjectGroup
+                  groupKey="global"
+                  defaultOpen
+                  header={
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-white"
+                        style={{ backgroundColor: "#0ea5e9" }}
+                      >
+                        <Globe className="h-3 w-3" />
+                      </span>
+                      <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+                        Global
+                      </span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                        · in shared folders
+                      </span>
+                    </div>
+                  }
+                  count={groups.global.length}
+                  accent="#0ea5e9"
+                  items={groups.global}
+                />
+              )}
+              {groups.others.map((g) => (
+                <ProjectGroup
+                  key={`owner-${g.ownerId}`}
+                  groupKey={`owner-${g.ownerId}`}
+                  defaultOpen={false}
+                  header={
+                    <OwnerChip
+                      ownerId={g.ownerId}
+                      ownerName={g.ownerName}
+                      size="md"
+                    />
+                  }
+                  count={g.items.length}
+                  items={g.items}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="grid gap-4"
+              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
+            >
+              {filteredProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-900 rounded-lg shadow">
             <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-[#026d55]/20 flex items-center justify-center mb-4">
@@ -197,5 +362,65 @@ export default function ProjectsPage() {
         )}
       </div>
     </AppLayout>
+  );
+}
+
+// Collapsible "owner" section in the grouped projects view. We keep
+// the open state in localStorage (via useGroupOpen) so navigating away
+// and back doesn't fold everything up again.
+function ProjectGroup({
+  groupKey,
+  header,
+  count,
+  items,
+  defaultOpen,
+  accent,
+}: {
+  groupKey: string;
+  header: React.ReactNode;
+  count: number;
+  items: Array<React.ComponentProps<typeof ProjectCard>["project"]>;
+  defaultOpen: boolean;
+  accent?: string;
+}) {
+  const [open, setOpen] = useGroupOpen(groupKey, defaultOpen);
+  const regionId = `project-group-region-${groupKey}`;
+  return (
+    <section data-testid={`project-group-${groupKey}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={regionId}
+        className="group flex w-full items-center gap-2 px-1 py-1 mb-2 rounded-md hover:bg-neutral-100 dark:hover:bg-gray-900/50 transition-colors"
+      >
+        <ChevronRight
+          className={cn(
+            "h-4 w-4 shrink-0 text-neutral-400 transition-transform",
+            open && "rotate-90"
+          )}
+        />
+        {header}
+        <span
+          className="ml-1 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 h-5 rounded-full text-[10px] font-semibold text-white"
+          style={{ backgroundColor: accent || "#737373" }}
+        >
+          {count}
+        </span>
+        <div className="flex-1 ml-2 h-px bg-neutral-200 dark:bg-gray-800" />
+      </button>
+      {open && (
+        <div
+          id={regionId}
+          role="region"
+          className="grid gap-4"
+          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
+        >
+          {items.map((p) => (
+            <ProjectCard key={p.id} project={p} />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

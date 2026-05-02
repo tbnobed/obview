@@ -15,13 +15,15 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatTimeAgo } from "@/lib/utils/formatters";
-import { Trash2, PlayCircle, User as UserIcon } from "lucide-react";
+import { Trash2, PlayCircle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
+import OwnerChip from "@/components/projects/owner-chip";
+import { getOwnerColor } from "@/lib/owner-color";
 
 // Extended Project type with latest video file + admin metadata returned
 // by /api/projects (creator name/username + file count). These fields are
@@ -150,10 +152,19 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     navigate(`/projects/${project.id}`);
   };
 
+  // Visual ownership cue: cards you own get a colored left bar and a
+  // subtle highlight; cards owned by someone else get that owner's
+  // color so the dashboard reads as "your stuff vs. theirs" at a glance.
+  const accentColor = isOwner ? "#026d55" : getOwnerColor(project.createdById);
+
   return (
     <>
       <Card
-        className="cursor-pointer transition-shadow hover:shadow-md text-sm active:opacity-70"
+        className={cn(
+          "cursor-pointer transition-shadow hover:shadow-md text-sm active:opacity-70 border-l-4 relative overflow-hidden",
+          isOwner && "ring-1 ring-[#026d55]/30 dark:ring-[#026d55]/40"
+        )}
+        style={{ borderLeftColor: accentColor }}
         draggable
         onDragStart={onDragStart}
         onDragEnd={clearDragPayload}
@@ -165,21 +176,18 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             <CardTitle className="text-sm font-semibold line-clamp-1">{project.name}</CardTitle>
             {getStatusBadge(project.status)}
           </div>
-          {/* Owner badge: shown to admins on every card so a project's owner
-              is visible at a glance from the dashboard. Owners themselves
-              don't need to see "owned by you". */}
-          {isAdmin && !isOwner && (
-            <div className="mt-1">
-              <Badge
-                variant="outline"
-                className="text-[10px] font-normal py-0 px-1.5 gap-1"
-                data-testid={`project-owner-badge-${project.id}`}
-              >
-                <UserIcon className="h-2.5 w-2.5" />
-                {ownerLabel}
-              </Badge>
-            </div>
-          )}
+          {/* Owner row: every card shows who owns it via a colored avatar
+              chip. Yours show a "You" chip in the brand color so they
+              pop against the rest of the grid. */}
+          <div className="mt-1">
+            <OwnerChip
+              ownerId={project.createdById}
+              ownerName={ownerLabel}
+              isYou={isOwner}
+              size="sm"
+              data-testid={`project-owner-chip-${project.id}`}
+            />
+          </div>
         </CardHeader>
         
         {/* Video Preview Section */}
