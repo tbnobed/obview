@@ -1,0 +1,752 @@
+obtv-admin@obtv-ai:~/obview$ docker compose logs -f
+obview_db  | The files belonging to this database system will be owned by user "postgres".
+obview_db  | This user must also own the server process.
+obview_db  |
+obview_db  | The database cluster will be initialized with locale "en_US.utf8".
+obview_db  | The default database encoding has accordingly been set to "UTF8".
+obview_db  | The default text search configuration will be set to "english".
+obview_db  |
+obview_db  | Data page checksums are disabled.
+obview_db  |
+obview_db   | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+obview_app  | Waiting for database to be ready...
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_db   | creating subdirectories ... ok
+obview_db   | selecting dynamic shared memory implementation ... posix
+obview_db   | selecting default max_connections ... 100
+obview_db   | selecting default shared_buffers ... 128MB
+obview_db   | selecting default time zone ... UTC
+obview_app  | Ensuring unified comment system table exists...
+obview_app  | NOTICE:  relation "comments_unified" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | ALTER TABLE
+obview_app  | DO
+obview_app  | NOTICE:  relation "idx_comments_unified_file_id" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comments_unified_user_id" already exists, skipping
+obview_db   | creating configuration files ... ok
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | NOTICE:  relation "idx_comments_unified_parent_id" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comments_unified_file_timestamp" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_db   | running bootstrap script ... ok
+obview_db   | sh: locale: not found
+obview_db   | 2026-05-03 06:49:01.350 UTC [35] WARNING:  no usable system locales were found
+obview_db   | performing post-bootstrap initialization ... ok
+obview_db   | syncing data to disk ... ok
+obview_db   |
+obview_db   |
+obview_app  | Ensuring comment reactions table exists...
+obview_app  | NOTICE:  relation "comment_reactions" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comment_reactions_comment_id" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comment_reactions_comment_reaction" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | DO
+obview_app  | Taking pre-migration database backup to /app/db-backups/pre-migration-20260503-070619.sql ...
+obview_app  | ✅ Pre-migration backup saved: /app/db-backups/pre-migration-20260503-070619.sql (36.0K)
+obview_app  | Ensuring migration tracking table exists...
+obview_app  | CREATE TABLE
+obview_app  | Running database migrations...
+obview_app  | Found db-migrate.cjs, running migrations...
+obview_app  | Initializing database migration...
+obview_app  | Environment: production
+obview_db   | Success. You can now start the database server using:
+obview_db   |
+obview_db   |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+obview_app  | Docker mode: true
+obview_app  | Database connection established
+obview_app  | Skipping drizzle migrations in Docker mode - SQL migrations will handle schema setup
+obview_app  | Database connection verified successfully
+obview_app  | Migration script completed successfully
+obview_app  | Scanning SQL migrations directory...
+obview_app  | ▶ Applying SQL migration: 0000_smooth_whistler.sql
+obview_db   |
+obview_db   | initdb: warning: enabling "trust" authentication for local connections
+obview_db   | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+obview_db   | waiting for server to start....2026-05-03 06:49:02.115 UTC [41] LOG:  starting PostgreSQL 16.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+obview_db   | 2026-05-03 06:49:02.115 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2026-05-03 06:49:02.120 UTC [44] LOG:  database system was shut down at 2026-05-03 06:49:01 UTC
+obview_db   | 2026-05-03 06:49:02.127 UTC [41] LOG:  database system is ready to accept connections
+obview_db   |  done
+obview_app  | psql:/app/migrations/0000_smooth_whistler.sql:9: ERROR:  relation "activity_logs" already exists
+obview_app  | ❌ ERROR: 0000_smooth_whistler.sql failed. NOT recorded as applied; will retry on next startup.
+obview_db   | server started
+obview_db   | CREATE DATABASE
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/01-init-schema.sql
+obview_db   | CREATE EXTENSION
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_app  |    Investigate the error above before restarting, and consider restoring /app/db-backups/pre-migration-20260503-070619.sql if data was affected.
+obview_app  | ▶ Applying SQL migration: 0001_add_password_resets.sql
+obview_db   | DO
+obview_db   | GRANT
+obview_db   |
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: sourcing /docker-entrypoint-initdb.d/02-init-db.sh
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0001_add_password_resets.sql:10: NOTICE:  relation "password_resets" already exists, skipping
+obview_app  | psql:/app/migrations/0001_add_password_resets.sql:14: ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+obview_db   | Starting database initialization...
+obview_db   | Warning: /app directory not found. This script is meant to run within the application container.
+obview_db   | Database initialization process completed!
+obview_db   |
+obview_db   | /usr/local/bin/docker-entrypoint.sh: running /docker-entrypoint-initdb.d/03-complete-schema.sql
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | CREATE TABLE
+obview_db   | DO
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | CREATE INDEX
+obview_db   | GRANT
+obview_db   | GRANT
+obview_db   |
+obview_db   |
+obview_db   | waiting for server to shut down....2026-05-03 06:49:02.496 UTC [41] LOG:  received fast shutdown request
+obview_db   | 2026-05-03 06:49:02.497 UTC [41] LOG:  aborting any active transactions
+obview_app  | ❌ ERROR: 0001_add_password_resets.sql failed. NOT recorded as applied; will retry on next startup.
+obview_app  |    Investigate the error above before restarting, and consider restoring /app/db-backups/pre-migration-20260503-070619.sql if data was affected.
+obview_app  | ▶ Applying SQL migration: 0002_add_theme_preference.sql
+obview_app  | psql:/app/migrations/0002_add_theme_preference.sql:2: NOTICE:  column "theme_preference" of relation "users" already exists, skipping
+obview_app  | ALTER TABLE
+obview_app  | UPDATE 0
+obview_app  | ✅ Applied 0002_add_theme_preference.sql
+obview_app  | ▶ Applying SQL migration: 0003_add_file_availability.sql
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0003_add_file_availability.sql:2: NOTICE:  column "is_available" of relation "files" already exists, skipping
+obview_app  | ✅ Applied 0003_add_file_availability.sql
+obview_app  | ▶ Applying SQL migration: 0004_update_file_size_type.sql
+obview_app  | ALTER TABLE
+obview_app  | ✅ Applied 0004_update_file_size_type.sql
+obview_app  | ▶ Applying SQL migration: 0005_docker_schema_consolidation.sql
+obview_app  | CREATE EXTENSION
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:15: NOTICE:  extension "pgcrypto" already exists, skipping
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:27: NOTICE:  relation "users" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:38: NOTICE:  relation "projects" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:54: NOTICE:  relation "files" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:66: NOTICE:  relation "comments" already exists, skipping
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:78: NOTICE:  relation "public_comments" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:87: NOTICE:  relation "project_users" already exists, skipping
+obview_db   | 2026-05-03 06:49:02.501 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
+obview_db   | 2026-05-03 06:49:02.502 UTC [42] LOG:  shutting down
+obview_db   | 2026-05-03 06:49:02.502 UTC [42] LOG:  checkpoint starting: shutdown immediate
+obview_db   | 2026-05-03 06:49:02.527 UTC [42] LOG:  checkpoint complete: wrote 969 buffers (5.9%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.021 s, sync=0.003 s, total=0.026 s; sync files=383, longest=0.001 s, average=0.001 s; distance=4667 kB, estimate=4667 kB; lsn=0/19814F0, redo lsn=0/19814F0
+obview_db   | 2026-05-03 06:49:02.539 UTC [41] LOG:  database system is shut down
+obview_db   |  done
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:98: NOTICE:  relation "activity_logs" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:113: NOTICE:  relation "invitations" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:129: NOTICE:  relation "approvals" already exists, skipping
+obview_db   | server stopped
+obview_db   |
+obview_app  | CREATE TABLE
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:139: NOTICE:  relation "password_resets" already exists, skipping
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_db   | PostgreSQL init process complete; ready for start up.
+obview_db   |
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_db   | 2026-05-03 06:49:02.649 UTC [1] LOG:  starting PostgreSQL 16.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+obview_db   | 2026-05-03 06:49:02.649 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db   | 2026-05-03 06:49:02.650 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db   | 2026-05-03 06:49:02.651 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db   | 2026-05-03 06:49:02.656 UTC [61] LOG:  database system was shut down at 2026-05-03 06:49:02 UTC
+obview_db   | 2026-05-03 06:49:02.665 UTC [1] LOG:  database system is ready to accept connections
+obview_db   | 2026-05-03 06:49:06.822 UTC [75] ERROR:  relation "activity_logs" already exists
+obview_db   | 2026-05-03 06:49:06.822 UTC [75] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:406: NOTICE:  relation "idx_files_project_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:407: NOTICE:  relation "idx_files_share_token" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:408: NOTICE:  relation "idx_files_is_latest_version" already exists, skipping
+obview_app  | CREATE INDEX
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   );
+obview_db   | 2026-05-03 06:49:06.824 UTC [75] ERROR:  relation "approvals" already exists
+obview_db   | 2026-05-03 06:49:06.824 UTC [75] STATEMENT:  CREATE TABLE "approvals" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "status" text NOT NULL,
+obview_db   |           "feedback" text,
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:409: NOTICE:  relation "idx_comments_file_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:410: NOTICE:  relation "idx_comments_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:411: NOTICE:  relation "idx_comments_timestamp" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:412: NOTICE:  relation "idx_public_comments_file_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   );
+obview_db   | 2026-05-03 06:49:06.826 UTC [75] ERROR:  relation "comments" already exists
+obview_db   | 2026-05-03 06:49:06.826 UTC [75] STATEMENT:  CREATE TABLE "comments" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "content" text NOT NULL,
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:413: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:414: NOTICE:  relation "idx_public_comments_creator_token" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:415: NOTICE:  relation "idx_project_users_project_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:416: NOTICE:  relation "idx_project_users_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:417: NOTICE:  relation "idx_activity_logs_entity_type_id" already exists, skipping
+obview_db   |           "file_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:418: NOTICE:  relation "idx_activity_logs_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:419: NOTICE:  relation "idx_invitations_token" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:420: NOTICE:  relation "idx_invitations_email" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:421: NOTICE:  relation "idx_approvals_file_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_db   |           "parent_id" integer,
+obview_db   |           "timestamp" integer,
+obview_db   |           "is_resolved" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   );
+obview_db   | 2026-05-03 06:49:06.828 UTC [75] ERROR:  relation "files" already exists
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:422: NOTICE:  relation "idx_password_resets_token" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0005_docker_schema_consolidation.sql:423: NOTICE:  relation "idx_password_resets_user_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | DO
+obview_app  | DO
+obview_app  | ✅ Applied 0005_docker_schema_consolidation.sql
+obview_app  | ▶ Applying SQL migration: 0006_add_video_processing.sql
+obview_app  | psql:/app/migrations/0006_add_video_processing.sql:15: NOTICE:  relation "video_processing" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0006_add_video_processing.sql:18: NOTICE:  relation "idx_video_processing_file_id" already exists, skipping
+obview_app  | psql:/app/migrations/0006_add_video_processing.sql:20: NOTICE:  relation "idx_video_processing_status" already exists, skipping
+obview_app  | CREATE INDEX
+obview_db   | 2026-05-03 06:49:06.828 UTC [75] STATEMENT:  CREATE TABLE "files" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "filename" text NOT NULL,
+obview_db   |           "file_type" text NOT NULL,
+obview_db   |           "file_size" integer NOT NULL,
+obview_db   |           "file_path" text NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_db   |           "uploaded_by_id" integer NOT NULL,
+obview_db   |           "version" integer DEFAULT 1 NOT NULL,
+obview_db   |           "is_latest_version" boolean DEFAULT true NOT NULL,
+obview_app  | ✅ Applied 0006_add_video_processing.sql
+obview_app  | ▶ Applying SQL migration: 0007_add_folders_support.sql
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:13: NOTICE:  relation "folders" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | DO
+obview_db   |           "share_token" text,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   );
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:27: NOTICE:  relation "idx_folders_created_by_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:28: NOTICE:  relation "idx_folders_name" already exists, skipping
+obview_db   | 2026-05-03 06:49:06.829 UTC [75] ERROR:  relation "invitations" already exists
+obview_db   | 2026-05-03 06:49:06.829 UTC [75] STATEMENT:  CREATE TABLE "invitations" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "project_id" integer,
+obview_app  | CREATE INDEX
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "token" text NOT NULL,
+obview_db   |           "expires_at" timestamp NOT NULL,
+obview_db   |           "is_accepted" boolean DEFAULT false NOT NULL,
+obview_db   |           "email_sent" boolean DEFAULT false NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           CONSTRAINT "invitations_token_unique" UNIQUE("token")
+obview_db   |   );
+obview_db   | 2026-05-03 06:49:06.830 UTC [75] ERROR:  relation "project_users" already exists
+obview_db   | 2026-05-03 06:49:06.830 UTC [75] STATEMENT:  CREATE TABLE "project_users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "project_id" integer NOT NULL,
+obview_app  | psql:/app/migrations/0007_add_folders_support.sql:29: NOTICE:  relation "idx_projects_folder_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | DO
+obview_app  | ✅ Applied 0007_add_folders_support.sql
+obview_app  | ▶ Applying SQL migration: 0008_add_creator_token_to_public_comments.sql
+obview_app  | DO
+obview_app  | psql:/app/migrations/0008_add_creator_token_to_public_comments.sql:16: NOTICE:  relation "idx_public_comments_creator_token" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | ✅ Applied 0008_add_creator_token_to_public_comments.sql
+obview_app  | ▶ Applying SQL migration: 0009_add_parent_id_to_public_comments.sql
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_app  | DO
+obview_app  | psql:/app/migrations/0009_add_parent_id_to_public_comments.sql:16: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | UPDATE 0
+obview_app  | DO
+obview_db   |   );
+obview_db   | 2026-05-03 06:49:06.832 UTC [75] ERROR:  relation "projects" already exists
+obview_db   | 2026-05-03 06:49:06.832 UTC [75] STATEMENT:  CREATE TABLE "projects" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "description" text,
+obview_db   |           "status" text DEFAULT 'in_progress' NOT NULL,
+obview_db   |           "created_by_id" integer NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_db   |           "updated_at" timestamp DEFAULT now() NOT NULL
+obview_app  | ✅ Applied 0009_add_parent_id_to_public_comments.sql
+obview_app  | ▶ Applying SQL migration: 0010_fix_public_comments_constraint.sql
+obview_app  | DO
+obview_app  | psql:/app/migrations/0010_fix_public_comments_constraint.sql:19: NOTICE:  Removed public_comments_parent_id_fkey constraint to allow cross-table replies
+obview_app  | psql:/app/migrations/0010_fix_public_comments_constraint.sql:23: NOTICE:  relation "idx_public_comments_parent_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | ✅ Applied 0010_fix_public_comments_constraint.sql
+obview_db   |   );
+obview_db   | 2026-05-03 06:49:06.833 UTC [75] ERROR:  relation "users" already exists
+obview_db   | 2026-05-03 06:49:06.833 UTC [75] STATEMENT:  CREATE TABLE "users" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "username" text NOT NULL,
+obview_app  | ▶ Applying SQL migration: 0011_create_comments_unified.sql
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:16: NOTICE:  relation "comments_unified" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:19: NOTICE:  relation "idx_comments_unified_file_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_db   |           "password" text NOT NULL,
+obview_db   |           "email" text NOT NULL,
+obview_db   |           "name" text NOT NULL,
+obview_db   |           "role" text DEFAULT 'viewer' NOT NULL,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL,
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:20: NOTICE:  relation "idx_comments_unified_user_id" already exists, skipping
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:21: NOTICE:  relation "idx_comments_unified_parent_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0011_create_comments_unified.sql:22: NOTICE:  relation "idx_comments_unified_file_timestamp" already exists, skipping
+obview_app  | ✅ Applied 0011_create_comments_unified.sql
+obview_app  | ▶ Applying SQL migration: 0012_create_comment_reactions.sql
+obview_app  | psql:/app/migrations/0012_create_comment_reactions.sql:9: NOTICE:  relation "comment_reactions" already exists, skipping
+obview_db   |           CONSTRAINT "users_username_unique" UNIQUE("username"),
+obview_db   |           CONSTRAINT "users_email_unique" UNIQUE("email")
+obview_db   |   );
+obview_db   | 2026-05-03 06:49:07.112 UTC [80] ERROR:  column "accepted_by_id" referenced in foreign key constraint does not exist
+obview_db   | 2026-05-03 06:49:07.112 UTC [80] CONTEXT:  SQL statement "ALTER TABLE invitations ADD CONSTRAINT invitations_accepted_by_id_fkey
+obview_db   |           FOREIGN KEY (accepted_by_id) REFERENCES users(id) ON DELETE SET NULL"
+obview_db   |   PL/pgSQL function inline_code_block line 82 at SQL statement
+obview_db   | 2026-05-03 06:49:07.112 UTC [80] STATEMENT:  DO $$
+obview_app  | CREATE TABLE
+obview_app  | DO
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | psql:/app/migrations/0012_create_comment_reactions.sql:33: NOTICE:  relation "idx_comment_reactions_comment_id" already exists, skipping
+obview_app  | psql:/app/migrations/0012_create_comment_reactions.sql:34: NOTICE:  relation "idx_comment_reactions_comment_reaction" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | DO
+obview_app  | DO
+obview_app  | ✅ Applied 0012_create_comment_reactions.sql
+obview_app  | ▶ Applying SQL migration: 0013_add_annotations_column.sql
+obview_db   |   BEGIN
+obview_db   |       -- Clean up orphaned data that would violate foreign key constraints
+obview_db   |       DELETE FROM files WHERE project_id NOT IN (SELECT id FROM projects);
+obview_db   |       DELETE FROM comments WHERE file_id NOT IN (SELECT id FROM files);
+obview_db   |       DELETE FROM comments WHERE parent_id IS NOT NULL AND parent_id NOT IN (SELECT id FROM comments);
+obview_db   |       DELETE FROM public_comments WHERE file_id NOT IN (SELECT id FROM files);
+obview_db   |       DELETE FROM approvals WHERE file_id NOT IN (SELECT id FROM files);
+obview_db   |       DELETE FROM activity_logs WHERE user_id NOT IN (SELECT id FROM users);
+obview_db   |       DELETE FROM project_users WHERE project_id NOT IN (SELECT id FROM projects) OR user_id NOT IN (SELECT id FROM users);
+obview_db   |       DELETE FROM invitations WHERE project_id IS NOT NULL AND project_id NOT IN (SELECT id FROM projects);
+obview_db   |       DELETE FROM invitations WHERE created_by_id NOT IN (SELECT id FROM users);
+obview_db   |       DELETE FROM password_resets WHERE user_id NOT IN (SELECT id FROM users);
+obview_db   |       -- Projects foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'projects_created_by_id_fkey') THEN
+obview_db   |           ALTER TABLE projects ADD CONSTRAINT projects_created_by_id_fkey
+obview_app  | ALTER TABLE
+obview_app  | psql:/app/migrations/0013_add_annotations_column.sql:5: NOTICE:  column "annotations" of relation "comments_unified" already exists, skipping
+obview_app  | ✅ Applied 0013_add_annotations_column.sql
+obview_app  | ▶ Applying SQL migration: 0014_add_transcripts.sql
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | ✅ Applied 0014_add_transcripts.sql
+obview_app  | ▶ Applying SQL migration: 0015_add_summary.sql
+obview_app  | ALTER TABLE
+obview_db   |           FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       -- Files foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'files_project_id_fkey') THEN
+obview_db   |           ALTER TABLE files ADD CONSTRAINT files_project_id_fkey
+obview_db   |           FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'files_uploaded_by_id_fkey') THEN
+obview_db   |           ALTER TABLE files ADD CONSTRAINT files_uploaded_by_id_fkey
+obview_db   |           FOREIGN KEY (uploaded_by_id) REFERENCES users(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_app  | ALTER TABLE
+obview_app  | ALTER TABLE
+obview_app  | ALTER TABLE
+obview_app  | ALTER TABLE
+obview_app  | ✅ Applied 0015_add_summary.sql
+obview_app  | ▶ Applying SQL migration: 0016_add_media_info.sql
+obview_app  | ALTER TABLE
+obview_app  | ✅ Applied 0016_add_media_info.sql
+obview_app  | ▶ Applying SQL migration: 0017_add_folder_is_global.sql
+obview_app  | ALTER TABLE
+obview_app  | ✅ Applied 0017_add_folder_is_global.sql
+obview_app  | ▶ Applying SQL migration: 0018_add_share_links.sql
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_db   |
+obview_db   |       -- Comments foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'comments_file_id_fkey') THEN
+obview_db   |           ALTER TABLE comments ADD CONSTRAINT comments_file_id_fkey
+obview_db   |           FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE;
+obview_app  | CREATE INDEX
+obview_app  | ✅ Applied 0018_add_share_links.sql
+obview_app  | ▶ Applying SQL migration: 0019_add_share_link_watermark.sql
+obview_app  | ALTER TABLE
+obview_app  | ✅ Applied 0019_add_share_link_watermark.sql
+obview_app  | ▶ Applying SQL migration: 0020_soft_delete_and_subfolders.sql
+obview_app  | ALTER TABLE
+obview_app  | ALTER TABLE
+obview_app  | ALTER TABLE
+obview_app  | ALTER TABLE
+obview_app  | ALTER TABLE
+obview_app  | DO
+obview_app  | DO
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | ✅ Applied 0020_soft_delete_and_subfolders.sql
+obview_app  | Database migration process completed.
+obview_app  | Verifying critical foreign keys are present...
+obview_app  | ✅ All required foreign keys are in place.
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Creating admin user: admin
+obview_app  | Error creating admin user: error: column "createdAt" of relation "users" does not exist
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async main (/app/scripts/setup.cjs:63:5) {
+obview_app  |   length: 127,
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42703',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: '59',
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'comments_user_id_fkey') THEN
+obview_db   |           ALTER TABLE comments ADD CONSTRAINT comments_user_id_fkey
+obview_db   |           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'comments_parent_id_fkey') THEN
+obview_db   |           ALTER TABLE comments ADD CONSTRAINT comments_parent_id_fkey
+obview_db   |           FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_db   |
+obview_db   |       -- Public comments foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'public_comments_file_id_fkey') THEN
+obview_db   |           ALTER TABLE public_comments ADD CONSTRAINT public_comments_file_id_fkey
+obview_db   |           FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       -- Project users foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'project_users_project_id_fkey') THEN
+obview_db   |           ALTER TABLE project_users ADD CONSTRAINT project_users_project_id_fkey
+obview_db   |           FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'project_users_user_id_fkey') THEN
+obview_db   |           ALTER TABLE project_users ADD CONSTRAINT project_users_user_id_fkey
+obview_db   |           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       -- Activity logs foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'activity_logs_user_id_fkey') THEN
+obview_db   |           ALTER TABLE activity_logs ADD CONSTRAINT activity_logs_user_id_fkey
+obview_db   |           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       -- Invitations foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'invitations_project_id_fkey') THEN
+obview_db   |           ALTER TABLE invitations ADD CONSTRAINT invitations_project_id_fkey
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'parse_target.c',
+obview_app  |   line: '1066',
+obview_app  |   routine: 'checkInsertTargets'
+obview_app  | }
+obview_app  | Setup failed: error: column "createdAt" of relation "users" does not exist
+obview_app  |     at /app/node_modules/pg-pool/index.js:45:11
+obview_app  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+obview_app  |     at async main (/app/scripts/setup.cjs:63:5) {
+obview_app  |   length: 127,
+obview_db   |           FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'invitations_created_by_id_fkey') THEN
+obview_db   |           ALTER TABLE invitations ADD CONSTRAINT invitations_created_by_id_fkey
+obview_app  |   severity: 'ERROR',
+obview_app  |   code: '42703',
+obview_app  |   detail: undefined,
+obview_app  |   hint: undefined,
+obview_app  |   position: '59',
+obview_app  |   internalPosition: undefined,
+obview_app  |   internalQuery: undefined,
+obview_app  |   where: undefined,
+obview_app  |   schema: undefined,
+obview_app  |   table: undefined,
+obview_app  |   column: undefined,
+obview_app  |   dataType: undefined,
+obview_app  |   constraint: undefined,
+obview_app  |   file: 'parse_target.c',
+obview_app  |   line: '1066',
+obview_app  |   routine: 'checkInsertTargets'
+obview_app  | }
+obview_db   |           FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'invitations_accepted_by_id_fkey') THEN
+obview_db   |           ALTER TABLE invitations ADD CONSTRAINT invitations_accepted_by_id_fkey
+obview_db   |           FOREIGN KEY (accepted_by_id) REFERENCES users(id) ON DELETE SET NULL;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       -- Approvals foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'approvals_file_id_fkey') THEN
+obview_db   |           ALTER TABLE approvals ADD CONSTRAINT approvals_file_id_fkey
+obview_app  | Warning: Admin user setup encountered issues.
+obview_app  | This might be normal if the user already exists. Continuing...
+obview_app  | Verifying filesystem utilities for admin cleanup operations...
+obview_app  | ✅ Upload directory write permissions verified
+obview_db   |           FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'approvals_user_id_fkey') THEN
+obview_db   |           ALTER TABLE approvals ADD CONSTRAINT approvals_user_id_fkey
+obview_db   |           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+obview_app  | Starting crond for daily database backups...
+obview_app  | Found built server entry point: /app/dist/index.js
+obview_db   |       END IF;
+obview_db   |
+obview_db   |       -- Password resets foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'password_resets_user_id_fkey') THEN
+obview_db   |           ALTER TABLE password_resets ADD CONSTRAINT password_resets_user_id_fkey
+obview_db   |           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | Using PostgreSQL session store with connection string
+obview_app  | ✅ Serving static files from: /app/dist/public
+obview_app  | Using PostgreSQL session store with connection string
+obview_app  | 🚀 Production server running on port 5000
+obview_app  | 📁 Static files served from: /app/dist/public
+obview_app  | Database connection initialized successfully
+obview_app  | [Video Processing] Startup recovery scanning for stuck jobs...
+obview_db   |       -- Public comments foreign keys
+obview_db   |       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'public_comments_parent_id_fkey') THEN
+obview_db   |           ALTER TABLE public_comments ADD CONSTRAINT public_comments_parent_id_fkey
+obview_db   |           FOREIGN KEY (parent_id) REFERENCES public_comments(id) ON DELETE CASCADE;
+obview_db   |       END IF;
+obview_db   |   END $$;
+obview_db   | 2026-05-03 06:49:07.122 UTC [80] ERROR:  column "parent_id" does not exist
+obview_db   | 2026-05-03 06:49:07.122 UTC [80] STATEMENT:  CREATE INDEX IF NOT EXISTS idx_public_comments_parent_id ON public_comments(parent_id);
+obview_db   | 2026-05-03 06:49:07.122 UTC [80] ERROR:  column "creator_token" does not exist
+obview_db   | 2026-05-03 06:49:07.122 UTC [80] STATEMENT:  CREATE INDEX IF NOT EXISTS idx_public_comments_creator_token ON public_comments(creator_token);
+obview_db   | 2026-05-03 06:49:07.552 UTC [86] ERROR:  relation "comments_unified" already exists
+obview_db   | 2026-05-03 06:49:07.552 UTC [86] STATEMENT:  CREATE TABLE comments_unified (
+obview_db   |       id TEXT PRIMARY KEY,
+obview_db   |       file_id INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+obview_db   |       user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+obview_db   |       is_public BOOLEAN DEFAULT false NOT NULL,
+obview_db   |       author_name TEXT NOT NULL,
+obview_db   |       author_email TEXT NOT NULL,
+obview_db   |       creator_token TEXT,
+obview_db   |       parent_id TEXT REFERENCES comments_unified(id) ON DELETE CASCADE,
+obview_db   |       content TEXT NOT NULL,
+obview_db   |       timestamp DECIMAL,
+obview_db   |       is_resolved BOOLEAN DEFAULT false NOT NULL,
+obview_db   |       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+obview_db   |   );
+obview_db   | 2026-05-03 06:49:07.553 UTC [86] ERROR:  relation "idx_comments_unified_file_id" already exists
+obview_db   | 2026-05-03 06:49:07.553 UTC [86] STATEMENT:  CREATE INDEX idx_comments_unified_file_id ON comments_unified(file_id);
+obview_db   | 2026-05-03 06:49:07.554 UTC [86] ERROR:  relation "idx_comments_unified_parent_id" already exists
+obview_db   | 2026-05-03 06:49:07.554 UTC [86] STATEMENT:  CREATE INDEX idx_comments_unified_parent_id ON comments_unified(parent_id);
+obview_db   | 2026-05-03 06:49:07.940 UTC [88] ERROR:  column "createdAt" of relation "users" does not exist at character 59
+obview_db   | 2026-05-03 06:49:07.940 UTC [88] STATEMENT:  INSERT INTO users (username, password, email, name, role, "createdAt") VALUES ($1, $2, $3, $4, $5, NOW())
+obview_db   | 2026-05-03 06:54:02.755 UTC [59] LOG:  checkpoint starting: time
+obview_db   | 2026-05-03 06:54:22.609 UTC [59] LOG:  checkpoint complete: wrote 201 buffers (1.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=19.850 s, sync=0.002 s, total=19.854 s; sync files=105, longest=0.001 s, average=0.001 s; distance=1140 kB, estimate=1140 kB; lsn=0/1A9E5D0, redo lsn=0/1A9E598
+obview_db   | 2026-05-03 07:06:20.410 UTC [864] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:20.410 UTC [864] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:20.442 UTC [865] ERROR:  relation "activity_logs" already exists
+obview_db   | 2026-05-03 07:06:20.442 UTC [865] STATEMENT:  CREATE TABLE "activity_logs" (
+obview_db   |           "id" serial PRIMARY KEY NOT NULL,
+obview_db   |           "action" text NOT NULL,
+obview_db   |           "entity_type" text NOT NULL,
+obview_db   |           "entity_id" integer NOT NULL,
+obview_db   |           "user_id" integer NOT NULL,
+obview_db   |           "metadata" json,
+obview_db   |           "created_at" timestamp DEFAULT now() NOT NULL
+obview_db   |   );
+obview_db   | 2026-05-03 07:06:20.476 UTC [866] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:20.476 UTC [866] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:20.511 UTC [867] ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+obview_db   | 2026-05-03 07:06:20.511 UTC [867] STATEMENT:  ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_user_id_fkey"
+obview_db   |   FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+obview_db   | 2026-05-03 07:06:20.547 UTC [868] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:20.547 UTC [868] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:20.610 UTC [870] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:20.610 UTC [870] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:20.642 UTC [871] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:20.642 UTC [871] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:20.699 UTC [873] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:20.699 UTC [873] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:20.732 UTC [874] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:20.732 UTC [874] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:20.793 UTC [876] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:20.793 UTC [876] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:20.826 UTC [877] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:20.826 UTC [877] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:21.073 UTC [879] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:21.073 UTC [879] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:21.105 UTC [880] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:21.105 UTC [880] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:21.162 UTC [882] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:21.162 UTC [882] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:21.195 UTC [883] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:21.195 UTC [883] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:21.288 UTC [885] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:21.288 UTC [885] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:21.320 UTC [886] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:21.320 UTC [886] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:21.432 UTC [888] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:21.432 UTC [888] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:21.463 UTC [889] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:21.463 UTC [889] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:21.551 UTC [891] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:21.551 UTC [891] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:21.586 UTC [892] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:21.586 UTC [892] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:21.672 UTC [894] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:21.672 UTC [894] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:21.705 UTC [895] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:21.705 UTC [895] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:21.770 UTC [897] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:21.770 UTC [897] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:21.803 UTC [898] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:21.803 UTC [898] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:21.891 UTC [900] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:21.891 UTC [900] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:21.926 UTC [901] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:21.926 UTC [901] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:21.986 UTC [903] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:21.986 UTC [903] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:22.018 UTC [904] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:22.018 UTC [904] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:22.090 UTC [906] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:22.090 UTC [906] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:22.123 UTC [907] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:22.123 UTC [907] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:22.188 UTC [909] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:22.188 UTC [909] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:22.220 UTC [910] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:22.220 UTC [910] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:22.274 UTC [912] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:22.274 UTC [912] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:22.307 UTC [913] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:22.307 UTC [913] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:22.379 UTC [915] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:22.379 UTC [915] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:22.413 UTC [916] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:22.413 UTC [916] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:22.491 UTC [918] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:22.491 UTC [918] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:22.525 UTC [919] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:22.525 UTC [919] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:22.590 UTC [921] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:22.590 UTC [921] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:22.623 UTC [922] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-03 07:06:22.623 UTC [922] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-03 07:06:22.718 UTC [924] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-03 07:06:22.718 UTC [924] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-03 07:06:23.407 UTC [938] ERROR:  column "createdAt" of relation "users" does not exist at character 59
+obview_db   | 2026-05-03 07:06:23.407 UTC [938] STATEMENT:  INSERT INTO users (username, password, email, name, role, "createdAt") VALUES ($1, $2, $3, $4, $5, NOW())
