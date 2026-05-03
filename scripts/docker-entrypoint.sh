@@ -105,6 +105,24 @@ END \$\$;
   echo "Warning: Could not create unique indexes for comment reactions. Continuing..."
 }
 
+# Ensure the connect-pg-simple session table exists. This table is NOT
+# managed by drizzle (it's owned by the runtime session middleware), so
+# `npm run db:push` will offer to DROP it because it isn't in
+# shared/schema.ts. Recreating it here on every boot guarantees auth
+# survives accidental drops or fresh DB initializations.
+echo "Ensuring session store table exists..."
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
+CREATE TABLE IF NOT EXISTS \"session\" (
+    \"sid\" varchar NOT NULL COLLATE \"default\",
+    \"sess\" json NOT NULL,
+    \"expire\" timestamp(6) NOT NULL,
+    CONSTRAINT \"session_pkey\" PRIMARY KEY (\"sid\") NOT DEFERRABLE INITIALLY IMMEDIATE
+);
+CREATE INDEX IF NOT EXISTS \"IDX_session_expire\" ON \"session\" (\"expire\");
+" || {
+  echo "⚠️  Warning: could not ensure session table; logins may fail until resolved."
+}
+
 # Use the full DATABASE_URL directly for all psql/pg_dump invocations.
 # Regex-parsing DATABASE_URL is brittle for passwords containing @, :, %, etc.
 # psql/pg_dump accept a libpq connection string as their first positional argument.
