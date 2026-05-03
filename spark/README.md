@@ -126,10 +126,29 @@ currently loaded.
 
 ### Whisper on Blackwell (GB10) — known caveats
 
-The DGX Spark's GB10 is a Grace Blackwell unified-memory part. CTranslate2
-(faster-whisper's backend) ships prebuilt aarch64 wheels linked against
-CUDA 12; on the Spark's CUDA 13 stack you may see a load-time error like
-"Library libcublas.so.12 not found". Two fixes, easiest first:
+> **Reality check (verified 2026-05-03):** PyPI's `ctranslate2` aarch64
+> wheel is **CPU-only** — NVIDIA only ships CUDA-enabled CT2 wheels for
+> x86_64. `ctranslate2.get_cuda_device_count()` returns 0 and any
+> `device="cuda"` load fails with `"This CTranslate2 package was not
+> compiled with CUDA support"`. The cu12-vs-cu13 mismatch described below
+> is the *next* problem you'll hit, not the current one.
+>
+> **Today, run on CPU.** Drop a systemd override at
+> `/etc/systemd/system/obviu-spark-ai.service.d/override.conf`:
+> ```ini
+> [Service]
+> Environment=OBVIU_WHISPER_DEVICE=cpu
+> Environment=OBVIU_WHISPER_COMPUTE_TYPE=int8
+> ```
+> then `sudo systemctl daemon-reload && sudo systemctl restart obviu-spark-ai.service`.
+> On Grace + int8 we see ~0.25× realtime for `large-v3-turbo` (52-min
+> audio in ~13 min). To unlock GPU later, build CT2 from source against
+> CUDA 13 — see option 2 below.
+
+The DGX Spark's GB10 is a Grace Blackwell unified-memory part. Once you
+have a CUDA-enabled CTranslate2 build, the *prebuilt* CT2 binaries link
+against CUDA 12; on the Spark's CUDA 13 stack you may see a load-time
+error like "Library libcublas.so.12 not found". Two fixes, easiest first:
 
 1. **Install the CUDA 12 compatibility libs** (NVIDIA ships these in the
    `cuda-compat-12-x` packages on the CUDA repo). The 580 driver is
