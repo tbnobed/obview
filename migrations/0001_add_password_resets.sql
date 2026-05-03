@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS "password_resets" (
   CONSTRAINT "password_resets_token_unique" UNIQUE("token")
 );
 
--- Add foreign key to link password_resets to users
-ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_user_id_fkey" 
-FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+-- Add foreign key to link password_resets to users (idempotent)
+DO $$ BEGIN
+  ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_user_id_fkey"
+    FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
