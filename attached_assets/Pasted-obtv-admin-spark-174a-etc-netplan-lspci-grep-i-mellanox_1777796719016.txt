@@ -1,0 +1,48 @@
+obtv-admin@spark-174a:/etc/netplan$ lspci | grep -i mellanox
+lsmod | grep -E "mlx5|rpcrdma|rdma_cm|ib_core"
+ls /sys/class/infiniband/ 2>&1
+ibv_devinfo 2>&1 | head -20
+dpkg -l | grep -E "nfs-common"
+0000:01:00.0 Ethernet controller: Mellanox Technologies MT2910 Family [ConnectX-7]
+0000:01:00.1 Ethernet controller: Mellanox Technologies MT2910 Family [ConnectX-7]
+0002:01:00.0 Ethernet controller: Mellanox Technologies MT2910 Family [ConnectX-7]
+0002:01:00.1 Ethernet controller: Mellanox Technologies MT2910 Family [ConnectX-7]
+rpcrdma               380928  0
+sunrpc                782336  18 nfsd,rpcrdma,auth_rpcgss,lockd,nfs_acl
+rdma_cm               147456  4 rpcrdma,ib_srp,ib_iser,rdma_ucm
+iw_cm                  57344  1 rdma_cm
+ib_cm                 147456  3 rdma_cm,ib_ipoib,ib_srp
+mlx5_fwctl             16384  0
+fwctl                  24576  1 mlx5_fwctl
+mlx5_ib               520192  0
+ib_uverbs             208896  2 rdma_ucm,mlx5_ib
+macsec                 77824  1 mlx5_ib
+ib_core               528384  11 rdma_cm,ib_ipoib,rpcrdma,ib_srp,iw_cm,ib_iser,ib_umad,rdma_ucm,ib_uverbs,mlx5_ib,ib_cm
+mlx5_core            2756608  2 mlx5_fwctl,mlx5_ib
+mlxfw                  32768  1 mlx5_core
+psample                24576  1 mlx5_core
+tls                   159744  2 mlx5_core
+pci_hyperv_intf        12288  1 mlx5_core
+rocep1s0f0  rocep1s0f1  roceP2p1s0f0  roceP2p1s0f1
+hca_id: rocep1s0f0
+        transport:                      InfiniBand (0)
+        fw_ver:                         28.45.4028
+        node_guid:                      4cbb:4703:002b:174b
+        sys_image_guid:                 4cbb:4703:002b:174b
+        vendor_id:                      0x02c9
+        vendor_part_id:                 4129
+        hw_ver:                         0x0
+        board_id:                       NVD0000000087
+        phys_port_cnt:                  1
+                port:   1
+                        state:                  PORT_ACTIVE (4)
+                        max_mtu:                4096 (5)
+                        active_mtu:             4096 (5)
+                        sm_lid:                 0
+                        port_lid:               0
+                        port_lmc:               0x00
+                        link_layer:             Ethernet
+
+hca_id: rocep1s0f1
+ii  nfs-common                                       1:2.6.4-3ubuntu5.1                       arm64        NFS support files common to client and server
+obtv-admin@spark-174
