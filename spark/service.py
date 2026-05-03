@@ -768,10 +768,12 @@ def _do_transcribe_whispercpp(
         ]
         if not WHISPER_CPP_USE_GPU:
             wc_cmd.append("--no-gpu")
-        if req.word_timestamps:
-            # Force one-token-per-segment so each segment carries usable
-            # word-level timing in the JSON output.
-            wc_cmd += ["--max-len", "1"]
+        # NOTE: do NOT pass `--max-len 1` here. That flag forces
+        # one-token-per-segment, which makes the UI render every word as
+        # its own row. `--output-json-full` already emits per-token
+        # offsets inside each segment's `tokens[]` array, which we map
+        # into seg["words"] below — so word-level timing is preserved
+        # while segments stay at natural phrase boundaries.
 
         wc_start = time.time()
         ok, stdout, stderr = _run(wc_cmd, timeout=WHISPER_CPP_TIMEOUT_SEC)
