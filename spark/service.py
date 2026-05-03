@@ -66,6 +66,31 @@ DEFAULT_DEVICE = os.environ.get("OBVIU_WHISPER_DEVICE", "cuda")
 DEFAULT_COMPUTE_TYPE = os.environ.get("OBVIU_WHISPER_COMPUTE_TYPE", "float16")
 TRANSCRIPTS_SUBDIR = os.environ.get("OBVIU_TRANSCRIPTS_SUBDIR", "transcripts")
 
+# Backend selector. faster_whisper uses the in-process WhisperModel cache
+# (currently CPU-only on aarch64 because PyPI's ctranslate2 wheel ships no
+# CUDA backend). whisper_cpp shells out to a CUDA-built whisper-cli binary
+# for real GPU acceleration; the model is loaded per invocation but the
+# decode runs on the GPU at ~10-20x realtime on GB10.
+WHISPER_BACKEND = os.environ.get("OBVIU_WHISPER_BACKEND", "faster_whisper").strip().lower()
+WHISPER_CPP_BIN = os.environ.get(
+    "OBVIU_WHISPER_CPP_BIN", "/opt/whisper.cpp/build/bin/whisper-cli"
+)
+WHISPER_CPP_MODEL_PATH = os.environ.get(
+    "OBVIU_WHISPER_CPP_MODEL_PATH",
+    "/opt/whisper.cpp/models/ggml-large-v3-turbo.bin",
+)
+WHISPER_CPP_THREADS = _env_int("OBVIU_WHISPER_CPP_THREADS", 8, minimum=1, maximum=256)
+WHISPER_CPP_USE_GPU = os.environ.get("OBVIU_WHISPER_CPP_USE_GPU", "1").strip().lower() not in (
+    "0", "false", "no", "off",
+)
+WHISPER_CPP_TIMEOUT_SEC = _env_int(
+    "OBVIU_WHISPER_CPP_TIMEOUT_SEC", 4 * 3600, minimum=60, maximum=24 * 3600
+)
+FFMPEG_BIN = os.environ.get("OBVIU_FFMPEG_BIN", "ffmpeg")
+FFMPEG_TIMEOUT_SEC = _env_int(
+    "OBVIU_FFMPEG_TIMEOUT_SEC", 1800, minimum=10, maximum=24 * 3600
+)
+
 app = FastAPI(title="Obviu Spark AI Worker", version=SERVICE_VERSION)
 
 # Whisper models are large (1-3 GB) and slow to load (10-30s); cache one
@@ -385,9 +410,18 @@ def info() -> dict[str, Any]:
         "mountRoot": str(MOUNT_ROOT),
         "transcriptsDir": TRANSCRIPTS_SUBDIR,
         "whisper": {
+            "backend": WHISPER_BACKEND,
             "model": DEFAULT_MODEL,
             "device": DEFAULT_DEVICE,
             "computeType": DEFAULT_COMPUTE_TYPE,
+            "whisperCpp": {
+                "bin": WHISPER_CPP_BIN,
+                "binExists": Path(WHISPER_CPP_BIN).exists(),
+                "modelPath": WHISPER_CPP_MODEL_PATH,
+                "modelExists": Path(WHISPER_CPP_MODEL_PATH).exists(),
+                "threads": WHISPER_CPP_THREADS,
+                "useGpu": WHISPER_CPP_USE_GPU,
+            },
         },
         "endpoints": {
             "GET /health": "liveness + GPU snapshot + NFS mount status",
@@ -478,6 +512,7 @@ def transcribe_status() -> dict[str, Any]:
             {"model": k[0], "device": k[1], "computeType": k[2]} for k in _MODEL_CACHE.keys()
         ],
         "defaults": {
+            "backend": WHISPER_BACKEND,
             "model": DEFAULT_MODEL,
             "device": DEFAULT_DEVICE,
             "computeType": DEFAULT_COMPUTE_TYPE,
@@ -557,84 +592,297 @@ def _do_transcribe_locked(
         return {"_busy": True, "current": _get_job()}
     started = time.time()
     try:
-        _set_job({"path": req.path, "model": model_name, "startedAt": started, "phase": "loading_model"})
-
-        load_start = time.time()
-        model = _load_whisper(model_name, DEFAULT_DEVICE, DEFAULT_COMPUTE_TYPE)
-        model_load_ms = int((time.time() - load_start) * 1000)
-
-        _set_job({"path": req.path, "model": model_name, "startedAt": started, "phase": "transcribing"})
-        transcribe_start = time.time()
-
-        segments_iter, info = model.transcribe(
-            str(target),
-            language=req.language,
-            vad_filter=req.vad_filter,
-            word_timestamps=req.word_timestamps,
-            beam_size=req.beam_size,
-        )
-        # faster-whisper streams segments lazily; this loop is where the
-        # actual GPU decode happens.
-        segs = []
-        for s in segments_iter:
-            seg: dict[str, Any] = {
-                "id": s.id,
-                "start": round(float(s.start), 3),
-                "end": round(float(s.end), 3),
-                "text": s.text,
-                "avgLogprob": getattr(s, "avg_logprob", None),
-                "noSpeechProb": getattr(s, "no_speech_prob", None),
-            }
-            if req.word_timestamps and getattr(s, "words", None):
-                seg["words"] = [
-                    {
-                        "start": round(float(w.start), 3) if w.start is not None else None,
-                        "end": round(float(w.end), 3) if w.end is not None else None,
-                        "word": w.word,
-                        "probability": getattr(w, "probability", None),
-                    }
-                    for w in s.words
-                ]
-            segs.append(seg)
-
-        transcribe_ms = int((time.time() - transcribe_start) * 1000)
-
-        payload: dict[str, Any] = {
-            "ok": True,
-            "path": req.path,
-            "absPath": str(target),
-            "model": model_name,
-            "device": DEFAULT_DEVICE,
-            "computeType": DEFAULT_COMPUTE_TYPE,
-            "modelLoadMs": model_load_ms,
-            "transcribeMs": transcribe_ms,
-            "totalMs": int((time.time() - started) * 1000),
-            "result": {
-                "language": info.language,
-                "languageProbability": getattr(info, "language_probability", None),
-                "duration": round(float(info.duration), 3),
-                "segments": segs,
-                "text": "".join(s["text"] for s in segs).strip(),
-            },
-        }
+        if WHISPER_BACKEND == "whisper_cpp":
+            payload = _do_transcribe_whispercpp(req, target, model_name, started)
+        else:
+            payload = _do_transcribe_faster_whisper(req, target, model_name, started)
 
         if req.save:
-            out_dir = MOUNT_ROOT / TRANSCRIPTS_SUBDIR
-            try:
-                out_dir.mkdir(parents=True, exist_ok=True)
-                out_path = out_dir / (target.stem + ".json")
-                tmp_path = out_path.with_suffix(".json.tmp")
-                with tmp_path.open("w", encoding="utf-8") as f:
-                    json.dump(payload, f, ensure_ascii=False, indent=2)
-                os.replace(tmp_path, out_path)
-                payload["savedTo"] = str(out_path.relative_to(MOUNT_ROOT))
-            except OSError as e:
-                payload["saveError"] = str(e)
+            _save_payload_to_nfs(payload, target)
 
         return payload
     finally:
         _set_job(None)
         _JOB_LOCK.release()
+
+
+def _save_payload_to_nfs(payload: dict[str, Any], target: Path) -> None:
+    """Persist a transcription result alongside its source file on the NFS mount.
+
+    Mutates payload in-place to add either ``savedTo`` (success) or
+    ``saveError`` (failure). Atomic via tmp-file + os.replace so a partial
+    write is never observable.
+    """
+    out_dir = MOUNT_ROOT / TRANSCRIPTS_SUBDIR
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / (target.stem + ".json")
+        tmp_path = out_path.with_suffix(".json.tmp")
+        with tmp_path.open("w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, out_path)
+        payload["savedTo"] = str(out_path.relative_to(MOUNT_ROOT))
+    except OSError as e:
+        payload["saveError"] = str(e)
+
+
+def _do_transcribe_faster_whisper(
+    req: "TranscribeRequest", target: Path, model_name: str, started: float
+) -> dict[str, Any]:
+    """faster-whisper backend (in-process WhisperModel; CPU-only on aarch64 PyPI wheel)."""
+    _set_job({"path": req.path, "model": model_name, "startedAt": started, "phase": "loading_model"})
+    load_start = time.time()
+    model = _load_whisper(model_name, DEFAULT_DEVICE, DEFAULT_COMPUTE_TYPE)
+    model_load_ms = int((time.time() - load_start) * 1000)
+
+    _set_job({"path": req.path, "model": model_name, "startedAt": started, "phase": "transcribing"})
+    transcribe_start = time.time()
+
+    segments_iter, info = model.transcribe(
+        str(target),
+        language=req.language,
+        vad_filter=req.vad_filter,
+        word_timestamps=req.word_timestamps,
+        beam_size=req.beam_size,
+    )
+    # faster-whisper streams segments lazily; this loop is where the
+    # actual decode happens.
+    segs = []
+    for s in segments_iter:
+        seg: dict[str, Any] = {
+            "id": s.id,
+            "start": round(float(s.start), 3),
+            "end": round(float(s.end), 3),
+            "text": s.text,
+            "avgLogprob": getattr(s, "avg_logprob", None),
+            "noSpeechProb": getattr(s, "no_speech_prob", None),
+        }
+        if req.word_timestamps and getattr(s, "words", None):
+            seg["words"] = [
+                {
+                    "start": round(float(w.start), 3) if w.start is not None else None,
+                    "end": round(float(w.end), 3) if w.end is not None else None,
+                    "word": w.word,
+                    "probability": getattr(w, "probability", None),
+                }
+                for w in s.words
+            ]
+        segs.append(seg)
+
+    transcribe_ms = int((time.time() - transcribe_start) * 1000)
+
+    return {
+        "ok": True,
+        "path": req.path,
+        "absPath": str(target),
+        "backend": "faster_whisper",
+        "model": model_name,
+        "device": DEFAULT_DEVICE,
+        "computeType": DEFAULT_COMPUTE_TYPE,
+        "modelLoadMs": model_load_ms,
+        "transcribeMs": transcribe_ms,
+        "totalMs": int((time.time() - started) * 1000),
+        "result": {
+            "language": info.language,
+            "languageProbability": getattr(info, "language_probability", None),
+            "duration": round(float(info.duration), 3),
+            "segments": segs,
+            "text": "".join(s["text"] for s in segs).strip(),
+        },
+    }
+
+
+def _do_transcribe_whispercpp(
+    req: "TranscribeRequest", target: Path, model_name: str, started: float
+) -> dict[str, Any]:
+    """whisper.cpp backend — shells out to a CUDA-built whisper-cli for real GPU work.
+
+    Pipeline: ffmpeg → 16kHz mono WAV → whisper-cli with --output-json-full
+    → parse JSON → map into the same payload shape as the faster_whisper
+    backend so the app side is backend-agnostic.
+
+    The model is loaded per invocation (no in-process cache) — for
+    large-v3-turbo that's a few seconds of mmap on top of the actual
+    decode. If this becomes the bottleneck, switch to whisper-server
+    (keeps the model resident) as a follow-up.
+    """
+    import tempfile
+
+    if not Path(WHISPER_CPP_BIN).exists():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"whisper-cli binary not found at {WHISPER_CPP_BIN}. "
+                "Run spark/build-whispercpp-cuda.sh on the spark or set "
+                "OBVIU_WHISPER_CPP_BIN."
+            ),
+        )
+    if not Path(WHISPER_CPP_MODEL_PATH).exists():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"whisper.cpp model not found at {WHISPER_CPP_MODEL_PATH}. "
+                "Run the bundled download-ggml-model.sh or set "
+                "OBVIU_WHISPER_CPP_MODEL_PATH."
+            ),
+        )
+
+    with tempfile.TemporaryDirectory(prefix="obviu-whisper-") as scratch:
+        scratch_path = Path(scratch)
+        wav_path = scratch_path / "input.wav"
+        out_base = scratch_path / "out"
+
+        # Step 1: transcode to 16kHz mono PCM WAV (whisper.cpp's required input format).
+        _set_job({"path": req.path, "model": model_name, "startedAt": started, "phase": "ffmpeg"})
+        ff_start = time.time()
+        ok, _, err = _run(
+            [
+                FFMPEG_BIN, "-y",
+                "-i", str(target),
+                "-ar", "16000",
+                "-ac", "1",
+                "-c:a", "pcm_s16le",
+                str(wav_path),
+            ],
+            timeout=FFMPEG_TIMEOUT_SEC,
+        )
+        if not ok:
+            raise HTTPException(status_code=500, detail=f"ffmpeg failed: {err.strip() or 'unknown error'}")
+        ffmpeg_ms = int((time.time() - ff_start) * 1000)
+
+        # Step 2: run whisper-cli on the GPU.
+        _set_job({"path": req.path, "model": model_name, "startedAt": started, "phase": "transcribing"})
+        # whisper-cli flag notes: --print-progress is a boolean TOGGLE (no
+        # value); passing it would force progress output. We just omit it
+        # since the default is silent. --no-gpu is also a toggle. Boolean
+        # flags must never be followed by "true"/"false".
+        wc_cmd = [
+            WHISPER_CPP_BIN,
+            "-m", WHISPER_CPP_MODEL_PATH,
+            "-f", str(wav_path),
+            "--output-json-full",
+            "--output-file", str(out_base),
+            "--threads", str(WHISPER_CPP_THREADS),
+            "--language", req.language or "auto",
+            "--beam-size", str(req.beam_size),
+        ]
+        if not WHISPER_CPP_USE_GPU:
+            wc_cmd.append("--no-gpu")
+        if req.word_timestamps:
+            # Force one-token-per-segment so each segment carries usable
+            # word-level timing in the JSON output.
+            wc_cmd += ["--max-len", "1"]
+
+        wc_start = time.time()
+        ok, stdout, stderr = _run(wc_cmd, timeout=WHISPER_CPP_TIMEOUT_SEC)
+        if not ok:
+            raise HTTPException(
+                status_code=500,
+                detail=f"whisper-cli failed: {(stderr or stdout).strip() or 'unknown error'}",
+            )
+        transcribe_ms = int((time.time() - wc_start) * 1000)
+
+        # Step 3: parse the JSON the CLI dumped next to out_base.
+        json_path = Path(str(out_base) + ".json")
+        if not json_path.exists():
+            raise HTTPException(
+                status_code=500,
+                detail=f"whisper-cli produced no JSON at {json_path} (stderr: {stderr.strip()[:500]})",
+            )
+        try:
+            with json_path.open("r", encoding="utf-8") as f:
+                wc_json = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            raise HTTPException(status_code=500, detail=f"failed to parse whisper-cli JSON: {e}")
+
+    # Map whisper.cpp's JSON shape into the faster_whisper-style payload.
+    language = (wc_json.get("result") or {}).get("language")
+    transcription = wc_json.get("transcription") or []
+
+    # Sanity check: a real run produces at least one segment unless the
+    # source is genuinely silent. An empty result for a non-trivial input
+    # almost always means a flag/parse drift in whisper-cli — fail loud
+    # so we don't silently store empty transcripts.
+    if not transcription:
+        # Allow the empty case only if the file is < 1 second (truly tiny
+        # / silent test inputs).
+        try:
+            file_seconds = target.stat().st_size / (16000 * 2)  # rough lower bound
+        except OSError:
+            file_seconds = 0
+        if file_seconds > 1.0:
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "whisper-cli produced an empty transcription for a non-trivial "
+                    "input — likely a CLI flag drift. stderr: "
+                    f"{(stderr or '')[:500]}"
+                ),
+            )
+    segs: list[dict[str, Any]] = []
+    duration_s = 0.0
+
+    for i, t in enumerate(transcription):
+        offsets = t.get("offsets") or {}
+        start_s = (offsets.get("from") or 0) / 1000.0
+        end_s = (offsets.get("to") or 0) / 1000.0
+        duration_s = max(duration_s, end_s)
+        seg: dict[str, Any] = {
+            "id": i,
+            "start": round(start_s, 3),
+            "end": round(end_s, 3),
+            "text": t.get("text", ""),
+            "avgLogprob": None,
+            "noSpeechProb": None,
+        }
+        if req.word_timestamps:
+            words = []
+            for tok in t.get("tokens") or []:
+                tok_text = tok.get("text", "")
+                # Filter whisper.cpp's special tokens (e.g. "[_BEG_]", "[_TT_]").
+                if not tok_text or tok_text.startswith("[_"):
+                    continue
+                tok_off = tok.get("offsets") or {}
+                words.append({
+                    "start": round((tok_off.get("from") or 0) / 1000.0, 3),
+                    "end": round((tok_off.get("to") or 0) / 1000.0, 3),
+                    "word": tok_text,
+                    "probability": tok.get("p"),
+                })
+            if words:
+                seg["words"] = words
+        segs.append(seg)
+
+    full_text = "".join(s["text"] for s in segs).strip()
+
+    # Report the actual model file in use, not just whatever the request
+    # asked for — whisper.cpp ignores `model_name` and decodes with whatever
+    # binary file is at WHISPER_CPP_MODEL_PATH. Diagnostics need the truth.
+    actual_model = Path(WHISPER_CPP_MODEL_PATH).stem
+    if actual_model.startswith("ggml-"):
+        actual_model = actual_model[len("ggml-"):]
+
+    return {
+        "ok": True,
+        "path": req.path,
+        "absPath": str(target),
+        "backend": "whisper_cpp",
+        "model": actual_model,
+        "requestedModel": model_name,
+        "device": "cuda" if WHISPER_CPP_USE_GPU else "cpu",
+        "computeType": "whisper.cpp/ggml",
+        "modelLoadMs": 0,  # bundled into transcribeMs by the CLI
+        "ffmpegMs": ffmpeg_ms,
+        "transcribeMs": transcribe_ms,
+        "totalMs": int((time.time() - started) * 1000),
+        "result": {
+            "language": language,
+            "languageProbability": None,
+            "duration": round(duration_s, 3),
+            "segments": segs,
+            "text": full_text,
+        },
+    }
 
 
 @app.post("/transcribe")
