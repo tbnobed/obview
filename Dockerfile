@@ -48,18 +48,27 @@ FROM node:20-alpine as production
 
 # Install PostgreSQL client for health checks and utilities.
 # libstdc++ is required by the whisper-cpp binary.
-# dcron + busybox provide the in-container scheduler used by scripts/backup-cron.sh.
+# dcron provides the in-container scheduler used by scripts/backup-cron.sh.
+# gcompat supplies glibc shims so we can run BtbN's static ffmpeg (glibc-built)
+# on Alpine (musl) below. xz is needed to extract the BtbN tarball.
 # NOTE: We deliberately do NOT install Alpine's `ffmpeg` package — it's built
 # without NVENC/CUDA. We pull a static ffmpeg with NVENC support below.
-RUN apk add --no-cache postgresql-client curl libstdc++ libgcc dcron
+RUN apk add --no-cache postgresql-client curl libstdc++ libgcc dcron gcompat xz
 
-# Static ffmpeg + ffprobe with NVENC, NVDEC and CUDA filters baked in.
-# mwader/static-ffmpeg ships truly-static Linux/x86_64 binaries that run on
-# Alpine (musl) without glibc compat shims. The host's NVIDIA driver +
-# Container Toolkit injects libnvidia-encode.so.1 / libcuda.so.1 at runtime,
-# so the binary can call NVENC even though Alpine has no NVIDIA libs in apk.
-COPY --from=mwader/static-ffmpeg:7.1 /ffmpeg /usr/local/bin/ffmpeg
-COPY --from=mwader/static-ffmpeg:7.1 /ffprobe /usr/local/bin/ffprobe
+# Static ffmpeg + ffprobe with NVENC, NVDEC, CUDA filters, libplacebo, vaapi,
+# vulkan etc. baked in. BtbN's GPL builds are the de facto standard for a
+# fully-loaded ffmpeg binary. The host's NVIDIA driver + Container Toolkit
+# injects libnvidia-encode.so.1 / libcuda.so.1 at runtime, so the binary
+# resolves NVENC dynamically — Alpine itself ships no NVIDIA libs.
+ARG FFMPEG_RELEASE=n7.1-latest-linux64-gpl-7.1
+RUN curl -fsSL -o /tmp/ff.tar.xz \
+      "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-${FFMPEG_RELEASE}.tar.xz" && \
+    mkdir -p /tmp/ff && \
+    tar -xJf /tmp/ff.tar.xz -C /tmp/ff --strip-components=1 && \
+    install -m 0755 /tmp/ff/bin/ffmpeg  /usr/local/bin/ffmpeg && \
+    install -m 0755 /tmp/ff/bin/ffprobe /usr/local/bin/ffprobe && \
+    rm -rf /tmp/ff /tmp/ff.tar.xz && \
+    /usr/local/bin/ffmpeg -version | head -1
 
 WORKDIR /app
 

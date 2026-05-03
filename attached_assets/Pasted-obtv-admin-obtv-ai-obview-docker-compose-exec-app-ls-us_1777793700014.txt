@@ -1,0 +1,71 @@
+obtv-admin@obtv-ai:~/obview$ docker compose exec app ls /usr/lib/x86_64-linux-gnu/ | grep -i nvidia
+docker compose exec app /usr/local/bin/ffmpeg -hide_banner -encoders 2>&1 | grep -i nvenc
+docker compose exec app /usr/local/bin/ffmpeg -hide_banner -hwaccels
+
+# Real smoke test: encode 5 seconds of color bars with h264_nvenc
+docker compose exec app /usr/local/bin/ffmpeg -hide_banner -y \
+  -f lavfi -i "testsrc=duration=5:size=1280x720:rate=30" \
+  -c:v h264_nvenc -preset p4 /tmp/nvenc_test.mp4
+libEGL_nvidia.so.0
+libEGL_nvidia.so.575.64.03
+libGLESv1_CM_nvidia.so.1
+libGLESv1_CM_nvidia.so.575.64.03
+libGLESv2_nvidia.so.2
+libGLESv2_nvidia.so.575.64.03
+libGLX_nvidia.so.0
+libGLX_nvidia.so.575.64.03
+libnvidia-allocator.so
+libnvidia-allocator.so.1
+libnvidia-allocator.so.575.64.03
+libnvidia-cfg.so
+libnvidia-cfg.so.1
+libnvidia-cfg.so.575.64.03
+libnvidia-egl-gbm.so.1
+libnvidia-egl-gbm.so.1.1.2
+libnvidia-egl-wayland.so.1
+libnvidia-egl-wayland.so.1.1.13
+libnvidia-eglcore.so.575.64.03
+libnvidia-encode.so
+libnvidia-encode.so.1
+libnvidia-encode.so.575.64.03
+libnvidia-fbc.so
+libnvidia-fbc.so.1
+libnvidia-fbc.so.575.64.03
+libnvidia-glcore.so.575.64.03
+libnvidia-glsi.so.575.64.03
+libnvidia-glvkspirv.so.575.64.03
+libnvidia-gpucomp.so.575.64.03
+libnvidia-ml.so
+libnvidia-ml.so.1
+libnvidia-ml.so.575.64.03
+libnvidia-ngx.so.1
+libnvidia-ngx.so.575.64.03
+libnvidia-nvvm.so
+libnvidia-nvvm.so.4
+libnvidia-nvvm.so.575.64.03
+libnvidia-opencl.so.1
+libnvidia-opencl.so.575.64.03
+libnvidia-opticalflow.so
+libnvidia-opticalflow.so.1
+libnvidia-opticalflow.so.575.64.03
+libnvidia-pkcs11-openssl3.so.575.64.03
+libnvidia-pkcs11.so.575.64.03
+libnvidia-ptxjitcompiler.so
+libnvidia-ptxjitcompiler.so.1
+libnvidia-ptxjitcompiler.so.575.64.03
+libnvidia-rtcore.so.575.64.03
+libnvidia-tls.so.575.64.03
+libnvidia-vksc-core.so.1
+libnvidia-vksc-core.so.575.64.03
+nvidia
+Hardware acceleration methods:
+qsv
+
+Input #0, lavfi, from 'testsrc=duration=5:size=1280x720:rate=30':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, rgb24, 1280x720 [SAR 1:1 DAR 16:9], 30 fps, 30 tbr, 30 tbn
+[vost#0:0 @ 0x779ffc79a080] Unknown encoder 'h264_nvenc'
+[vost#0:0 @ 0x779ffc79a080] Error selecting an encoder
+Error opening output file /tmp/nvenc_test.mp4.
+Error opening output files: Encoder not found
+obtv-admin@obtv-ai:~/obview$
