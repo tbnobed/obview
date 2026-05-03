@@ -1,0 +1,49 @@
+obtv-admin@obtv-ai:~$ ip a show enp68s0f0np0
+ip a show enp68s0f1np1
+
+# normal ping (should be sub-ms)
+ping -c 3 192.168.100.1
+ping -c 3 192.168.101.1
+
+# jumbo-frame ping (8972 = 9000 - 28 bytes IP/ICMP overhead, DF set)
+# both must succeed for jumbo to actually be working end-to-end
+ping -c 3 -M do -s 8972 192.168.100.1
+ping -c 3 -M do -s 8972 192.168.101.1
+7: enp68s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc mq state UP group default qlen 1000
+    link/ether 10:70:fd:b2:eb:3e brd ff:ff:ff:ff:ff:ff
+    inet 192.168.100.2/24 brd 192.168.100.255 scope global noprefixroute enp68s0f0np0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::1270:fdff:feb2:eb3e/64 scope link
+       valid_lft forever preferred_lft forever
+9: enp68s0f1np1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 9000 qdisc mq state DOWN group default qlen 1000
+    link/ether 10:70:fd:b2:eb:3f brd ff:ff:ff:ff:ff:ff
+PING 192.168.100.1 (192.168.100.1) 56(84) bytes of data.
+64 bytes from 192.168.100.1: icmp_seq=1 ttl=64 time=1.10 ms
+64 bytes from 192.168.100.1: icmp_seq=2 ttl=64 time=0.801 ms
+64 bytes from 192.168.100.1: icmp_seq=3 ttl=64 time=0.810 ms
+
+--- 192.168.100.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2022ms
+rtt min/avg/max/mdev = 0.801/0.902/1.096/0.136 ms
+PING 192.168.101.1 (192.168.101.1) 56(84) bytes of data.
+
+--- 192.168.101.1 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2044ms
+
+PING 192.168.100.1 (192.168.100.1) 8972(9000) bytes of data.
+8980 bytes from 192.168.100.1: icmp_seq=1 ttl=64 time=0.887 ms
+8980 bytes from 192.168.100.1: icmp_seq=2 ttl=64 time=0.822 ms
+8980 bytes from 192.168.100.1: icmp_seq=3 ttl=64 time=0.799 ms
+
+--- 192.168.100.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2028ms
+rtt min/avg/max/mdev = 0.799/0.836/0.887/0.037 ms
+PING 192.168.101.1 (192.168.101.1) 8972(9000) bytes of data.
+ping: local error: message too long, mtu=1500
+ping: local error: message too long, mtu=1500
+ping: local error: message too long, mtu=1500
+
+--- 192.168.101.1 ping statistics ---
+3 packets transmitted, 0 received, +3 errors, 100% packet loss, time 2044ms
+
+obtv-admin@obtv-ai:~$
