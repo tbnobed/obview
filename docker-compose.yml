@@ -50,6 +50,10 @@ services:
       - LLAMA_MODEL=${LLAMA_MODEL:-llama-3.2-1b-instruct.Q4_K_M.gguf}
       - LLAMA_THREADS=${LLAMA_THREADS:-4}
       - LLAMA_MODELS_DIR=/app/models/llama
+      # DGX Spark companion box (reachable over the 200Gb DAC link)
+      - SPARK_HOST=${SPARK_HOST:-}
+      - SPARK_PORT=${SPARK_PORT:-22}
+      - SPARK_DIAG_URL=${SPARK_DIAG_URL:-}
     volumes:
       - uploads:/app/uploads
       - db_backups:/app/db-backups
