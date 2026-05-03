@@ -68,6 +68,16 @@ Preferred communication style: Simple, everyday language.
   - **NVIDIA NVENC hardware acceleration** when `VIDEO_USE_NVENC=true` (default on in Docker). Full CUDA decode → `scale_cuda` → `h264_nvenc` pipeline keeps frames in GPU memory. Automatic fallback to libx264 on any failure (no GPU access, unsupported input codec, NVENC session exhaustion). Tunables: `VIDEO_NVENC_MAIN_PRESET` (p1-p7, default p4), `VIDEO_NVENC_MAIN_CQ` (default 23), `VIDEO_NVENC_SCRUB_PRESET` (default p1), `VIDEO_NVENC_SCRUB_CQ` (default 28).
   - Production Docker image based on `node:20-bookworm-slim` (Debian glibc), with BtbN static FFmpeg n7.1 (NVENC/NVDEC/CUDA filters/vaapi/vulkan) installed at `/usr/local/bin/ffmpeg`. Container Toolkit injects `libnvidia-encode.so.1`, `libcuda.so.1` etc. at runtime; compose uses `runtime: nvidia` + `NVIDIA_VISIBLE_DEVICES=all` + `NVIDIA_DRIVER_CAPABILITIES=compute,utility,video` to trigger the prestart hook.
 
+### AI Hardware Topology (Self-Hosted)
+- **`obtv-ai`** (x86_64, Ubuntu 24.04): primary application host. Tesla T4 GPU (driver 575.64.03, CUDA 12.9) used for NVENC video encoding inside the app container. Mellanox ConnectX-5 (`mlx5_0`/`mlx5_1`) on the 200Gb DAC link.
+- **`spark-174a`** (ARM64, DGX Spark, Blackwell): dedicated AI compute node for heavy models (Whisper-large, CLIP, 70B-class LLMs). Mellanox ConnectX-7 with four RoCE ports. Reaches obtv-ai's media via NFS-RDMA.
+- **DAC link**: 200Gb Mellanox direct-attach copper, point-to-point on `192.168.100.0/24`, MTU 9000, sub-ms latency. obtv-ai = .2, spark = .1. Lossless RoCE v2 (no PFC needed since there's no switch).
+- **Shared media via NFS-RDMA**:
+  - Server: obtv-ai exports the Docker `obview_uploads` volume at `/var/lib/docker/volumes/obview_uploads/_data` over NFSv4.2 with the RDMA transport bound on port 20049 (the standard `tcp 2049` listener stays up for compatibility).
+  - Server-side bring-up notes: Ubuntu 24.04's `/etc/nfs.conf` `rdma=y` directive is unreliable; the persistent fix is a systemd drop-in (`/etc/systemd/system/nfs-server.service.d/rdma.conf`) that runs `echo "rdma 20049" > /proc/fs/nfsd/portlist` post-start. Also `/etc/exports` must exist (touch it) for `/etc/exports.d/*` to be parsed.
+  - Client: spark mounts at `/mnt/obview-uploads` via fstab with `vers=4.2,proto=rdma,port=20049,rsize=1048576,wsize=1048576,hard,timeo=600,_netdev,nofail`.
+  - Measured throughput: write 837 MB/s (disk-bound on server), read 17.7 GB/s (RDMA + page cache, zero-copy). Proves the RDMA path is live; standard NFS-over-TCP would cap ~1-2 GB/s on the same hardware.
+
 ### Deployment Architecture
 - **Containerization**: Multi-stage Docker builds with separate builder and production stages
 - **Container Orchestration**: Docker Compose with separate services for app, database, and reverse proxy
