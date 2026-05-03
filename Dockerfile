@@ -46,10 +46,20 @@ RUN make -j$(nproc) && \
 # Production stage
 FROM node:20-alpine as production
 
-# Install PostgreSQL client for health checks and utilities, plus FFmpeg for video processing
-# libstdc++ is required by the whisper-cpp binary
-# dcron + busybox provide the in-container scheduler used by scripts/backup-cron.sh
-RUN apk add --no-cache postgresql-client curl ffmpeg libstdc++ libgcc dcron
+# Install PostgreSQL client for health checks and utilities.
+# libstdc++ is required by the whisper-cpp binary.
+# dcron + busybox provide the in-container scheduler used by scripts/backup-cron.sh.
+# NOTE: We deliberately do NOT install Alpine's `ffmpeg` package — it's built
+# without NVENC/CUDA. We pull a static ffmpeg with NVENC support below.
+RUN apk add --no-cache postgresql-client curl libstdc++ libgcc dcron
+
+# Static ffmpeg + ffprobe with NVENC, NVDEC and CUDA filters baked in.
+# mwader/static-ffmpeg ships truly-static Linux/x86_64 binaries that run on
+# Alpine (musl) without glibc compat shims. The host's NVIDIA driver +
+# Container Toolkit injects libnvidia-encode.so.1 / libcuda.so.1 at runtime,
+# so the binary can call NVENC even though Alpine has no NVIDIA libs in apk.
+COPY --from=mwader/static-ffmpeg:7.1 /ffmpeg /usr/local/bin/ffmpeg
+COPY --from=mwader/static-ffmpeg:7.1 /ffprobe /usr/local/bin/ffprobe
 
 WORKDIR /app
 

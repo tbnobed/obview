@@ -67,13 +67,21 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s # More time for application startup and database migration
-    # Restart the container if it fails the health check
+    # Restart the container if it fails the health check, and reserve the
+    # NVIDIA T4 (or any present NVIDIA GPU) for hardware-accelerated encode +
+    # local AI workloads. Requires the NVIDIA Container Toolkit on the host.
     deploy:
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
         window: 120s
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, video, utility, compute]
 
   db:
     image: postgres:16-alpine
