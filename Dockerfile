@@ -138,6 +138,9 @@ ENV TRANSCRIPTION_ENABLED=true
 ENV WHISPER_MODEL=base.en
 ENV WHISPER_BIN=whisper-cpp
 ENV WHISPER_MODELS_DIR=/app/models
+# Hardware-accelerated video encoding via NVENC. Falls back to libx264
+# automatically if the GPU isn't reachable (see server/video-processor.ts).
+ENV VIDEO_USE_NVENC=true
 
 # Create upload + model directories with proper permissions
 RUN mkdir -p /app/uploads/processed /app/models && \

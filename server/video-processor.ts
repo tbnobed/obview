@@ -287,33 +287,70 @@ export class VideoProcessor {
       const evenW = targetW - (targetW % 2);
       const evenH = targetH - (targetH % 2);
 
-      // FFmpeg arguments for H.264 encoding optimized for speed and low bandwidth
-      const args = [
+      // CPU (libx264) args — used as fallback and when VIDEO_USE_NVENC is off.
+      const cpuArgs = [
         '-i', inputPath,
         '-c:v', 'libx264',
-        '-preset', 'fast', // Use faster preset for quicker encoding
-        '-crf', '26', // Slightly higher CRF for faster encoding with acceptable quality
-        '-profile:v', 'main', // Use main profile for better compatibility and speed
+        '-preset', 'fast',
+        '-crf', '26',
+        '-profile:v', 'main',
         '-level', '3.1',
-        '-pix_fmt', 'yuv420p', // Ensures compatibility with all players
+        '-pix_fmt', 'yuv420p',
         // Cap at target with no upscaling, then round both dimensions to even
-        // (libx264 + yuv420p requires even width/height; aspect-preserving
-        // downscales of portrait/odd-aspect sources can produce odd output).
+        // (libx264 + yuv420p requires even width/height).
         '-vf', `scale=${evenW}:${evenH}:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
         '-maxrate', quality.bitrate,
-        '-bufsize', `${parseInt(quality.bitrate) * 1.5}k`, // Reduce buffer size for faster encoding
+        '-bufsize', `${parseInt(quality.bitrate) * 1.5}k`,
         '-c:a', 'aac',
-        '-b:a', '96k', // Lower audio bitrate for speed
-        '-ar', '44100', // Standard sample rate
-        '-movflags', '+faststart', // Enable progressive download
-        '-threads', '0', // Use all available CPU threads
+        '-b:a', '96k',
+        '-ar', '44100',
+        '-movflags', '+faststart',
+        '-threads', '0',
         '-f', 'mp4',
-        '-y', // Overwrite output
+        '-y',
         outputPath
       ];
-      
-      console.log(`[VideoProcessor] Generating ${quality.name} with optimized settings...`);
-      await this.executeFFmpeg(args, config.video.timeouts.quality);
+
+      // GPU (h264_nvenc) args — full CUDA decode → scale_cuda → NVENC pipeline.
+      // Frames stay in GPU memory the entire time, no PCIe round-trips.
+      const gpuArgs = [
+        '-hwaccel', 'cuda',
+        '-hwaccel_output_format', 'cuda',
+        '-i', inputPath,
+        '-c:v', 'h264_nvenc',
+        '-preset', config.video.nvenc.mainPreset,
+        '-tune', config.video.nvenc.mainTune,
+        '-rc', 'vbr',
+        '-cq', config.video.nvenc.mainCq,
+        '-profile:v', 'main',
+        '-level', '3.1',
+        // scale_cuda runs on the GPU and outputs nv12 surfaces ready for NVENC.
+        // force_original_aspect_ratio=decrease prevents upscaling.
+        '-vf', `scale_cuda=${evenW}:${evenH}:force_original_aspect_ratio=decrease:format=nv12`,
+        '-b:v', quality.bitrate,
+        '-maxrate', quality.bitrate,
+        '-bufsize', `${parseInt(quality.bitrate) * 1.5}k`,
+        '-c:a', 'aac',
+        '-b:a', '96k',
+        '-ar', '44100',
+        '-movflags', '+faststart',
+        '-f', 'mp4',
+        '-y',
+        outputPath
+      ];
+
+      if (config.video.useNvenc) {
+        try {
+          console.log(`[VideoProcessor] Generating ${quality.name} via NVENC...`);
+          await this.executeFFmpeg(gpuArgs, config.video.timeouts.quality);
+        } catch (gpuErr: any) {
+          console.warn(`[VideoProcessor] NVENC encode failed for ${quality.name}, falling back to libx264:`, gpuErr?.message || gpuErr);
+          await this.executeFFmpeg(cpuArgs, config.video.timeouts.quality);
+        }
+      } else {
+        console.log(`[VideoProcessor] Generating ${quality.name} via libx264...`);
+        await this.executeFFmpeg(cpuArgs, config.video.timeouts.quality);
+      }
       
       // Get file size
       const stats = await fs.stat(outputPath);
@@ -345,29 +382,64 @@ export class VideoProcessor {
     try {
       const outputPath = path.join(outputDir, `${filename}_scrub.mp4`);
       
-      // Generate I-frame only version with optimized H.264 for instant seeking
-      const args = [
+      // CPU (libx264) all-intra args.
+      const cpuArgs = [
         '-i', inputPath,
         '-c:v', 'libx264',
         '-preset', config.video.scrub.preset,
         '-crf', config.video.scrub.crf.toString(),
-        '-pix_fmt', 'yuv420p', // Ensure compatibility
+        '-pix_fmt', 'yuv420p',
         '-profile:v', config.video.scrub.profile,
         '-level', config.video.scrub.level,
-        '-r', config.video.scrub.fps.toString(), // Lower frame rate for smaller files
-        '-g', '1', // I-frame only (keyframe interval = 1)
+        '-r', config.video.scrub.fps.toString(),
+        '-g', '1', // I-frame only (every frame is a keyframe)
         '-keyint_min', '1',
-        '-sc_threshold', '0', // Disable scene change detection
-        '-vf', `scale=${config.video.scrub.scale}`, // Use configurable scale
-        ...(config.video.scrub.disableAudio ? ['-an'] : []), // Conditionally disable audio
+        '-sc_threshold', '0',
+        '-vf', `scale=${config.video.scrub.scale}`,
+        ...(config.video.scrub.disableAudio ? ['-an'] : []),
         '-movflags', '+faststart',
         '-f', 'mp4',
         '-y',
         outputPath
       ];
-      
-      console.log(`[VideoProcessor] Generating scrub version...`);
-      await this.executeFFmpeg(args, config.video.timeouts.scrub);
+
+      // GPU (h264_nvenc) all-intra args. NVENC honours -g 1 + -forced-idr 1 to
+      // force every frame to an IDR keyframe, giving the same instant-seek
+      // behaviour as libx264's I-frame-only output.
+      const gpuArgs = [
+        '-hwaccel', 'cuda',
+        '-hwaccel_output_format', 'cuda',
+        '-i', inputPath,
+        '-c:v', 'h264_nvenc',
+        '-preset', config.video.nvenc.scrubPreset,
+        '-rc', 'vbr',
+        '-cq', config.video.nvenc.scrubCq,
+        '-profile:v', config.video.scrub.profile,
+        '-level', config.video.scrub.level,
+        '-r', config.video.scrub.fps.toString(),
+        '-g', '1',
+        '-forced-idr', '1',
+        '-no-scenecut', '1',
+        '-vf', `scale_cuda=${config.video.scrub.scale}:format=nv12`,
+        ...(config.video.scrub.disableAudio ? ['-an'] : []),
+        '-movflags', '+faststart',
+        '-f', 'mp4',
+        '-y',
+        outputPath
+      ];
+
+      if (config.video.useNvenc) {
+        try {
+          console.log(`[VideoProcessor] Generating scrub version via NVENC...`);
+          await this.executeFFmpeg(gpuArgs, config.video.timeouts.scrub);
+        } catch (gpuErr: any) {
+          console.warn(`[VideoProcessor] NVENC scrub encode failed, falling back to libx264:`, gpuErr?.message || gpuErr);
+          await this.executeFFmpeg(cpuArgs, config.video.timeouts.scrub);
+        }
+      } else {
+        console.log(`[VideoProcessor] Generating scrub version via libx264...`);
+        await this.executeFFmpeg(cpuArgs, config.video.timeouts.scrub);
+      }
       
       return outputPath;
     } catch (error) {

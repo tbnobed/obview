@@ -65,6 +65,8 @@ Preferred communication style: Simple, everyday language.
   - Thumbnail sprite generation for hover previews
   - Configurable timeouts: Quality (60 min), Scrub (30 min), Sprite (10 min), Metadata (5 min)
   - All timeouts adjustable via environment variables for large file handling
+  - **NVIDIA NVENC hardware acceleration** when `VIDEO_USE_NVENC=true` (default on in Docker). Full CUDA decode → `scale_cuda` → `h264_nvenc` pipeline keeps frames in GPU memory. Automatic fallback to libx264 on any failure (no GPU access, unsupported input codec, NVENC session exhaustion). Tunables: `VIDEO_NVENC_MAIN_PRESET` (p1-p7, default p4), `VIDEO_NVENC_MAIN_CQ` (default 23), `VIDEO_NVENC_SCRUB_PRESET` (default p1), `VIDEO_NVENC_SCRUB_CQ` (default 28).
+  - Production Docker image based on `node:20-bookworm-slim` (Debian glibc), with BtbN static FFmpeg n7.1 (NVENC/NVDEC/CUDA filters/vaapi/vulkan) installed at `/usr/local/bin/ffmpeg`. Container Toolkit injects `libnvidia-encode.so.1`, `libcuda.so.1` etc. at runtime; compose uses `runtime: nvidia` + `NVIDIA_VISIBLE_DEVICES=all` + `NVIDIA_DRIVER_CAPABILITIES=compute,utility,video` to trigger the prestart hook.
 
 ### Deployment Architecture
 - **Containerization**: Multi-stage Docker builds with separate builder and production stages

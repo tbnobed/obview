@@ -34,6 +34,20 @@ export const config = {
 
   // Video encoding configuration
   video: {
+    // GPU encoding toggle. When true, generateQuality / generateScrubVersion
+    // use NVIDIA NVENC (h264_nvenc) instead of libx264. Falls back to libx264
+    // automatically if the NVENC encode fails (unsupported input codec, no
+    // GPU access, etc.) so a misconfigured host can never block uploads.
+    useNvenc: process.env.VIDEO_USE_NVENC === 'true',
+    // NVENC quality knobs. Presets are p1 (fastest) → p7 (slowest/best).
+    // p4 is the balanced "medium" equivalent. CQ 23 ≈ libx264 CRF 23.
+    nvenc: {
+      mainPreset: process.env.VIDEO_NVENC_MAIN_PRESET || 'p4',
+      mainTune: process.env.VIDEO_NVENC_MAIN_TUNE || 'hq',
+      mainCq: process.env.VIDEO_NVENC_MAIN_CQ || '23',
+      scrubPreset: process.env.VIDEO_NVENC_SCRUB_PRESET || 'p1',
+      scrubCq: process.env.VIDEO_NVENC_SCRUB_CQ || '28',
+    },
     // Main quality H.264 encoding settings
     main: {
       crf: parseInt(process.env.VIDEO_MAIN_CRF || '24', 10),

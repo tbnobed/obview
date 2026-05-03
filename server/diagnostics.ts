@@ -133,7 +133,13 @@ async function probeStorage() {
     exists = false;
   }
 
-  // Disk free + mount info: best-effort, parsed from `df -PT` and `mount`.
+  // Disk free + mount info. We get sizes from Node's built-in fs.statfs (no
+  // shell parsing) and the mount metadata from `findmnt -T`, which always
+  // returns exactly the mount that backs the given path — even when the
+  // container has dozens of unrelated bind mounts (e.g. NVIDIA Container
+  // Toolkit injecting per-binary mounts under /usr/bin/nvidia-*). Parsing
+  // `df -PT` previously broke here because column splitting picked up the
+  // wrong data line on busy mount tables.
   let totalBytes: number | null = null;
   let freeBytes: number | null = null;
   let fsType: string | null = null;
@@ -143,35 +149,31 @@ async function probeStorage() {
   let isNfs = false;
   let isRdma = false;
 
-  const dfRes = await run("df", ["-PT", absUploadDir]);
-  if (dfRes.ok) {
-    // Header line, then one data line. Columns: Filesystem Type 1024-blocks Used Available Capacity Mounted on
-    const lines = dfRes.stdout.trim().split("\n");
-    if (lines.length >= 2) {
-      const cols = lines[1].trim().split(/\s+/);
-      if (cols.length >= 7) {
-        mountSource = cols[0];
-        fsType = cols[1];
-        const blocks1k = parseInt(cols[2], 10);
-        const avail1k = parseInt(cols[4], 10);
-        if (isFinite(blocks1k)) totalBytes = blocks1k * 1024;
-        if (isFinite(avail1k)) freeBytes = avail1k * 1024;
-        mountPoint = cols.slice(6).join(" ");
-        if (/^nfs/i.test(fsType)) isNfs = true;
-      }
-    }
+  try {
+    const statfs = await fs.statfs(absUploadDir);
+    totalBytes = Number(statfs.blocks) * Number(statfs.bsize);
+    freeBytes = Number(statfs.bavail) * Number(statfs.bsize);
+  } catch {
+    /* ignore */
   }
 
-  if (mountPoint) {
-    const mountRes = await run("mount");
-    if (mountRes.ok) {
-      const re = new RegExp(`\\son ${mountPoint.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")} type (\\S+) \\(([^)]*)\\)`);
-      const m = mountRes.stdout.match(re);
-      if (m) {
-        if (!fsType) fsType = m[1];
-        mountOptions = m[2];
-        if (/rdma|proto=rdma/i.test(mountOptions)) isRdma = true;
-      }
+  // findmnt -T <path> resolves the path to its backing mount in one go.
+  // -n: no header, -o: explicit columns, --raw: tab-separated single line.
+  const fmRes = await run("findmnt", [
+    "-n",
+    "-T", absUploadDir,
+    "-o", "SOURCE,TARGET,FSTYPE,OPTIONS",
+    "--raw",
+  ]);
+  if (fmRes.ok && fmRes.stdout.trim()) {
+    const cols = fmRes.stdout.trim().split(/\s+/);
+    if (cols.length >= 4) {
+      mountSource = cols[0];
+      mountPoint = cols[1];
+      fsType = cols[2];
+      mountOptions = cols.slice(3).join(" ");
+      if (/^nfs/i.test(fsType)) isNfs = true;
+      if (mountOptions && /rdma|proto=rdma/i.test(mountOptions)) isRdma = true;
     }
   }
 
