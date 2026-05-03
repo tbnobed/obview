@@ -100,39 +100,19 @@ export function sparkConfigured(): boolean {
   return baseUrl() !== null;
 }
 
-// Long-lived dispatcher with TCP keepalive + disabled idle/header/body
-// timeouts. The spark's /transcribe call can sit for 10+ minutes on CPU
-// while the app waits for a single big JSON response. With undici's
-// defaults (300s headers/body timeout) and Docker NAT's ~10min conntrack
-// timeout, the connection dies long before the spark finishes. TCP
-// keepalive every 30s keeps the conntrack entry hot; zero timeouts let
-// undici wait as long as our own AbortController allows.
-let sparkDispatcher: any = null;
-async function getDispatcher(): Promise<any> {
-  if (sparkDispatcher) return sparkDispatcher;
-  // undici ships with Node 18+ but isn't in our deps; suppress the
-  // type-only resolution error.
-  // @ts-ignore
-  const { Agent } = await import("undici");
-  sparkDispatcher = new Agent({
-    keepAliveTimeout: 60_000,
-    keepAliveMaxTimeout: 2 * 60 * 60 * 1000,
-    headersTimeout: 0,
-    bodyTimeout: 0,
-    connect: {
-      keepAlive: true,
-      keepAliveInitialDelay: 30_000,
-    },
-  });
-  return sparkDispatcher;
-}
+// All spark requests are now short-lived under the async job API:
+// submission returns 202 in ~ms, every poll is a sub-second JSON read.
+// We no longer hold a single fetch open across the full transcribe
+// duration, so the previous custom undici Agent (with 0 timeouts and
+// 30s TCP keepalive) is no longer needed — and importing `undici`
+// dynamically broke production where it isn't bundled. We use Node's
+// global fetch with a per-request AbortController for timeout.
 
 async function fetchJson<T>(url: string, init: RequestInit, timeoutMs: number): Promise<T> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  const dispatcher = await getDispatcher();
   try {
-    const res = await fetch(url, { ...init, signal: ctrl.signal, dispatcher } as any);
+    const res = await fetch(url, { ...init, signal: ctrl.signal });
     const text = await res.text();
     let body: any = null;
     try { body = text ? JSON.parse(text) : null; } catch { body = text; }
