@@ -38,7 +38,11 @@ if [ ! -d "${SERVICE_DIR}/venv" ]; then
   python3 -m venv "${SERVICE_DIR}/venv"
 fi
 "${SERVICE_DIR}/venv/bin/pip" install --quiet --upgrade pip
-"${SERVICE_DIR}/venv/bin/pip" install --quiet -r "${SERVICE_DIR}/requirements.txt"
+# faster-whisper + ctranslate2 are heavy installs (~500MB) the first time;
+# drop --quiet so the user sees progress.
+"${SERVICE_DIR}/venv/bin/pip" install -r "${SERVICE_DIR}/requirements.txt"
+
+mkdir -p "${SERVICE_DIR}/models"
 
 echo "==> writing systemd unit at ${UNIT_PATH}"
 sudo tee "${UNIT_PATH}" >/dev/null <<EOF
@@ -59,6 +63,12 @@ WorkingDirectory=${SERVICE_DIR}
 Environment=SPARK_BIND_HOST=${BIND_HOST}
 Environment=SPARK_BIND_PORT=${BIND_PORT}
 Environment=OBVIU_MOUNT_ROOT=${MOUNT_ROOT}
+# Pin HuggingFace cache to a known location under the service dir so model
+# downloads are visible, persistent across reinstalls, and easy to inspect.
+Environment=HF_HOME=${SERVICE_DIR}/models
+Environment=HUGGINGFACE_HUB_CACHE=${SERVICE_DIR}/models/hub
+# Make the GPU visible to faster-whisper / ctranslate2.
+Environment=CUDA_VISIBLE_DEVICES=0
 ExecStart=${SERVICE_DIR}/venv/bin/python ${SERVICE_DIR}/service.py
 Restart=on-failure
 RestartSec=3

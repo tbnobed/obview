@@ -30,8 +30,12 @@ import time
 from pathlib import Path
 from typing import Any
 
+import asyncio
+import threading
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 SERVICE_VERSION = "0.1.0"
 MOUNT_ROOT = Path(os.environ.get("OBVIU_MOUNT_ROOT", "/mnt/obview-uploads")).resolve()
@@ -54,8 +58,84 @@ def _env_int(name: str, default: int, *, minimum: int = 1, maximum: int = 3600) 
 
 
 PROBE_TIMEOUT_SEC = _env_int("OBVIU_PROBE_TIMEOUT_SEC", 30, minimum=1, maximum=600)
+DEFAULT_MODEL = os.environ.get("OBVIU_WHISPER_MODEL", "large-v3-turbo")
+DEFAULT_DEVICE = os.environ.get("OBVIU_WHISPER_DEVICE", "cuda")
+DEFAULT_COMPUTE_TYPE = os.environ.get("OBVIU_WHISPER_COMPUTE_TYPE", "float16")
+TRANSCRIPTS_SUBDIR = os.environ.get("OBVIU_TRANSCRIPTS_SUBDIR", "transcripts")
 
 app = FastAPI(title="Obviu Spark AI Worker", version=SERVICE_VERSION)
+
+# Whisper models are large (1-3 GB) and slow to load (10-30s); cache one
+# instance per (model, device, compute_type) for the process lifetime.
+_MODEL_CACHE: dict[tuple[str, str, str], Any] = {}
+_MODEL_LOAD_LOCK = threading.Lock()
+
+# True one-job-at-a-time guarantee: this lock is held by the worker thread
+# for the entire duration of the compute. We deliberately use a synchronous
+# threading.Lock (not asyncio.Lock) because the GPU work runs on a worker
+# thread via asyncio.to_thread; if the HTTP request is cancelled or the
+# client disconnects, the asyncio coroutine unwinds but the worker thread
+# (and the GPU) keeps running — the lock stays held until the actual
+# compute finishes, so no second job can start on the same GPU.
+_JOB_LOCK = threading.Lock()
+_JOB_STATE_LOCK = threading.Lock()
+_CURRENT_JOB: dict[str, Any] | None = None
+
+
+def _set_job(state: dict[str, Any] | None) -> None:
+    global _CURRENT_JOB
+    with _JOB_STATE_LOCK:
+        _CURRENT_JOB = state
+
+
+def _get_job() -> dict[str, Any] | None:
+    with _JOB_STATE_LOCK:
+        return None if _CURRENT_JOB is None else dict(_CURRENT_JOB)
+
+
+def _load_whisper(name: str, device: str, compute_type: str):
+    """Lazy-load a faster-whisper model and cache the instance."""
+    key = (name, device, compute_type)
+    cached = _MODEL_CACHE.get(key)
+    if cached is not None:
+        return cached
+    with _MODEL_LOAD_LOCK:
+        cached = _MODEL_CACHE.get(key)
+        if cached is not None:
+            return cached
+        try:
+            from faster_whisper import WhisperModel  # type: ignore
+        except ImportError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "faster-whisper is not installed. Run "
+                    "`./venv/bin/pip install -r requirements.txt` on the spark."
+                    f" ({e})"
+                ),
+            )
+        try:
+            model = WhisperModel(name, device=device, compute_type=compute_type)
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"failed to load whisper model {name!r} on device={device}, "
+                    f"compute_type={compute_type}: {type(e).__name__}: {e}"
+                ),
+            )
+        _MODEL_CACHE[key] = model
+        return model
+
+
+class TranscribeRequest(BaseModel):
+    path: str = Field(..., description="path relative to OBVIU_MOUNT_ROOT")
+    model: str | None = Field(None, description="whisper model name (default: large-v3-turbo)")
+    language: str | None = Field(None, description="ISO code, e.g. 'en'; auto-detect if omitted")
+    vad_filter: bool = Field(True, description="apply VAD to skip silence")
+    word_timestamps: bool = Field(True, description="emit per-word timing")
+    beam_size: int = Field(5, ge=1, le=10)
+    save: bool = Field(True, description="persist result to <mount>/transcripts/<basename>.json")
 
 
 def _run(cmd: list[str], timeout: int = 5) -> tuple[bool, str, str]:
@@ -190,10 +270,18 @@ def info() -> dict[str, Any]:
         "service": "obviu-spark-ai",
         "version": SERVICE_VERSION,
         "mountRoot": str(MOUNT_ROOT),
+        "transcriptsDir": TRANSCRIPTS_SUBDIR,
+        "whisper": {
+            "model": DEFAULT_MODEL,
+            "device": DEFAULT_DEVICE,
+            "computeType": DEFAULT_COMPUTE_TYPE,
+        },
         "endpoints": {
             "GET /health": "liveness + GPU snapshot + NFS mount status",
             "GET /info": "this payload",
             "GET /probe?path=<relative-path>": "ffprobe a media file in the shared mount",
+            "POST /transcribe": "transcribe with faster-whisper (body: TranscribeRequest)",
+            "GET /transcribe/status": "current job + loaded models + defaults",
         },
     }
 
@@ -246,6 +334,165 @@ def probe(path: str = Query(..., description="path relative to OBVIU_MOUNT_ROOT"
         "mtime": stat.st_mtime,
         "ffprobe": meta,
     })
+
+
+def _resolve_safe(rel_path: str) -> Path:
+    """Resolve a relative path under MOUNT_ROOT, rejecting traversal."""
+    if not rel_path or rel_path.startswith("/") or ".." in rel_path.split("/"):
+        raise HTTPException(status_code=400, detail="path must be relative and must not contain '..'")
+    target = (MOUNT_ROOT / rel_path).resolve()
+    try:
+        target.relative_to(MOUNT_ROOT)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="path escapes mount root")
+    return target
+
+
+@app.get("/transcribe/status")
+def transcribe_status() -> dict[str, Any]:
+    job = _get_job()
+    return {
+        "busy": _JOB_LOCK.locked(),
+        "job": job,
+        "loadedModels": [
+            {"model": k[0], "device": k[1], "computeType": k[2]} for k in _MODEL_CACHE.keys()
+        ],
+        "defaults": {
+            "model": DEFAULT_MODEL,
+            "device": DEFAULT_DEVICE,
+            "computeType": DEFAULT_COMPUTE_TYPE,
+        },
+    }
+
+
+def _do_transcribe_locked(
+    req: "TranscribeRequest",
+    target: Path,
+    model_name: str,
+) -> dict[str, Any]:
+    """Run one transcription end-to-end while holding _JOB_LOCK.
+
+    Acquires the lock non-blocking; if another job is in flight, returns a
+    sentinel ``{"_busy": True}`` so the caller can produce a 429. The lock
+    is held for the *entire* duration of model load + decode + save, so
+    cancellation of the HTTP request cannot cause overlapping GPU work.
+    """
+    if not _JOB_LOCK.acquire(blocking=False):
+        return {"_busy": True, "current": _get_job()}
+    started = time.time()
+    try:
+        _set_job({"path": req.path, "model": model_name, "startedAt": started, "phase": "loading_model"})
+
+        load_start = time.time()
+        model = _load_whisper(model_name, DEFAULT_DEVICE, DEFAULT_COMPUTE_TYPE)
+        model_load_ms = int((time.time() - load_start) * 1000)
+
+        _set_job({"path": req.path, "model": model_name, "startedAt": started, "phase": "transcribing"})
+        transcribe_start = time.time()
+
+        segments_iter, info = model.transcribe(
+            str(target),
+            language=req.language,
+            vad_filter=req.vad_filter,
+            word_timestamps=req.word_timestamps,
+            beam_size=req.beam_size,
+        )
+        # faster-whisper streams segments lazily; this loop is where the
+        # actual GPU decode happens.
+        segs = []
+        for s in segments_iter:
+            seg: dict[str, Any] = {
+                "id": s.id,
+                "start": round(float(s.start), 3),
+                "end": round(float(s.end), 3),
+                "text": s.text,
+                "avgLogprob": getattr(s, "avg_logprob", None),
+                "noSpeechProb": getattr(s, "no_speech_prob", None),
+            }
+            if req.word_timestamps and getattr(s, "words", None):
+                seg["words"] = [
+                    {
+                        "start": round(float(w.start), 3) if w.start is not None else None,
+                        "end": round(float(w.end), 3) if w.end is not None else None,
+                        "word": w.word,
+                        "probability": getattr(w, "probability", None),
+                    }
+                    for w in s.words
+                ]
+            segs.append(seg)
+
+        transcribe_ms = int((time.time() - transcribe_start) * 1000)
+
+        payload: dict[str, Any] = {
+            "ok": True,
+            "path": req.path,
+            "absPath": str(target),
+            "model": model_name,
+            "device": DEFAULT_DEVICE,
+            "computeType": DEFAULT_COMPUTE_TYPE,
+            "modelLoadMs": model_load_ms,
+            "transcribeMs": transcribe_ms,
+            "totalMs": int((time.time() - started) * 1000),
+            "result": {
+                "language": info.language,
+                "languageProbability": getattr(info, "language_probability", None),
+                "duration": round(float(info.duration), 3),
+                "segments": segs,
+                "text": "".join(s["text"] for s in segs).strip(),
+            },
+        }
+
+        if req.save:
+            out_dir = MOUNT_ROOT / TRANSCRIPTS_SUBDIR
+            try:
+                out_dir.mkdir(parents=True, exist_ok=True)
+                out_path = out_dir / (target.stem + ".json")
+                tmp_path = out_path.with_suffix(".json.tmp")
+                with tmp_path.open("w", encoding="utf-8") as f:
+                    json.dump(payload, f, ensure_ascii=False, indent=2)
+                os.replace(tmp_path, out_path)
+                payload["savedTo"] = str(out_path.relative_to(MOUNT_ROOT))
+            except OSError as e:
+                payload["saveError"] = str(e)
+
+        return payload
+    finally:
+        _set_job(None)
+        _JOB_LOCK.release()
+
+
+@app.post("/transcribe")
+async def transcribe(req: TranscribeRequest) -> JSONResponse:
+    """Transcribe a media file with faster-whisper.
+
+    Reads bytes directly from the NFS-RDMA mount (no upload). The compute
+    runs on a worker thread that holds _JOB_LOCK for its entire lifetime,
+    so the one-job-at-a-time guarantee survives client disconnect /
+    request cancellation. There is no server-side wall-clock timeout —
+    very long files are expected; cap from the client if you need one.
+    """
+    target = _resolve_safe(req.path)
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail=f"file not found: {req.path}")
+
+    model_name = req.model or DEFAULT_MODEL
+
+    # Fast path: peek before scheduling so the busy response is immediate.
+    if _JOB_LOCK.locked():
+        raise HTTPException(
+            status_code=429,
+            detail={"error": "spark is busy with another transcription", "current": _get_job()},
+        )
+
+    result = await asyncio.to_thread(_do_transcribe_locked, req, target, model_name)
+    if result.get("_busy"):
+        # Race: another request acquired the lock between our peek and the
+        # thread's acquire. Surface 429 with the same shape as the fast path.
+        raise HTTPException(
+            status_code=429,
+            detail={"error": "spark is busy with another transcription", "current": result.get("current")},
+        )
+    return JSONResponse(result)
 
 
 if __name__ == "__main__":

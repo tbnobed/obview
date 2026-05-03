@@ -1,2 +1,8 @@
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
+pydantic>=2.7,<3
+# faster-whisper pulls ctranslate2 (CUDA backend). On DGX Spark (aarch64,
+# Blackwell GB10, CUDA 13) the prebuilt CT2 wheel may need to be replaced
+# with a cu13 build; if model load fails with a CUDA error, see
+# README.md > "Whisper on Blackwell" for the fallback build steps.
+faster-whisper>=1.0.3

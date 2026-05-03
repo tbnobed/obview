@@ -449,6 +449,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Spark AI worker endpoints (admin only). The DGX Spark is reachable
+  // over the private DAC link and reads media from the same uploads volume
+  // via NFS-RDMA. See server/spark-client.ts and spark/service.py.
+  app.get("/api/admin/spark/status", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const { sparkConfigured, sparkHealth, sparkTranscribeStatus } = await import("./spark-client");
+      if (!sparkConfigured()) {
+        return res.status(503).json({ ok: false, error: "spark not configured (set SPARK_AI_URL or SPARK_DIAG_URL)" });
+      }
+      const [health, status] = await Promise.allSettled([sparkHealth(), sparkTranscribeStatus()]);
+      res.json({
+        ok: true,
+        health: health.status === "fulfilled" ? health.value : { ok: false, error: (health.reason as Error)?.message },
+        transcribe: status.status === "fulfilled" ? status.value : { ok: false, error: (status.reason as Error)?.message },
+      });
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || String(err) });
+    }
+  });
+
+  app.post("/api/admin/spark/transcribe/:fileId", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.fileId, 10);
+      if (!Number.isInteger(fileId) || fileId < 1) {
+        return res.status(400).json({ ok: false, error: "invalid fileId" });
+      }
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ ok: false, error: "file not found" });
+
+      // Derive the spark-relative path from the app's uploads root rather
+      // than blindly taking the basename (which would pick the wrong file
+      // if uploads grow subdirectories or duplicate basenames). The spark
+      // mounts the same volume at /mnt/obview-uploads, so the path
+      // relative to the app's UPLOAD_DIR is exactly the path relative to
+      // the spark's mount root.
+      const uploadsRoot = process.env.UPLOAD_DIR
+        ? path.resolve(process.env.UPLOAD_DIR)
+        : path.join(process.cwd(), "uploads");
+      const stored = file.filePath;
+      const absStored = path.isAbsolute(stored) ? stored : path.join(uploadsRoot, stored);
+      const rel = path.relative(uploadsRoot, path.resolve(absStored));
+      if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
+        return res.status(400).json({ ok: false, error: `file path is not inside uploads root (uploadsRoot=${uploadsRoot}, stored=${stored})` });
+      }
+      const sparkRelPath = rel.split(path.sep).join("/");
+
+      const { sparkConfigured, sparkTranscribe, SparkUnavailableError, SparkHttpError } = await import("./spark-client");
+      if (!sparkConfigured()) {
+        return res.status(503).json({ ok: false, error: "spark not configured (set SPARK_AI_URL)" });
+      }
+
+      const body = req.body || {};
+      try {
+        const result = await sparkTranscribe({
+          path: sparkRelPath,
+          model: typeof body.model === "string" ? body.model : undefined,
+          language: typeof body.language === "string" ? body.language : null,
+          vad_filter: body.vad_filter !== false,
+          word_timestamps: body.word_timestamps !== false,
+          beam_size: typeof body.beam_size === "number" ? body.beam_size : 5,
+          save: body.save !== false,
+        });
+        res.json({ ...result, fileId, file: { id: file.id, filename: file.filename } });
+      } catch (e: any) {
+        if (e instanceof SparkHttpError) {
+          // Preserve the spark's status code (429 busy, 404 missing, 400
+          // bad request, 503 model unavailable) so the caller sees real
+          // semantics instead of a flat 503.
+          return res.status(e.status).json({ ok: false, error: e.message, detail: e.detail });
+        }
+        if (e instanceof SparkUnavailableError) {
+          return res.status(503).json({ ok: false, error: e.message });
+        }
+        throw e;
+      }
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || String(err) });
+    }
+  });
+
   // Test authentication endpoint
   app.get('/api/test-auth', (req, res) => {
     console.log('Test auth endpoint called');
