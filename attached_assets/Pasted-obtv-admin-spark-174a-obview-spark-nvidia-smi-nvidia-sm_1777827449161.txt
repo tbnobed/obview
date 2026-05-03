@@ -1,0 +1,57 @@
+obtv-admin@spark-174a:~/obview/spark$ nvidia-smi
+nvidia-smi -L
+nvidia-smi --query-gpu=index,name --format=csv
+which nvidia-smi
+ls /dev/nvidia* 2>/dev/null
+ls /usr/bin/tegrastats 2>/dev/null
+dpkg -l | grep -E 'cuda|nvidia' | head -20
+Sun May  3 09:57:21 2026
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.126.09             Driver Version: 580.126.09     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GB10                    On  |   0000000F:01:00.0 Off |                  N/A |
+| N/A   39C    P8              5W /  N/A  | Not Supported          |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            3400      G   /usr/lib/xorg/Xorg                       43MiB |
+|    0   N/A  N/A            3429      G   /usr/bin/gnome-shell                     18MiB |
++-----------------------------------------------------------------------------------------+
+GPU 0: NVIDIA GB10 (UUID: GPU-93f5d28c-b3e1-c8e6-bf49-ad36b20daaf6)
+index, name
+0, NVIDIA GB10
+/usr/bin/nvidia-smi
+/dev/nvidia0  /dev/nvidiactl  /dev/nvidia-modeset  /dev/nvidia-uvm  /dev/nvidia-uvm-tools
+
+/dev/nvidia-caps:
+nvidia-cap1  nvidia-cap2
+ii  cuda-cccl-13-0                                   13.0.85-1                                arm64        CUDA CCCL
+ii  cuda-command-line-tools-13-0                     13.0.2-1                                 arm64        CUDA command-line tools
+ii  cuda-compiler-13-0                               13.0.2-1                                 arm64        CUDA compiler
+ii  cuda-compute-repo-lowpri                         25.10-2                                  arm64        CUDA compute repository configuration files (low priority)
+ii  cuda-crt-13-0                                    13.0.88-1                                arm64        CUDA crt
+ii  cuda-cudart-13-0                                 13.0.96-1                                arm64        CUDA Runtime native Libraries
+ii  cuda-cudart-dev-13-0                             13.0.96-1                                arm64        CUDA Runtime native dev links, headers
+ii  cuda-culibos-dev-13-0                            13.0.85-1                                arm64        CUDA DEV culibos is a Math Libraries fork of the cuos library
+ii  cuda-cuobjdump-13-0                              13.0.85-1                                arm64        CUDA cuobjdump
+ii  cuda-cupti-13-0                                  13.0.85-1                                arm64        CUDA profiling tools runtime libs.
+ii  cuda-cupti-dev-13-0                              13.0.85-1                                arm64        CUDA profiling tools interface.
+ii  cuda-cuxxfilt-13-0                               13.0.85-1                                arm64        CUDA cuxxfilt
+ii  cuda-documentation-13-0                          13.0.85-1                                arm64        CUDA documentation
+ii  cuda-driver-dev-13-0                             13.0.96-1                                arm64        CUDA Driver native dev stub library
+ii  cuda-gdb-13-0                                    13.0.85-1                                arm64        CUDA-GDB
+ii  cuda-keyring                                     1.1-1                                    all          GPG keyring for the CUDA repository
+ii  cuda-libraries-13-0                              13.0.2-1                                 arm64        CUDA Libraries 13.0 meta-package
+ii  cuda-libraries-dev-13-0                          13.0.2-1                                 arm64        CUDA Libraries 13.0 development meta-package
+ii  cuda-nsight-compute-13-0                         13.0.2-1                                 arm64        NVIDIA Nsight Compute
+ii  cuda-nsight-systems-13-0                         13.0.2-1                                 arm64        NVIDIA Nsight Systems
+obtv-admin@spark-174a:~/obview/spark$

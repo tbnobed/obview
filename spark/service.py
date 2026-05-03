@@ -77,9 +77,29 @@ def _run(cmd: list[str], timeout: int = 5) -> tuple[bool, str, str]:
         return False, "", f"{type(e).__name__}: {e}"
 
 
+_NVSMI_NULLS = {"", "[not supported]", "not supported", "n/a", "[n/a]", "[unknown error]"}
+
+
+def _nvsmi_int(raw: str) -> int | None:
+    """Parse a single nvidia-smi CSV cell as int, tolerant of '[Not Supported]'.
+
+    Required because the DGX Spark's GB10 uses unified memory with the CPU, so
+    memory.total / memory.used / utilization.gpu come back as '[Not Supported]'
+    instead of integers — the original strict int() parse caused us to drop the
+    whole row and report an empty device list.
+    """
+    s = raw.strip().lower()
+    if s in _NVSMI_NULLS:
+        return None
+    try:
+        return int(raw.strip())
+    except ValueError:
+        return None
+
+
 def _probe_gpu() -> dict[str, Any]:
     """Snapshot of all visible NVIDIA GPUs via nvidia-smi --query-gpu."""
-    fields = "index,name,driver_version,memory.total,memory.used,utilization.gpu,temperature.gpu"
+    fields = "index,name,uuid,driver_version,memory.total,memory.used,utilization.gpu,temperature.gpu"
     ok, out, err = _run(
         ["nvidia-smi", f"--query-gpu={fields}", "--format=csv,noheader,nounits"],
         timeout=5,
@@ -89,23 +109,28 @@ def _probe_gpu() -> dict[str, Any]:
     devices = []
     for line in out.strip().splitlines():
         cols = [c.strip() for c in line.split(",")]
-        if len(cols) < 7:
+        if len(cols) < 8:
             continue
+        # index/name/uuid/driver are always real strings; numeric fields may
+        # be '[Not Supported]' on unified-memory parts (Grace Blackwell, Tegra).
         try:
-            devices.append(
-                {
-                    "index": int(cols[0]),
-                    "name": cols[1],
-                    "driver": cols[2],
-                    "memoryTotalMb": int(cols[3]),
-                    "memoryUsedMb": int(cols[4]),
-                    "utilizationPct": int(cols[5]),
-                    "temperatureC": int(cols[6]),
-                }
-            )
+            idx = int(cols[0])
         except ValueError:
             continue
-    return {"ok": True, "devices": devices}
+        devices.append(
+            {
+                "index": idx,
+                "name": cols[1],
+                "uuid": cols[2],
+                "driver": cols[3],
+                "memoryTotalMb": _nvsmi_int(cols[4]),
+                "memoryUsedMb": _nvsmi_int(cols[5]),
+                "utilizationPct": _nvsmi_int(cols[6]),
+                "temperatureC": _nvsmi_int(cols[7]),
+                "unifiedMemory": _nvsmi_int(cols[4]) is None,
+            }
+        )
+    return {"ok": True, "devices": devices, "count": len(devices)}
 
 
 def _probe_mount() -> dict[str, Any]:
