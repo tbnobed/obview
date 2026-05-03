@@ -22,6 +22,15 @@ INSTALL_DIR="${1:-/opt/whisper.cpp}"
 MODEL="${OBVIU_WHISPER_CPP_MODEL:-large-v3-turbo}"
 JOBS="${JOBS:-$(nproc)}"
 
+# sudo strips PATH, so `nvcc` installed under /usr/local/cuda/bin is invisible
+# to the script even when it's on the calling user's PATH. Add the standard
+# CUDA toolkit bin dirs explicitly so `sudo bash build-whispercpp-cuda.sh`
+# works without `sudo -E`.
+for cuda_bin in /usr/local/cuda/bin /usr/local/cuda-13.0/bin /usr/local/cuda-12.6/bin; do
+  [[ -d "$cuda_bin" ]] && PATH="$cuda_bin:$PATH"
+done
+export PATH
+
 log() { printf '\n[whispercpp-cuda] %s\n' "$*"; }
 die() { printf '\n[whispercpp-cuda] ERROR: %s\n' "$*" >&2; exit 1; }
 
@@ -30,7 +39,7 @@ log "preflight checks"
 command -v git   >/dev/null || die "git missing — apt install git"
 command -v cmake >/dev/null || die "cmake missing — apt install cmake"
 command -v make  >/dev/null || die "make missing — apt install build-essential"
-command -v nvcc  >/dev/null || die "nvcc missing — install CUDA toolkit (apt install cuda-toolkit-13-0 or similar)"
+command -v nvcc  >/dev/null || die "nvcc missing — install CUDA toolkit (apt install cuda-toolkit-13-0) and ensure /usr/local/cuda/bin exists"
 command -v ffmpeg>/dev/null || die "ffmpeg missing — apt install ffmpeg"
 command -v nvidia-smi >/dev/null || die "nvidia-smi missing — driver not installed?"
 
