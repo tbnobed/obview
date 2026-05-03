@@ -1,0 +1,59 @@
+obtv-admin@obtv-ai:~/obview$ # What kernels can we actually boot?
+ls /boot/vmlinuz-* | sort -V
+
+# Confirm 6.14 has its nvidia module ready
+ls /lib/modules/6.14.0-29-generic/kernel/drivers/video/nvidia/ 2>/dev/null \
+  || ls /lib/modules/6.14.0-29-generic/updates/dkms/nvidia*.ko* 2>/dev/null \
+  || find /lib/modules/6.14.0-29-generic -name 'nvidia*.ko*' 2>/dev/null
+
+# Show grub default + what's available to boot into
+sudo grep -E 'GRUB_DEFAULT|GRUB_TIMEOUT' /etc/default/grub
+awk -F"'" '/menuentry / {print NR-1": "$2}' /boot/grub/grub.cfg 2>/dev/null | head -20
+/boot/vmlinuz-6.14.0-29-generic
+/boot/vmlinuz-6.17.0-22-generic
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535srv/bits/nvidia-drm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535srv/bits/nvidia-peermem.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535srv/bits/nvidia-uvm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535srv/bits/nvidia-modeset.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535srv/bits/nvidia.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570/bits/nvidia-drm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570/bits/nvidia-peermem.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570/bits/nvidia-uvm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570/bits/nvidia-modeset.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570/bits/nvidia.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/bits/nvidia-drm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/bits/nvidia-peermem.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/bits/nvidia-uvm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/bits/nvidia-modeset.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/bits/nvidia.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/nvidia-drm.ko
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/nvidia-modeset.ko
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/nvidia-peermem.ko
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/nvidia.ko
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575/nvidia-uvm.ko
+/lib/modules/6.14.0-29-generic/kernel/drivers/video/fbdev/nvidia/nvidiafb.ko.zst
+/lib/modules/6.14.0-29-generic/kernel/drivers/platform/x86/nvidia-wmi-ec-backlight.ko.zst
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570srv/bits/nvidia-drm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570srv/bits/nvidia-peermem.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570srv/bits/nvidia-uvm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570srv/bits/nvidia-modeset.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-570srv/bits/nvidia.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535/bits/nvidia-drm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535/bits/nvidia-peermem.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535/bits/nvidia-uvm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535/bits/nvidia-modeset.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-535/bits/nvidia.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575srv/bits/nvidia-drm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575srv/bits/nvidia-peermem.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575srv/bits/nvidia-uvm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575srv/bits/nvidia-modeset.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-575srv/bits/nvidia.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-550/bits/nvidia-drm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-550/bits/nvidia-peermem.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-550/bits/nvidia-uvm.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-550/bits/nvidia-modeset.ko.sig
+/lib/modules/6.14.0-29-generic/kernel/nvidia-550/bits/nvidia.ko.sig
+GRUB_DEFAULT=0
+GRUB_TIMEOUT_STYLE=hidden
+GRUB_TIMEOUT=0
+obtv-admin@obtv-ai:~/obview$
