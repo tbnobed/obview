@@ -1,0 +1,54 @@
+obtv-admin@spark-174a:~/obview/spark$ systemctl is-active obviu-spark-ai.service
+sudo journalctl -u obviu-spark-ai.service -n 60 --no-pager
+active
+[sudo] password for obtv-admin:
+May 03 09:55:42 spark-174a systemd[1]: Started obviu-spark-ai.service - Obviu Spark AI worker (FastAPI).
+May 03 09:55:42 spark-174a python[469489]: INFO:     Started server process [469489]
+May 03 09:55:42 spark-174a python[469489]: INFO:     Waiting for application startup.
+May 03 09:55:42 spark-174a python[469489]: INFO:     Application startup complete.
+May 03 09:55:42 spark-174a python[469489]: INFO:     Uvicorn running on http://192.168.100.1:7681 (Press CTRL+C to quit)
+May 03 09:55:43 spark-174a python[469489]: INFO:     192.168.100.1:53800 - "GET /health HTTP/1.1" 200 OK
+May 03 09:56:38 spark-174a python[469489]: INFO:     192.168.100.2:36524 - "GET /health HTTP/1.1" 200 OK
+May 03 09:56:39 spark-174a python[469489]: INFO:     192.168.100.2:36528 - "GET /probe?path=1777795884649-885951634.mp4 HTTP/1.1" 200 OK
+May 03 09:57:48 spark-174a python[469489]: INFO:     192.168.100.2:49682 - "GET /health HTTP/1.1" 200 OK
+May 03 09:58:45 spark-174a systemd[1]: Stopping obviu-spark-ai.service - Obviu Spark AI worker (FastAPI)...
+May 03 09:58:45 spark-174a python[469489]: INFO:     Shutting down
+May 03 09:58:46 spark-174a python[469489]: INFO:     Waiting for application shutdown.
+May 03 09:58:46 spark-174a python[469489]: INFO:     Application shutdown complete.
+May 03 09:58:46 spark-174a python[469489]: INFO:     Finished server process [469489]
+May 03 09:58:46 spark-174a systemd[1]: obviu-spark-ai.service: Deactivated successfully.
+May 03 09:58:46 spark-174a systemd[1]: Stopped obviu-spark-ai.service - Obviu Spark AI worker (FastAPI).
+May 03 09:58:46 spark-174a systemd[1]: Started obviu-spark-ai.service - Obviu Spark AI worker (FastAPI).
+May 03 09:58:46 spark-174a python[469629]: INFO:     Started server process [469629]
+May 03 09:58:46 spark-174a python[469629]: INFO:     Waiting for application startup.
+May 03 09:58:46 spark-174a python[469629]: INFO:     Application startup complete.
+May 03 09:58:46 spark-174a python[469629]: INFO:     Uvicorn running on http://192.168.100.1:7681 (Press CTRL+C to quit)
+May 03 09:59:00 spark-174a python[469629]: INFO:     192.168.100.2:44374 - "GET /health HTTP/1.1" 200 OK
+May 03 10:10:42 spark-174a systemd[1]: Stopping obviu-spark-ai.service - Obviu Spark AI worker (FastAPI)...
+May 03 10:10:42 spark-174a python[469629]: INFO:     Shutting down
+May 03 10:10:42 spark-174a python[469629]: INFO:     Waiting for application shutdown.
+May 03 10:10:42 spark-174a python[469629]: INFO:     Application shutdown complete.
+May 03 10:10:42 spark-174a python[469629]: INFO:     Finished server process [469629]
+May 03 10:10:42 spark-174a systemd[1]: obviu-spark-ai.service: Deactivated successfully.
+May 03 10:10:42 spark-174a systemd[1]: Stopped obviu-spark-ai.service - Obviu Spark AI worker (FastAPI).
+May 03 10:10:42 spark-174a systemd[1]: obviu-spark-ai.service: Consumed 1.049s CPU time, 46.8M memory peak, 0B memory swap peak.
+May 03 10:10:42 spark-174a systemd[1]: Started obviu-spark-ai.service - Obviu Spark AI worker (FastAPI).
+May 03 10:10:42 spark-174a python[470662]: INFO:     Started server process [470662]
+May 03 10:10:42 spark-174a python[470662]: INFO:     Waiting for application startup.
+May 03 10:10:42 spark-174a python[470662]: INFO:     Application startup complete.
+May 03 10:10:42 spark-174a python[470662]: INFO:     Uvicorn running on http://192.168.100.1:7681 (Press CTRL+C to quit)
+May 03 10:10:43 spark-174a python[470662]: INFO:     192.168.100.1:44622 - "GET /health HTTP/1.1" 200 OK
+May 03 10:10:51 spark-174a python[470662]: INFO:     Shutting down
+May 03 10:10:51 spark-174a systemd[1]: Stopping obviu-spark-ai.service - Obviu Spark AI worker (FastAPI)...
+May 03 10:10:51 spark-174a python[470662]: INFO:     Waiting for application shutdown.
+May 03 10:10:51 spark-174a python[470662]: INFO:     Application shutdown complete.
+May 03 10:10:51 spark-174a python[470662]: INFO:     Finished server process [470662]
+May 03 10:10:51 spark-174a systemd[1]: obviu-spark-ai.service: Deactivated successfully.
+May 03 10:10:51 spark-174a systemd[1]: Stopped obviu-spark-ai.service - Obviu Spark AI worker (FastAPI).
+May 03 10:10:51 spark-174a systemd[1]: Started obviu-spark-ai.service - Obviu Spark AI worker (FastAPI).
+May 03 10:10:51 spark-174a python[470688]: INFO:     Started server process [470688]
+May 03 10:10:51 spark-174a python[470688]: INFO:     Waiting for application startup.
+May 03 10:10:51 spark-174a python[470688]: INFO:     Application startup complete.
+May 03 10:10:51 spark-174a python[470688]: INFO:     Uvicorn running on http://192.168.100.1:7681 (Press CTRL+C to quit)
+May 03 10:10:57 spark-174a python[470688]: INFO:     192.168.100.2:36906 - "POST /transcribe HTTP/1.1" 404 Not Found
+obtv-admin@spark-174a:~/obview/spark$
