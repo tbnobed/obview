@@ -4,6 +4,12 @@ import fs from "fs";
 import https from "https";
 import os from "os";
 import { storage } from "./storage";
+import {
+  sparkConfigured,
+  sparkTranscribe,
+  SparkHttpError,
+  SparkUnavailableError,
+} from "./spark-client";
 
 export interface TranscriptSegment {
   start: number;
@@ -148,13 +154,37 @@ interface RunOptions {
   modelName?: string;
 }
 
+// In-process FIFO serializer for the spark worker. The spark holds a
+// process-wide threading.Lock around its faster-whisper pipeline and
+// returns HTTP 429 to anyone who arrives while it's busy. Rather than
+// surface 429s to users (or retry blindly), we chain all spark calls
+// onto a single Promise so concurrent transcribeFile() invocations
+// queue cleanly and run one at a time.
+let sparkChain: Promise<any> = Promise.resolve();
+function runOnSpark<T>(fileId: number, fn: () => Promise<T>): Promise<T> {
+  const next = sparkChain.then(
+    () => fn(),
+    () => fn(), // don't let a previous failure poison the queue
+  );
+  // Keep the chain alive even if a caller never awaits.
+  sparkChain = next.catch(() => undefined);
+  next.then(
+    () => console.log(`[Transcription] Spark slot released for file ${fileId}`),
+    () => console.log(`[Transcription] Spark slot released for file ${fileId} (errored)`),
+  );
+  return next;
+}
+
 /**
  * Transcribe a media file. Updates the transcripts table as it progresses.
  * Safe to call from a fire-and-forget background context.
  */
 export async function transcribeFile(opts: RunOptions): Promise<void> {
   const { fileId, inputPath } = opts;
-  const modelName = opts.modelName || MODEL_NAME;
+  // modelName here is the *requested* model. The spark may override (e.g.
+  // serve large-v3-turbo regardless), so we record the spark's reported
+  // model name on completion. Default lets callers omit it.
+  const requestedModel = opts.modelName || process.env.SPARK_WHISPER_MODEL || undefined;
 
   if (!TRANSCRIPTION_ENABLED) {
     console.log(`[Transcription] Disabled. Skipping file ${fileId}.`);
@@ -167,72 +197,81 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
     record = await storage.createTranscript({
       fileId,
       status: "pending",
-      modelName,
+      modelName: requestedModel ? `spark:${requestedModel}` : "spark",
     } as any);
   } else {
     await storage.updateTranscript(record.id, {
       status: "pending",
-      modelName,
+      modelName: requestedModel ? `spark:${requestedModel}` : "spark",
       errorMessage: null as any,
     });
   }
 
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `transcribe-${fileId}-`));
-  const wavPath = path.join(tmpDir, "audio.wav");
-
   try {
-    if (!(await isTranscriptionAvailable())) {
+    if (!sparkConfigured()) {
       throw new Error(
-        `Transcription engine '${WHISPER_BIN}' is not available on this server.`
+        "Spark transcription worker is not configured (set SPARK_AI_URL or SPARK_DIAG_URL)."
       );
     }
 
-    await ensureModel(modelName);
+    // Translate the file's stored path into a path relative to the
+    // uploads root. The spark mounts the same volume at its
+    // OBVIU_MOUNT_ROOT, so the relative path is identical on both sides.
+    const uploadsRoot = process.env.UPLOAD_DIR
+      ? path.resolve(process.env.UPLOAD_DIR)
+      : path.join(process.cwd(), "uploads");
+    const absStored = path.isAbsolute(inputPath)
+      ? inputPath
+      : path.join(uploadsRoot, inputPath);
+    const rel = path.relative(uploadsRoot, path.resolve(absStored));
+    if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
+      throw new Error(
+        `file path is not inside uploads root (uploadsRoot=${uploadsRoot}, stored=${inputPath})`
+      );
+    }
+    const sparkRelPath = rel.split(path.sep).join("/");
 
     await storage.updateTranscript(record.id, { status: "processing" });
 
-    console.log(`[Transcription] Extracting audio for file ${fileId}`);
-    await extractWav(inputPath, wavPath);
-
-    const outBase = path.join(tmpDir, "out");
-    const args = [
-      "-m", modelPath(modelName),
-      "-f", wavPath,
-      "-t", String(WHISPER_THREADS),
-      "-oj",
-      "-of", outBase,
-      "-l", modelName.endsWith(".en") ? "en" : "auto",
-    ];
-
-    console.log(`[Transcription] Running whisper for file ${fileId}`);
-    const res = await runCmd(WHISPER_BIN, args);
-    if (res.code !== 0) {
-      throw new Error(`whisper-cpp failed (code ${res.code}): ${res.stderr.slice(-500)}`);
-    }
-
-    const jsonPath = `${outBase}.json`;
-    if (!fs.existsSync(jsonPath)) {
-      throw new Error(`whisper-cpp produced no JSON output at ${jsonPath}`);
-    }
-
-    const raw = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-    const segments: TranscriptSegment[] = (raw.transcription || []).map(
-      (seg: any) => ({
-        start: parseTimestamp(seg.timestamps?.from) ?? (seg.offsets?.from ?? 0) / 1000,
-        end: parseTimestamp(seg.timestamps?.to) ?? (seg.offsets?.to ?? 0) / 1000,
-        text: (seg.text || "").trim(),
+    // The spark worker is single-job (returns HTTP 429 when busy). Serialize
+    // all transcription requests against it through an in-process FIFO so
+    // concurrent uploads + regenerates queue cleanly instead of failing.
+    console.log(`[Transcription] Queued file ${fileId} for spark (${sparkRelPath})`);
+    const t0 = Date.now();
+    const result = await runOnSpark(fileId, () =>
+      sparkTranscribe({
+        path: sparkRelPath,
+        model: requestedModel,
+        language: null,
+        vad_filter: true,
+        word_timestamps: true,
+        beam_size: 5,
+        save: true,
       })
-    ).filter((s: TranscriptSegment) => s.text.length > 0);
+    );
+    console.log(
+      `[Transcription] Spark returned for file ${fileId} in ${Date.now() - t0}ms ` +
+      `(model=${result.model}, device=${result.device}, computeType=${result.computeType})`
+    );
 
-    const fullText = segments.map((s) => s.text).join(" ");
-    const detectedLanguage =
-      raw.result?.language || (modelName.endsWith(".en") ? "en" : null);
+    const segments: TranscriptSegment[] = (result.result.segments || [])
+      .map((seg) => ({
+        start: typeof seg.start === "number" ? seg.start : 0,
+        end: typeof seg.end === "number" ? seg.end : 0,
+        text: (seg.text || "").trim(),
+      }))
+      .filter((s) => s.text.length > 0);
+
+    const fullText =
+      result.result.text?.trim() || segments.map((s) => s.text).join(" ");
+    const detectedLanguage = result.result.language || null;
 
     await storage.updateTranscript(record.id, {
       status: "completed",
       segments,
       text: fullText,
       language: detectedLanguage,
+      modelName: `spark:${result.model}`,
       processedAt: new Date(),
     } as any);
 
@@ -245,17 +284,21 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
       .then((m) => m.summarizeForFile(fileId))
       .catch((e) => console.error(`[Summarization] Auto-trigger failed for ${fileId}:`, e));
   } catch (err: any) {
+    let message = err?.message || "Unknown transcription error";
+    if (err instanceof SparkHttpError) {
+      message = `Spark worker rejected request (HTTP ${err.status}): ${
+        typeof err.detail === "string" ? err.detail : err.message
+      }`;
+    } else if (err instanceof SparkUnavailableError) {
+      message = `Spark worker unreachable: ${err.message}`;
+    }
     console.error(`[Transcription] Failed for file ${fileId}:`, err);
     await storage
       .updateTranscript(record.id, {
         status: "failed",
-        errorMessage: err?.message || "Unknown transcription error",
+        errorMessage: message,
       } as any)
       .catch(() => {});
-  } finally {
-    try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch {}
   }
 }
 

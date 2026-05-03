@@ -192,7 +192,10 @@ export default function TranscriptView({
           Transcribing…
         </h4>
         <p className="text-sm text-neutral-500 dark:text-gray-400 mt-1">
-          Using local {transcript.modelName || "whisper"} model. This page will update automatically.
+          {transcript.modelName?.startsWith("spark")
+            ? `Running on Spark (${transcript.modelName.replace(/^spark:?/, "") || "whisper"}).`
+            : `Using ${transcript.modelName || "whisper"} model.`}{" "}
+          This page will update automatically.
         </p>
       </div>
     );

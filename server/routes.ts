@@ -2252,11 +2252,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== Transcript routes =====
   app.get("/api/transcription/status", isAuthenticated, async (_req, res) => {
-    const available = await isTranscriptionAvailable();
+    const { sparkConfigured, sparkHealth } = await import("./spark-client");
+    const enabled = (process.env.TRANSCRIPTION_ENABLED || "true").toLowerCase() !== "false";
+    const configured = sparkConfigured();
+    let available = false;
+    let health: any = null;
+    let error: string | null = null;
+    if (enabled && configured) {
+      try {
+        health = await sparkHealth();
+        available = !!health?.ok;
+      } catch (e: any) {
+        error = e?.message || String(e);
+      }
+    }
     res.json({
       available,
-      enabled: (process.env.TRANSCRIPTION_ENABLED || "true").toLowerCase() !== "false",
-      model: process.env.WHISPER_MODEL || "base.en",
+      enabled,
+      engine: "spark",
+      configured,
+      model: process.env.SPARK_WHISPER_MODEL || health?.model || null,
+      health,
+      error,
     });
   });
 
