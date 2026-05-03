@@ -257,6 +257,10 @@ export const transcripts = pgTable("transcripts", {
   summaryError: text("summary_error"),
   summaryModel: text("summary_model"),
   summaryProcessedAt: timestamp("summary_processed_at"),
+  // ID of the in-flight job on the spark worker (null when not using async API
+  // or when the job has terminated and been reaped). Used to resume polling
+  // across app restarts so transcripts don't get stuck in 'processing'.
+  sparkJobId: text("spark_job_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

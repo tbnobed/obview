@@ -100,11 +100,39 @@ export function sparkConfigured(): boolean {
   return baseUrl() !== null;
 }
 
+// Long-lived dispatcher with TCP keepalive + disabled idle/header/body
+// timeouts. The spark's /transcribe call can sit for 10+ minutes on CPU
+// while the app waits for a single big JSON response. With undici's
+// defaults (300s headers/body timeout) and Docker NAT's ~10min conntrack
+// timeout, the connection dies long before the spark finishes. TCP
+// keepalive every 30s keeps the conntrack entry hot; zero timeouts let
+// undici wait as long as our own AbortController allows.
+let sparkDispatcher: any = null;
+async function getDispatcher(): Promise<any> {
+  if (sparkDispatcher) return sparkDispatcher;
+  // undici ships with Node 18+ but isn't in our deps; suppress the
+  // type-only resolution error.
+  // @ts-ignore
+  const { Agent } = await import("undici");
+  sparkDispatcher = new Agent({
+    keepAliveTimeout: 60_000,
+    keepAliveMaxTimeout: 2 * 60 * 60 * 1000,
+    headersTimeout: 0,
+    bodyTimeout: 0,
+    connect: {
+      keepAlive: true,
+      keepAliveInitialDelay: 30_000,
+    },
+  });
+  return sparkDispatcher;
+}
+
 async function fetchJson<T>(url: string, init: RequestInit, timeoutMs: number): Promise<T> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const dispatcher = await getDispatcher();
   try {
-    const res = await fetch(url, { ...init, signal: ctrl.signal });
+    const res = await fetch(url, { ...init, signal: ctrl.signal, dispatcher } as any);
     const text = await res.text();
     let body: any = null;
     try { body = text ? JSON.parse(text) : null; } catch { body = text; }
@@ -159,4 +187,173 @@ export async function sparkTranscribe(
     },
     timeoutMs,
   );
+}
+
+// ===== Async job API =====
+//
+// The sync POST /transcribe holds an HTTP connection open for the entire
+// duration of the compute (10+ minutes on CPU; even on GPU it can be a
+// minute or two). That's fragile across Docker NAT (conntrack drops idle
+// connections after ~10min) and undici's default 5min headers/body
+// timeout. The async API submits a job, returns a jobId immediately,
+// and lets us poll with short-lived requests that never time out.
+
+export type SparkJobStatus = "queued" | "running" | "completed" | "failed";
+
+export interface SparkJobSnapshot {
+  jobId: string;
+  status: SparkJobStatus;
+  submittedAt: number;
+  startedAt: number | null;
+  completedAt: number | null;
+  request: {
+    path: string;
+    model: string;
+    language: string | null;
+    vad_filter: boolean;
+    word_timestamps: boolean;
+    beam_size: number;
+    save: boolean;
+  } | null;
+  result: SparkTranscribeResult | null;
+  error: { status: number; detail: any } | null;
+}
+
+export async function sparkSubmitJob(
+  req: SparkTranscribeRequest,
+): Promise<SparkJobSnapshot> {
+  const base = baseUrl();
+  if (!base) throw new SparkUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
+  return fetchJson<SparkJobSnapshot>(
+    `${base}/transcribe/jobs`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(req),
+    },
+    30_000, // submission is instant; 30s is plenty
+  );
+}
+
+/**
+ * Thrown when polling gives up but the job is still in-flight on the spark
+ * (e.g. our deadline elapsed, or repeated network failures). Distinct from
+ * SparkHttpError (the spark itself reported a terminal failure) so callers
+ * can keep the jobId on record and resume polling later instead of marking
+ * the transcript as a hard failure.
+ */
+export class SparkJobInFlightError extends Error {
+  constructor(public readonly jobId: string, message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = "SparkJobInFlightError";
+  }
+}
+
+export async function sparkGetJob(jobId: string): Promise<SparkJobSnapshot> {
+  const base = baseUrl();
+  if (!base) throw new SparkUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
+  return fetchJson<SparkJobSnapshot>(
+    `${base}/transcribe/jobs/${encodeURIComponent(jobId)}`,
+    { method: "GET" },
+    15_000,
+  );
+}
+
+/**
+ * Submit a transcription job and poll until it terminates.
+ *
+ * Per-poll requests are short-lived so they survive NAT/proxy idle
+ * timeouts. The whole call still blocks the caller's promise until the
+ * job is done, so transcribeFile()'s shape is preserved.
+ *
+ * If onJobId is provided, it's invoked synchronously the moment the
+ * spark accepts the submission — the caller can persist the jobId
+ * before the long wait so an app restart can resume polling.
+ */
+export async function sparkTranscribeAsync(
+  req: SparkTranscribeRequest,
+  opts: {
+    pollIntervalMs?: number;
+    overallTimeoutMs?: number;
+    onJobId?: (jobId: string) => void | Promise<void>;
+  } = {},
+): Promise<SparkTranscribeResult> {
+  const pollIntervalMs = opts.pollIntervalMs ?? 5_000;
+  const overallTimeoutMs = opts.overallTimeoutMs ?? 4 * 60 * 60 * 1000; // 4h hard cap
+
+  const submitted = await sparkSubmitJob(req);
+  if (opts.onJobId) await opts.onJobId(submitted.jobId);
+
+  return pollSparkJob(submitted.jobId, { pollIntervalMs, overallTimeoutMs });
+}
+
+/** Poll an existing jobId to completion. Used both for fresh submissions and restart-resume. */
+export async function pollSparkJob(
+  jobId: string,
+  opts: { pollIntervalMs?: number; overallTimeoutMs?: number } = {},
+): Promise<SparkTranscribeResult> {
+  const pollIntervalMs = opts.pollIntervalMs ?? 5_000;
+  const overallTimeoutMs = opts.overallTimeoutMs ?? 4 * 60 * 60 * 1000;
+  const deadline = Date.now() + overallTimeoutMs;
+
+  // Network-level retry tolerance. Network errors do NOT kill the poll —
+  // the job is running on the spark independently of our connection. We
+  // keep retrying until the overall deadline. Only a 404 (spark forgot
+  // the job) or an explicit terminal status from the spark stops us.
+  let lastPollError: unknown = null;
+
+  while (Date.now() < deadline) {
+    let snap: SparkJobSnapshot;
+    try {
+      snap = await sparkGetJob(jobId);
+      lastPollError = null;
+    } catch (e) {
+      lastPollError = e;
+      if (e instanceof SparkHttpError && e.status === 404) {
+        // The spark genuinely lost the job (registry pruned or worker
+        // restarted). The job is gone — surface as in-flight-lost so the
+        // caller can decide whether to resubmit, but don't pretend the
+        // job failed on the GPU.
+        throw new SparkJobInFlightError(
+          jobId,
+          `spark forgot job ${jobId} (registry pruned or worker restarted)`,
+          e,
+        );
+      }
+      // Transient: keep polling silently. Job is unaffected.
+      await sleep(pollIntervalMs);
+      continue;
+    }
+
+    if (snap.status === "completed") {
+      if (!snap.result) {
+        throw new SparkHttpError(`spark job ${jobId} completed without result`, 500, snap);
+      }
+      return snap.result;
+    }
+    if (snap.status === "failed") {
+      const status = snap.error?.status ?? 500;
+      const detail = snap.error?.detail ?? "unknown error";
+      throw new SparkHttpError(
+        `spark job ${jobId} failed: HTTP ${status} - ${
+          typeof detail === "string" ? detail : JSON.stringify(detail)
+        }`,
+        status,
+        detail,
+      );
+    }
+    await sleep(pollIntervalMs);
+  }
+  // Deadline elapsed but the job may still be running. Surface as in-flight
+  // so transcription.ts keeps sparkJobId for later resumption.
+  throw new SparkJobInFlightError(
+    jobId,
+    `spark job ${jobId} did not complete within ${overallTimeoutMs}ms (still in-flight)` +
+      (lastPollError ? `; last poll error: ${(lastPollError as Error)?.message ?? lastPollError}` : ""),
+    lastPollError ?? undefined,
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }

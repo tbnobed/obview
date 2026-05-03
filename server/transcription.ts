@@ -6,9 +6,11 @@ import os from "os";
 import { storage } from "./storage";
 import {
   sparkConfigured,
-  sparkTranscribe,
+  sparkTranscribeAsync,
+  pollSparkJob,
   SparkHttpError,
   SparkUnavailableError,
+  SparkJobInFlightError,
 } from "./spark-client";
 
 export interface TranscriptSegment {
@@ -160,20 +162,11 @@ interface RunOptions {
 // surface 429s to users (or retry blindly), we chain all spark calls
 // onto a single Promise so concurrent transcribeFile() invocations
 // queue cleanly and run one at a time.
-let sparkChain: Promise<any> = Promise.resolve();
-function runOnSpark<T>(fileId: number, fn: () => Promise<T>): Promise<T> {
-  const next = sparkChain.then(
-    () => fn(),
-    () => fn(), // don't let a previous failure poison the queue
-  );
-  // Keep the chain alive even if a caller never awaits.
-  sparkChain = next.catch(() => undefined);
-  next.then(
-    () => console.log(`[Transcription] Spark slot released for file ${fileId}`),
-    () => console.log(`[Transcription] Spark slot released for file ${fileId} (errored)`),
-  );
-  return next;
-}
+//
+// NOTE: with the async job API the spark queues internally, so the
+// in-process FIFO is no longer required. Kept commented for reference
+// in case we ever need client-side serialization again.
+// let sparkChain: Promise<any> = Promise.resolve();
 
 /**
  * Transcribe a media file. Updates the transcripts table as it progresses.
@@ -233,13 +226,14 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
 
     await storage.updateTranscript(record.id, { status: "processing" });
 
-    // The spark worker is single-job (returns HTTP 429 when busy). Serialize
-    // all transcription requests against it through an in-process FIFO so
-    // concurrent uploads + regenerates queue cleanly instead of failing.
-    console.log(`[Transcription] Queued file ${fileId} for spark (${sparkRelPath})`);
+    // Async API: submit a job, persist the jobId, then poll. Short-lived
+    // polls survive NAT/proxy idle timeouts that would kill a single
+    // long-held HTTP connection. The spark serializes jobs internally,
+    // so we no longer need our own in-process FIFO.
+    console.log(`[Transcription] Submitting file ${fileId} to spark (${sparkRelPath})`);
     const t0 = Date.now();
-    const result = await runOnSpark(fileId, () =>
-      sparkTranscribe({
+    const result = await sparkTranscribeAsync(
+      {
         path: sparkRelPath,
         model: requestedModel,
         language: null,
@@ -247,7 +241,13 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
         word_timestamps: true,
         beam_size: 5,
         save: true,
-      })
+      },
+      {
+        onJobId: async (jobId) => {
+          await storage.updateTranscript(record!.id, { sparkJobId: jobId } as any);
+          console.log(`[Transcription] File ${fileId} accepted as spark job ${jobId}`);
+        },
+      },
     );
     console.log(
       `[Transcription] Spark returned for file ${fileId} in ${Date.now() - t0}ms ` +
@@ -273,6 +273,8 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
       language: detectedLanguage,
       modelName: `spark:${result.model}`,
       processedAt: new Date(),
+      // Job is done — drop the registry pointer so we don't re-poll on restart.
+      sparkJobId: null,
     } as any);
 
     console.log(
@@ -284,6 +286,25 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
       .then((m) => m.summarizeForFile(fileId))
       .catch((e) => console.error(`[Summarization] Auto-trigger failed for ${fileId}:`, e));
   } catch (err: any) {
+    // Distinguish "we lost contact with the spark / our poll deadline elapsed"
+    // (job may still be running on the GPU) from "spark told us the job
+    // failed" (truly terminal). Only the latter clears sparkJobId.
+    if (err instanceof SparkJobInFlightError) {
+      const message =
+        `Lost contact with spark while job ${err.jobId} was still running. ` +
+        `Spark may still be working on it; you can retry to resume polling. ` +
+        `(${err.message})`;
+      console.warn(`[Transcription] In-flight loss for file ${fileId}: ${err.message}`);
+      await storage
+        .updateTranscript(record.id, {
+          // Keep status = processing; keep sparkJobId for resume.
+          status: "processing",
+          errorMessage: message,
+        } as any)
+        .catch(() => {});
+      return;
+    }
+
     let message = err?.message || "Unknown transcription error";
     if (err instanceof SparkHttpError) {
       message = `Spark worker rejected request (HTTP ${err.status}): ${
@@ -297,6 +318,7 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
       .updateTranscript(record.id, {
         status: "failed",
         errorMessage: message,
+        sparkJobId: null,
       } as any)
       .catch(() => {});
   }

@@ -22,6 +22,7 @@ Preferred communication style: Simple, everyday language.
 - **File Upload**: Multer middleware for handling large file uploads (up to 20GB+)
 - **Database ORM**: Drizzle ORM for type-safe database operations
 - **Migration System**: SQL-based migrations with automated execution during container startup
+- **AI Worker (Spark)**: External FastAPI service on the DGX Spark node (`spark/service.py`) reachable over the 200Gb DAC link. App uses an **async job API**: `POST /transcribe/jobs` returns 202 + jobId immediately, app polls `GET /transcribe/jobs/{id}` every 5s until completion. This avoids holding a long HTTP connection across Docker NAT (conntrack ~10min idle timeout) and undici's default 5min header/body timeout. The spark serializes jobs internally via a single dedicated worker thread + queue; the legacy sync `POST /transcribe` is retained for admin tools but no longer used by the app. Job registry retains the last 200 finished jobs in memory for restart-resilient polling. Transcripts table carries a `spark_job_id` column so polling can resume across app restarts.
 - **Video Processing**: FFmpeg-based video encoding with configurable timeouts for large file support (up to 2+ hour processing times)
 
 ### Data Storage Solutions

@@ -32,6 +32,9 @@ from typing import Any
 
 import asyncio
 import threading
+import uuid
+import queue as queue_mod
+from collections import OrderedDict
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -81,6 +84,17 @@ _JOB_LOCK = threading.Lock()
 _JOB_STATE_LOCK = threading.Lock()
 _CURRENT_JOB: dict[str, Any] | None = None
 
+# Async job registry: jobId -> dict with status, request, result, timing.
+# An OrderedDict gives us cheap LRU-style pruning so we can keep the most
+# recent N completed jobs around for the app to poll, without growing
+# memory unboundedly across days of operation.
+_JOBS: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
+_JOBS_LOCK = threading.Lock()
+_JOBS_RETAIN = _env_int("OBVIU_JOBS_RETAIN", 200, minimum=10, maximum=10000)
+_JOB_QUEUE: "queue_mod.Queue[str]" = queue_mod.Queue()
+_WORKER_STARTED = threading.Event()
+_WORKER_START_LOCK = threading.Lock()
+
 
 def _set_job(state: dict[str, Any] | None) -> None:
     global _CURRENT_JOB
@@ -91,6 +105,105 @@ def _set_job(state: dict[str, Any] | None) -> None:
 def _get_job() -> dict[str, Any] | None:
     with _JOB_STATE_LOCK:
         return None if _CURRENT_JOB is None else dict(_CURRENT_JOB)
+
+
+def _job_snapshot(job_id: str) -> dict[str, Any] | None:
+    """Public-shape snapshot of a job; None if unknown."""
+    with _JOBS_LOCK:
+        j = _JOBS.get(job_id)
+        if j is None:
+            return None
+        _JOBS.move_to_end(job_id)
+        return {
+            "jobId": job_id,
+            "status": j["status"],
+            "submittedAt": j["submittedAt"],
+            "startedAt": j.get("startedAt"),
+            "completedAt": j.get("completedAt"),
+            "request": j.get("requestPublic"),
+            "result": j.get("result"),
+            "error": j.get("error"),
+        }
+
+
+def _prune_jobs_locked() -> None:
+    """Caller must hold _JOBS_LOCK. Drops oldest finished entries past the cap."""
+    if len(_JOBS) <= _JOBS_RETAIN:
+        return
+    excess = len(_JOBS) - _JOBS_RETAIN
+    for jid in list(_JOBS.keys()):
+        if excess <= 0:
+            break
+        if _JOBS[jid]["status"] in ("completed", "failed"):
+            del _JOBS[jid]
+            excess -= 1
+
+
+def _worker_loop() -> None:
+    """Single dedicated worker thread that drains _JOB_QUEUE serially.
+
+    Each job acquires _JOB_LOCK for the duration of its compute, preserving
+    the one-job-at-a-time GPU guarantee. The legacy sync POST /transcribe
+    bypasses this queue and goes directly to _do_transcribe_locked.
+    """
+    while True:
+        job_id = _JOB_QUEUE.get()
+        try:
+            with _JOBS_LOCK:
+                job = _JOBS.get(job_id)
+                if job is None or job["status"] != "queued":
+                    continue
+                req = job["request"]
+                target = job["target"]
+                model_name = job["modelName"]
+                job["status"] = "running"
+                job["startedAt"] = time.time()
+
+            try:
+                # Block until the GPU lock is free. The worker is the only
+                # async-path producer for the lock, but the legacy sync
+                # POST /transcribe can still hold it; we wait rather than
+                # failing the user's job on coexistence contention.
+                result = _do_transcribe_locked(req, target, model_name, blocking=True)
+                if result.get("_busy"):
+                    raise RuntimeError("internal: lock contention in worker thread")
+                with _JOBS_LOCK:
+                    j = _JOBS.get(job_id)
+                    if j is not None:
+                        j["status"] = "completed"
+                        j["completedAt"] = time.time()
+                        j["result"] = result
+                        _prune_jobs_locked()
+            except HTTPException as e:
+                with _JOBS_LOCK:
+                    j = _JOBS.get(job_id)
+                    if j is not None:
+                        j["status"] = "failed"
+                        j["completedAt"] = time.time()
+                        j["error"] = {"status": e.status_code, "detail": e.detail}
+                        _prune_jobs_locked()
+            except Exception as e:  # noqa: BLE001
+                with _JOBS_LOCK:
+                    j = _JOBS.get(job_id)
+                    if j is not None:
+                        j["status"] = "failed"
+                        j["completedAt"] = time.time()
+                        j["error"] = {"status": 500, "detail": f"{type(e).__name__}: {e}"}
+                        _prune_jobs_locked()
+        finally:
+            _JOB_QUEUE.task_done()
+
+
+def _ensure_worker() -> None:
+    """Lazily start the worker thread on first submission. Idempotent under concurrency."""
+    if _WORKER_STARTED.is_set():
+        return
+    with _WORKER_START_LOCK:
+        if _WORKER_STARTED.is_set():
+            return
+        t = threading.Thread(target=_worker_loop, name="spark-job-worker", daemon=True)
+        t.start()
+        _WORKER_STARTED.set()
 
 
 def _load_whisper(name: str, device: str, compute_type: str):
@@ -280,7 +393,9 @@ def info() -> dict[str, Any]:
             "GET /health": "liveness + GPU snapshot + NFS mount status",
             "GET /info": "this payload",
             "GET /probe?path=<relative-path>": "ffprobe a media file in the shared mount",
-            "POST /transcribe": "transcribe with faster-whisper (body: TranscribeRequest)",
+            "POST /transcribe": "SYNC transcribe (legacy; blocks until done)",
+            "POST /transcribe/jobs": "ASYNC submit; returns 202 + jobId immediately",
+            "GET /transcribe/jobs/{jobId}": "poll job status/result",
             "GET /transcribe/status": "current job + loaded models + defaults",
         },
     }
@@ -351,9 +466,14 @@ def _resolve_safe(rel_path: str) -> Path:
 @app.get("/transcribe/status")
 def transcribe_status() -> dict[str, Any]:
     job = _get_job()
+    with _JOBS_LOCK:
+        queued = sum(1 for v in _JOBS.values() if v["status"] == "queued")
+        running = sum(1 for v in _JOBS.values() if v["status"] == "running")
+        retained = len(_JOBS)
     return {
         "busy": _JOB_LOCK.locked(),
         "job": job,
+        "queue": {"queued": queued, "running": running, "retained": retained},
         "loadedModels": [
             {"model": k[0], "device": k[1], "computeType": k[2]} for k in _MODEL_CACHE.keys()
         ],
@@ -365,19 +485,75 @@ def transcribe_status() -> dict[str, Any]:
     }
 
 
+@app.post("/transcribe/jobs", status_code=202)
+def submit_transcribe_job(req: TranscribeRequest) -> JSONResponse:
+    """Submit an async transcription job. Returns immediately with a jobId.
+
+    Poll GET /transcribe/jobs/{jobId} for status/result. The job runs on a
+    single dedicated worker thread that drains a FIFO queue, so concurrent
+    submissions queue cleanly without overlapping on the GPU. This is the
+    preferred endpoint for long-running transcriptions because it avoids
+    holding an HTTP connection open for the duration (which is fragile
+    across NAT, proxies, and idle-connection timeouts).
+    """
+    target = _resolve_safe(req.path)
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail=f"file not found: {req.path}")
+
+    model_name = req.model or DEFAULT_MODEL
+    job_id = uuid.uuid4().hex
+    submitted_at = time.time()
+
+    with _JOBS_LOCK:
+        _JOBS[job_id] = {
+            "status": "queued",
+            "submittedAt": submitted_at,
+            "request": req,
+            "requestPublic": {
+                "path": req.path,
+                "model": model_name,
+                "language": req.language,
+                "vad_filter": req.vad_filter,
+                "word_timestamps": req.word_timestamps,
+                "beam_size": req.beam_size,
+                "save": req.save,
+            },
+            "target": target,
+            "modelName": model_name,
+        }
+
+    _ensure_worker()
+    _JOB_QUEUE.put(job_id)
+
+    snap = _job_snapshot(job_id) or {"jobId": job_id, "status": "queued"}
+    return JSONResponse(snap, status_code=202)
+
+
+@app.get("/transcribe/jobs/{job_id}")
+def get_transcribe_job(job_id: str) -> dict[str, Any]:
+    snap = _job_snapshot(job_id)
+    if snap is None:
+        raise HTTPException(status_code=404, detail=f"unknown jobId: {job_id}")
+    return snap
+
+
 def _do_transcribe_locked(
     req: "TranscribeRequest",
     target: Path,
     model_name: str,
+    blocking: bool = False,
 ) -> dict[str, Any]:
     """Run one transcription end-to-end while holding _JOB_LOCK.
 
-    Acquires the lock non-blocking; if another job is in flight, returns a
-    sentinel ``{"_busy": True}`` so the caller can produce a 429. The lock
-    is held for the *entire* duration of model load + decode + save, so
+    By default, acquires the lock non-blocking and returns ``{"_busy": True}``
+    if another job is in flight (used by the legacy sync POST /transcribe so
+    callers can produce a 429). When ``blocking=True``, waits for the lock —
+    used by the async worker thread so queued jobs survive coexistence with
+    a legacy in-flight request instead of failing on contention. The lock
+    is held for the entire duration of model load + decode + save, so
     cancellation of the HTTP request cannot cause overlapping GPU work.
     """
-    if not _JOB_LOCK.acquire(blocking=False):
+    if not _JOB_LOCK.acquire(blocking=blocking):
         return {"_busy": True, "current": _get_job()}
     started = time.time()
     try:
