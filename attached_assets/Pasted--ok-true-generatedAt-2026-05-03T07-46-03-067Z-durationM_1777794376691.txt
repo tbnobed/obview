@@ -1,0 +1,97 @@
+{
+  "ok": true,
+  "generatedAt": "2026-05-03T07:46:03.067Z",
+  "durationMs": 80,
+  "node": {
+    "version": "v20.20.2",
+    "platform": "linux",
+    "arch": "x64",
+    "pid": 1,
+    "uptimeSec": 6,
+    "rss": 79613952,
+    "rssHuman": "75.9 MB",
+    "heapUsed": 19848832,
+    "heapUsedHuman": "18.9 MB"
+  },
+  "os": {
+    "hostname": "b7d789d344fc",
+    "type": "Linux",
+    "release": "6.14.0-29-generic",
+    "arch": "x64",
+    "cpus": 112,
+    "cpuModel": "Intel(R) Xeon(R) CPU E5-4650 v4 @ 2.20GHz",
+    "loadavg": [
+      1.27,
+      2.04,
+      1.33
+    ],
+    "totalMem": 710011691008,
+    "totalMemHuman": "661 GB",
+    "freeMem": 699432505344,
+    "freeMemHuman": "651 GB",
+    "uptimeSec": 1366
+  },
+  "postgres": {
+    "ok": true,
+    "version": "PostgreSQL 16.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "dbSize": "9007 kB"
+  },
+  "storage": {
+    "uploadDir": "/app/uploads",
+    "absUploadDir": "/app/uploads",
+    "exists": true,
+    "entryCount": 1,
+    "totalBytes": 981697945600,
+    "totalBytesHuman": "914 GB",
+    "freeBytes": 894749286400,
+    "freeBytesHuman": "833 GB",
+    "mountSource": "/dev/sda2",
+    "mountPoint": "/usr/bin/nvidia-cuda-mps-control",
+    "fsType": "ext4",
+    "mountOptions": null,
+    "isNfs": false,
+    "isRdma": false
+  },
+  "ffmpeg": {
+    "ok": false,
+    "error": "Command failed: ffmpeg -hide_banner -version\nError loading shared library libmvec.so.1: No such file or directory (needed by /usr/local/bin/ffmpeg)\nError relocating /usr/local/bin/ffmpeg: fcntl64: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN2v_cos: symbol not found\nError relocating /usr/local/bin/ffmpeg: strtof128: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN2v_sin: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN4v_sinf: symbol not found\nError relocating /usr/local/bin/ffmpeg: __wmemcpy_chk: symbol not found\nError relocating /usr/local/bin/ffmpeg: strfromf128: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN4v_cosf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVdN8vv_powf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVdN4v_exp: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVcN4v_exp: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN2vv_pow: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVdN4vv_pow: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN4v_logf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVcN8vv_powf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVdN8v_expf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVeN16v_logf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVeN16v_expf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN4vv_powf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVdN4v_log: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVdN8v_logf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVcN8v_logf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVcN4vv_pow: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN2v_exp: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVeN16vv_powf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVeN8v_log: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVeN8vv_pow: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVcN8v_expf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN4v_expf: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVbN2v_log: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVcN4v_log: symbol not found\nError relocating /usr/local/bin/ffmpeg: _ZGVeN8v_exp: symbol not found\n"
+  },
+  "gpus": {
+    "ok": true,
+    "devices": [
+      {
+        "index": 0,
+        "name": "Tesla T4",
+        "driver": "575.64.03",
+        "memoryTotalMb": 15360,
+        "memoryUsedMb": 5,
+        "utilizationPct": 0,
+        "temperatureC": 36
+      }
+    ]
+  },
+  "spark": {
+    "configured": true,
+    "host": "192.168.100.1",
+    "port": 22,
+    "tcp": {
+      "ok": true,
+      "latencyMs": 12
+    }
+  },
+  "env": {
+    "flags": {
+      "NODE_ENV": "production",
+      "UPLOAD_DIR": "/app/uploads",
+      "SPARK_HOST": "192.168.100.1",
+      "SPARK_PORT": "22",
+      "SPARK_DIAG_URL": ""
+    },
+    "secretsPresent": {
+      "DATABASE_URL": true,
+      "SENDGRID_API_KEY": true,
+      "SESSION_SECRET": true,
+      "SPARK_DIAG_URL": false
+    }
+  }
+}
