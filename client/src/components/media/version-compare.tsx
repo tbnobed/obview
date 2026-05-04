@@ -97,6 +97,21 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
     const rightVideo = rightVideoRef.current;
     if (!leftVideo || !rightVideo) return;
 
+    let raf = 0;
+    const tick = () => {
+      setCurrentTime(leftVideo.currentTime);
+      syncVideos();
+      raf = requestAnimationFrame(tick);
+    };
+    const startRaf = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(tick);
+    };
+    const stopRaf = () => {
+      cancelAnimationFrame(raf);
+      setCurrentTime(leftVideo.currentTime);
+    };
+
     const handleTimeUpdate = () => {
       setCurrentTime(leftVideo.currentTime);
       syncVideos();
@@ -109,24 +124,35 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
     const handlePlay = () => {
       setIsPlaying(true);
       rightVideo.play().catch(() => {});
+      startRaf();
     };
 
     const handlePause = () => {
       setIsPlaying(false);
       rightVideo.pause();
+      stopRaf();
     };
 
     leftVideo.addEventListener('timeupdate', handleTimeUpdate);
     leftVideo.addEventListener('durationchange', handleDurationChange);
     leftVideo.addEventListener('play', handlePlay);
+    leftVideo.addEventListener('playing', handlePlay);
     leftVideo.addEventListener('pause', handlePause);
+    leftVideo.addEventListener('seeked', stopRaf);
+    leftVideo.addEventListener('ended', handlePause);
     rightVideo.addEventListener('durationchange', handleDurationChange);
 
+    if (!leftVideo.paused) startRaf();
+
     return () => {
+      cancelAnimationFrame(raf);
       leftVideo.removeEventListener('timeupdate', handleTimeUpdate);
       leftVideo.removeEventListener('durationchange', handleDurationChange);
       leftVideo.removeEventListener('play', handlePlay);
+      leftVideo.removeEventListener('playing', handlePlay);
       leftVideo.removeEventListener('pause', handlePause);
+      leftVideo.removeEventListener('seeked', stopRaf);
+      leftVideo.removeEventListener('ended', handlePause);
       rightVideo.removeEventListener('durationchange', handleDurationChange);
     };
   }, [leftVersionId, rightVersionId, mode, syncVideos]);
@@ -216,10 +242,17 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   }, [mode]);
 
   const formatTime = (time: number) => {
-    if (isNaN(time)) return "00:00";
-    const minutes = Math.floor(time / 60);
+    if (time == null || isNaN(time)) return "00:00:00:00";
+    const fps = 30;
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const frames = Math.min(
+      Math.floor((time - Math.floor(time)) * fps),
+      Math.max(0, Math.round(fps) - 1)
+    );
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(frames)}`;
   };
 
   const mediaUrl = (fileId: number) => `/api/files/${fileId}/content`;
