@@ -1,11 +1,14 @@
 import { storage } from "./storage";
-import { prompt, enqueueJob, clearSession, getModelName, logBackend } from "./llm-client";
+import { prompt, enqueueJob, clearSession, getModelName, logBackend, isRemoteMode } from "./llm-client";
 
 const SUMMARIZATION_ENABLED =
   (process.env.SUMMARIZATION_ENABLED || "true").toLowerCase() !== "false";
 
+const LOCAL_MAX_CHARS = 16000;
+const REMOTE_MAX_CHARS = 80000;
+
 function buildPrompt(transcript: string): string {
-  const MAX_CHARS = 16000;
+  const MAX_CHARS = isRemoteMode() ? REMOTE_MAX_CHARS : LOCAL_MAX_CHARS;
   const text =
     transcript.length > MAX_CHARS
       ? transcript.slice(0, MAX_CHARS) + "\n[...truncated]"

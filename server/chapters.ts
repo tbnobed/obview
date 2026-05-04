@@ -1,8 +1,11 @@
 import { storage } from "./storage";
-import { prompt, enqueueJob, clearSession, getModelName, logBackend } from "./llm-client";
+import { prompt, enqueueJob, clearSession, getModelName, logBackend, isRemoteMode } from "./llm-client";
 
 const CHAPTERS_ENABLED =
   (process.env.CHAPTERS_ENABLED || process.env.SUMMARIZATION_ENABLED || "true").toLowerCase() !== "false";
+
+const LOCAL_MAX_CHARS = 14000;
+const REMOTE_MAX_CHARS = 80000;
 
 function formatTimestamp(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -15,7 +18,7 @@ function formatTimestamp(seconds: number): string {
 function buildChaptersPrompt(
   segments: Array<{ start: number; end: number; text: string }>
 ): string {
-  const MAX_CHARS = 14000;
+  const MAX_CHARS = isRemoteMode() ? REMOTE_MAX_CHARS : LOCAL_MAX_CHARS;
   let segText = "";
   for (const seg of segments) {
     const line = `[${formatTimestamp(seg.start)}] ${seg.text.trim()}\n`;
@@ -159,7 +162,9 @@ async function runChaptersJob(fileId: number): Promise<void> {
 
   try {
     const basePrompt = buildChaptersPrompt(transcript.segments);
-    console.log(`[Chapters] Generating chapters for file ${fileId}...`);
+    const promptLen = basePrompt.length;
+    const maxChars = isRemoteMode() ? REMOTE_MAX_CHARS : LOCAL_MAX_CHARS;
+    console.log(`[Chapters] Generating chapters for file ${fileId} (prompt ${promptLen} chars, limit ${maxChars}, ${isRemoteMode() ? "remote" : "local"})...`);
 
     let chapters: Chapter[] | null = null;
     const MAX_ATTEMPTS = 2;
@@ -170,7 +175,7 @@ async function runChaptersJob(fileId: number): Promise<void> {
           ? basePrompt
           : basePrompt +
             '\n\nIMPORTANT: Your previous response was not valid JSON. Output ONLY a raw JSON array with no extra text. Example: [{"start":0,"title":"Intro","summary":"Opening"}]',
-        { maxTokens: 1024, temperature: attempt === 1 ? 0.2 : 0.1 },
+        { maxTokens: isRemoteMode() ? 2048 : 1024, temperature: attempt === 1 ? 0.2 : 0.1 },
         `Chapters generation for file ${fileId} (attempt ${attempt})`
       );
       const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
