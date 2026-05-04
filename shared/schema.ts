@@ -261,6 +261,11 @@ export const transcripts = pgTable("transcripts", {
   // or when the job has terminated and been reaped). Used to resume polling
   // across app restarts so transcripts don't get stuck in 'processing'.
   sparkJobId: text("spark_job_id"),
+  chapters: json("chapters").$type<Array<{ start: number; title: string; summary?: string }>>(),
+  chaptersStatus: text("chapters_status").default("pending"),
+  chaptersError: text("chapters_error"),
+  chaptersModel: text("chapters_model"),
+  chaptersProcessedAt: timestamp("chapters_processed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

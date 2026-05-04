@@ -281,10 +281,13 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
       `[Transcription] Completed file ${fileId}: ${segments.length} segments, ${fullText.length} chars`
     );
 
-    // Auto-trigger summarization (fire-and-forget)
+    // Auto-trigger summarization and chapters (fire-and-forget)
     import("./summarization")
       .then((m) => m.summarizeForFile(fileId))
       .catch((e) => console.error(`[Summarization] Auto-trigger failed for ${fileId}:`, e));
+    import("./chapters")
+      .then((m) => m.generateChaptersForFile(fileId))
+      .catch((e) => console.error(`[Chapters] Auto-trigger failed for ${fileId}:`, e));
   } catch (err: any) {
     // Distinguish "we lost contact with the spark / our poll deadline elapsed"
     // (job may still be running on the GPU) from "spark told us the job

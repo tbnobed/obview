@@ -54,6 +54,7 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TranscriptView from "@/components/media/transcript-view";
 import SynopsisView from "@/components/media/synopsis-view";
+import ChaptersView from "@/components/media/chapters-view";
 import WatermarkOverlay from "@/components/media/watermark-overlay";
 
 type ShareInfo = {
@@ -1505,6 +1506,11 @@ function FileViewer({
                   Synopsis
                 </TabsTrigger>
               )}
+              {supportsTranscript && (
+                <TabsTrigger value="chapters" className="text-xs px-3">
+                  Chapters
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -1871,6 +1877,24 @@ function FileViewer({
                 apiBase={apiBase}
                 readOnly
                 queryKey={transcriptQueryKey}
+              />
+            </TabsContent>
+          )}
+
+          {supportsTranscript && (
+            <TabsContent
+              value="chapters"
+              className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
+            >
+              <ChaptersView
+                fileId={file.id}
+                apiBase={apiBase}
+                readOnly
+                queryKey={transcriptQueryKey}
+                onSeek={(time: number) => {
+                  const mediaEl = document.querySelector<HTMLVideoElement | HTMLAudioElement>("video, audio");
+                  if (mediaEl) mediaEl.currentTime = time;
+                }}
               />
             </TabsContent>
           )}

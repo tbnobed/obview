@@ -4,6 +4,7 @@ import fs from "fs";
 import { setupAuth } from "./auth.js";
 import { registerRoutes, resumeStuckVideoProcessing } from "./routes.js";
 import { resumePendingSummarizations } from "./summarization.js";
+import { resumePendingChapters } from "./chapters.js";
 import { config } from "./utils/config.js";
 import { dbReady } from "./db.js";
 
@@ -61,6 +62,9 @@ registerRoutes(app).then(server => {
       );
       resumePendingSummarizations().catch((err) =>
         console.error("[Startup] Could not resume summarizations:", err)
+      );
+      resumePendingChapters().catch((err) =>
+        console.error("[Startup] Could not resume chapters:", err)
       );
     });
   });

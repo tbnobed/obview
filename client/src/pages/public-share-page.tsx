@@ -30,6 +30,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TranscriptView from "@/components/media/transcript-view";
 import SynopsisView from "@/components/media/synopsis-view";
+import ChaptersView from "@/components/media/chapters-view";
 import {
   AlertCircle,
   Download,
@@ -1176,6 +1177,14 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                     Synopsis
                   </TabsTrigger>
                 )}
+                {(isVideo || isAudio) && (
+                  <TabsTrigger
+                    value="chapters"
+                    className="text-xs px-3"
+                  >
+                    Chapters
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
 
@@ -1534,6 +1543,24 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   apiBase={`/api/share/${token}`}
                   readOnly
                   queryKey={["share-transcript", token, file.id]}
+                />
+              </TabsContent>
+            )}
+
+            {(isVideo || isAudio) && (
+              <TabsContent
+                value="chapters"
+                className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
+              >
+                <ChaptersView
+                  fileId={file.id}
+                  apiBase={`/api/share/${token}`}
+                  readOnly
+                  queryKey={["share-transcript", token, file.id]}
+                  onSeek={(time: number) => {
+                    const mediaEl = document.querySelector<HTMLVideoElement | HTMLAudioElement>("video, audio");
+                    if (mediaEl) mediaEl.currentTime = time;
+                  }}
                 />
               </TabsContent>
             )}

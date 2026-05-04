@@ -52,6 +52,15 @@ Preferred communication style: Simple, everyday language.
 - **UI**: Synopsis card at the top of the Transcript tab with regenerate button and live status (pending/processing/completed/failed)
 - **Configuration**: `SUMMARIZATION_ENABLED`, `LLAMA_MODEL`, `LLAMA_THREADS`, `LLAMA_MODELS_DIR` env vars; Docker volume `llama_models` persists the downloaded GGUF model
 
+### AI Auto-Chapters
+- **Engine**: Same `node-llama-cpp` + local GGUF model as synopsis
+- **Pipeline**: After transcription completes, `generateChaptersForFile` is auto-triggered alongside summarization. The LLM receives timestamped transcript segments and identifies 3–12 logical chapter boundaries (topic shifts, scene changes)
+- **Data**: Stored as a JSON array of `{ start: number, title: string, summary?: string }` in `transcripts.chapters`, with `chapters_status`, `chapters_error`, `chapters_model`, `chapters_processed_at` columns
+- **API**: `POST /api/files/:id/chapters/regenerate` triggers (re)generation
+- **UI**: Chapters tab in media player and both public share pages. Each chapter is a clickable row showing timestamp + title + summary; clicking seeks the video to that chapter's start time
+- **Configuration**: `CHAPTERS_ENABLED` env var (falls back to `SUMMARIZATION_ENABLED` if unset). Uses the same `LLAMA_MODEL`, `LLAMA_THREADS`, `LLAMA_MODELS_DIR` settings
+- **Migration**: `0022_add_chapters.sql`
+
 ### Key Features Implementation
 - **Media Timeline Comments**: Timestamped comments system allowing precise feedback on video content
 - **Approval Workflow**: Request changes or approve functionality with threaded comment support

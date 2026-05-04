@@ -79,6 +79,11 @@ app.use((req, res, next) => {
       .catch((err) =>
         console.error("[Startup] Could not resume summarizations:", err)
       );
+    import("./chapters")
+      .then(({ resumePendingChapters }) => resumePendingChapters())
+      .catch((err) =>
+        console.error("[Startup] Could not resume chapters:", err)
+      );
     // Resume any video processing jobs interrupted by the previous shutdown.
     import("./routes")
       .then(({ resumeStuckVideoProcessing }) => resumeStuckVideoProcessing())
