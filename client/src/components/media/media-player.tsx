@@ -1909,7 +1909,7 @@ export default function MediaPlayer({
                       onClick={() => setIsVersionDialogOpen(true)}
                       title="Upload new version"
                     >
-                      <UploadVersionIcon className="h-5 w-5" />
+                      <UploadVersionIcon className="h-[22px] w-[22px]" />
                     </Button>
                     <ShareLinkButton 
                       fileId={file.id} 
@@ -1927,7 +1927,7 @@ export default function MediaPlayer({
                       disabled={approveMutation.isPending}
                       title="Request changes"
                     >
-                      <RequestChangesIcon className="h-5 w-5" />
+                      <RequestChangesIcon className="h-[22px] w-[22px]" />
                     </Button>
                     <Button 
                       variant="ghost"
@@ -1937,7 +1937,7 @@ export default function MediaPlayer({
                       disabled={approveMutation.isPending}
                       title="Approve"
                     >
-                      <ApproveIcon className="h-5 w-5" />
+                      <ApproveIcon className="h-[22px] w-[22px]" />
                     </Button>
 
                     {(user?.role === 'admin' || user?.role === 'editor') && project && (
@@ -1953,7 +1953,7 @@ export default function MediaPlayer({
                           {isUpdatingStatus ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <MarkReviewIcon className="h-5 w-5" />
+                            <MarkReviewIcon className="h-[22px] w-[22px]" />
                           )}
                         </Button>
                       </>
