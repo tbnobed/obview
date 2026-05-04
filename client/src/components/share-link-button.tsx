@@ -154,7 +154,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
         data-variant-type={variant}
         title={compact ? "Share this file" : undefined}
       >
-        <ShareFileIcon className={compact ? "h-4 w-4" : "h-4 w-4"} />
+        <ShareFileIcon className={compact ? "h-5 w-5" : "h-5 w-5"} />
         {!compact && <span className="text-inherit">Share</span>}
       </Button>
 
