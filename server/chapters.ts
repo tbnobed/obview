@@ -29,18 +29,25 @@ function buildChaptersPrompt(
     segText += line;
   }
 
+  const lastSeg = segments[segments.length - 1];
+  const totalDuration = lastSeg ? formatTimestamp(lastSeg.end) : "unknown";
+
   return [
-    "You will receive the timestamped transcript of a video. Your task is to divide it into logical chapters.",
+    "You will receive the timestamped transcript of a video. Your task is to divide the ENTIRE video into logical chapters.",
     "Each chapter marks a distinct topic, scene, or shift in the conversation.",
+    `The video is ${totalDuration} long. You MUST cover the full duration from start to finish.`,
     "",
     "Rules:",
     "- Output ONLY a JSON array. No other text, no markdown fences, no explanation.",
     '- Each element: {"start": <seconds as number>, "title": "<short title>", "summary": "<1 sentence>"}',
     "- The first chapter MUST start at 0.",
+    `- The last chapter MUST cover content near the end of the video (around ${totalDuration}).`,
     "- Use the timestamps from the transcript to determine where each chapter begins.",
-    "- Create between 3 and 12 chapters depending on the content length and variety.",
+    "- Create between 3 and 20 chapters depending on the content length and variety.",
+    "- For videos over 30 minutes, aim for at least 8-12 chapters spread across the full runtime.",
     "- Titles should be concise (2-6 words).",
     "- Do not invent content not present in the transcript.",
+    "- Distribute chapters evenly — do NOT cluster them all in the first few minutes.",
     "",
     "Transcript:",
     segText,
