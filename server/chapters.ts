@@ -4,8 +4,6 @@ import { prompt, enqueueJob, clearSession, getModelName, logBackend, isRemoteMod
 const CHAPTERS_ENABLED =
   (process.env.CHAPTERS_ENABLED || process.env.SUMMARIZATION_ENABLED || "true").toLowerCase() !== "false";
 
-const LOCAL_MAX_CHARS = 14000;
-const REMOTE_MAX_CHARS = 80000;
 
 function formatTimestamp(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -15,42 +13,48 @@ function formatTimestamp(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function condensedTimeline(
+  segments: Array<{ start: number; end: number; text: string }>
+): string {
+  const lastSeg = segments[segments.length - 1];
+  const totalSec = lastSeg ? lastSeg.end : 0;
+  const windowSec = totalSec > 1800 ? 120 : totalSec > 600 ? 60 : 30;
+  const windows: Map<number, string[]> = new Map();
+  for (const seg of segments) {
+    const bucket = Math.floor(seg.start / windowSec) * windowSec;
+    if (!windows.has(bucket)) windows.set(bucket, []);
+    windows.get(bucket)!.push(seg.text.trim());
+  }
+  const lines: string[] = [];
+  for (const [sec, texts] of [...windows.entries()].sort((a, b) => a[0] - b[0])) {
+    const combined = texts.join(" ");
+    const snippet = combined.length > 200 ? combined.slice(0, 200) + "..." : combined;
+    lines.push(`[${formatTimestamp(sec)}] ${snippet}`);
+  }
+  return lines.join("\n");
+}
+
 function buildChaptersPrompt(
   segments: Array<{ start: number; end: number; text: string }>
 ): string {
-  const MAX_CHARS = isRemoteMode() ? REMOTE_MAX_CHARS : LOCAL_MAX_CHARS;
-  let segText = "";
-  for (const seg of segments) {
-    const line = `[${formatTimestamp(seg.start)}] ${seg.text.trim()}\n`;
-    if (segText.length + line.length > MAX_CHARS) {
-      segText += "\n[...truncated]\n";
-      break;
-    }
-    segText += line;
-  }
-
   const lastSeg = segments[segments.length - 1];
   const totalDuration = lastSeg ? formatTimestamp(lastSeg.end) : "unknown";
   const totalSeconds = lastSeg ? Math.round(lastSeg.end) : 0;
+  const timeline = condensedTimeline(segments);
 
   return [
-    `Below is the timestamped transcript of a ${totalDuration} video. After the transcript you will find your task.`,
+    `Below is a condensed timeline of a ${totalDuration} video (${totalSeconds} seconds total). Each line shows the timestamp and a summary of what is being said at that point.`,
     "",
-    "--- TRANSCRIPT START ---",
-    segText,
-    "--- TRANSCRIPT END ---",
+    timeline,
     "",
-    `The video above is ${totalDuration} long (${totalSeconds} seconds). Divide it into logical chapters covering the ENTIRE video from 0 to ${totalSeconds} seconds.`,
+    `Task: Divide this ${totalDuration} video into chapters. The chapters must span the ENTIRE video from 0:00 to ${totalDuration}.`,
     "",
-    "Rules:",
-    "- Output ONLY a JSON array. No markdown fences, no explanation, no extra text.",
-    '- Each element: {"start": <seconds as number>, "title": "<short title>", "summary": "<1 sentence>"}',
-    `- First chapter must start at 0. Last chapter must start after ${Math.round(totalSeconds * 0.8)} seconds.`,
-    "- Create 8-15 chapters, spread evenly across the full runtime.",
-    "- Titles: 2-6 words. Summaries: 1 sentence.",
-    "- Use the [mm:ss] timestamps from the transcript to set each chapter's start time in seconds.",
+    "Output ONLY a JSON array. No markdown, no explanation.",
+    'Each element: {"start": <seconds as integer>, "title": "<2-6 word title>", "summary": "<1 sentence>"}',
+    `First chapter starts at 0. Last chapter must start after ${formatTimestamp(Math.round(totalSeconds * 0.75))}.`,
+    "Create 8-15 chapters based on topic changes in the timeline above.",
     "",
-    "Output the JSON array now:",
+    "JSON array:",
   ].join("\n");
 }
 
@@ -170,8 +174,7 @@ async function runChaptersJob(fileId: number): Promise<void> {
   try {
     const basePrompt = buildChaptersPrompt(transcript.segments);
     const promptLen = basePrompt.length;
-    const maxChars = isRemoteMode() ? REMOTE_MAX_CHARS : LOCAL_MAX_CHARS;
-    console.log(`[Chapters] Generating chapters for file ${fileId} (prompt ${promptLen} chars, limit ${maxChars}, ${isRemoteMode() ? "remote" : "local"})...`);
+    console.log(`[Chapters] Generating chapters for file ${fileId} (prompt ${promptLen} chars, ${isRemoteMode() ? "remote" : "local"})...`);
 
     let chapters: Chapter[] | null = null;
     const MAX_ATTEMPTS = 2;
