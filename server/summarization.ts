@@ -19,6 +19,8 @@ const MODEL_URLS: Record<string, string> = {
     "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
   "qwen2.5-1.5b-instruct.Q4_K_M.gguf":
     "https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
+  "qwen2.5-3b-instruct.Q4_K_M.gguf":
+    "https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf",
 };
 
 const downloadPromises = new Map<string, Promise<string>>();

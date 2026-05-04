@@ -19,6 +19,8 @@ const MODEL_URLS: Record<string, string> = {
     "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
   "qwen2.5-1.5b-instruct.Q4_K_M.gguf":
     "https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
+  "qwen2.5-3b-instruct.Q4_K_M.gguf":
+    "https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf",
 };
 
 const downloadPromises = new Map<string, Promise<string>>();
@@ -209,15 +211,34 @@ function parseChaptersResponse(raw: string): Chapter[] {
     const repaired = repairJson(text);
     try {
       parsed = JSON.parse(repaired);
-    } catch (e2: any) {
-      throw new Error(
-        `Failed to parse chapters JSON even after repair: ${e2.message}\nRaw output (first 500 chars): ${raw.slice(0, 500)}`
-      );
+    } catch {
+      const objects = text.match(/\{[^{}]+\}/g);
+      if (objects && objects.length > 0) {
+        try {
+          parsed = JSON.parse("[" + objects.join(",") + "]");
+        } catch (e3: any) {
+          const repairedObjects = objects.map((o) => repairJson(o));
+          try {
+            parsed = JSON.parse("[" + repairedObjects.join(",") + "]");
+          } catch (e4: any) {
+            throw new Error(
+              `Failed to parse chapters JSON: ${e4.message}\nRaw output (first 500 chars): ${raw.slice(0, 500)}`
+            );
+          }
+        }
+      } else {
+        throw new Error(
+          `Failed to parse chapters JSON — no objects found\nRaw output (first 500 chars): ${raw.slice(0, 500)}`
+        );
+      }
     }
   }
 
-  if (!Array.isArray(parsed) || parsed.length === 0) {
-    throw new Error("LLM returned empty or non-array chapters");
+  if (!Array.isArray(parsed)) {
+    parsed = [parsed];
+  }
+  if (parsed.length === 0) {
+    throw new Error("LLM returned empty chapters");
   }
 
   const chapters: Chapter[] = [];
