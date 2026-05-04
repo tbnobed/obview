@@ -53,8 +53,7 @@ import { formatTimeAgo } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TranscriptView from "@/components/media/transcript-view";
-import SynopsisView from "@/components/media/synopsis-view";
-import ChaptersView from "@/components/media/chapters-view";
+import AIInsightsView from "@/components/media/ai-insights-view";
 import WatermarkOverlay from "@/components/media/watermark-overlay";
 
 type ShareInfo = {
@@ -1480,7 +1479,7 @@ function FileViewer({
             const allowed = new Set<string>(["comments"]);
             if (supportsTranscript) {
               allowed.add("transcript");
-              allowed.add("synopsis");
+              allowed.add("ai");
             }
             return t && allowed.has(t) ? t : "comments";
           })()}
@@ -1502,13 +1501,8 @@ function FileViewer({
                 </TabsTrigger>
               )}
               {supportsTranscript && (
-                <TabsTrigger value="synopsis" className="text-xs px-3">
-                  Synopsis
-                </TabsTrigger>
-              )}
-              {supportsTranscript && (
-                <TabsTrigger value="chapters" className="text-xs px-3">
-                  Chapters
+                <TabsTrigger value="ai" className="text-xs px-3">
+                  AI
                 </TabsTrigger>
               )}
             </TabsList>
@@ -1869,24 +1863,10 @@ function FileViewer({
 
           {supportsTranscript && (
             <TabsContent
-              value="synopsis"
+              value="ai"
               className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
             >
-              <SynopsisView
-                fileId={file.id}
-                apiBase={apiBase}
-                readOnly
-                queryKey={transcriptQueryKey}
-              />
-            </TabsContent>
-          )}
-
-          {supportsTranscript && (
-            <TabsContent
-              value="chapters"
-              className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
-            >
-              <ChaptersView
+              <AIInsightsView
                 fileId={file.id}
                 apiBase={apiBase}
                 readOnly

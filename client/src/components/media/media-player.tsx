@@ -11,8 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import TimelineComments from "@/components/media/timeline-comments";
 import TranscriptView from "@/components/media/transcript-view";
-import SynopsisView from "@/components/media/synopsis-view";
-import ChaptersView from "@/components/media/chapters-view";
+import AIInsightsView from "@/components/media/ai-insights-view";
 import { DownloadButton } from "@/components/download-button";
 import { ExportMarkersButton } from "@/components/export-markers-button";
 import { AnnotationCanvas, AnnotationOverlay, type Annotation } from "@/components/media/annotation-canvas";
@@ -2185,10 +2184,7 @@ export default function MediaPlayer({
                   <TabsTrigger value="transcript" onClick={() => setShowCommentsTab(false)}>Transcript</TabsTrigger>
                 )}
                 {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="synopsis" onClick={() => setShowCommentsTab(false)}>Synopsis</TabsTrigger>
-                )}
-                {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="chapters" onClick={() => setShowCommentsTab(false)}>Chapters</TabsTrigger>
+                  <TabsTrigger value="ai" onClick={() => setShowCommentsTab(false)}>AI</TabsTrigger>
                 )}
                 <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
               </TabsList>
@@ -2206,13 +2202,8 @@ export default function MediaPlayer({
                   </TabsTrigger>
                 )}
                 {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="synopsis" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
-                    Synopsis
-                  </TabsTrigger>
-                )}
-                {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="chapters" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
-                    Chapters
+                  <TabsTrigger value="ai" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
+                    AI
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="versions" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
@@ -2253,14 +2244,8 @@ export default function MediaPlayer({
             </TabsContent>
             
             {(file.fileType === "video" || file.fileType === "audio") && (
-              <TabsContent value="synopsis" className="flex-1 min-h-0 p-0 overflow-hidden">
-                <SynopsisView fileId={file.id} />
-              </TabsContent>
-            )}
-
-            {(file.fileType === "video" || file.fileType === "audio") && (
-              <TabsContent value="chapters" className="flex-1 min-h-0 p-0 overflow-hidden">
-                <ChaptersView
+              <TabsContent value="ai" className="flex-1 min-h-0 p-0 overflow-hidden">
+                <AIInsightsView
                   fileId={file.id}
                   onSeek={(time: number) => {
                     const mediaElement = videoRef.current || audioRef.current;

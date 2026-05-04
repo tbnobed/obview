@@ -29,8 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TranscriptView from "@/components/media/transcript-view";
-import SynopsisView from "@/components/media/synopsis-view";
-import ChaptersView from "@/components/media/chapters-view";
+import AIInsightsView from "@/components/media/ai-insights-view";
 import {
   AlertCircle,
   Download,
@@ -1140,7 +1139,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           data-testid="share-sidebar"
         >
           <Tabs
-            defaultValue={viewOnly ? (isVideo || isAudio ? "transcript" : "synopsis") : "comments"}
+            defaultValue={viewOnly ? "transcript" : "comments"}
             className="flex-1 min-h-0 flex flex-col"
           >
             <div className="px-3 py-2.5 border-b border-neutral-200 dark:border-gray-800">
@@ -1170,19 +1169,11 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 )}
                 {(isVideo || isAudio) && (
                   <TabsTrigger
-                    value="synopsis"
+                    value="ai"
                     className="text-xs px-3"
-                    data-testid="tab-synopsis"
+                    data-testid="tab-ai"
                   >
-                    Synopsis
-                  </TabsTrigger>
-                )}
-                {(isVideo || isAudio) && (
-                  <TabsTrigger
-                    value="chapters"
-                    className="text-xs px-3"
-                  >
-                    Chapters
+                    AI
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -1535,24 +1526,10 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
 
             {(isVideo || isAudio) && (
               <TabsContent
-                value="synopsis"
+                value="ai"
                 className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
               >
-                <SynopsisView
-                  fileId={file.id}
-                  apiBase={`/api/share/${token}`}
-                  readOnly
-                  queryKey={["share-transcript", token, file.id]}
-                />
-              </TabsContent>
-            )}
-
-            {(isVideo || isAudio) && (
-              <TabsContent
-                value="chapters"
-                className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
-              >
-                <ChaptersView
+                <AIInsightsView
                   fileId={file.id}
                   apiBase={`/api/share/${token}`}
                   readOnly
