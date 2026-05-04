@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ShareIcon, CopyIcon, CheckIcon, Mail, Send, Loader2 } from "lucide-react";
+import { ShareFileIcon } from "@/components/media/action-icons";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -153,7 +154,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
         data-variant-type={variant}
         title={compact ? "Share this file" : undefined}
       >
-        <ShareIcon className={compact ? "h-3 w-3" : "h-4 w-4"} />
+        <ShareFileIcon className={compact ? "h-4 w-4" : "h-4 w-4"} />
         {!compact && <span className="text-inherit">Share</span>}
       </Button>
 

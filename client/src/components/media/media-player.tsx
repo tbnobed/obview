@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2, Columns2 } from "lucide-react";
+import { UploadVersionIcon, ShareFileIcon, RequestChangesIcon, ApproveIcon, MarkReviewIcon } from "@/components/media/action-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1904,18 +1905,18 @@ export default function MediaPlayer({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800"
+                      className="h-8 w-8 p-0 text-teal-600 hover:text-teal-700 hover:bg-teal-50 dark:text-teal-400 dark:hover:text-teal-300 dark:hover:bg-teal-500/10"
                       onClick={() => setIsVersionDialogOpen(true)}
                       title="Upload new version"
                     >
-                      <FilePlus2 className="h-4 w-4" />
+                      <UploadVersionIcon className="h-[18px] w-[18px]" />
                     </Button>
                     <ShareLinkButton 
                       fileId={file.id} 
                       size="sm"
                       variant="ghost"
                       compact={true}
-                      className="h-8 w-8 p-0 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800"
+                      className="h-8 w-8 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10"
                     />
 
                     <div className="mx-1 h-5 w-px bg-neutral-200 dark:bg-gray-700" aria-hidden />
@@ -1928,7 +1929,7 @@ export default function MediaPlayer({
                       disabled={approveMutation.isPending}
                       title="Request changes"
                     >
-                      <AlertCircle className="h-4 w-4" />
+                      <RequestChangesIcon className="h-[18px] w-[18px]" />
                       <span className="text-xs font-medium">Request changes</span>
                     </Button>
                     <Button 
@@ -1938,7 +1939,7 @@ export default function MediaPlayer({
                       disabled={approveMutation.isPending}
                       title="Approve"
                     >
-                      <Check className="h-4 w-4" />
+                      <ApproveIcon className="h-[18px] w-[18px]" />
                       <span className="text-xs font-medium">Approve</span>
                     </Button>
 
@@ -1948,7 +1949,7 @@ export default function MediaPlayer({
                         <Button 
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800 disabled:opacity-40"
+                          className="h-8 w-8 p-0 text-teal-600 hover:text-teal-700 hover:bg-teal-50 dark:text-teal-400 dark:hover:text-teal-300 dark:hover:bg-teal-500/10 disabled:opacity-40"
                           onClick={handleMarkAsInReview}
                           disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
                           title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
@@ -1956,7 +1957,7 @@ export default function MediaPlayer({
                           {isUpdatingStatus ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <ClipboardCheck className="h-4 w-4" />
+                            <MarkReviewIcon className="h-[18px] w-[18px]" />
                           )}
                         </Button>
                       </>
@@ -2135,20 +2136,20 @@ export default function MediaPlayer({
             <DropdownMenuItem
               onClick={handleRequestChanges}
               disabled={approveMutation.isPending}
-              className="text-orange-600 focus:text-orange-600"
+              className="text-amber-600 focus:text-amber-600"
               data-testid="mobile-request-changes"
             >
-              <AlertCircle className="h-4 w-4 mr-2" />
+              <RequestChangesIcon className="h-4 w-4 mr-2" />
               Request Changes
             </DropdownMenuItem>
             
             <DropdownMenuItem
               onClick={handleApprove}
               disabled={approveMutation.isPending}
-              className="text-green-600 focus:text-green-600"
+              className="text-emerald-600 focus:text-emerald-600"
               data-testid="mobile-approve"
             >
-              <Check className="h-4 w-4 mr-2" />
+              <ApproveIcon className="h-4 w-4 mr-2" />
               Approve
             </DropdownMenuItem>
             
@@ -2156,13 +2157,13 @@ export default function MediaPlayer({
               <DropdownMenuItem
                 onClick={handleMarkAsInReview}
                 disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
-                className="text-blue-600 focus:text-blue-600"
+                className="text-teal-600 focus:text-teal-600"
                 data-testid="mobile-mark-in-review"
               >
                 {isUpdatingStatus ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <ClipboardCheck className="h-4 w-4 mr-2" />
+                  <MarkReviewIcon className="h-4 w-4 mr-2" />
                 )}
                 Mark as In Review
               </DropdownMenuItem>
@@ -2298,7 +2299,7 @@ export default function MediaPlayer({
                           className="h-7 text-xs"
                           onClick={() => setIsVersionDialogOpen(true)}
                         >
-                          <Upload className="h-3 w-3 mr-1" /> Upload New Version
+                          <UploadVersionIcon className="h-3.5 w-3.5 mr-1" /> Upload New Version
                         </Button>
                       </div>
                     </div>
