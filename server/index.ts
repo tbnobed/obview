@@ -73,6 +73,9 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    import("./llm-client")
+      .then(({ logBackend }) => logBackend())
+      .catch(() => {});
     // Resume any summarization jobs interrupted by the previous shutdown.
     import("./summarization")
       .then(({ resumePendingSummarizations }) => resumePendingSummarizations())

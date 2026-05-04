@@ -5,6 +5,7 @@ import { setupAuth } from "./auth.js";
 import { registerRoutes, resumeStuckVideoProcessing } from "./routes.js";
 import { resumePendingSummarizations } from "./summarization.js";
 import { resumePendingChapters } from "./chapters.js";
+import { logBackend as logLLMBackend } from "./llm-client.js";
 import { config } from "./utils/config.js";
 import { dbReady } from "./db.js";
 
@@ -53,6 +54,7 @@ registerRoutes(app).then(server => {
   server.listen(config.port, '0.0.0.0', () => {
     console.log(`🚀 Production server running on port ${config.port}`);
     console.log(`📁 Static files served from: ${staticPath}`);
+    logLLMBackend();
     // Wait for the lazy DB connection to finish initializing, THEN resume any
     // jobs that were interrupted by the previous shutdown and recover videos
     // that silently failed quality encoding before this fix landed.
