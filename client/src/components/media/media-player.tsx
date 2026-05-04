@@ -1905,42 +1905,39 @@ export default function MediaPlayer({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
+                      className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
                       onClick={() => setIsVersionDialogOpen(true)}
                       title="Upload new version"
                     >
                       <UploadVersionIcon className="h-5 w-5" />
-                      <span className="text-xs font-medium text-gray-200">Upload New Version</span>
                     </Button>
                     <ShareLinkButton 
                       fileId={file.id} 
                       size="sm"
                       variant="ghost"
-                      compact={false}
-                      className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
+                      compact={true}
+                      className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
                     />
 
                     <Button 
                       variant="ghost"
                       size="sm" 
-                      className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
+                      className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
                       onClick={handleRequestChanges}
                       disabled={approveMutation.isPending}
                       title="Request changes"
                     >
                       <RequestChangesIcon className="h-5 w-5" />
-                      <span className="text-xs font-medium text-gray-200">Request changes</span>
                     </Button>
                     <Button 
                       variant="ghost"
                       size="sm" 
-                      className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
+                      className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
                       onClick={handleApprove}
                       disabled={approveMutation.isPending}
                       title="Approve"
                     >
                       <ApproveIcon className="h-5 w-5" />
-                      <span className="text-xs font-medium text-gray-200">Approve</span>
                     </Button>
 
                     {(user?.role === 'admin' || user?.role === 'editor') && project && (
@@ -1948,7 +1945,7 @@ export default function MediaPlayer({
                         <Button 
                           variant="ghost"
                           size="sm"
-                          className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0 disabled:opacity-40"
+                          className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0 disabled:opacity-40"
                           onClick={handleMarkAsInReview}
                           disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
                           title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
@@ -1958,7 +1955,6 @@ export default function MediaPlayer({
                           ) : (
                             <MarkReviewIcon className="h-5 w-5" />
                           )}
-                          <span className="text-xs font-medium text-gray-200">Mark ready for review</span>
                         </Button>
                       </>
                     )}
