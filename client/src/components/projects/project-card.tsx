@@ -308,11 +308,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             }`}>
               <PlayCircle className="h-8 w-8 text-white" />
             </div>
-            <div className={`absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded transition-opacity ${
-              isScrubbing ? 'opacity-50' : 'opacity-100'
-            }`}>
-              {project.latestVideoFile.filename}
-            </div>
           </div>
         ) : (
           <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-t-none mx-2.5 mb-1 flex items-center justify-center">
@@ -324,12 +319,11 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         )}
         
         <CardContent className="px-3 py-2.5">
-          <p className={cn(
-            "text-neutral-600 text-xs mb-2.5",
-            project.description ? "line-clamp-2" : "italic text-neutral-400"
-          )}>
-            {project.description || "No description provided"}
-          </p>
+          {project.latestVideoFile && (
+            <p className="text-neutral-600 dark:text-neutral-300 text-xs mb-2.5 line-clamp-1" title={project.latestVideoFile.filename}>
+              {project.latestVideoFile.filename}
+            </p>
+          )}
           
           <div className="flex justify-between items-center text-xs text-neutral-500">
             <div>
