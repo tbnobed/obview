@@ -1184,15 +1184,20 @@ export default function MediaPlayer({
     }
   };
 
-  // Format time (HH:MM:SS)
+  // Format time as SMPTE timecode (HH:MM:SS:FF)
   const formatTime = (time: number) => {
-    if (time == null || isNaN(time)) return '00:00:00';
-    
+    if (time == null || isNaN(time)) return '00:00:00:00';
+
+    const fps = frameRate && frameRate > 0 ? frameRate : 30;
     const hours = Math.floor(time / 3600);
     const minutes = Math.floor((time % 3600) / 60);
     const seconds = Math.floor(time % 60);
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const frames = Math.min(
+      Math.floor((time - Math.floor(time)) * fps),
+      Math.max(0, Math.round(fps) - 1)
+    );
+
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
   };
 
   // Handle media events
