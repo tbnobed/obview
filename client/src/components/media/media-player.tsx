@@ -1905,40 +1905,42 @@ export default function MediaPlayer({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 rounded-lg bg-gray-800/90 hover:bg-gray-700 dark:bg-gray-800/90 dark:hover:bg-gray-700"
+                      className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
                       onClick={() => setIsVersionDialogOpen(true)}
                       title="Upload new version"
                     >
                       <UploadVersionIcon className="h-5 w-5" />
+                      <span className="text-xs font-medium text-gray-200">Upload New Version</span>
                     </Button>
                     <ShareLinkButton 
                       fileId={file.id} 
                       size="sm"
                       variant="ghost"
-                      compact={true}
-                      className="h-8 w-8 p-0 rounded-lg bg-gray-800/90 hover:bg-gray-700 dark:bg-gray-800/90 dark:hover:bg-gray-700"
+                      compact={false}
+                      className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
                     />
 
                     <Button 
-                      variant="outline"
+                      variant="ghost"
                       size="sm" 
-                      className="h-8 px-2.5 gap-1.5 rounded-lg border-gray-600 text-amber-400 bg-transparent hover:bg-gray-800/50 dark:border-gray-600 dark:text-amber-400 dark:bg-transparent dark:hover:bg-gray-800/50"
+                      className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
                       onClick={handleRequestChanges}
                       disabled={approveMutation.isPending}
                       title="Request changes"
                     >
                       <RequestChangesIcon className="h-5 w-5" />
-                      <span className="text-xs font-medium">Request changes</span>
+                      <span className="text-xs font-medium text-gray-200">Request changes</span>
                     </Button>
                     <Button 
+                      variant="ghost"
                       size="sm" 
-                      className="h-8 px-3 gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                      className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
                       onClick={handleApprove}
                       disabled={approveMutation.isPending}
                       title="Approve"
                     >
                       <ApproveIcon className="h-5 w-5" />
-                      <span className="text-xs font-medium">Approve</span>
+                      <span className="text-xs font-medium text-gray-200">Approve</span>
                     </Button>
 
                     {(user?.role === 'admin' || user?.role === 'editor') && project && (
@@ -1946,7 +1948,7 @@ export default function MediaPlayer({
                         <Button 
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 rounded-lg bg-gray-800/90 hover:bg-gray-700 dark:bg-gray-800/90 dark:hover:bg-gray-700 disabled:opacity-40"
+                          className="h-8 px-3 gap-1.5 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0 disabled:opacity-40"
                           onClick={handleMarkAsInReview}
                           disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
                           title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
@@ -1956,6 +1958,7 @@ export default function MediaPlayer({
                           ) : (
                             <MarkReviewIcon className="h-5 w-5" />
                           )}
+                          <span className="text-xs font-medium text-gray-200">Mark ready for review</span>
                         </Button>
                       </>
                     )}

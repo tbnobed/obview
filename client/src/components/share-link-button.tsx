@@ -150,12 +150,12 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
         variant={variant} 
         size={compact ? "sm" : size}
         onClick={handleOpenDialog}
-        className={`flex items-center ${compact ? 'gap-0 p-1' : 'gap-2'} ${variant === 'outline' ? 'dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/50 dark:hover:text-gray-400' : 'dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white'} ${className || ''}`}
+        className={`flex items-center ${compact ? 'gap-0 p-1' : 'gap-1.5'} ${className || ''}`}
         data-variant-type={variant}
         title={compact ? "Share this file" : undefined}
       >
-        <ShareFileIcon className={compact ? "h-5 w-5" : "h-5 w-5"} />
-        {!compact && <span className="text-inherit">Share</span>}
+        <ShareFileIcon className="h-5 w-5" />
+        {!compact && <span className="text-xs font-medium text-gray-200">Share File</span>}
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
