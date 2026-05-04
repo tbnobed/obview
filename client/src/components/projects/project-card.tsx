@@ -117,18 +117,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     });
   };
   
-  // Determine status badge color
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <Badge className="bg-green-600">Approved</Badge>;
-      case 'in_review':
-        return <Badge className="bg-blue-600">In Review</Badge>;
-      case 'in_progress':
-      default:
-        return <Badge className="bg-yellow-600">In Progress</Badge>;
-    }
-  };
 
   // Whole-card drag. We attach drag handlers on the Card and navigate
   // programmatically on click. We deliberately do NOT wrap this in a
@@ -174,7 +162,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         <CardHeader className="pb-1 px-3 pt-3">
           <div className="flex justify-between items-start gap-2">
             <CardTitle className="text-sm font-semibold line-clamp-1">{project.name}</CardTitle>
-            {getStatusBadge(project.status)}
           </div>
           {/* Owner row: every card shows who owns it via a colored avatar
               chip. Yours show a "You" chip in the brand color so they
