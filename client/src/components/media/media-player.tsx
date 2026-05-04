@@ -1905,7 +1905,7 @@ export default function MediaPlayer({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
+                      className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
                       onClick={() => setIsVersionDialogOpen(true)}
                       title="Upload new version"
                     >
@@ -1916,13 +1916,13 @@ export default function MediaPlayer({
                       size="sm"
                       variant="ghost"
                       compact={true}
-                      className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
+                      className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
                     />
 
                     <Button 
                       variant="ghost"
                       size="sm" 
-                      className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
+                      className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
                       onClick={handleRequestChanges}
                       disabled={approveMutation.isPending}
                       title="Request changes"
@@ -1932,7 +1932,7 @@ export default function MediaPlayer({
                     <Button 
                       variant="ghost"
                       size="sm" 
-                      className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0"
+                      className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
                       onClick={handleApprove}
                       disabled={approveMutation.isPending}
                       title="Approve"
@@ -1945,7 +1945,7 @@ export default function MediaPlayer({
                         <Button 
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 rounded-lg bg-[#2a2d35] hover:bg-[#35383f] border-0 disabled:opacity-40"
+                          className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0 disabled:opacity-40"
                           onClick={handleMarkAsInReview}
                           disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
                           title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
