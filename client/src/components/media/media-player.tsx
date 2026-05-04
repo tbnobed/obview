@@ -210,15 +210,12 @@ export default function MediaPlayer({
     onSuccess: () => {
       // Invalidate approvals query to update the file approval status
       queryClient.invalidateQueries({ queryKey: ['/api/files', file?.id, 'approvals'] });
-      
-      // Also invalidate project query to update project badge status
+
+      // Refresh the per-file approval map used by the media card grid badges
       if (file?.projectId) {
-        // Invalidate specific project
-        queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}`] });
-        // Also invalidate the projects list
-        queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/projects', file.projectId, 'file-approvals'] });
       }
-      
+
       toast({
         title: "File approval updated",
         description: "Your approval status has been saved.",

@@ -1712,10 +1712,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[DEBUG] Getting files for project ID: ${projectId}`);
       const files = await storage.getFilesByProject(projectId);
       console.log(`[DEBUG] Found ${files.length} files for project ID ${projectId}`);
-      
+
       res.json(files);
     } catch (error) {
       console.error(`[ERROR] Failed to get files for project ${req.params.projectId}:`, error);
+      next(error);
+    }
+  });
+
+  // Get aggregated per-file approval status for every file in a project.
+  // Returns a record mapping fileId -> "approved" | "changes_requested" | null.
+  // Aggregation rule (Frame.io style): if any reviewer requested changes the
+  // file is "changes_requested"; otherwise if any reviewer approved it is
+  // "approved"; otherwise no status (null).
+  app.get("/api/projects/:projectId/file-approvals", hasProjectAccess, async (req, res, next) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const files = await storage.getFilesByProject(projectId);
+      const result: Record<number, "approved" | "changes_requested" | null> = {};
+      await Promise.all(
+        files.map(async (f) => {
+          const approvals = await storage.getApprovalsByFile(f.id);
+          if (approvals.some((a) => a.status === "changes_requested" || a.status === "requested_changes")) {
+            result[f.id] = "changes_requested";
+          } else if (approvals.some((a) => a.status === "approved")) {
+            result[f.id] = "approved";
+          } else {
+            result[f.id] = null;
+          }
+        })
+      );
+      res.json(result);
+    } catch (error) {
       next(error);
     }
   });
@@ -4227,34 +4255,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: userWithoutPassword,
       };
       
-      // If all editors have approved, update project status
-      if (validationResult.data.status === "approved") {
-        const project = await storage.getProject(file.projectId);
-        if (project) {
-          // Get project editors
-          const projectUsers = await storage.getProjectUsers(file.projectId);
-          const editorIds = projectUsers
-            .filter(pu => pu.role === "editor" || pu.role === "admin")
-            .map(pu => pu.userId);
-          
-          // Get approvals for this file
-          const approvals = await storage.getApprovalsByFile(fileId);
-          const approvedEditorIds = approvals
-            .filter(a => a.status === "approved")
-            .map(a => a.userId);
-          
-          // Check if all editors have approved
-          const allEditorsApproved = editorIds.every(id => approvedEditorIds.includes(id));
-          
-          if (allEditorsApproved) {
-            await storage.updateProject(file.projectId, { status: "approved" });
-          }
-        }
-      } else if (validationResult.data.status === "requested_changes") {
-        // If changes are requested, update project status
-        await storage.updateProject(file.projectId, { status: "in_progress" });
-      }
-      
+      // Approvals are tracked at the file level only.
+      // The parent project status is no longer auto-updated from file approvals.
+
       // Log activity
       await storage.logActivity({
         action: validationResult.data.status === "approved" ? "approve" : "request_changes",
@@ -4386,44 +4389,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: userWithoutPassword,
       };
       
-      // Update project status based on approval/rejection
-      if (validationResult.data.status === "approved") {
-        const project = await storage.getProject(file.projectId);
-        if (project) {
-          console.log(`Processing approval for project ${project.id}`);
-          
-          // Get project editors
-          const projectUsers = await storage.getProjectUsers(file.projectId);
-          const editorIds = projectUsers
-            .filter(pu => pu.role === "editor" || pu.role === "admin")
-            .map(pu => pu.userId);
-          
-          console.log(`Project has ${editorIds.length} editors that need to approve`);
-          
-          // Get approvals for this file
-          const approvals = await storage.getApprovalsByFile(fileId);
-          const approvedEditorIds = approvals
-            .filter(a => a.status === "approved")
-            .map(a => a.userId);
-          
-          console.log(`File has ${approvedEditorIds.length} editor approvals so far`);
-          
-          // Check if all editors have approved
-          const allEditorsApproved = editorIds.every(id => approvedEditorIds.includes(id));
-          
-          if (allEditorsApproved) {
-            console.log(`All editors have approved file ${fileId}, updating project status to 'approved'`);
-            await storage.updateProject(file.projectId, { status: "approved" });
-          } else {
-            console.log(`Not all editors have approved yet. Waiting for more approvals.`);
-          }
-        }
-      } else if (validationResult.data.status === "changes_requested") {
-        // If changes are requested, update project status to in_progress
-        console.log(`Changes requested for file ${fileId}, updating project status to 'in_progress'`);
-        await storage.updateProject(file.projectId, { status: "in_progress" });
-      }
-      
+      // Approvals are tracked at the file level only.
+      // The parent project status is no longer auto-updated from file approvals.
+
       // Log activity
       await storage.logActivity({
         action: validationResult.data.status === "approved" ? "approve" : "request_changes",

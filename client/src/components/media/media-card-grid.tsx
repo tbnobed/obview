@@ -69,9 +69,10 @@ interface MediaCardProps {
   onSelect: (fileId: number) => void;
   onMove?: (file: StorageFile) => void;
   versionCount?: number;
+  approvalStatus?: "approved" | "changes_requested" | null;
 }
 
-function MediaCard({ file, onSelect, onMove, versionCount = 1 }: MediaCardProps) {
+function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }: MediaCardProps) {
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -646,23 +647,45 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1 }: MediaCardProps)
           </h3>
           
           {/* Metadata */}
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <div className="flex items-center gap-1">
-              <span>{formatFileSize(file.fileSize)}</span>
+          <div className="flex items-center justify-between text-xs text-gray-400 gap-2">
+            <div className="flex items-center gap-1 min-w-0">
+              <span className="truncate">{formatFileSize(file.fileSize)}</span>
               <span>•</span>
-              <span>{formatTimeAgo(file.createdAt)}</span>
+              <span className="truncate">{formatTimeAgo(file.createdAt)}</span>
             </div>
-            
-            {/* Status Text */}
-            <Badge 
-              variant="outline" 
-              className={cn(
-                "text-xs border-0 text-white",
-                statusInfo.color
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Approval status (file-level) */}
+              {approvalStatus === "approved" && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                  data-testid={`approval-badge-${file.id}`}
+                >
+                  Approved
+                </Badge>
               )}
-            >
-              {statusInfo.text}
-            </Badge>
+              {approvalStatus === "changes_requested" && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 border-amber-500/30 bg-amber-500/10 text-amber-400"
+                  data-testid={`approval-badge-${file.id}`}
+                >
+                  Changes Requested
+                </Badge>
+              )}
+
+              {/* Processing/availability status */}
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs border-0 text-white",
+                  statusInfo.color
+                )}
+              >
+                {statusInfo.text}
+              </Badge>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -768,6 +791,14 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
     versionCounts.set(key, (versionCounts.get(key) || 0) + 1);
   }
 
+  const { data: fileApprovals } = useQuery<Record<number, "approved" | "changes_requested" | null>>({
+    queryKey: ['/api/projects', projectId, 'file-approvals'],
+    queryFn: ({ signal }) =>
+      apiRequest('GET', `/api/projects/${projectId}/file-approvals`, undefined, { signal }),
+    enabled: !!projectId,
+    staleTime: 10000,
+  });
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -794,6 +825,7 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
             onSelect={onSelectFile}
             onMove={onMoveFile}
             versionCount={versionCounts.get(`${file.projectId}::${file.filename}`) || 1}
+            approvalStatus={fileApprovals?.[file.id] ?? null}
           />
         ))}
       </div>

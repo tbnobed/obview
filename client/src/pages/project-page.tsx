@@ -389,7 +389,6 @@ export default function ProjectPage() {
                 <h1 className="text-sm font-semibold text-neutral-900 dark:text-white truncate lg:text-base" title={project.name}>
                   {project.name}
                 </h1>
-                <div className="hidden sm:block shrink-0">{getStatusBadge(project.status)}</div>
                 <span className="hidden md:inline text-xs text-neutral-400 dark:text-gray-500 truncate">
                   · Updated {formatTimeAgo(new Date(project.updatedAt))}
                 </span>
