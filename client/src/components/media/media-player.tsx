@@ -1205,6 +1205,50 @@ export default function MediaPlayer({
     setCurrentTime(e.currentTarget.currentTime);
   };
 
+  // Smooth per-frame timecode updates while playing. The native `timeupdate`
+  // event only fires 4-15 times per second, which makes the frame counter
+  // appear to jump/stutter. We sample currentTime every animation frame
+  // (and prefer requestVideoFrameCallback when available) so the displayed
+  // timecode advances at the actual frame rate.
+  useEffect(() => {
+    if (!isPlaying) return;
+    const mediaElement = videoRef.current || audioRef.current;
+    if (!mediaElement) return;
+
+    let cancelled = false;
+    let rafId: number | null = null;
+    let vfcHandle: number | null = null;
+    const videoEl = videoRef.current as (HTMLVideoElement & {
+      requestVideoFrameCallback?: (cb: (now: number, metadata: any) => void) => number;
+      cancelVideoFrameCallback?: (handle: number) => void;
+    }) | null;
+
+    const tick = () => {
+      if (cancelled) return;
+      setCurrentTime(mediaElement.currentTime);
+      rafId = requestAnimationFrame(tick);
+    };
+
+    if (videoEl && typeof videoEl.requestVideoFrameCallback === 'function') {
+      const onFrame = (_now: number, metadata: any) => {
+        if (cancelled) return;
+        setCurrentTime(typeof metadata?.mediaTime === 'number' ? metadata.mediaTime : videoEl.currentTime);
+        vfcHandle = videoEl.requestVideoFrameCallback!(onFrame);
+      };
+      vfcHandle = videoEl.requestVideoFrameCallback(onFrame);
+    } else {
+      rafId = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      cancelled = true;
+      if (rafId != null) cancelAnimationFrame(rafId);
+      if (vfcHandle != null && videoEl?.cancelVideoFrameCallback) {
+        videoEl.cancelVideoFrameCallback(vfcHandle);
+      }
+    };
+  }, [isPlaying]);
+
   const handleDurationChange = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
     setDuration(e.currentTarget.duration);
   };
