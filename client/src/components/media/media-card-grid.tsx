@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, MessageSquare, Copy, Check } from "lucide-react";
+import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, MessageSquare, Copy, Check, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,9 +68,10 @@ interface MediaCardProps {
   file: StorageFile;
   onSelect: (fileId: number) => void;
   onMove?: (file: StorageFile) => void;
+  versionCount?: number;
 }
 
-function MediaCard({ file, onSelect, onMove }: MediaCardProps) {
+function MediaCard({ file, onSelect, onMove, versionCount = 1 }: MediaCardProps) {
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -532,8 +533,14 @@ function MediaCard({ file, onSelect, onMove }: MediaCardProps) {
           )}
 
           {/* Status Badge */}
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-2 left-2 flex items-center gap-1.5">
             <div className={cn("w-3 h-3 rounded-full", statusInfo.color)}></div>
+            {versionCount > 1 && (
+              <div className="flex items-center gap-1 bg-black/70 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
+                <Layers className="h-3 w-3" />
+                v{file.version}
+              </div>
+            )}
           </div>
 
           {/* Actions Menu */}
@@ -753,13 +760,21 @@ function MediaCard({ file, onSelect, onMove }: MediaCardProps) {
 }
 
 export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFile }: MediaCardGridProps) {
+  const latestFiles = files.filter((f) => f.isLatestVersion);
+
+  const versionCounts = new Map<string, number>();
+  for (const f of files) {
+    const key = `${f.projectId}::${f.filename}`;
+    versionCounts.set(key, (versionCounts.get(key) || 0) + 1);
+  }
+
   return (
     <div className="p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold text-white mb-1">Media Files</h2>
-          <p className="text-gray-400 text-sm">{files.length} file{files.length !== 1 ? 's' : ''}</p>
+          <p className="text-gray-400 text-sm">{latestFiles.length} file{latestFiles.length !== 1 ? 's' : ''}</p>
         </div>
         
         {/* View Options - could add list/grid toggle here */}
@@ -772,12 +787,13 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
 
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-        {files.map((file) => (
+        {latestFiles.map((file) => (
           <MediaCard
             key={file.id}
             file={file}
             onSelect={onSelectFile}
             onMove={onMoveFile}
+            versionCount={versionCounts.get(`${file.projectId}::${file.filename}`) || 1}
           />
         ))}
       </div>
