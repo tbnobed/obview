@@ -179,6 +179,18 @@ interface Chapter {
   summary?: string;
 }
 
+function repairJson(text: string): string {
+  let s = text;
+  s = s.replace(/,\s*([}\]])/g, "$1");
+  s = s.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+  s = s.replace(/:\s*'([^']*)'/g, ': "$1"');
+  s = s.replace(/\n/g, " ");
+  s = s.replace(/\t/g, " ");
+  // eslint-disable-next-line no-control-regex
+  s = s.replace(/[\x00-\x1f]/g, " ");
+  return s;
+}
+
 function parseChaptersResponse(raw: string): Chapter[] {
   let text = raw.trim();
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -190,16 +202,35 @@ function parseChaptersResponse(raw: string): Chapter[] {
     text = text.slice(bracketStart, bracketEnd + 1);
   }
 
-  const parsed = JSON.parse(text);
+  let parsed: any;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    const repaired = repairJson(text);
+    try {
+      parsed = JSON.parse(repaired);
+    } catch (e2: any) {
+      throw new Error(
+        `Failed to parse chapters JSON even after repair: ${e2.message}\nRaw output (first 500 chars): ${raw.slice(0, 500)}`
+      );
+    }
+  }
+
   if (!Array.isArray(parsed) || parsed.length === 0) {
     throw new Error("LLM returned empty or non-array chapters");
   }
 
   const chapters: Chapter[] = [];
   for (const item of parsed) {
-    if (typeof item.start !== "number" || typeof item.title !== "string") continue;
+    const start =
+      typeof item.start === "number"
+        ? item.start
+        : typeof item.start === "string"
+          ? parseFloat(item.start)
+          : NaN;
+    if (isNaN(start) || typeof item.title !== "string") continue;
     chapters.push({
-      start: Math.max(0, item.start),
+      start: Math.max(0, start),
       title: item.title.trim(),
       summary: typeof item.summary === "string" ? item.summary.trim() : undefined,
     });
@@ -238,25 +269,43 @@ async function runChaptersJob(fileId: number): Promise<void> {
 
   try {
     const session = await getSession(MODEL_NAME);
-    if (typeof session.resetChatHistory === "function") {
-      session.resetChatHistory();
-    } else if (typeof session.setChatHistory === "function") {
-      session.setChatHistory([]);
-    }
 
     const prompt = buildChaptersPrompt(transcript.segments);
     console.log(`[Chapters] Generating chapters for file ${fileId}...`);
-    const t0 = Date.now();
-    const response = await withTimeout(
-      session.prompt(prompt, { maxTokens: 1024, temperature: 0.2 }),
-      GENERATION_TIMEOUT_MS,
-      `Chapters generation for file ${fileId}`
-    );
-    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-    console.log(`[Chapters] File ${fileId} chapters generated in ${elapsed}s`);
 
-    const chapters = parseChaptersResponse(String(response));
-    console.log(`[Chapters] File ${fileId}: ${chapters.length} chapters parsed`);
+    let chapters: Chapter[] | null = null;
+    const MAX_ATTEMPTS = 2;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      if (typeof session.resetChatHistory === "function") {
+        session.resetChatHistory();
+      } else if (typeof session.setChatHistory === "function") {
+        session.setChatHistory([]);
+      }
+
+      const t0 = Date.now();
+      const response = await withTimeout(
+        session.prompt(
+          attempt === 1
+            ? prompt
+            : prompt +
+              "\n\nIMPORTANT: Your previous response was not valid JSON. Output ONLY a raw JSON array with no extra text. Example: [{\"start\":0,\"title\":\"Intro\",\"summary\":\"Opening\"}]",
+          { maxTokens: 1024, temperature: attempt === 1 ? 0.2 : 0.1 }
+        ),
+        GENERATION_TIMEOUT_MS,
+        `Chapters generation for file ${fileId} (attempt ${attempt})`
+      );
+      const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+      console.log(`[Chapters] File ${fileId} attempt ${attempt} completed in ${elapsed}s`);
+
+      try {
+        chapters = parseChaptersResponse(String(response));
+        console.log(`[Chapters] File ${fileId}: ${chapters.length} chapters parsed`);
+        break;
+      } catch (parseErr: any) {
+        console.warn(`[Chapters] File ${fileId} attempt ${attempt} parse failed: ${parseErr.message}`);
+        if (attempt === MAX_ATTEMPTS) throw parseErr;
+      }
+    }
 
     await storage.updateTranscript(transcript.id, {
       chapters,
