@@ -1,139 +1,8 @@
-import path from "path";
-import fs from "fs";
-import https from "https";
 import { storage } from "./storage";
+import { prompt, enqueueJob, clearSession, getModelName, logBackend } from "./llm-client";
 
 const CHAPTERS_ENABLED =
   (process.env.CHAPTERS_ENABLED || process.env.SUMMARIZATION_ENABLED || "true").toLowerCase() !== "false";
-
-const MODELS_DIR = path.resolve(
-  process.env.LLAMA_MODELS_DIR || path.join(process.cwd(), "models", "llama")
-);
-
-const MODEL_NAME = process.env.LLAMA_MODEL || "llama-3.2-1b-instruct.Q4_K_M.gguf";
-
-const MODEL_URLS: Record<string, string> = {
-  "llama-3.2-1b-instruct.Q4_K_M.gguf":
-    "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
-  "llama-3.2-3b-instruct.Q4_K_M.gguf":
-    "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
-  "qwen2.5-1.5b-instruct.Q4_K_M.gguf":
-    "https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
-  "qwen2.5-3b-instruct.Q4_K_M.gguf":
-    "https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf",
-};
-
-const downloadPromises = new Map<string, Promise<string>>();
-
-function modelPath(name: string) {
-  return path.join(MODELS_DIR, name);
-}
-
-async function downloadFile(url: string, dest: string): Promise<void> {
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  const tmp = `${dest}.part`;
-  await new Promise<void>((resolve, reject) => {
-    const file = fs.createWriteStream(tmp);
-    const req = (u: string) =>
-      https
-        .get(u, (res) => {
-          if (
-            res.statusCode &&
-            res.statusCode >= 300 &&
-            res.statusCode < 400 &&
-            res.headers.location
-          ) {
-            res.resume();
-            return req(res.headers.location);
-          }
-          if (res.statusCode !== 200) {
-            return reject(new Error(`Download failed ${res.statusCode}`));
-          }
-          res.pipe(file);
-          file.on("finish", () => file.close(() => resolve()));
-        })
-        .on("error", reject);
-    req(url);
-  });
-  fs.renameSync(tmp, dest);
-}
-
-async function ensureModel(name: string): Promise<string> {
-  const target = modelPath(name);
-  if (fs.existsSync(target) && fs.statSync(target).size > 100_000_000) return target;
-  if (!MODEL_URLS[name]) throw new Error(`Unknown llama model: ${name}`);
-
-  const inflight = downloadPromises.get(name);
-  if (inflight) return inflight;
-
-  const promise = (async () => {
-    console.log(`[Chapters] Downloading model ${name} (this may take a few minutes)...`);
-    await downloadFile(MODEL_URLS[name], target);
-    console.log(`[Chapters] Model ${name} ready at ${target}`);
-    return target;
-  })();
-  downloadPromises.set(name, promise);
-  try {
-    return await promise;
-  } finally {
-    downloadPromises.delete(name);
-  }
-}
-
-let cachedSession: { session: any; modelName: string } | null = null;
-let modelLoadPromise: Promise<any> | null = null;
-
-let jobChain: Promise<void> = Promise.resolve();
-
-async function getSession(modelName: string): Promise<any> {
-  if (cachedSession && cachedSession.modelName === modelName) {
-    return cachedSession.session;
-  }
-  if (modelLoadPromise) return modelLoadPromise;
-
-  modelLoadPromise = (async () => {
-    const modelFile = await ensureModel(modelName);
-    const { getLlama, LlamaChatSession } = await import("node-llama-cpp");
-    const llama = await getLlama();
-    const model = await llama.loadModel({ modelPath: modelFile });
-    const context = await model.createContext({
-      contextSize: 8192,
-      threads: parseInt(process.env.LLAMA_THREADS || "4", 10),
-    });
-    const session = new LlamaChatSession({
-      contextSequence: context.getSequence(),
-    });
-    cachedSession = { session, modelName };
-    return session;
-  })();
-
-  try {
-    return await modelLoadPromise;
-  } finally {
-    modelLoadPromise = null;
-  }
-}
-
-const GENERATION_TIMEOUT_MS = parseInt(
-  process.env.LLAMA_GENERATION_TIMEOUT_MS || "600000",
-  10
-);
-
-function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
-    p.then(
-      (v) => {
-        clearTimeout(t);
-        resolve(v);
-      },
-      (e) => {
-        clearTimeout(t);
-        reject(e);
-      }
-    );
-  });
-}
 
 function formatTimestamp(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -163,7 +32,7 @@ function buildChaptersPrompt(
     "",
     "Rules:",
     "- Output ONLY a JSON array. No other text, no markdown fences, no explanation.",
-    "- Each element: {\"start\": <seconds as number>, \"title\": \"<short title>\", \"summary\": \"<1 sentence>\"}",
+    '- Each element: {"start": <seconds as number>, "title": "<short title>", "summary": "<1 sentence>"}',
     "- The first chapter MUST start at 0.",
     "- Use the timestamps from the transcript to determine where each chapter begins.",
     "- Create between 3 and 12 chapters depending on the content length and variety.",
@@ -216,7 +85,7 @@ function parseChaptersResponse(raw: string): Chapter[] {
       if (objects && objects.length > 0) {
         try {
           parsed = JSON.parse("[" + objects.join(",") + "]");
-        } catch (e3: any) {
+        } catch {
           const repairedObjects = objects.map((o) => repairJson(o));
           try {
             parsed = JSON.parse("[" + repairedObjects.join(",") + "]");
@@ -289,37 +158,26 @@ async function runChaptersJob(fileId: number): Promise<void> {
   } as any);
 
   try {
-    const session = await getSession(MODEL_NAME);
-
-    const prompt = buildChaptersPrompt(transcript.segments);
+    const basePrompt = buildChaptersPrompt(transcript.segments);
     console.log(`[Chapters] Generating chapters for file ${fileId}...`);
 
     let chapters: Chapter[] | null = null;
     const MAX_ATTEMPTS = 2;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      if (typeof session.resetChatHistory === "function") {
-        session.resetChatHistory();
-      } else if (typeof session.setChatHistory === "function") {
-        session.setChatHistory([]);
-      }
-
       const t0 = Date.now();
-      const response = await withTimeout(
-        session.prompt(
-          attempt === 1
-            ? prompt
-            : prompt +
-              "\n\nIMPORTANT: Your previous response was not valid JSON. Output ONLY a raw JSON array with no extra text. Example: [{\"start\":0,\"title\":\"Intro\",\"summary\":\"Opening\"}]",
-          { maxTokens: 1024, temperature: attempt === 1 ? 0.2 : 0.1 }
-        ),
-        GENERATION_TIMEOUT_MS,
+      const response = await prompt(
+        attempt === 1
+          ? basePrompt
+          : basePrompt +
+            '\n\nIMPORTANT: Your previous response was not valid JSON. Output ONLY a raw JSON array with no extra text. Example: [{"start":0,"title":"Intro","summary":"Opening"}]',
+        { maxTokens: 1024, temperature: attempt === 1 ? 0.2 : 0.1 },
         `Chapters generation for file ${fileId} (attempt ${attempt})`
       );
       const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
       console.log(`[Chapters] File ${fileId} attempt ${attempt} completed in ${elapsed}s`);
 
       try {
-        chapters = parseChaptersResponse(String(response));
+        chapters = parseChaptersResponse(response);
         console.log(`[Chapters] File ${fileId}: ${chapters.length} chapters parsed`);
         break;
       } catch (parseErr: any) {
@@ -332,7 +190,7 @@ async function runChaptersJob(fileId: number): Promise<void> {
       chapters,
       chaptersStatus: "completed",
       chaptersError: null,
-      chaptersModel: MODEL_NAME,
+      chaptersModel: getModelName(),
       chaptersProcessedAt: new Date(),
     } as any);
   } catch (err: any) {
@@ -343,7 +201,7 @@ async function runChaptersJob(fileId: number): Promise<void> {
         chaptersError: err?.message || "Unknown chapters error",
       } as any)
       .catch(() => {});
-    cachedSession = null;
+    clearSession();
   }
 }
 
@@ -353,13 +211,12 @@ export function generateChaptersForFile(fileId: number): Promise<void> {
     return Promise.resolve();
   }
   console.log(`[Chapters] Enqueuing job for file ${fileId}`);
-  const next = jobChain.then(() => runChaptersJob(fileId));
-  jobChain = next.catch(() => {});
-  return next;
+  return enqueueJob(() => runChaptersJob(fileId));
 }
 
 export async function resumePendingChapters(): Promise<void> {
   if (!CHAPTERS_ENABLED) return;
+  logBackend();
   try {
     const { db } = await import("./db");
     const { transcripts } = await import("@shared/schema");

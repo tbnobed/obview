@@ -44,21 +44,26 @@ Preferred communication style: Simple, everyday language.
 - **Password Reset**: Email-based password reset workflow with temporary tokens
 - **Registration Control**: Configurable registration disable via VITE_DISABLE_REGISTRATION environment variable for Docker deployments
 
-### AI Synopsis (Local Summarization)
-- **Engine**: `node-llama-cpp` running a small instruct model entirely on the host (no cloud / external APIs)
-- **Default model**: `llama-3.2-1b-instruct.Q4_K_M.gguf` (~770MB, downloaded on first use to `models/llama/`)
-- **Pipeline**: After whisper transcription completes, `summarizeForFile` is auto-triggered to produce a headline + 2-4 sentence overview + key-moments bullet list from the transcript text
-- **API**: `POST /api/files/:id/summary/regenerate` triggers (re)generation; the synopsis is stored in the same `transcripts` row (`summary`, `summary_status`, `summary_error`, `summary_model`, `summary_processed_at`)
-- **UI**: Synopsis card at the top of the Transcript tab with regenerate button and live status (pending/processing/completed/failed)
-- **Configuration**: `SUMMARIZATION_ENABLED`, `LLAMA_MODEL`, `LLAMA_THREADS`, `LLAMA_MODELS_DIR` env vars; Docker volume `llama_models` persists the downloaded GGUF model
+### LLM Backend (`server/llm-client.ts`)
+- **Dual mode**: Supports local `node-llama-cpp` (CPU) or remote `llama-server` (GPU) via OpenAI-compatible API
+- **Remote mode**: Set `LLAMA_API_URL` (e.g. `http://192.168.100.1:8080`) to use a llama-server instance on the Spark or any OpenAI-compatible endpoint. Calls `POST /v1/chat/completions`
+- **Local fallback**: When `LLAMA_API_URL` is unset, loads a GGUF model locally via `node-llama-cpp` (same as before)
+- **Shared job queue**: Both synopsis and chapters use the same serialized queue for local mode (prevents concurrent session access). Remote mode runs jobs in parallel
+- **Configuration**: `LLAMA_API_URL`, `LLAMA_MODEL`, `LLAMA_THREADS`, `LLAMA_MODELS_DIR`, `LLAMA_GENERATION_TIMEOUT_MS`
+- **Available local models**: `llama-3.2-1b-instruct`, `llama-3.2-3b-instruct`, `qwen2.5-1.5b-instruct`, `qwen2.5-3b-instruct` (all Q4_K_M quantization)
+
+### AI Synopsis
+- **Pipeline**: After whisper transcription completes, `summarizeForFile` is auto-triggered to produce a headline + overview + key-moments bullet list
+- **API**: `POST /api/files/:id/summary/regenerate`
+- **UI**: Synopsis section in the AI tab with regenerate button and live status
+- **Configuration**: `SUMMARIZATION_ENABLED` env var
 
 ### AI Auto-Chapters
-- **Engine**: Same `node-llama-cpp` + local GGUF model as synopsis
-- **Pipeline**: After transcription completes, `generateChaptersForFile` is auto-triggered alongside summarization. The LLM receives timestamped transcript segments and identifies 3–12 logical chapter boundaries (topic shifts, scene changes)
-- **Data**: Stored as a JSON array of `{ start: number, title: string, summary?: string }` in `transcripts.chapters`, with `chapters_status`, `chapters_error`, `chapters_model`, `chapters_processed_at` columns
-- **API**: `POST /api/files/:id/chapters/regenerate` triggers (re)generation
-- **UI**: Chapters tab in media player and both public share pages. Each chapter is a clickable row showing timestamp + title + summary; clicking seeks the video to that chapter's start time
-- **Configuration**: `CHAPTERS_ENABLED` env var (falls back to `SUMMARIZATION_ENABLED` if unset). Uses the same `LLAMA_MODEL`, `LLAMA_THREADS`, `LLAMA_MODELS_DIR` settings
+- **Pipeline**: After transcription completes, `generateChaptersForFile` is auto-triggered alongside summarization. The LLM identifies 3–12 logical chapter boundaries from timestamped segments
+- **Data**: JSON array of `{ start, title, summary? }` in `transcripts.chapters`
+- **API**: `POST /api/files/:id/chapters/regenerate`
+- **UI**: Chapters section in the AI tab with clickable timestamp navigation
+- **Configuration**: `CHAPTERS_ENABLED` env var (falls back to `SUMMARIZATION_ENABLED`)
 - **Migration**: `0022_add_chapters.sql`
 
 ### Key Features Implementation
