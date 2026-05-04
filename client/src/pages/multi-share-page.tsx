@@ -32,6 +32,7 @@ import {
   Trash2,
   Reply,
   Check,
+  Filter,
 } from "lucide-react";
 import {
   AnnotationCanvas,
@@ -974,6 +975,7 @@ function FileViewer({
   const [editContent, setEditContent] = useState("");
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const [commentFilter, setCommentFilter] = useState<"all" | "unresolved" | "resolved">("all");
 
   const post = useMutation({
     mutationFn: async () => {
@@ -1512,6 +1514,23 @@ function FileViewer({
             value="comments"
             className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
           >
+            <div className="flex items-center gap-1 px-3 py-1.5 border-b border-neutral-200 dark:border-gray-800 shrink-0">
+              <Filter className="h-3.5 w-3.5 mr-1 text-neutral-400 dark:text-gray-500" />
+              {(["all", "unresolved", "resolved"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setCommentFilter(f)}
+                  className={cn(
+                    "text-xs px-2 py-0.5 rounded-full transition-colors capitalize",
+                    commentFilter === f
+                      ? "bg-primary/20 text-primary dark:bg-[#10a37f]/20 dark:text-[#10a37f]"
+                      : "text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-200"
+                  )}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
             {/* Comments list (scrolls) */}
             <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-2.5">
               {commentsQ.isLoading && (
@@ -1519,9 +1538,25 @@ function FileViewer({
                   Loading comments...
                 </p>
               )}
+              {!commentsQ.isLoading && commentsQ.data && commentsQ.data.length === 0 && commentFilter === "all" && (
+                <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
+                  No comments yet. Be the first to leave one.
+                </p>
+              )}
               {(() => {
-                const all = commentsQ.data || [];
+                const all = (commentsQ.data || []).filter((c) => {
+                  if (commentFilter === "unresolved") return !c.isResolved;
+                  if (commentFilter === "resolved") return c.isResolved;
+                  return true;
+                });
                 const topLevel = all.filter((c) => !c.parentId);
+                if (topLevel.length === 0 && commentFilter !== "all" && commentsQ.data && commentsQ.data.length > 0) {
+                  return (
+                    <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
+                      No {commentFilter} comments
+                    </p>
+                  );
+                }
                 const repliesByParent = new Map<string, Comment[]>();
                 for (const c of all) {
                   if (c.parentId) {

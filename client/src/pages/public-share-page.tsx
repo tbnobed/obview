@@ -51,6 +51,7 @@ import {
   Trash2,
   Reply,
   Check,
+  Filter,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -131,6 +132,7 @@ interface PublicComment {
   createdAt: string;
   creatorToken?: string;
   annotations?: string | null;
+  isResolved?: boolean;
 }
 
 const PUB_COMMENT_TOKEN_KEY = (id: string) => `share-comment-token-${id}`;
@@ -586,6 +588,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
   const [editContent, setEditContent] = useState("");
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const [commentFilter, setCommentFilter] = useState<"all" | "unresolved" | "resolved">("all");
 
   const post = useMutation({
     mutationFn: async () => {
@@ -1184,6 +1187,23 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               value="comments"
               className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
             >
+              <div className="flex items-center gap-1 px-3 py-1.5 border-b border-neutral-200 dark:border-gray-800 shrink-0">
+                <Filter className="h-3.5 w-3.5 mr-1 text-neutral-400 dark:text-gray-500" />
+                {(["all", "unresolved", "resolved"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setCommentFilter(f)}
+                    className={cn(
+                      "text-xs px-2 py-0.5 rounded-full transition-colors capitalize",
+                      commentFilter === f
+                        ? "bg-primary/20 text-primary dark:bg-[#10a37f]/20 dark:text-[#10a37f]"
+                        : "text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-200"
+                    )}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
               <div
                 className="flex-1 min-h-0 overflow-y-auto px-3 space-y-2"
                 data-testid="share-comments-list"
@@ -1191,13 +1211,26 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 {commentsQ.isLoading && (
                   <div className="text-sm text-neutral-500 px-1 py-2">Loading…</div>
                 )}
-                {commentsQ.data?.length === 0 && (
+                {commentsQ.data?.length === 0 && commentFilter === "all" && (
                   <div className="text-sm text-neutral-500 px-1 py-6 text-center">
                     No comments yet. Be the first to leave one.
                   </div>
                 )}
+                {commentsQ.data && commentsQ.data.length > 0 && commentFilter !== "all" && (commentsQ.data || []).filter((c) => {
+                  if (commentFilter === "unresolved") return !c.isResolved;
+                  if (commentFilter === "resolved") return c.isResolved;
+                  return true;
+                }).filter((c) => !c.parentId).length === 0 && (
+                  <div className="text-sm text-neutral-500 px-1 py-6 text-center">
+                    No {commentFilter} comments
+                  </div>
+                )}
                 {(() => {
-                  const all = commentsQ.data || [];
+                  const all = (commentsQ.data || []).filter((c) => {
+                    if (commentFilter === "unresolved") return !c.isResolved;
+                    if (commentFilter === "resolved") return c.isResolved;
+                    return true;
+                  });
                   const topLevel = all.filter((c) => !c.parentId);
                   const repliesByParent = new Map<string, PublicComment[]>();
                   for (const c of all) {

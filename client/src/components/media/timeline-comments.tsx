@@ -416,6 +416,25 @@ export default function TimelineComments({
         />
       </div>
       
+      {/* Filter bar */}
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))', backgroundColor: 'hsl(var(--comments-bg))'}}>
+        <Filter className="h-3.5 w-3.5 mr-1" style={{color: 'hsl(var(--comments-muted))'}} />
+        {(["all", "unresolved", "resolved"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={cn(
+              "text-xs px-2 py-0.5 rounded-full transition-colors capitalize",
+              filter === f
+                ? "bg-primary/20 text-primary dark:bg-[#10a37f]/20 dark:text-[#10a37f]"
+                : "text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-200"
+            )}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
       {/* Comments List - Mobile: basic padding, Desktop: extended padding */}
       <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-3 pb-3">
         {isLoading ? (
@@ -681,7 +700,7 @@ export default function TimelineComments({
 
                   {/* Replies section - Mobile: reduced padding, Desktop: full padding */}
                   <div className="pl-8 lg:pl-11">
-                    <RenderReplies comments={comments} parentId={comment.id} depth={0} />
+                    <RenderReplies comments={filteredComments || []} parentId={comment.id} depth={0} />
                   </div>
                 </div>
               );
@@ -691,8 +710,12 @@ export default function TimelineComments({
           // Empty state - Mobile: compact padding, Desktop: spacious padding
           <div className="flex flex-col items-center justify-center py-8 text-center lg:py-12">
             <MessageSquare className="h-10 w-10 mb-3 lg:h-12 lg:w-12" style={{color: 'hsl(var(--comments-muted))'}} />
-            <p className="text-sm" style={{color: 'hsl(var(--comments-muted))'}}>No comments yet</p>
-            <p className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>Be the first to comment!</p>
+            <p className="text-sm" style={{color: 'hsl(var(--comments-muted))'}}>
+              {filter !== "all" ? `No ${filter} comments` : "No comments yet"}
+            </p>
+            {filter === "all" && (
+              <p className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>Be the first to comment!</p>
+            )}
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useProjectComments } from "@/hooks/use-comments";
 import { Loader2, FileVideo, Clock, Play, MessageSquare, MoreHorizontal, Filter, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,6 +9,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { cn } from "@/lib/utils";
 
 // Format time for Frame.io style (HH:MM:SS:FF - hours:minutes:seconds:frames)
 const formatTime = (time: number | null) => {
@@ -28,6 +30,7 @@ const getUserInitials = (name: string) => {
 export function ProjectCommentsTab({ projectId }: { projectId: number }) {
   const { data: comments, isLoading, error } = useProjectComments(projectId);
   const [_, navigate] = useLocation();
+  const [filter, setFilter] = useState<"all" | "unresolved" | "resolved">("all");
   
   if (isLoading) {
     return (
@@ -53,8 +56,13 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
     );
   }
   
-  // Sort comments by timestamp (null timestamps at the end)
-  const sortedComments = [...comments].sort((a, b) => {
+  const filteredComments = comments.filter((c: any) => {
+    if (filter === "unresolved") return !c.isResolved;
+    if (filter === "resolved") return c.isResolved;
+    return true;
+  });
+
+  const sortedComments = [...filteredComments].sort((a, b) => {
     // If both have timestamps, sort by timestamp
     if (a.timestamp !== null && b.timestamp !== null) {
       return a.timestamp - b.timestamp;
@@ -152,23 +160,34 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium">All comments</span>
+          <span className="text-sm font-medium">Comments</span>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
-            <Search className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
-            <Filter className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-white hover:bg-gray-700">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          <Filter className="h-3.5 w-3.5 text-gray-400 mr-1" />
+          {(["all", "unresolved", "resolved"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={cn(
+                "text-xs px-2 py-0.5 rounded-full transition-colors capitalize",
+                filter === f
+                  ? "bg-[#10a37f]/20 text-[#10a37f]"
+                  : "text-gray-400 hover:text-gray-200"
+              )}
+            >
+              {f}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Comments List */}
       <div className="flex-1 overflow-y-auto">
+        {sortedComments.length === 0 && filter !== "all" && (
+          <div className="text-center py-8 text-gray-400 text-sm">
+            No {filter} comments
+          </div>
+        )}
         <div className="divide-y divide-gray-700">
           {sortedComments.map((comment: Comment & { user?: any, file?: any }, index: number) => (
             <div 
