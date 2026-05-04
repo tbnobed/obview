@@ -332,11 +332,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               </svg>
               {formatTimeAgo(new Date(project.updatedAt))}
             </div>
-            
-          </div>
-        </CardContent>
-        <CardFooter className="pt-1 px-3 pb-2.5 border-t">
-          <div className="w-full flex justify-end items-center">
             {canDelete && (
               <Button
                 variant="ghost"
@@ -350,7 +345,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               </Button>
             )}
           </div>
-        </CardFooter>
+        </CardContent>
       </Card>
 
       <Dialog
