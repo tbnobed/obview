@@ -7,10 +7,13 @@ interface IconProps {
 export function UploadVersionIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={cn("h-4 w-4", className)}>
-      <path d="M16 2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6l-4-4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
-      <path d="M14 2v4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
-      <rect x="2" y="4" width="12" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8 16v-6m0 0l-2.5 2.5M8 10l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Back page (offset behind) */}
+      <path d="M20 8v10a2 2 0 0 1-2 2h-8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+      {/* Front page */}
+      <rect x="3" y="2" width="13" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      {/* Upload arrow */}
+      <path d="M9.5 15V9m0 0L7 11.5m2.5-2.5L12 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -18,8 +21,10 @@ export function UploadVersionIcon({ className }: IconProps) {
 export function ShareFileIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={cn("h-4 w-4", className)}>
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h4l2-2h6l2 2h2a2 2 0 0 1 2 2v10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M14 11l3-3m0 0h-4m4 0v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Folder body */}
+      <path d="M2 8a2 2 0 0 1 2-2h4.5l2 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* External link arrow (top right) */}
+      <path d="M13 11l5-5m0 0h-3.5m3.5 0v3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -27,13 +32,15 @@ export function ShareFileIcon({ className }: IconProps) {
 export function RequestChangesIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={cn("h-4 w-4", className)}>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M14 2v4a2 2 0 0 0 2 2h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M14 2l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="9" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M9 11v1.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="9" cy="13.8" r="0.6" fill="currentColor" />
-      <path d="M16.5 13.5l-4.5 4.5-1 3.5 3.5-1 4.5-4.5a1.5 1.5 0 0 0-2.5-2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Document */}
+      <path d="M4 4a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 2v5h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Exclamation mark on document */}
+      <path d="M10 10v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="10" cy="15" r="0.7" fill="currentColor" />
+      {/* Pencil (bottom right, overlapping) */}
+      <path d="M15.5 14l-5 5L9 20.5l1.5-1.5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15.5 14l2-2a0.7 0.7 0 0 1 1 0l1 1a0.7 0.7 0 0 1 0 1l-2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -49,10 +56,18 @@ export function ApproveIcon({ className }: IconProps) {
 export function MarkReviewIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={cn("h-4 w-4", className)}>
-      <rect x="3" y="1" width="16" height="22" rx="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8 1v3h6V1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M7 9l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M7 15l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Clipboard body */}
+      <rect x="3" y="2" width="16" height="20" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      {/* Clipboard clip */}
+      <path d="M8 2h6v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Checkmark row 1 */}
+      <path d="M7 9.5l1.5 1.5L12 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Line row 1 */}
+      <path d="M14 10h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Checkmark row 2 */}
+      <path d="M7 15.5l1.5 1.5L12 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Line row 2 */}
+      <path d="M14 16h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
