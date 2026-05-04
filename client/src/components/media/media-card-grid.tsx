@@ -655,36 +655,50 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* Approval status (file-level) */}
+              {/* Approval status (file-level) — minimal dot pill */}
               {approvalStatus === "approved" && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0 border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400"
                   data-testid={`approval-badge-${file.id}`}
+                  title="Approved"
                 >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   Approved
-                </Badge>
+                </span>
               )}
               {approvalStatus === "changes_requested" && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0 border-amber-500/30 bg-amber-500/10 text-amber-400"
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400"
                   data-testid={`approval-badge-${file.id}`}
+                  title="Changes requested"
                 >
-                  Changes Requested
-                </Badge>
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                  Changes
+                </span>
               )}
 
-              {/* Processing/availability status */}
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-xs border-0 text-white",
-                  statusInfo.color
-                )}
-              >
-                {statusInfo.text}
-              </Badge>
+              {/* Processing/availability — only surface non-ready states to keep things calm */}
+              {statusInfo.text !== "Ready" && (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[10px] font-medium",
+                    statusInfo.text === "Failed" || statusInfo.text === "Unavailable"
+                      ? "text-red-400"
+                      : "text-blue-400"
+                  )}
+                  title={statusInfo.text}
+                >
+                  <span
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      statusInfo.text === "Failed" || statusInfo.text === "Unavailable"
+                        ? "bg-red-400"
+                        : "bg-blue-400 animate-pulse"
+                    )}
+                  />
+                  {statusInfo.text}
+                </span>
+              )}
             </div>
           </div>
         </div>
