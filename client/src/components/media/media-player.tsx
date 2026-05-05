@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2, Columns2 } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2, Columns2, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { UploadVersionIcon, ShareFileIcon, RequestChangesIcon, ApproveIcon, MarkReviewIcon } from "@/components/media/action-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,8 @@ export default function MediaPlayer({
   const [errorMessage, setErrorMessage] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommentsTab, setShowCommentsTab] = useState(true);
+  const [isSidebarHidden, setIsSidebarHidden] = useState(false);
+  const [useOriginalQuality, setUseOriginalQuality] = useState(false);
   const [activeCommentId, setActiveCommentId] = useState<string | undefined>(undefined);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
   const [selectedVersionFile, setSelectedVersionFile] = useState<File | null>(null);
@@ -167,6 +169,41 @@ export default function MediaPlayer({
   
   // Find user's approval (if any)
   const userApproval = approvals && approvals.length > 0 ? approvals[0] : null;
+
+  // Whether a 720p proxy is available — used both to decide which <source> to
+  // render and to know whether the HD/720p toggle is meaningful for this file.
+  const has720p = videoProcessing?.status === 'completed' &&
+    videoProcessing.qualities?.some((q: any) => q.resolution === '720p');
+
+  // Reload the video element when the user toggles between proxy and original
+  // so the new <source> set is actually picked up. Preserves time and play state.
+  // Only depends on the toggle itself — file changes are handled by the player's
+  // own load lifecycle, and has720p flips shouldn't yank an in-progress playback.
+  const didMountQualityRef = useRef(false);
+  useEffect(() => {
+    if (!didMountQualityRef.current) {
+      didMountQualityRef.current = true;
+      return;
+    }
+    const v = videoRef.current;
+    if (!v || !file || file.fileType !== 'video') return;
+    const wasPlaying = !v.paused;
+    const t = v.currentTime;
+    const restore = () => {
+      try { v.currentTime = t; } catch {}
+      if (wasPlaying) { v.play().catch(() => {}); }
+    };
+    v.addEventListener('loadedmetadata', restore, { once: true });
+    v.load();
+    return () => v.removeEventListener('loadedmetadata', restore);
+  }, [useOriginalQuality]);
+
+  // Reset quality preference when switching files (without triggering the
+  // reload effect — the file change itself causes a fresh load).
+  useEffect(() => {
+    didMountQualityRef.current = false;
+    setUseOriginalQuality(false);
+  }, [file?.id]);
 
   // Approval mutation
   const approveMutation = useMutation({
@@ -1435,27 +1472,24 @@ export default function MediaPlayer({
             preload="metadata"
             playsInline
           >
-            {/* Use 720p proxy when available for better performance, fallback to original */}
+            {/* Source selection: by default we use the 720p proxy when available
+                for smooth playback. When the user explicitly chooses HD via the
+                quality toggle we serve the original full-resolution file. */}
             {(() => {
-              // Check if 720p proxy is available and processing completed
-              const has720p = videoProcessing?.status === 'completed' && 
-                            videoProcessing.qualities?.some((q: any) => q.resolution === '720p');
-              
-              const mimeType = file.fileType.startsWith('video/') 
-                ? file.fileType 
-                : file.filename.toLowerCase().endsWith('.mp4') 
-                  ? 'video/mp4' 
-                  : file.filename.toLowerCase().endsWith('.webm') 
+              const mimeType = file.fileType.startsWith('video/')
+                ? file.fileType
+                : file.filename.toLowerCase().endsWith('.mp4')
+                  ? 'video/mp4'
+                  : file.filename.toLowerCase().endsWith('.webm')
                     ? 'video/webm'
                     : 'video/mp4';
 
+              if (useOriginalQuality || !has720p) {
+                return <source src={`/api/files/${file.id}/content`} type={mimeType} />;
+              }
               return (
                 <>
-                  {/* Use 720p proxy if available */}
-                  {has720p && (
-                    <source src={`/api/files/${file.id}/qualities/720p`} type="video/mp4" />
-                  )}
-                  {/* Always include original as fallback */}
+                  <source src={`/api/files/${file.id}/qualities/720p`} type="video/mp4" />
                   <source src={`/api/files/${file.id}/content`} type={mimeType} />
                 </>
               );
@@ -1753,6 +1787,38 @@ export default function MediaPlayer({
                         className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
                       />
                     )}
+
+                    {/* HD / proxy quality toggle — only meaningful when both
+                        a 720p proxy and the original are available. */}
+                    {file?.fileType === 'video' && has720p && (
+                      <Button
+                        onClick={() => setUseOriginalQuality((v) => !v)}
+                        variant="ghost"
+                        size="sm"
+                        className={`h-8 px-2 text-xs font-semibold tracking-wide ${
+                          useOriginalQuality
+                            ? 'text-primary dark:text-[#3ddcb0]'
+                            : 'text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]'
+                        }`}
+                        title={useOriginalQuality ? 'Playing full HD (original). Click to use 720p proxy.' : 'Playing 720p proxy. Click to play full HD (original).'}
+                        data-testid="button-toggle-hd"
+                      >
+                        {useOriginalQuality ? 'HD' : '720p'}
+                      </Button>
+                    )}
+
+                    {/* Hide / show comments sidebar */}
+                    <Button
+                      onClick={() => setIsSidebarHidden((v) => !v)}
+                      variant="ghost"
+                      size="icon"
+                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                      title={isSidebarHidden ? 'Show comments panel' : 'Hide comments panel'}
+                      data-testid="button-toggle-sidebar"
+                    >
+                      {isSidebarHidden ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
+                    </Button>
+
                     <Button
                       onClick={toggleFullscreen}
                       variant="ghost"
@@ -2216,9 +2282,17 @@ export default function MediaPlayer({
         document.getElementById('mobile-actions-container')!
       )}
       
-      {/* Comments Section - Mobile: full width with max height, Desktop: fixed width with viewport constraint */}
+      {/* Comments Section - Mobile: full width with max height, Desktop: fixed width with viewport constraint.
+          Hidden via CSS (not unmounted) so unsaved comment drafts, scroll positions,
+          and the active tab survive toggling the panel off and back on. */}
       {file && (
-        <div className="w-full h-full max-h-[50vh] min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t border-neutral-200 dark:border-gray-800 lg:border-t-0 lg:border-l overflow-hidden lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div
+          className={cn(
+            "w-full h-full max-h-[50vh] min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t border-neutral-200 dark:border-gray-800 lg:border-t-0 lg:border-l overflow-hidden lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0",
+            isSidebarHidden && "hidden"
+          )}
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
             {/* Tab controls — single horizontally-scrollable strip works for
                 both desktop and mobile so all 5 labels fit without truncation. */}
