@@ -72,6 +72,15 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
+    // Tune HTTP server timeouts for very large uploads (multi-GB media files).
+    // Node 18+ defaults requestTimeout to 5 min and headersTimeout to 60s,
+    // both of which silently abort long uploads regardless of any reverse-proxy
+    // (Nginx) timeouts in front. keepAliveTimeout must exceed the proxy's
+    // keep-alive (Nginx default 75s) to avoid 502 races.
+    server.requestTimeout = 0;          // disable hard request cap; rely on per-request res.setTimeout + Nginx
+    server.headersTimeout = 3600_000;   // 1h ceiling for receiving headers
+    server.keepAliveTimeout = 120_000;  // > Nginx 75s keepalive
+    server.timeout = 3600_000;          // 1h socket inactivity cap
     log(`serving on port ${port}`);
     import("./llm-client")
       .then(({ logBackend }) => logBackend())
