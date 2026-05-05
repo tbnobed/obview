@@ -52,6 +52,7 @@ import {
 import { db } from "./db";
 import { sql, inArray, eq } from "drizzle-orm";
 import { VideoProcessor } from "./video-processor";
+import { createTusServer, TUS_USER_HEADER } from "./tus";
 import {
   transcribeFile,
   segmentsToVtt,
@@ -1811,6 +1812,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload a file to a project (support both endpoints for compatibility)
+  // Resumable / chunked upload endpoint (tus protocol). This is the primary
+  // upload path for the UI — see client/src/lib/upload-service.ts. The legacy
+  // multer-based POST below remains for non-UI integrations (comments, etc.).
+  // Auth is enforced here at the Express layer; the tus hooks read the
+  // authenticated user id from a trusted server-only header.
+  const tusServer = createTusServer({
+    uploadsDir,
+    tusDataDir: path.join(uploadsDir, ".tus"),
+    onProcessVideo: (file, processingId) => {
+      processVideoInBackground(file, processingId).catch((err) =>
+        console.error(`[tus] Video processing failed for file ${file.id}:`, err)
+      );
+    },
+    onTranscribe: (args) => {
+      transcribeFile(args).catch((err) =>
+        console.error(`[tus] Transcription failed for file ${args.fileId}:`, err)
+      );
+    },
+  });
+  const tusHandler = (req: Request, res: Response) => {
+    // Stamp the trusted user id so the tus hooks can authorize without
+    // having to plumb the Express request all the way through srvx.
+    if (req.user?.id != null) {
+      req.headers[TUS_USER_HEADER] = String(req.user.id);
+    }
+
+    // srvx (used internally by @tus/server v2) calls
+    //   nodeRes.writeHead(status, statusText, [k1, v1, k2, v2, ...])
+    // i.e. the FLAT header form. express-session installs `on-headers`
+    // which wraps writeHead and only understands the OBJECT or
+    // [[k,v], ...] forms — given a flat array it interprets each string
+    // as a single header (e.g. name="*", value=undefined for the
+    // CORS Access-Control-Allow-Origin header), then crashes Node with
+    // ERR_HTTP_INVALID_HEADER_VALUE. We bridge by converting the flat
+    // array into an object before delegating to the wrapped writeHead.
+    const origWriteHead: any = res.writeHead.bind(res);
+    (res as any).writeHead = function (status: number, ...rest: any[]) {
+      let statusText: string | undefined;
+      let headers: any;
+      if (typeof rest[0] === "string") {
+        statusText = rest[0];
+        headers = rest[1];
+      } else {
+        headers = rest[0];
+      }
+      if (Array.isArray(headers) && headers.length > 0 && !Array.isArray(headers[0])) {
+        const obj: Record<string, string | string[]> = {};
+        for (let i = 0; i + 1 < headers.length; i += 2) {
+          const k = headers[i];
+          const v = headers[i + 1];
+          if (!k || v === undefined || v === null) continue;
+          const existing = obj[k];
+          if (existing === undefined) {
+            obj[k] = v;
+          } else if (Array.isArray(existing)) {
+            existing.push(v);
+          } else {
+            obj[k] = [existing, v];
+          }
+        }
+        headers = obj;
+      }
+      if (statusText !== undefined) return origWriteHead(status, statusText, headers);
+      return origWriteHead(status, headers);
+    };
+
+    // Same family of bug as the writeHead shim: srvx terminates empty
+    // responses (e.g. 204 from a successful DELETE) with
+    //   nodeRes.end(resolve)
+    // which is the standard `end(callback)` overload. express-session
+    // wraps res.end and unconditionally treats arguments[0] as the
+    // chunk, then crashes Node with ERR_INVALID_ARG_TYPE because the
+    // resolve function is not a string/Buffer. Normalize here so the
+    // wrapped end sees end(undefined, undefined, callback).
+    const origEnd: any = res.end.bind(res);
+    (res as any).end = function (...args: any[]) {
+      if (args.length === 1 && typeof args[0] === "function") {
+        return origEnd(undefined, undefined, args[0]);
+      }
+      return origEnd(...args);
+    };
+
+    return (tusServer as any).handle(req, res);
+  };
+  app.all("/api/uploads/tus", isAuthenticated, tusHandler);
+  app.all("/api/uploads/tus/*", isAuthenticated, tusHandler);
+
   app.post(["/api/projects/:projectId/files", "/api/projects/:projectId/upload"], hasProjectEditAccess, upload.single('file'), handleMulterErrors, async (req: FileRequest, res, next) => {
     try {
       const projectId = parseInt(req.params.projectId);

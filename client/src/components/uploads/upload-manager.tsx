@@ -1,43 +1,39 @@
 import { useEffect, useState } from 'react';
-import { X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader2, Pause, Play } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { uploadService, type UploadProgress } from '@/lib/upload-service';
 import { useLocation } from 'wouter';
 
-// Component to display a list of ongoing uploads
+// Floating panel that shows every in-flight, paused, completed or failed
+// upload. Subscribes to uploadService so it auto-refreshes as chunks land.
 export function UploadManager() {
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
 
-  // Subscribe to upload updates
   useEffect(() => {
     const unsubscribe = uploadService.subscribe((updatedUploads) => {
       setUploads(updatedUploads);
-      
-      // Auto-open when there are active uploads
       if (updatedUploads.length > 0 && !isOpen) {
         setIsOpen(true);
       }
     });
-
     return unsubscribe;
   }, [isOpen]);
 
-  // If there are no uploads, don't render anything
   if (uploads.length === 0) {
     return null;
   }
 
-  // Count active uploads
-  const activeUploads = uploads.filter(u => u.status === 'uploading' || u.status === 'pending').length;
-  
+  const activeUploads = uploads.filter(
+    (u) => u.status === 'uploading' || u.status === 'pending' || u.status === 'paused'
+  ).length;
+
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end space-y-2">
-      {/* Upload Manager Button */}
-      <Button 
+      <Button
         onClick={() => setIsOpen(!isOpen)}
         size="sm"
         variant="default"
@@ -52,10 +48,9 @@ export function UploadManager() {
           <>Uploads</>
         )}
       </Button>
-      
-      {/* Upload Cards */}
+
       {isOpen && (
-        <Card className="w-80 shadow-lg">
+        <Card className="w-96 shadow-lg">
           <CardContent className="p-3">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-medium">File Uploads</h3>
@@ -68,12 +63,14 @@ export function UploadManager() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {uploads.map((upload) => (
-                <UploadItem 
-                  key={upload.id} 
-                  upload={upload} 
+                <UploadItem
+                  key={upload.id}
+                  upload={upload}
+                  onPause={() => uploadService.pauseUpload(upload.id)}
+                  onResume={() => uploadService.resumeUpload(upload.id)}
                   onCancel={() => uploadService.cancelUpload(upload.id)}
                   onRemove={() => uploadService.removeUpload(upload.id)}
                   onViewProject={() => setLocation(`/projects/${upload.projectId}`)}
@@ -87,65 +84,113 @@ export function UploadManager() {
   );
 }
 
-// Component to display a single upload with progress
-function UploadItem({ 
-  upload, 
-  onCancel, 
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes < 1024) return `${Math.round(bytes || 0)} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function formatDuration(seconds: number | undefined): string {
+  if (seconds == null || !isFinite(seconds) || seconds <= 0) return '—';
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  if (m < 60) return `${m}m ${s}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m`;
+}
+
+function UploadItem({
+  upload,
+  onPause,
+  onResume,
+  onCancel,
   onRemove,
-  onViewProject 
-}: { 
+  onViewProject,
+}: {
   upload: UploadProgress;
+  onPause: () => void;
+  onResume: () => void;
   onCancel: () => void;
   onRemove: () => void;
   onViewProject: () => void;
 }) {
-  const isActive = upload.status === 'uploading' || upload.status === 'pending';
-  
+  const isUploading = upload.status === 'uploading' || upload.status === 'pending';
+  const isPaused = upload.status === 'paused';
+  const isActive = isUploading || isPaused;
+
   return (
     <div className="border rounded-md p-2 bg-background">
-      <div className="flex justify-between items-start mb-1">
-        <div className="truncate flex-1 pr-2">
-          <p className="text-xs font-medium truncate">{upload.filename}</p>
+      <div className="flex justify-between items-start mb-1 gap-2">
+        <div className="truncate flex-1 min-w-0">
+          <p className="text-xs font-medium truncate" title={upload.filename}>
+            {upload.filename}
+          </p>
         </div>
-        
-        {isActive ? (
+
+        <div className="flex items-center gap-0.5 shrink-0">
+          {isUploading && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={onPause}
+              title="Pause upload"
+            >
+              <Pause className="h-3 w-3" />
+            </Button>
+          )}
+          {isPaused && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={onResume}
+              title="Resume upload"
+            >
+              <Play className="h-3 w-3" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
             className="h-6 w-6 p-0"
-            onClick={onCancel}
+            onClick={isActive ? onCancel : onRemove}
+            title={isActive ? 'Cancel upload' : 'Dismiss'}
           >
             <X className="h-3 w-3" />
           </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={onRemove}
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        )}
+        </div>
       </div>
-      
-      {/* Progress bar */}
+
       {isActive && (
         <div className="space-y-1">
-          <div className="flex justify-between text-xs">
-            <span>{upload.status === 'uploading' ? 'Uploading...' : 'Preparing...'}</span>
-            <span>{Math.round(upload.progress)}%</span>
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>
+              {upload.status === 'pending' && 'Preparing…'}
+              {upload.status === 'uploading' && `${formatBytes(upload.bytesPerSecond || 0)}/s`}
+              {upload.status === 'paused' && 'Paused'}
+            </span>
+            <span>
+              {formatBytes(upload.bytesUploaded)} / {formatBytes(upload.fileSize)}
+              {upload.status === 'uploading' && upload.etaSeconds != null && (
+                <> · {formatDuration(upload.etaSeconds)} left</>
+              )}
+            </span>
           </div>
           <Progress value={upload.progress} className="h-1.5" />
+          <div className="text-right text-[10px] text-muted-foreground">
+            {Math.round(upload.progress)}%
+          </div>
         </div>
       )}
-      
-      {/* Status indicators */}
+
       {upload.status === 'completed' && (
         <div className="flex items-center justify-between mt-1">
           <div className="flex items-center text-xs text-green-600 dark:text-green-500">
             <CheckCircle className="h-3 w-3 mr-1" />
-            <span>Upload completed</span>
+            <span>Upload complete</span>
           </div>
           <Button
             variant="ghost"
@@ -157,7 +202,7 @@ function UploadItem({
           </Button>
         </div>
       )}
-      
+
       {upload.status === 'error' && (
         <div className="flex items-center mt-1 text-xs text-red-600 dark:text-red-500">
           <AlertCircle className="h-3 w-3 mr-1" />
