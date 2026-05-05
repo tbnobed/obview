@@ -1,5 +1,64 @@
 // Load environment configuration for the application
 
+import { execSync } from 'child_process';
+
+// Detect whether the local ffmpeg has the h264_nvenc encoder compiled in
+// AND can actually open an NVENC session (i.e. there's a usable NVIDIA GPU
+// reachable from this process). We run this once at module load so the
+// answer is cached for the rest of the process. Two probes are needed
+// because `-encoders` only tells us the binary supports NVENC; on a host
+// with no GPU (or no driver, or no permissions) the encoder is listed but
+// any attempted encode fails immediately. The second probe forces ffmpeg
+// to actually initialise an NVENC session against /dev/null, which is
+// fast (<200ms) and gives us a definitive yes/no.
+// Returns { ok, reason } so the startup log can explain *why* NVENC was
+// rejected ('ffmpeg_missing' | 'encoder_missing' | 'nvenc_init_failed').
+function detectNvenc(): { ok: boolean; reason?: string } {
+  let encoders: string;
+  try {
+    encoders = execSync('ffmpeg -hide_banner -encoders 2>/dev/null', {
+      encoding: 'utf8',
+      timeout: 2000,
+    });
+  } catch {
+    return { ok: false, reason: 'ffmpeg_missing' };
+  }
+  if (!/h264_nvenc/.test(encoders)) return { ok: false, reason: 'encoder_missing' };
+  try {
+    execSync(
+      'ffmpeg -hide_banner -loglevel error -f lavfi -i color=size=64x64:duration=0.1 ' +
+        '-c:v h264_nvenc -f null - 2>&1',
+      { encoding: 'utf8', timeout: 2000, stdio: ['ignore', 'ignore', 'ignore'] }
+    );
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: 'nvenc_init_failed' };
+  }
+}
+
+// VIDEO_USE_NVENC: 'true' forces NVENC on, 'false' forces it off,
+// anything else (including unset) auto-detects. Auto-detect is the new
+// default so production hosts with a GPU don't need any config to
+// benefit, while CI / dev boxes without a GPU stay on libx264.
+function resolveUseNvenc(): boolean {
+  const explicit = (process.env.VIDEO_USE_NVENC || '').toLowerCase();
+  if (explicit === 'true' || explicit === '1') {
+    console.log('[Video] NVENC: forced ON via VIDEO_USE_NVENC=true — using h264_nvenc');
+    return true;
+  }
+  if (explicit === 'false' || explicit === '0') {
+    console.log('[Video] NVENC: forced OFF via VIDEO_USE_NVENC=false — using libx264');
+    return false;
+  }
+  const { ok, reason } = detectNvenc();
+  if (ok) {
+    console.log('[Video] NVENC auto-detect: available — using h264_nvenc');
+  } else {
+    console.log(`[Video] NVENC auto-detect: unavailable (${reason}) — using libx264`);
+  }
+  return ok;
+}
+
 // Helper to determine the appropriate domain based on environment
 // This is only a fallback - client should send their actual domain with each request
 function getDomain(): string {
@@ -38,7 +97,7 @@ export const config = {
     // use NVIDIA NVENC (h264_nvenc) instead of libx264. Falls back to libx264
     // automatically if the NVENC encode fails (unsupported input codec, no
     // GPU access, etc.) so a misconfigured host can never block uploads.
-    useNvenc: process.env.VIDEO_USE_NVENC === 'true',
+    useNvenc: resolveUseNvenc(),
     // NVENC quality knobs. Presets are p1 (fastest) → p7 (slowest/best).
     // p4 is the balanced "medium" equivalent. CQ 23 ≈ libx264 CRF 23.
     nvenc: {
