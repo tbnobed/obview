@@ -26,7 +26,10 @@ function detectNvenc(): { ok: boolean; reason?: string } {
   if (!/h264_nvenc/.test(encoders)) return { ok: false, reason: 'encoder_missing' };
   try {
     execSync(
-      'ffmpeg -hide_banner -loglevel error -f lavfi -i color=size=64x64:duration=0.1 ' +
+      // 256x256 — comfortably above T4's NVENC minimum frame dimension
+      // (~145x49). 64x64 is rejected by Turing+ NVENC with
+      // "Frame Dimension less than the minimum supported value".
+      'ffmpeg -hide_banner -loglevel error -f lavfi -i color=size=256x256:duration=0.1 ' +
         '-c:v h264_nvenc -f null - 2>&1',
       { encoding: 'utf8', timeout: 2000, stdio: ['ignore', 'ignore', 'ignore'] }
     );
