@@ -190,10 +190,15 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
     try {
       const res = await apiRequest("POST", `/api/files/${file.id}/share`);
       const data = await res.json();
-      const match = typeof data?.shareUrl === "string"
-        ? data.shareUrl.match(/\/share\/([^/?#]+)/)
-        : null;
-      const token = match?.[1] ?? null;
+      // Server now returns the raw token directly. Fall back to parsing
+      // the trailing path segment of shareUrl for older server builds
+      // that only returned shareUrl. Old format was /share/<token>; new
+      // format is bare /<token>.
+      let token: string | null = typeof data?.token === "string" ? data.token : null;
+      if (!token && typeof data?.shareUrl === "string") {
+        const m = data.shareUrl.match(/\/(?:share\/)?([^/?#]+)\/?$/);
+        token = m?.[1] ?? null;
+      }
       if (!token) throw new Error("Failed to obtain share token");
       setShareToken(token);
       (file as any).shareToken = token;
@@ -222,9 +227,15 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
     try {
       const token = await ensureShareToken();
       if (!token) throw new Error("No token");
+      // Use the configured short-link domain when available, falling
+      // back to the current origin. URL format is bare-token at root,
+      // matching ShareLinksDialog.publicShareUrl.
+      const configured = (import.meta.env.VITE_SHORT_LINK_BASE_URL as string | undefined)
+        ?.trim().replace(/\/+$/, "");
+      const base = configured && configured.length > 0 ? configured : window.location.origin;
       const url = variant === "viewOnly"
-        ? `${window.location.origin}/share/${token}?viewOnly=true`
-        : `${window.location.origin}/share/${token}`;
+        ? `${base}/${token}?viewOnly=true`
+        : `${base}/${token}`;
 
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(url);

@@ -3638,11 +3638,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return short share URL — bare token on the configured short-link
       // domain (e.g. https://t.obviu.io/abc12345). Falls back to the
-      // request origin if SHORT_LINK_BASE_URL is unset.
+      // request origin if SHORT_LINK_BASE_URL is unset. We also return
+      // the raw token so callers don't have to parse it back out of the
+      // URL (the previous /share/<token> path is gone).
       const base = (process.env.SHORT_LINK_BASE_URL || "").trim().replace(/\/+$/, "")
         || `${req.protocol}://${req.get('host')}`;
       const shareUrl = `${base}/${file.shareToken}`;
-      res.json({ shareUrl });
+      res.json({ shareUrl, token: file.shareToken });
     } catch (error) {
       next(error);
     }
