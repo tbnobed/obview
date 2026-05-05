@@ -23,7 +23,16 @@ export interface SpeechQualityResult {
 const NO_SPEECH_THRESHOLD = 0.6;
 const LOGPROB_THRESHOLD = -1.0;
 const MIN_WORDS = 8;
-const MIN_UNIQUE_TOKEN_RATIO = 0.25;
+// Whisper hallucinations on music/silence usually have unique-token
+// ratios well under 10% (the same handful of words repeating).
+// Real English speech follows Zipf's law: function words dominate, so
+// a 1000-word transcript naturally lands around 15–20% unique. Picking
+// a hard threshold here false-positives real long transcripts, so we
+// only fire when the ratio is genuinely degenerate AND the transcript
+// is short enough that the low ratio can't be explained by length.
+const HARD_UNIQUE_TOKEN_RATIO = 0.08; // always suspicious below this
+const SHORT_UNIQUE_TOKEN_RATIO = 0.15; // suspicious only on short transcripts
+const SHORT_TRANSCRIPT_WORDS = 150;
 const MAX_TOP_PHRASE_RATIO = 0.5;
 
 function tokenize(text: string): string[] {
@@ -145,12 +154,23 @@ export function assessSpeechQuality(
     };
   }
 
-  if (wordCount >= 20 && uniqueTokenRatio < MIN_UNIQUE_TOKEN_RATIO) {
+  // Two-tier unique-token check. Only fires on transcripts that are
+  // either degenerately repetitive (< 8% unique) OR short-and-repetitive
+  // (< 15% unique with under 150 words). Long natural-speech transcripts
+  // can sit at 12–18% unique purely because of function-word frequency,
+  // so a single fixed threshold across all lengths produced false
+  // positives on real videos.
+  const tooRepetitive =
+    wordCount >= 20 &&
+    (uniqueTokenRatio < HARD_UNIQUE_TOKEN_RATIO ||
+      (wordCount < SHORT_TRANSCRIPT_WORDS &&
+        uniqueTokenRatio < SHORT_UNIQUE_TOKEN_RATIO));
+  if (tooRepetitive) {
     return {
       hasSpeech: false,
       reason: `Transcript appears to be repetitive noise (only ${Math.round(
         uniqueTokenRatio * 100,
-      )}% unique words). Likely no meaningful speech.`,
+      )}% unique words across ${wordCount} words). Likely no meaningful speech.`,
       metrics,
     };
   }
