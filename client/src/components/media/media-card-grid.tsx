@@ -223,19 +223,21 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
     }
   };
 
+  const buildShareUrl = (token: string, variant?: "viewOnly" | "comments") => {
+    // Use the configured short-link domain when available, falling
+    // back to the current origin. URL format is bare-token at root,
+    // matching ShareLinksDialog.publicShareUrl.
+    const configured = (import.meta.env.VITE_SHORT_LINK_BASE_URL as string | undefined)
+      ?.trim().replace(/\/+$/, "");
+    const base = configured && configured.length > 0 ? configured : window.location.origin;
+    return variant === "viewOnly" ? `${base}/${token}?viewOnly=true` : `${base}/${token}`;
+  };
+
   const copyShareUrl = async (variant: "viewOnly" | "comments") => {
     try {
       const token = await ensureShareToken();
       if (!token) throw new Error("No token");
-      // Use the configured short-link domain when available, falling
-      // back to the current origin. URL format is bare-token at root,
-      // matching ShareLinksDialog.publicShareUrl.
-      const configured = (import.meta.env.VITE_SHORT_LINK_BASE_URL as string | undefined)
-        ?.trim().replace(/\/+$/, "");
-      const base = configured && configured.length > 0 ? configured : window.location.origin;
-      const url = variant === "viewOnly"
-        ? `${base}/${token}?viewOnly=true`
-        : `${base}/${token}`;
+      const url = buildShareUrl(token, variant);
 
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(url);
@@ -790,7 +792,7 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
           {shareToken && (
             <Input
               readOnly
-              value={`${window.location.origin}/share/${shareToken}`}
+              value={buildShareUrl(shareToken)}
               className="font-mono text-xs"
               onClick={(e) => (e.target as HTMLInputElement).select()}
             />
