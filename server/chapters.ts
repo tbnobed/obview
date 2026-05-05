@@ -166,6 +166,22 @@ async function runChaptersJob(fileId: number): Promise<void> {
     return;
   }
 
+  // Same speech-quality gate as summarization — prevents the LLM from
+  // inventing chapters ("Step 1, Step 2, Step 3...") when the audio is
+  // actually silence or music.
+  const { assessSpeechQuality } = await import("./speech-quality");
+  const quality = assessSpeechQuality(transcript.segments);
+  if (!quality.hasSpeech) {
+    console.log(
+      `[Chapters] Skipping file ${fileId}: ${quality.reason}`
+    );
+    await storage.updateTranscript(transcript.id, {
+      chaptersStatus: "failed",
+      chaptersError: quality.reason,
+    } as any);
+    return;
+  }
+
   await storage.updateTranscript(transcript.id, {
     chaptersStatus: "processing",
     chaptersError: null,

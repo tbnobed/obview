@@ -42,6 +42,24 @@ async function runSummarizationJob(fileId: number): Promise<void> {
     return;
   }
 
+  // Speech-quality gate. Whisper hallucinates plausible-sounding text on
+  // silence/music; without this guard the LLM happily summarizes the
+  // hallucination (e.g. inventing a "climate change discussion" for a
+  // music-only video). Apply on every run, not just auto-trigger, so manual
+  // Regenerate clicks can't bypass it.
+  const { assessSpeechQuality } = await import("./speech-quality");
+  const quality = assessSpeechQuality(transcript.segments);
+  if (!quality.hasSpeech) {
+    console.log(
+      `[Summarization] Skipping file ${fileId}: ${quality.reason}`
+    );
+    await storage.updateTranscript(transcript.id, {
+      summaryStatus: "failed",
+      summaryError: quality.reason,
+    } as any);
+    return;
+  }
+
   await storage.updateTranscript(transcript.id, {
     summaryStatus: "processing",
     summaryError: null,

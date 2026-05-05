@@ -17,6 +17,8 @@ export interface TranscriptSegment {
   start: number;
   end: number;
   text: string;
+  avgLogprob?: number | null;
+  noSpeechProb?: number | null;
 }
 
 const MODEL_NAME = process.env.WHISPER_MODEL || "base.en";
@@ -259,6 +261,8 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
         start: typeof seg.start === "number" ? seg.start : 0,
         end: typeof seg.end === "number" ? seg.end : 0,
         text: (seg.text || "").trim(),
+        avgLogprob: typeof seg.avgLogprob === "number" ? seg.avgLogprob : null,
+        noSpeechProb: typeof seg.noSpeechProb === "number" ? seg.noSpeechProb : null,
       }))
       .filter((s) => s.text.length > 0);
 
@@ -280,6 +284,25 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
     console.log(
       `[Transcription] Completed file ${fileId}: ${segments.length} segments, ${fullText.length} chars`
     );
+
+    // Detect music-only / silent / hallucinated transcripts before
+    // burning LLM cycles on synopsis + chapters.
+    const { assessSpeechQuality } = await import("./speech-quality");
+    const quality = assessSpeechQuality(segments);
+    if (!quality.hasSpeech) {
+      console.log(
+        `[Transcription] File ${fileId}: speech-quality gate failed — ${quality.reason} ` +
+          `(words=${quality.metrics.wordCount}, avgNoSpeech=${quality.metrics.avgNoSpeechProb}, ` +
+          `avgLogprob=${quality.metrics.avgLogprob}, repetition=${quality.metrics.repetitionRatio.toFixed(2)})`
+      );
+      await storage.updateTranscript(record.id, {
+        summaryStatus: "failed",
+        summaryError: quality.reason,
+        chaptersStatus: "failed",
+        chaptersError: quality.reason,
+      } as any);
+      return;
+    }
 
     // Auto-trigger summarization and chapters (fire-and-forget)
     import("./summarization")
