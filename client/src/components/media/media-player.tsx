@@ -12,6 +12,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import TimelineComments from "@/components/media/timeline-comments";
 import TranscriptView from "@/components/media/transcript-view";
+import { MediaInfoBody } from "@/components/media/media-info-dialog";
 import AIInsightsView from "@/components/media/ai-insights-view";
 import { DownloadButton } from "@/components/download-button";
 import { ExportMarkersButton } from "@/components/export-markers-button";
@@ -2219,38 +2220,28 @@ export default function MediaPlayer({
       {file && (
         <div className="w-full h-full max-h-[50vh] min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t border-neutral-200 dark:border-gray-800 lg:border-t-0 lg:border-l overflow-hidden lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
-            {/* Tab controls - Desktop */}
-            <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
-              <TabsList className="bg-neutral-100 dark:bg-gray-900">
-                <TabsTrigger value="comments" onClick={() => setShowCommentsTab(true)}>Comments</TabsTrigger>
-                {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="transcript" onClick={() => setShowCommentsTab(false)}>Transcript</TabsTrigger>
-                )}
-                {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="ai" onClick={() => setShowCommentsTab(false)}>AI</TabsTrigger>
-                )}
-                <TabsTrigger value="versions" onClick={() => setShowCommentsTab(false)}>Versions</TabsTrigger>
-              </TabsList>
-            </div>
-
-            {/* Tab controls - Mobile (horizontally scrollable) */}
-            <div className="flex lg:hidden items-center px-2 py-2 border-b border-neutral-200 dark:border-gray-800 overflow-x-auto">
+            {/* Tab controls — single horizontally-scrollable strip works for
+                both desktop and mobile so all 5 labels fit without truncation. */}
+            <div className="flex items-center px-2 py-2 lg:px-3 border-b border-neutral-200 dark:border-gray-800 overflow-x-auto">
               <TabsList className="bg-neutral-100 dark:bg-gray-900 inline-flex w-max">
-                <TabsTrigger value="comments" className="text-xs px-3" onClick={() => setShowCommentsTab(true)}>
+                <TabsTrigger value="comments" className="text-xs px-2.5" onClick={() => setShowCommentsTab(true)}>
                   Comments
                 </TabsTrigger>
                 {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="transcript" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
+                  <TabsTrigger value="transcript" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
                     Transcript
                   </TabsTrigger>
                 )}
                 {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="ai" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
+                  <TabsTrigger value="ai" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
                     AI
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="versions" className="text-xs px-3" onClick={() => setShowCommentsTab(false)}>
+                <TabsTrigger value="versions" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
                   Versions
+                </TabsTrigger>
+                <TabsTrigger value="details" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
+                  Details
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -2316,6 +2307,10 @@ export default function MediaPlayer({
                 />
               </TabsContent>
             )}
+
+            <TabsContent value="details" className="flex-1 min-h-0 overflow-auto px-3 py-3 lg:px-4 lg:py-4">
+              <MediaInfoBody fileId={file.id} />
+            </TabsContent>
 
             <TabsContent value="versions" className="flex-grow overflow-auto px-2 py-2 lg:px-4 lg:py-3">
               {(() => {
