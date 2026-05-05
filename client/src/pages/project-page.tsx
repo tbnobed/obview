@@ -397,7 +397,10 @@ export default function ProjectPage() {
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-              {/* Overflow menu — collapses Share, Download, Invite, Activity, Settings */}
+              {/* Overflow menu — collapses Share, Download, Invite, Activity, Settings.
+                  These are project-level actions, so they're hidden while the user
+                  is focused on a single piece of media. */}
+              {viewMode !== 'player' && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -436,6 +439,7 @@ export default function ProjectPage() {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+              )}
 
               {/* Reviewer Links Dialog */}
               <ShareLinksDialog
@@ -527,18 +531,16 @@ export default function ProjectPage() {
               </DialogContent>
             </Dialog>
 
-            {isEditor && (
-              <>
-                <Button
-                  size="sm"
-                  className="h-9 px-3.5 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 shadow-sm"
-                  onClick={() => navigate(`/projects/${projectId}/upload`)}
-                  title="Upload media"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline text-sm font-medium">Upload</span>
-                </Button>
-              </>
+            {isEditor && viewMode !== 'player' && (
+              <Button
+                size="sm"
+                className="h-9 px-3.5 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 shadow-sm"
+                onClick={() => navigate(`/projects/${projectId}/upload`)}
+                title="Upload media"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline text-sm font-medium">Upload</span>
+              </Button>
             )}
             {viewMode === 'player' && selectedFileId && (
               <Button
