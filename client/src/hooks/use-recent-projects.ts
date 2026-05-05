@@ -1,53 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
-const STORAGE_KEY = "recent_project_ids";
-const MAX_RECENT = 10;
+const QUERY_KEY = ["/api/recent-projects"] as const;
 
-function readStored(): number[] {
-  if (typeof window === "undefined") return [];
+// Module-level helper so callers get a referentially-stable function — this
+// keeps `useEffect` triggers based on it from re-firing and spamming the API.
+async function touchRecentProject(projectId: number): Promise<void> {
+  if (!Number.isFinite(projectId)) return;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((n) => typeof n === "number" && Number.isFinite(n));
+    await apiRequest("POST", `/api/recent-projects/${projectId}`);
+    queryClient.invalidateQueries({ queryKey: QUERY_KEY });
   } catch {
-    return [];
+    // Best-effort: failing to record the visit shouldn't break navigation.
   }
 }
 
 export function useRecentProjects() {
-  const [recentIds, setRecentIds] = useState<number[]>(() => readStored());
+  const { data: recentIds = [], isLoading } = useQuery<number[]>({
+    queryKey: QUERY_KEY,
+  });
 
-  // Cross-tab sync — pick up changes made in other tabs of the same app.
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) setRecentIds(readStored());
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  const addRecentProject = useCallback((id: number) => {
-    if (!Number.isFinite(id)) return;
-    setRecentIds((prev) => {
-      const next = [id, ...prev.filter((p) => p !== id)].slice(0, MAX_RECENT);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  }, []);
-
-  const removeRecentProject = useCallback((id: number) => {
-    setRecentIds((prev) => {
-      const next = prev.filter((p) => p !== id);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  }, []);
-
-  return { recentIds, addRecentProject, removeRecentProject };
+  return { recentIds, isLoading, addRecentProject: touchRecentProject };
 }

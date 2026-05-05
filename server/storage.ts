@@ -8,6 +8,7 @@ import {
   commentsUnified,
   commentReactions,
   projectUsers,
+  recentProjects as recentProjectsTable,
   activityLogs,
   invitations,
   approvals,
@@ -147,6 +148,10 @@ export interface IStorage {
   addUserToProject(projectUser: InsertProjectUser): Promise<ProjectUser>;
   updateProjectUserRole(id: number, role: string): Promise<ProjectUser | undefined>;
   removeUserFromProject(projectId: number, userId: number): Promise<boolean>;
+
+  // Recent projects (per-user history of opened projects)
+  touchRecentProject(userId: number, projectId: number): Promise<void>;
+  getRecentProjectIds(userId: number, limit?: number): Promise<number[]>;
 
   // Activity logging
   logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
@@ -932,6 +937,9 @@ export class MemStorage implements IStorage {
     this.projectUsers.set(id, updatedProjectUser);
     return updatedProjectUser;
   }
+
+  async touchRecentProject(_userId: number, _projectId: number): Promise<void> { /* noop in MemStorage */ }
+  async getRecentProjectIds(_userId: number, _limit: number = 10): Promise<number[]> { return []; }
 
   async removeUserFromProject(projectId: number, userId: number): Promise<boolean> {
     const projectUser = Array.from(this.projectUsers.values()).find(
@@ -2113,6 +2121,27 @@ export class DatabaseStorage implements IStorage {
       )
       .returning({ id: projectUsers.id });
     return result.length > 0;
+  }
+
+  // Recent projects — upsert (user_id, project_id) and refresh opened_at.
+  async touchRecentProject(userId: number, projectId: number): Promise<void> {
+    await db
+      .insert(recentProjectsTable)
+      .values({ userId, projectId })
+      .onConflictDoUpdate({
+        target: [recentProjectsTable.userId, recentProjectsTable.projectId],
+        set: { openedAt: new Date() },
+      });
+  }
+
+  async getRecentProjectIds(userId: number, limit: number = 10): Promise<number[]> {
+    const rows = await db
+      .select({ projectId: recentProjectsTable.projectId })
+      .from(recentProjectsTable)
+      .where(eq(recentProjectsTable.userId, userId))
+      .orderBy(desc(recentProjectsTable.openedAt))
+      .limit(limit);
+    return rows.map((r) => r.projectId);
   }
 
   // Activity Log methods

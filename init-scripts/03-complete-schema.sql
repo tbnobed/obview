@@ -112,6 +112,16 @@ CREATE TABLE IF NOT EXISTS project_users (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- Recent projects (per-user history of opened projects, powers sidebar Recent list)
+CREATE TABLE IF NOT EXISTS recent_projects (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    opened_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, project_id)
+);
+CREATE INDEX IF NOT EXISTS recent_projects_user_opened_idx
+    ON recent_projects (user_id, opened_at DESC);
+
 -- Activity logs table
 CREATE TABLE IF NOT EXISTS activity_logs (
     id SERIAL PRIMARY KEY,

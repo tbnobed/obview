@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, bigint, boolean, timestamp, json, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, bigint, boolean, timestamp, json, uuid, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -160,6 +160,18 @@ export const projectUsers = pgTable("project_users", {
 
 export const insertProjectUserSchema = createInsertSchema(projectUsers)
   .omit({ id: true, createdAt: true });
+
+// RECENT PROJECTS — tracks the last time each user opened each project so
+// the sidebar can surface their personal "Recent" list across devices.
+export const recentProjects = pgTable("recent_projects", {
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  openedAt: timestamp("opened_at").notNull().defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.projectId] }),
+}));
+
+export type RecentProject = typeof recentProjects.$inferSelect;
 
 // ACTIVITY LOG SCHEMA
 export const activityLogs = pgTable("activity_logs", {

@@ -1336,6 +1336,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== PROJECT ROUTES =====
   // Get all projects (accessible to user)
+  // Recent projects — server-side history of which projects this user has
+  // opened, ordered by most-recent first. Powers the sidebar's "Recent" list
+  // so it's truly per-account and follows the user across devices.
+  app.get("/api/recent-projects", isAuthenticated, async (req, res, next) => {
+    try {
+      const limitParam = parseInt(String(req.query.limit ?? ""), 10);
+      const limit = Number.isFinite(limitParam) && limitParam > 0 && limitParam <= 50 ? limitParam : 10;
+      const ids = await storage.getRecentProjectIds(req.user.id, limit);
+      res.json(ids);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/recent-projects/:projectId", hasProjectAccess, async (req, res, next) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (!Number.isFinite(projectId)) {
+        return res.status(400).json({ message: "Invalid projectId" });
+      }
+      await storage.touchRecentProject(req.user.id, projectId);
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/projects", isAuthenticated, async (req, res, next) => {
     try {
       let projects;
