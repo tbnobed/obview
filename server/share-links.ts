@@ -19,16 +19,16 @@ declare module "express-session" {
 
 // ---------- helpers ----------
 
-// Generate a short, URL-safe share token. 12 random bytes = 16 base64url chars
-// (96 bits of entropy) — keeps URLs roughly half their old length while
-// retaining strong brute-force resistance for bearer share links. The pre-
-// check is a UX guard; the real correctness comes from catching the unique-
+// Generate a short, URL-safe share token. 6 random bytes = 8 base64url chars
+// (48 bits of entropy) — keeps share URLs minimal (e.g. obviu.io/aB3xK9mQ)
+// while remaining unguessable for bearer access. The pre-check is a UX
+// guard; correctness under concurrency comes from catching the unique-
 // index violation at insert time and retrying (see createForScope).
 async function generateShortShareToken(): Promise<string> {
-  const candidate = crypto.randomBytes(12).toString("base64url");
+  const candidate = crypto.randomBytes(6).toString("base64url");
   const existing = await storage.getShareLinkByToken(candidate);
   if (!existing) return candidate;
-  return crypto.randomBytes(12).toString("base64url");
+  return crypto.randomBytes(6).toString("base64url");
 }
 
 // Postgres unique-violation SQLSTATE

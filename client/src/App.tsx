@@ -30,6 +30,7 @@ import TermsPage from "@/pages/terms-page";
 import ContactPage from "@/pages/contact-page";
 import PublicSharePage from "@/pages/public-share-page";
 import MultiSharePage from "@/pages/multi-share-page";
+import ShareResolverPage from "@/pages/share-resolver-page";
 
 function Router() {
   return (
@@ -54,6 +55,11 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/contact" component={ContactPage} />
+      {/* Bare-token short share URLs: obviu.io/<token> resolves to the
+          right share page. This MUST stay last so it doesn't shadow the
+          named routes above (single-segment only — wouter doesn't match
+          /:token across slashes). */}
+      <Route path="/:token" component={ShareResolverPage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -19,7 +19,9 @@ type Props = {
 };
 
 function publicShareUrl(token: string) {
-  return `${window.location.origin}/s/${token}`;
+  // Short URL: bare token at the site root. The SPA resolves /:token to
+  // the appropriate share page (multi-share or legacy single-file share).
+  return `${window.location.origin}/${token}`;
 }
 
 export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeId, scopeName }: Props) {

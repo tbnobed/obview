@@ -3619,25 +3619,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Generate a short, random token if one doesn't exist. 12 random bytes
-      // = 16 base64url chars (96 bits) — short URLs, still unguessable, and
-      // collision-resistant even though this legacy column has no UNIQUE
-      // index. We loop with a pre-check guard so two files cannot end up
-      // pointing at the same token (which would resolve to the wrong file).
+      // Generate a short, random token if one doesn't exist. 6 random bytes
+      // = 8 base64url chars (48 bits) — keeps URLs minimal while remaining
+      // unguessable for bearer share access. Loop with a pre-check guard
+      // so two files cannot end up pointing at the same token (this legacy
+      // column has no UNIQUE index).
       if (!file.shareToken) {
         let token = "";
         for (let i = 0; i < 5; i++) {
-          const candidate = crypto.randomBytes(12).toString("base64url");
+          const candidate = crypto.randomBytes(6).toString("base64url");
           const collision = await storage.getFileByShareToken(candidate);
           if (!collision) { token = candidate; break; }
         }
-        if (!token) token = crypto.randomBytes(18).toString("base64url");
+        if (!token) token = crypto.randomBytes(12).toString("base64url");
         await storage.updateFile(fileId, { shareToken: token });
         file.shareToken = token;
       }
 
-      // Return share URL
-      const shareUrl = `${req.protocol}://${req.get('host')}/share/${file.shareToken}`;
+      // Return short share URL — bare token at site root. Old /share/:token
+      // URLs continue to work for backward compatibility.
+      const shareUrl = `${req.protocol}://${req.get('host')}/${file.shareToken}`;
       res.json({ shareUrl });
     } catch (error) {
       next(error);
@@ -3668,24 +3669,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Generate a short, random token if one doesn't exist. 12 random bytes
-      // = 16 base64url chars (96 bits) — short URLs, still unguessable, and
-      // collision-resistant even though this legacy column has no UNIQUE
-      // index.
+      // Generate a short, random token if one doesn't exist. 6 random bytes
+      // = 8 base64url chars (48 bits) — short URLs, still unguessable.
       if (!file.shareToken) {
         let token = "";
         for (let i = 0; i < 5; i++) {
-          const candidate = crypto.randomBytes(12).toString("base64url");
+          const candidate = crypto.randomBytes(6).toString("base64url");
           const collision = await storage.getFileByShareToken(candidate);
           if (!collision) { token = candidate; break; }
         }
-        if (!token) token = crypto.randomBytes(18).toString("base64url");
+        if (!token) token = crypto.randomBytes(12).toString("base64url");
         await storage.updateFile(fileId, { shareToken: token });
         file.shareToken = token;
       }
 
-      // Generate share URL
-      const shareUrl = `${req.protocol}://${req.get('host')}/share/${file.shareToken}`;
+      // Short share URL — bare token at site root.
+      const shareUrl = `${req.protocol}://${req.get('host')}/${file.shareToken}`;
       
       // Send email
       const { sendShareLinkEmail } = await import('./utils/sendgrid');
