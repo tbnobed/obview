@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, FileVideo, Plus, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ChevronLeft, Activity, MoreHorizontal, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useSidebar } from "@/hooks/use-sidebar";
+import { useRecentProjects } from "@/hooks/use-recent-projects";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +56,15 @@ export default function ProjectPage() {
   // Remember whether the left sidebar was expanded before the user opened a
   // file so we can restore that state when they leave the player.
   const sidebarWasExpandedRef = useRef(false);
+  const { addRecentProject } = useRecentProjects();
+
+  // Record this project as recently opened so it shows up in the sidebar's
+  // "Recent" list. Runs once per project id change.
+  useEffect(() => {
+    if (Number.isFinite(projectId)) {
+      addRecentProject(projectId);
+    }
+  }, [projectId, addRecentProject]);
   
   // Fetch all users for the invite dropdown
   const { data: allUsers } = useQuery<any[]>({

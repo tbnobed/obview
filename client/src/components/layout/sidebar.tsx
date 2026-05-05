@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { useProjects } from "@/hooks/use-projects";
+import { useRecentProjects } from "@/hooks/use-recent-projects";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -35,9 +36,15 @@ export default function Sidebar() {
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const { toast } = useToast();
-  
-  // Get top 10 most recent projects, already sorted by last edited from the useProjects hook
-  const recentProjects = projects ? projects.slice(0, 10) : [];
+  const { recentIds } = useRecentProjects();
+
+  // Show only the projects the user has actually opened, ordered by most-recent
+  // visit first. Projects whose ids no longer resolve (deleted, lost access) are
+  // skipped silently so the list stays clean.
+  const projectsById = new Map((projects ?? []).map((p) => [p.id, p]));
+  const recentProjects = recentIds
+    .map((id) => projectsById.get(id))
+    .filter((p): p is NonNullable<typeof p> => !!p);
   
   // This function checks for active uploads and shows warning if needed
   const handleLogoutCheck = () => {
@@ -196,13 +203,13 @@ export default function Sidebar() {
             </div>
           ) : (
             <div className="mt-3 px-2 py-3 text-sm text-neutral-500 dark:text-neutral-400">
-              <p>No projects yet</p>
-              <Button 
-                variant="link" 
+              <p>No recently opened projects</p>
+              <Button
+                variant="link"
                 className="px-0 py-0 h-auto text-primary-500 dark:text-primary-400"
                 onClick={() => window.location.href="/projects"}
               >
-                Create your first project
+                Browse all projects
               </Button>
             </div>
           )}
