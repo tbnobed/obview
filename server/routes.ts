@@ -1350,6 +1350,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Per-project review summary derived from file approvals. Returns a map
+  // { projectId: { status, totalFiles, approvedFiles, changesRequestedFiles } }
+  // for every project the current user can see, so the Projects page filter
+  // chips ("In Progress" / "In Review" / "Approved") reflect actual review
+  // activity instead of a manually-set field.
+  app.get("/api/projects/approval-summaries", isAuthenticated, async (req, res, next) => {
+    try {
+      const projectList = req.user.role === "admin"
+        ? await storage.getAllProjects()
+        : await storage.getProjectsByUser(req.user.id);
+      const ids = projectList.map((p) => p.id);
+      const summaries = await storage.getProjectApprovalSummaries(ids);
+      const result: Record<number, { status: "in_progress" | "in_review" | "approved"; totalFiles: number; approvedFiles: number; changesRequestedFiles: number }> = {};
+      for (const pid of ids) {
+        const s = summaries[pid] || { totalFiles: 0, approvedFiles: 0, changesRequestedFiles: 0 };
+        let status: "in_progress" | "in_review" | "approved";
+        if (s.totalFiles === 0) {
+          status = "in_progress";
+        } else if (s.changesRequestedFiles > 0) {
+          status = "in_review";
+        } else if (s.approvedFiles === s.totalFiles) {
+          status = "approved";
+        } else if (s.approvedFiles > 0) {
+          status = "in_review";
+        } else {
+          status = "in_progress";
+        }
+        result[pid] = { status, ...s };
+      }
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post("/api/recent-projects/:projectId", hasProjectAccess, async (req, res, next) => {
     try {
       const projectId = parseInt(req.params.projectId);

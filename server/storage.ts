@@ -153,6 +153,11 @@ export interface IStorage {
   touchRecentProject(userId: number, projectId: number): Promise<void>;
   getRecentProjectIds(userId: number, limit?: number): Promise<number[]>;
 
+  // Per-project review summary derived from file-level approvals.
+  // Returns a map: projectId -> { totalFiles, approvedFiles, changesRequestedFiles }.
+  // Used to derive each project's review status (in_progress / in_review / approved).
+  getProjectApprovalSummaries(projectIds: number[]): Promise<Record<number, { totalFiles: number; approvedFiles: number; changesRequestedFiles: number }>>;
+
   // Activity logging
   logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
   getActivitiesByProject(projectId: number): Promise<ActivityLog[]>;
@@ -940,6 +945,7 @@ export class MemStorage implements IStorage {
 
   async touchRecentProject(_userId: number, _projectId: number): Promise<void> { /* noop in MemStorage */ }
   async getRecentProjectIds(_userId: number, _limit: number = 10): Promise<number[]> { return []; }
+  async getProjectApprovalSummaries(_projectIds: number[]) { return {}; }
 
   async removeUserFromProject(projectId: number, userId: number): Promise<boolean> {
     const projectUser = Array.from(this.projectUsers.values()).find(
@@ -2142,6 +2148,52 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(recentProjectsTable.openedAt))
       .limit(limit);
     return rows.map((r) => r.projectId);
+  }
+
+  // Aggregates per-file approval rows up to per-project counts in a single
+  // round-trip. A file is considered "changes_requested" if any reviewer
+  // requested changes; otherwise "approved" if any reviewer approved; else
+  // it has no review activity yet. Used to derive project status filters.
+  async getProjectApprovalSummaries(projectIds: number[]) {
+    const result: Record<number, { totalFiles: number; approvedFiles: number; changesRequestedFiles: number }> = {};
+    if (projectIds.length === 0) return result;
+
+    const rows = await db.execute(sql`
+      WITH file_state AS (
+        SELECT
+          f.id AS file_id,
+          f.project_id,
+          BOOL_OR(a.status IN ('changes_requested','requested_changes')) AS has_changes,
+          BOOL_OR(a.status = 'approved') AS has_approved
+        FROM ${files} f
+        LEFT JOIN ${approvals} a ON a.file_id = f.id
+        WHERE f.project_id = ANY(${sql.raw(`ARRAY[${projectIds.join(",")}]::int[]`)})
+        GROUP BY f.id, f.project_id
+      )
+      SELECT
+        project_id,
+        COUNT(*)::int AS total_files,
+        SUM(CASE WHEN has_changes IS NOT TRUE AND has_approved IS TRUE THEN 1 ELSE 0 END)::int AS approved_files,
+        SUM(CASE WHEN has_changes IS TRUE THEN 1 ELSE 0 END)::int AS changes_requested_files
+      FROM file_state
+      GROUP BY project_id
+    `);
+
+    // node-postgres returns { rows: [...] }, neon returns the array directly.
+    const list: any[] = Array.isArray(rows) ? rows : (rows as any).rows ?? [];
+    for (const r of list) {
+      const pid = Number(r.project_id);
+      result[pid] = {
+        totalFiles: Number(r.total_files) || 0,
+        approvedFiles: Number(r.approved_files) || 0,
+        changesRequestedFiles: Number(r.changes_requested_files) || 0,
+      };
+    }
+    // Ensure every requested project id has an entry, even when it has no files.
+    for (const pid of projectIds) {
+      if (!(pid in result)) result[pid] = { totalFiles: 0, approvedFiles: 0, changesRequestedFiles: 0 };
+    }
+    return result;
   }
 
   // Activity Log methods

@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { useProjects } from "@/hooks/use-projects";
 import { useFolders } from "@/hooks/use-folders";
+
+type ProjectStatus = "in_progress" | "in_review" | "approved";
+type ApprovalSummary = {
+  status: ProjectStatus;
+  totalFiles: number;
+  approvedFiles: number;
+  changesRequestedFiles: number;
+};
 import ProjectCard from "@/components/projects/project-card";
 import OwnerChip from "@/components/projects/owner-chip";
 import { useAuth } from "@/hooks/use-auth";
@@ -61,6 +70,14 @@ export default function ProjectsPage() {
   const { data: folders, isLoading: foldersLoading } = useFolders();
   const isAdmin = user?.role === "admin";
 
+  // Derived per-project review status (server aggregates file approvals).
+  // Falls back to "in_progress" while loading or if a project is missing.
+  const { data: approvalSummaries } = useQuery<Record<number, ApprovalSummary>>({
+    queryKey: ["/api/projects/approval-summaries"],
+  });
+  const statusFor = (projectId: number): ProjectStatus =>
+    approvalSummaries?.[projectId]?.status ?? "in_progress";
+
   // Set of folder ids that are global so we can split projects sitting
   // inside a global folder into their own group regardless of who owns
   // them. Memoised to avoid rebuilding on every keystroke in the search
@@ -80,7 +97,7 @@ export default function ProjectsPage() {
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (project.description?.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = statusFilter === null || project.status === statusFilter;
+    const matchesStatus = statusFilter === null || statusFor(project.id) === statusFilter;
 
     const matchesOwner = !isAdmin || ownerScope === "all" || project.createdById === user?.id;
 
