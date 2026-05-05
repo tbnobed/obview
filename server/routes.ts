@@ -147,15 +147,47 @@ export async function resumeStuckVideoProcessing() {
   }
 }
 
+// In-flight tracker keyed by fileId. Prevents multiple
+// processVideoInBackground() invocations for the same source file from
+// running at the same time, which previously happened when the user
+// hit "Reprocess" repeatedly (or when startup recovery raced with a
+// fresh upload). Each call spawns NVENC encodes + sprite extracts; N
+// concurrent calls for the same file = N× ffmpeg processes thrashing
+// the GPU and clobbering each other's output files.
+const inFlightFileProcessing = new Map<number, Promise<void>>();
+
 // Background video processing function
 async function processVideoInBackground(file: any, processingId: number) {
-  try {
-    console.log(`[Video Processing] Starting processing for file: ${file.filename}`);
-    
-    // Update status to processing
-    await storage.updateVideoProcessing(processingId, {
-      status: "processing"
-    });
+  // Coalesce duplicate concurrent requests for the same fileId. If a
+  // job is already running, attach to it (so the caller's
+  // .catch(...) still fires on its outcome) instead of starting a
+  // second pipeline against the same input.
+  const existing = inFlightFileProcessing.get(file.id);
+  if (existing) {
+    console.log(
+      `[Video Processing] Skipping duplicate processing request for ${file.filename} (id ${file.id}) — already in flight`,
+    );
+    // Mark this processing record as superseded so the UI doesn't
+    // show it as forever-pending. The in-flight job will write the
+    // real result to its own processing row.
+    await storage
+      .updateVideoProcessing(processingId, {
+        status: "failed",
+        errorMessage:
+          "Superseded — another processing job for this file is already running.",
+      })
+      .catch(() => {});
+    return existing;
+  }
+
+  const job = (async () => {
+    try {
+      console.log(`[Video Processing] Starting processing for file: ${file.filename}`);
+
+      // Update status to processing
+      await storage.updateVideoProcessing(processingId, {
+        status: "processing"
+      });
     
     // Set up processing paths
     const inputPath = file.filePath;
@@ -183,18 +215,26 @@ async function processVideoInBackground(file: any, processingId: number) {
       processedAt: new Date()
     });
     
-    console.log(`[Video Processing] Completed processing for file: ${file.filename}`);
-  } catch (error) {
-    console.error(`[Video Processing] Error processing file ${file.filename}:`, error);
-    
-    // Update processing record with error
-    await storage.updateVideoProcessing(processingId, {
-      status: "failed",
-      errorMessage: error.message || "Unknown processing error"
-    }).catch(updateError => {
-      console.error("[Video Processing] Failed to update error status:", updateError);
-    });
-  }
+      console.log(`[Video Processing] Completed processing for file: ${file.filename}`);
+    } catch (error: any) {
+      console.error(`[Video Processing] Error processing file ${file.filename}:`, error);
+
+      // Update processing record with error
+      await storage.updateVideoProcessing(processingId, {
+        status: "failed",
+        errorMessage: error.message || "Unknown processing error"
+      }).catch(updateError => {
+        console.error("[Video Processing] Failed to update error status:", updateError);
+      });
+    } finally {
+      // Always release the in-flight slot so subsequent (re)processing
+      // requests for this file can proceed.
+      inFlightFileProcessing.delete(file.id);
+    }
+  })();
+
+  inFlightFileProcessing.set(file.id, job);
+  return job;
 }
 
 // Ensure uploads directory exists
