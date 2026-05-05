@@ -311,22 +311,27 @@ export class VideoProcessor {
         outputPath
       ];
 
-      // GPU (h264_nvenc) args — full CUDA decode → scale_cuda → NVENC pipeline.
-      // Frames stay in GPU memory the entire time, no PCIe round-trips.
+      // GPU (h264_nvenc) args — CPU decode → CPU scale (with even-dim
+      // safety) → NVENC encode on the GPU. We deliberately do NOT use
+      // `-hwaccel cuda -hwaccel_output_format cuda + scale_cuda` because:
+      //   1. NVDEC can't decode every codec we accept (ProRes, DNxHD,
+      //      VP9 profile 2, 10-bit HEVC, etc.) — when it can't, the
+      //      whole pipeline aborts before encode even starts.
+      //   2. scale_cuda doesn't auto-round to even dimensions, so a
+      //      portrait or non-16:9 source can produce e.g. 405x720 which
+      //      NVENC rejects (NV12 requires even width and height).
+      // CPU decode + GPU encode still puts the expensive work on the
+      // T4 (Test 4 measured ~2x realtime on a 1280x720 source) while
+      // accepting any input codec/aspect.
       const gpuArgs = [
-        '-hwaccel', 'cuda',
-        '-hwaccel_output_format', 'cuda',
         '-i', inputPath,
         '-c:v', 'h264_nvenc',
         '-preset', config.video.nvenc.mainPreset,
-        '-tune', config.video.nvenc.mainTune,
         '-rc', 'vbr',
         '-cq', config.video.nvenc.mainCq,
         '-profile:v', 'main',
-        '-level', '3.1',
-        // scale_cuda runs on the GPU and outputs nv12 surfaces ready for NVENC.
-        // force_original_aspect_ratio=decrease prevents upscaling.
-        '-vf', `scale_cuda=${evenW}:${evenH}:force_original_aspect_ratio=decrease:format=nv12`,
+        // Match the libx264 path's even-dimension guarantee.
+        '-vf', `scale=${evenW}:${evenH}:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
         '-b:v', quality.bitrate,
         '-maxrate', quality.bitrate,
         '-bufsize', `${parseInt(quality.bitrate) * 1.5}k`,
@@ -406,21 +411,21 @@ export class VideoProcessor {
       // GPU (h264_nvenc) all-intra args. NVENC honours -g 1 + -forced-idr 1 to
       // force every frame to an IDR keyframe, giving the same instant-seek
       // behaviour as libx264's I-frame-only output.
+      // CPU decode → CPU scale → GPU encode (see generateQuality for the
+      // full rationale). Same trade-off applies here — works for any
+      // input codec/aspect, encode still runs on the T4.
       const gpuArgs = [
-        '-hwaccel', 'cuda',
-        '-hwaccel_output_format', 'cuda',
         '-i', inputPath,
         '-c:v', 'h264_nvenc',
         '-preset', config.video.nvenc.scrubPreset,
         '-rc', 'vbr',
         '-cq', config.video.nvenc.scrubCq,
         '-profile:v', config.video.scrub.profile,
-        '-level', config.video.scrub.level,
         '-r', config.video.scrub.fps.toString(),
         '-g', '1',
         '-forced-idr', '1',
         '-no-scenecut', '1',
-        '-vf', `scale_cuda=${config.video.scrub.scale}:format=nv12`,
+        '-vf', `scale=${config.video.scrub.scale},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
         ...(config.video.scrub.disableAudio ? ['-an'] : []),
         '-movflags', '+faststart',
         '-f', 'mp4',

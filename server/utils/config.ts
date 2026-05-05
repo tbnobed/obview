@@ -105,7 +105,6 @@ export const config = {
     // p4 is the balanced "medium" equivalent. CQ 23 ≈ libx264 CRF 23.
     nvenc: {
       mainPreset: process.env.VIDEO_NVENC_MAIN_PRESET || 'p4',
-      mainTune: process.env.VIDEO_NVENC_MAIN_TUNE || 'hq',
       mainCq: process.env.VIDEO_NVENC_MAIN_CQ || '23',
       scrubPreset: process.env.VIDEO_NVENC_SCRUB_PRESET || 'p1',
       scrubCq: process.env.VIDEO_NVENC_SCRUB_CQ || '28',
