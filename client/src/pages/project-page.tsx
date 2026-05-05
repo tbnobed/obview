@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
 import { useProject } from "@/hooks/use-projects";
@@ -51,7 +51,10 @@ export default function ProjectPage() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isCollapsed, toggleSidebar } = useSidebar();
+  const { isCollapsed, toggleSidebar, collapseSidebar, expandSidebar } = useSidebar();
+  // Remember whether the left sidebar was expanded before the user opened a
+  // file so we can restore that state when they leave the player.
+  const sidebarWasExpandedRef = useRef(false);
   
   // Fetch all users for the invite dropdown
   const { data: allUsers } = useQuery<any[]>({
@@ -75,6 +78,22 @@ export default function ProjectPage() {
   const [initialTime, setInitialTime] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("media");
   const [viewMode, setViewMode] = useState<'grid' | 'player'>('grid'); // Start with grid view
+
+  // Auto-collapse the left sidebar when the user opens a file in the player so
+  // they get a focused review surface, and restore it when they go back to the
+  // grid (only if it was the player that collapsed it in the first place).
+  useEffect(() => {
+    if (viewMode === 'player') {
+      if (!isCollapsed) {
+        sidebarWasExpandedRef.current = true;
+        collapseSidebar();
+      }
+    } else if (sidebarWasExpandedRef.current) {
+      sidebarWasExpandedRef.current = false;
+      expandSidebar();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode]);
   const [reviewerLinksOpen, setReviewerLinksOpen] = useState(false);
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
