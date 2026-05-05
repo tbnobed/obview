@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import path from 'path';
+import os from 'os';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import { config } from './utils/config.js';
@@ -478,8 +479,8 @@ export class VideoProcessor {
         : baseInterval;
       
       const thumbnailCount = Math.ceil(metadata.duration / effectiveInterval);
-      const cols = Math.ceil(Math.sqrt(thumbnailCount));
-      const rows = Math.ceil(thumbnailCount / cols);
+      let cols = Math.ceil(Math.sqrt(thumbnailCount));
+      let rows = Math.ceil(thumbnailCount / cols);
 
       // Aspect-aware cell size. Previously we forced every cell to 800x450
       // landscape and padded portrait/square videos with black bars, which
@@ -504,23 +505,132 @@ export class VideoProcessor {
 
       console.log(`[VideoProcessor] Sprite generation: ${metadata.duration}s video, ${effectiveInterval.toFixed(2)}s intervals, ${thumbnailCount} thumbnails (${cols}x${rows} grid), cell ${cellW}x${cellH}`);
 
-      // Generate sprite with thumbnails (no padding — cells keep source aspect)
-      const args = [
-        '-i', inputPath,
-        '-vf', [
-          `fps=${(1/effectiveInterval).toFixed(6)}`,
-          `scale=${cellW}:${cellH}:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
-          `tile=${cols}x${rows}`
-        ].join(','),
-        '-frames:v', '1',
-        '-q:v', '1', // Highest quality (1-31, lower is better)
-        '-f', 'image2',
-        '-y',
-        outputPath
-      ];
+      // Parallel keyframe-seek extraction. The previous single-pass
+      // approach (`-i input -vf fps=1/N,scale,tile`) forced ffmpeg to
+      // decode every frame of the source from byte 0 just to keep
+      // 1-in-N. On a 7+ GB / 55-min H.264 source this took >10 min and
+      // tripped the timeout. Putting `-ss <ts>` BEFORE `-i` lets the
+      // input demuxer seek directly to the nearest keyframe (near-
+      // instant), so each thumbnail extraction is ~100–500ms regardless
+      // of source length. We then tile the small JPEGs in a final pass.
+      console.log(`[VideoProcessor] Generating thumbnail sprite (parallel)...`);
+      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), `obviu-sprite-`));
+      try {
+        const scaleFilter = `scale=${cellW}:${cellH}:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`;
+        // Cap concurrency so we don't spawn 225 ffmpeg processes at once.
+        // 4 is comfortable on a single CPU and leaves headroom for the
+        // NVENC encodes that may still be running in parallel.
+        const concurrency = 4;
+        let nextIndex = 0;
+        const frameStart = effectiveInterval / 2; // sample mid-interval
+        const failures: Array<{ idx: number; err: string }> = [];
 
-      console.log(`[VideoProcessor] Generating thumbnail sprite...`);
-      await this.executeFFmpeg(args, config.video.timeouts.sprite);
+        // Clamp once: handles videos shorter than the 0.05s tail margin
+        // (e.g. a tiny intro clip) without producing negative -ss values
+        // that would either fail the extraction or trigger undefined
+        // seek behavior in ffmpeg.
+        const safeEnd = Math.max(0, (metadata.duration || 0) - 0.05);
+
+        const worker = async () => {
+          while (true) {
+            const i = nextIndex++;
+            if (i >= thumbnailCount) return;
+            const ts = Math.max(0, Math.min(safeEnd, frameStart + i * effectiveInterval));
+            const framePath = path.join(tmpDir, `f_${String(i).padStart(4, "0")}.jpg`);
+            const args = [
+              "-hide_banner", "-loglevel", "error",
+              "-ss", ts.toFixed(3),
+              "-i", inputPath,
+              "-frames:v", "1",
+              "-an", "-sn",
+              "-vf", scaleFilter,
+              "-q:v", "3",
+              "-f", "image2",
+              "-y",
+              framePath,
+            ];
+            try {
+              // Per-frame timeout: 30s is generous for a keyframe seek
+              // even on slow disks. If a single frame stalls we just
+              // drop it and move on instead of failing the whole sprite.
+              await this.executeFFmpeg(args, 30_000);
+            } catch (e: any) {
+              failures.push({ idx: i, err: e?.message || String(e) });
+            }
+          }
+        };
+
+        await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+        if (failures.length > 0) {
+          console.warn(
+            `[VideoProcessor] Sprite: ${failures.length}/${thumbnailCount} frame extractions failed (continuing). First: ${failures[0].err.slice(0, 200)}`,
+          );
+        }
+
+        // Renumber successful frames into a contiguous 0..N-1 sequence
+        // before the tile pass. ffmpeg's image2 sequential demuxer stops
+        // at the first gap, so if any extraction failed in the middle we
+        // would silently truncate the sprite (or fail entirely if frame 0
+        // was missing). Renaming closes any gaps and lets tile run on
+        // exactly the frames we actually have.
+        const extracted = (await fs.readdir(tmpDir))
+          .filter((n) => /^f_\d{4}\.jpg$/.test(n))
+          .sort();
+        if (extracted.length === 0) {
+          throw new Error("Sprite generation produced zero usable frames");
+        }
+        for (let i = 0; i < extracted.length; i++) {
+          const target = `s_${String(i).padStart(4, "0")}.jpg`;
+          if (extracted[i] !== target) {
+            await fs.rename(
+              path.join(tmpDir, extracted[i]),
+              path.join(tmpDir, target),
+            );
+          } else {
+            // Source already happens to have the contiguous name we want
+            // (extremely rare but possible if extracted[0] === "f_0000")
+            // — copy under the new prefix so the tile glob picks it up.
+            await fs.copyFile(
+              path.join(tmpDir, extracted[i]),
+              path.join(tmpDir, target),
+            );
+          }
+        }
+
+        // Update grid dims if frames went missing so the tile output isn't
+        // mostly empty cells. We keep the wider dimension and shrink the
+        // other to fit the actual frame count.
+        const actualCount = extracted.length;
+        const tileCols = Math.min(cols, actualCount);
+        const tileRows = Math.ceil(actualCount / tileCols);
+
+        // Final tile pass over the small per-frame JPEGs. This re-encodes
+        // a few hundred small images into one mosaic — fast (sub-second
+        // on this size of input) regardless of source video length.
+        const tileArgs = [
+          "-hide_banner", "-loglevel", "error",
+          "-framerate", "1",
+          "-i", path.join(tmpDir, "s_%04d.jpg"),
+          "-vf", `tile=${tileCols}x${tileRows}`,
+          "-frames:v", "1",
+          "-q:v", "1",
+          "-f", "image2",
+          "-y",
+          outputPath,
+        ];
+        await this.executeFFmpeg(tileArgs, config.video.timeouts.sprite);
+
+        // Reflect the final grid in the metadata returned to the caller
+        // so the client lays out the preview window correctly when the
+        // grid had to be shrunk due to extraction failures.
+        cols = tileCols;
+        rows = tileRows;
+      } finally {
+        // Always clean up tmp frames, even on failure, so we don't leak
+        // hundreds of MB of intermediate JPEGs into /tmp.
+        fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      }
 
       // Create sprite metadata. thumbnailWidth/Height now reflect the actual
       // cell aspect so the client can size the preview window correctly.
