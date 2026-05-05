@@ -639,18 +639,6 @@ export default function ProjectPage() {
               {viewMode === 'player' && selectedFileId && (
                 <div className="relative h-full flex flex-col lg:flex lg:flex-col">
                   <div className="relative flex-1 min-h-0 lg:flex-1 lg:min-h-0">
-                    {/* Back to Grid Button */}
-                    <div className="absolute top-2 left-2 z-10 lg:top-4 lg:left-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setViewMode('grid')}
-                        className="bg-black/60 backdrop-blur-sm border-white/20 text-white hover:bg-black/80 hover:text-white gap-1.5"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        <span className="hidden sm:inline">All media</span>
-                      </Button>
-                    </div>
                     {/* Mobile actions container kept for compatibility */}
                     <div className="absolute top-2 right-2 z-10 lg:hidden">
                       <div id="mobile-actions-container"></div>
