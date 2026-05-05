@@ -193,13 +193,36 @@ export default function MediaPlayer({
     if (!v || !file || file.fileType !== 'video') return;
     const wasPlaying = !v.paused;
     const t = v.currentTime;
+    // Clear any stuck error state from a previous failed source so the
+    // overlay doesn't linger after the user toggles back to a working
+    // quality. The new source's own error/load events will re-set it.
+    setMediaError(false);
+    setErrorMessage("");
+    let canPlayHandler: (() => void) | null = null;
     const restore = () => {
       try { v.currentTime = t; } catch {}
-      if (wasPlaying) { v.play().catch(() => {}); }
+      // Wait until the element actually has data before play()-ing —
+      // calling play() during the brief reload window after .load() can
+      // reject with AbortError and surface the misleading
+      // "autoplay restriction" toast from togglePlay.
+      if (wasPlaying) {
+        const tryPlay = () => v.play().catch(() => {});
+        if (v.readyState >= 3) tryPlay();
+        else {
+          canPlayHandler = tryPlay;
+          v.addEventListener('canplay', tryPlay, { once: true });
+        }
+      }
     };
     v.addEventListener('loadedmetadata', restore, { once: true });
     v.load();
-    return () => v.removeEventListener('loadedmetadata', restore);
+    return () => {
+      v.removeEventListener('loadedmetadata', restore);
+      // If the user toggled again before canplay fired, drop the stale
+      // resume so it doesn't trigger an out-of-date play() on the new
+      // source mid-load.
+      if (canPlayHandler) v.removeEventListener('canplay', canPlayHandler);
+    };
   }, [useOriginalQuality]);
 
   // Reset quality preference when switching files (without triggering the
@@ -947,9 +970,18 @@ export default function MediaPlayer({
           })
           .catch(error => {
             console.error("Error playing media:", error);
-            // Don't show error toast for user gesture errors (common with autoplay restrictions)
             setIsPlaying(false);
-            
+
+            // If we're on the HD original and a 720p proxy exists, the
+            // play() rejection is almost certainly a codec-decode issue
+            // about to surface via handleMediaError, which will auto-
+            // revert to the proxy and show its own friendly toast.
+            // Suppress the misleading "autoplay restriction" message in
+            // that window.
+            if (file?.fileType === 'video' && useOriginalQuality && has720p) {
+              return;
+            }
+
             toast({
               title: "Playback issue",
               description: "Unable to play media. Click the play button again or check browser autoplay settings.",
@@ -1302,15 +1334,35 @@ export default function MediaPlayer({
     console.error('[DEBUG] Media error target currentSrc:', (e.target as any)?.currentSrc);
     console.error('[DEBUG] Network state:', (e.target as any)?.networkState);
     console.error('[DEBUG] Ready state:', (e.target as any)?.readyState);
-    
-    // Try to get more detailed error info from video/audio elements
+
     const mediaElement = e.target as HTMLVideoElement | HTMLAudioElement;
+    const code = (mediaElement as any)?.error?.code;
+
+    // If we're on the HD (original) source and the browser can't decode it
+    // (common for HEVC / ProRes / DNxHD / 10-bit / AV1 originals), silently
+    // revert to the 720p NVENC proxy instead of surfacing a hard error.
+    // The proxy is always H.264 main yuv420p and plays in every browser.
+    if (
+      file?.fileType === 'video' &&
+      useOriginalQuality &&
+      has720p &&
+      (code === MediaError.MEDIA_ERR_DECODE || code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED)
+    ) {
+      console.warn('[Player] HD source failed to decode, falling back to 720p proxy');
+      setUseOriginalQuality(false);
+      toast({
+        title: "Using 720p proxy",
+        description: "Your browser can't decode the original file's codec. Playing the 720p proxy instead.",
+      });
+      return;
+    }
+
     if (mediaElement && 'error' in mediaElement && mediaElement.error) {
       console.error('[DEBUG] Media element error details:', {
         code: mediaElement.error.code,
         message: mediaElement.error.message
       });
-      
+
       // Map error codes to user-friendly messages
       let userMessage = "This file is no longer available. It may have been deleted from the server.";
       switch (mediaElement.error.code) {
@@ -1333,7 +1385,7 @@ export default function MediaPlayer({
     } else {
       setErrorMessage("This file is no longer available. It may have been deleted from the server.");
     }
-    
+
     setMediaError(true);
     setIsPlaying(false);
   };
