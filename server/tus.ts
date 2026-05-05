@@ -57,11 +57,26 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
 
   const datastore = new FileStore({ directory: opts.tusDataDir });
 
+  // Per-upload diagnostics. We log once per PATCH so a stalled upload
+  // leaves a clear breadcrumb trail in `docker compose logs app` instead
+  // of being silently invisible. Throttled to one line per chunk so the
+  // log isn't drowned by hundreds of entries per file.
+  const lastLogged = new Map<string, number>();
+
   return new TusServer({
     path: "/api/uploads/tus",
     datastore,
     maxSize: opts.maxFileSize ?? 50 * 1024 * 1024 * 1024, // 50 GB
     respectForwardedHeaders: true,
+
+    async onResponseError(_req, err: any) {
+      console.error(
+        `[tus] response error status=${err?.status_code ?? "?"} body=${
+          typeof err?.body === "string" ? err.body : JSON.stringify(err?.body ?? err?.message ?? err)
+        }`,
+      );
+      return undefined;
+    },
 
     // Re-check authorization on EVERY request that touches an existing
     // upload (HEAD / PATCH / DELETE / final POST). Without this an
@@ -92,6 +107,23 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
       }
       if (!Number.isFinite(projectId) || !(await userCanEditProject(currentUserId, projectId))) {
         throw { status_code: 403, body: "Insufficient permissions" };
+      }
+
+      // Throttled progress log: one line per upload at most every 10s,
+      // so a stalled or slow upload is observable from docker logs
+      // without flooding them on healthy fast uploads.
+      const now = Date.now();
+      const last = lastLogged.get(uploadId) || 0;
+      if (now - last > 10_000) {
+        lastLogged.set(uploadId, now);
+        const offset = upload.offset ?? 0;
+        const size = upload.size ?? 0;
+        const pct = size > 0 ? ((offset / size) * 100).toFixed(1) : "?";
+        const fname = meta.filename || meta.customFilename || "(unnamed)";
+        console.log(
+          `[tus] ${req.method} ${uploadId.slice(0, 8)} ${fname} ` +
+            `offset=${offset} size=${size} (${pct}%) user=${currentUserId}`,
+        );
       }
     },
 

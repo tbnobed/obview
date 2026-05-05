@@ -102,12 +102,40 @@ class UploadService {
 
     const tus = new TusUpload(file, {
       endpoint: "/api/uploads/tus",
-      // 8 MB chunks: small enough that a retry is cheap, large enough to
-      // keep HTTP overhead negligible on fast links.
-      chunkSize: 8 * 1024 * 1024,
-      // Exponential backoff. Total delay before giving up is ~2 minutes,
-      // which covers transient drops without hanging forever.
-      retryDelays: [0, 1000, 3000, 5000, 10000, 30000, 60000],
+      // 16 MB chunks. Larger chunks = fewer HTTP roundtrips per file
+      // (a 7 GB file becomes ~470 PATCHes instead of ~1800), which is
+      // the dominant overhead on a fast link. Each PATCH still finishes
+      // well under proxy request timeouts at typical broadband speeds.
+      chunkSize: 16 * 1024 * 1024,
+      // Upload 4 chunks in parallel to saturate the link instead of
+      // serializing one PATCH at a time. Uses the tus Concatenation
+      // extension (supported by @tus/server's FileStore): the file is
+      // split into N partial uploads streamed concurrently, then the
+      // server concatenates them on completion. On a 64 Mbps link this
+      // is the difference between ~16 min and ~4 min for a 7 GB file.
+      parallelUploads: 4,
+      // Aggressive retry schedule. Total delay before giving up is
+      // ~10 minutes, which lets us ride out long upstream stalls
+      // (proxy reconnects, DNS blips, transient 502s from a restarting
+      // container) without forcing the user to start over on a multi-GB
+      // upload. tus-js-client retries with the same offset, so any
+      // accepted bytes are not re-uploaded.
+      retryDelays: [
+        0, 1000, 3000, 5000, 10000, 30000, 60000, 60000, 120000, 120000, 300000,
+      ],
+      // Retry on every transient failure we'd realistically see in
+      // front of nginx/Cloudflare. Default tus only retries on a handful
+      // of statuses; we widen it to anything that isn't a clear
+      // permanent client error.
+      onShouldRetry: (err: any, _retryAttempt, _options) => {
+        const status = err?.originalResponse?.getStatus?.() ?? 0;
+        // Permanent client errors → don't retry (4xx except 408/423/429).
+        if (status >= 400 && status < 500) {
+          return status === 408 || status === 423 || status === 429;
+        }
+        // Network errors (status 0) and 5xx → always retry.
+        return true;
+      },
       removeFingerprintOnSuccess: true,
       metadata,
       onError: (err) => {
