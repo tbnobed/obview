@@ -5,7 +5,7 @@ import { useProject } from "@/hooks/use-projects";
 import { useMediaFiles } from "@/hooks/use-media";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Loader2, FileVideo, Plus, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ChevronLeft, Activity, MoreHorizontal, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Loader2, FileVideo, Plus, Clock, Settings as SettingsIcon, Download, Share2, UserPlus, Mail, ChevronLeft, Activity, MoreHorizontal, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useSidebar } from "@/hooks/use-sidebar";
 import {
@@ -71,6 +71,7 @@ export default function ProjectPage() {
   });
   const { data: pendingInvitations } = projectInvitationsQuery;
   const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
+  const [isCommentsPanelHidden, setIsCommentsPanelHidden] = useState(false);
   const [initialTime, setInitialTime] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("media");
   const [viewMode, setViewMode] = useState<'grid' | 'player'>('grid'); // Start with grid view
@@ -539,6 +540,18 @@ export default function ProjectPage() {
                 </Button>
               </>
             )}
+            {viewMode === 'player' && selectedFileId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#3ddcb0]"
+                onClick={() => setIsCommentsPanelHidden(v => !v)}
+                title={isCommentsPanelHidden ? 'Show comments panel' : 'Hide comments panel'}
+                data-testid="button-toggle-comments-panel"
+              >
+                {isCommentsPanelHidden ? <PanelRightOpen className="h-4 w-4" /> : <PanelRightClose className="h-4 w-4" />}
+              </Button>
+            )}
             <div className="hidden md:block mx-1 h-5 w-px bg-neutral-200 dark:bg-gray-800" aria-hidden />
             <div className="hidden md:block">
               <ThemeToggle />
@@ -618,6 +631,7 @@ export default function ProjectPage() {
                       files={files}
                       initialTime={initialTime}
                       project={project}
+                      isSidebarHidden={isCommentsPanelHidden}
                     />
                   </div>
                 </div>

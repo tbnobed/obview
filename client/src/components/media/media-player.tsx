@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2, Columns2, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2, Columns2 } from "lucide-react";
 import { UploadVersionIcon, ShareFileIcon, RequestChangesIcon, ApproveIcon, MarkReviewIcon } from "@/components/media/action-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ export default function MediaPlayer({
   projectId,
   initialTime,
   project,
+  isSidebarHidden: isSidebarHiddenProp,
 }: {
   file: StorageFile | null;
   files: StorageFile[];
@@ -39,6 +40,7 @@ export default function MediaPlayer({
   projectId: number;
   initialTime?: number | null;
   project?: Project;
+  isSidebarHidden?: boolean;
 }) {
   const { user } = useAuth();
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -50,7 +52,9 @@ export default function MediaPlayer({
   const [errorMessage, setErrorMessage] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCommentsTab, setShowCommentsTab] = useState(true);
-  const [isSidebarHidden, setIsSidebarHidden] = useState(false);
+  // Sidebar visibility is owned by the parent (project-page header). Defaults
+  // to visible when the prop isn't provided.
+  const isSidebarHidden = isSidebarHiddenProp ?? false;
   const [useOriginalQuality, setUseOriginalQuality] = useState(false);
   const [activeCommentId, setActiveCommentId] = useState<string | undefined>(undefined);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
@@ -1806,18 +1810,6 @@ export default function MediaPlayer({
                         {useOriginalQuality ? 'HD' : '720p'}
                       </Button>
                     )}
-
-                    {/* Hide / show comments sidebar */}
-                    <Button
-                      onClick={() => setIsSidebarHidden((v) => !v)}
-                      variant="ghost"
-                      size="icon"
-                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
-                      title={isSidebarHidden ? 'Show comments panel' : 'Hide comments panel'}
-                      data-testid="button-toggle-sidebar"
-                    >
-                      {isSidebarHidden ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
-                    </Button>
 
                     <Button
                       onClick={toggleFullscreen}
