@@ -103,17 +103,10 @@ class UploadService {
     const tus = new TusUpload(file, {
       endpoint: "/api/uploads/tus",
       // 16 MB chunks. Larger chunks = fewer HTTP roundtrips per file
-      // (a 7 GB file becomes ~470 PATCHes instead of ~1800), which is
+      // (a 7 GB file becomes ~470 PATCHes instead of ~950), which is
       // the dominant overhead on a fast link. Each PATCH still finishes
       // well under proxy request timeouts at typical broadband speeds.
       chunkSize: 16 * 1024 * 1024,
-      // Upload 4 chunks in parallel to saturate the link instead of
-      // serializing one PATCH at a time. Uses the tus Concatenation
-      // extension (supported by @tus/server's FileStore): the file is
-      // split into N partial uploads streamed concurrently, then the
-      // server concatenates them on completion. On a 64 Mbps link this
-      // is the difference between ~16 min and ~4 min for a 7 GB file.
-      parallelUploads: 4,
       // Aggressive retry schedule. Total delay before giving up is
       // ~10 minutes, which lets us ride out long upstream stalls
       // (proxy reconnects, DNS blips, transient 502s from a restarting
