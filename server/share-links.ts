@@ -19,6 +19,23 @@ declare module "express-session" {
 
 // ---------- helpers ----------
 
+// Generate a short, URL-safe share token. 12 random bytes = 16 base64url chars
+// (96 bits of entropy) — keeps URLs roughly half their old length while
+// retaining strong brute-force resistance for bearer share links. The pre-
+// check is a UX guard; the real correctness comes from catching the unique-
+// index violation at insert time and retrying (see createForScope).
+async function generateShortShareToken(): Promise<string> {
+  const candidate = crypto.randomBytes(12).toString("base64url");
+  const existing = await storage.getShareLinkByToken(candidate);
+  if (!existing) return candidate;
+  return crypto.randomBytes(12).toString("base64url");
+}
+
+// Postgres unique-violation SQLSTATE
+function isUniqueViolation(err: any): boolean {
+  return !!err && (err.code === "23505" || /unique/i.test(String(err?.message ?? "")));
+}
+
 function isExpired(link: ShareLink): boolean {
   return !!(link.expiresAt && new Date(link.expiresAt).getTime() <= Date.now());
 }
@@ -210,23 +227,37 @@ export function registerShareLinkRoutes(
     if (!parsed.success) return res.status(400).json({ message: "Invalid share link", errors: parsed.error.errors });
 
     const id = crypto.randomUUID();
-    const token = crypto.randomBytes(24).toString("base64url");
     const passwordHash = parsed.data.password ? await hashPassword(parsed.data.password) : null;
     const expiresAt = parsed.data.expiresAt ? new Date(parsed.data.expiresAt as any) : null;
 
-    const link = await storage.createShareLink({
-      id, token,
-      scopeType, scopeId,
-      name: parsed.data.name ?? null,
-      passwordHash,
-      expiresAt,
-      allowDownloads: !!parsed.data.allowDownloads,
-      allowComments: parsed.data.allowComments !== false,
-      requireEmail: !!parsed.data.requireEmail,
-      watermarkEnabled: !!parsed.data.watermarkEnabled,
-      watermarkText: parsed.data.watermarkText ?? null,
-      createdById: req.user!.id,
-    });
+    // Retry on the unique-index race in case two concurrent creators
+    // happen to generate the same token (vanishingly unlikely at 96 bits,
+    // but the bounded retry makes the path race-free in principle).
+    let link: ShareLink | null = null;
+    let lastErr: any = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const token = await generateShortShareToken();
+      try {
+        link = await storage.createShareLink({
+          id, token,
+          scopeType, scopeId,
+          name: parsed.data.name ?? null,
+          passwordHash,
+          expiresAt,
+          allowDownloads: !!parsed.data.allowDownloads,
+          allowComments: parsed.data.allowComments !== false,
+          requireEmail: !!parsed.data.requireEmail,
+          watermarkEnabled: !!parsed.data.watermarkEnabled,
+          watermarkText: parsed.data.watermarkText ?? null,
+          createdById: req.user!.id,
+        });
+        break;
+      } catch (err) {
+        lastErr = err;
+        if (!isUniqueViolation(err)) throw err;
+      }
+    }
+    if (!link) throw lastErr ?? new Error("Failed to allocate share token");
     res.status(201).json(sanitizeLink(link));
   };
 
