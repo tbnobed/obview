@@ -19,9 +19,13 @@ type Props = {
 };
 
 function publicShareUrl(token: string) {
-  // Short URL: bare token at the site root. The SPA resolves /:token to
-  // the appropriate share page (multi-share or legacy single-file share).
-  return `${window.location.origin}/${token}`;
+  // Short URL: bare token on the dedicated short-link domain when
+  // configured (e.g. VITE_SHORT_LINK_BASE_URL=https://t.obviu.io).
+  // Falls back to the current origin so local/dev installs work with
+  // no config. The SPA resolves /:token to the appropriate share page.
+  const configured = (import.meta.env.VITE_SHORT_LINK_BASE_URL as string | undefined)?.trim().replace(/\/+$/, "");
+  const base = configured && configured.length > 0 ? configured : window.location.origin;
+  return `${base}/${token}`;
 }
 
 export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeId, scopeName }: Props) {

@@ -3636,9 +3636,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         file.shareToken = token;
       }
 
-      // Return short share URL — bare token at site root. Old /share/:token
-      // URLs continue to work for backward compatibility.
-      const shareUrl = `${req.protocol}://${req.get('host')}/${file.shareToken}`;
+      // Return short share URL — bare token on the configured short-link
+      // domain (e.g. https://t.obviu.io/abc12345). Falls back to the
+      // request origin if SHORT_LINK_BASE_URL is unset.
+      const base = (process.env.SHORT_LINK_BASE_URL || "").trim().replace(/\/+$/, "")
+        || `${req.protocol}://${req.get('host')}`;
+      const shareUrl = `${base}/${file.shareToken}`;
       res.json({ shareUrl });
     } catch (error) {
       next(error);
@@ -3683,8 +3686,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         file.shareToken = token;
       }
 
-      // Short share URL — bare token at site root.
-      const shareUrl = `${req.protocol}://${req.get('host')}/${file.shareToken}`;
+      // Short share URL — bare token on the configured short-link domain.
+      const base = (process.env.SHORT_LINK_BASE_URL || "").trim().replace(/\/+$/, "")
+        || `${req.protocol}://${req.get('host')}`;
+      const shareUrl = `${base}/${file.shareToken}`;
       
       // Send email
       const { sendShareLinkEmail } = await import('./utils/sendgrid');

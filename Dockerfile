@@ -18,10 +18,17 @@ COPY . .
 ARG VITE_DISABLE_REGISTRATION=false
 ENV VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION
 
+# Public-facing short-link domain baked into the client bundle so the
+# share dialog generates URLs like https://t.obviu.io/<token>. Empty by
+# default → client falls back to window.location.origin.
+ARG VITE_SHORT_LINK_BASE_URL=
+ENV VITE_SHORT_LINK_BASE_URL=$VITE_SHORT_LINK_BASE_URL
+
 RUN ls -la && echo "Content of server directory:" && ls -la server/
 
 RUN echo "=== BUILDING APPLICATION ===" && \
     echo "VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION" && \
+    echo "VITE_SHORT_LINK_BASE_URL=$VITE_SHORT_LINK_BASE_URL" && \
     npm run build && \
     echo "=== BUILD VERIFICATION ===" && \
     ls -la dist/ && \

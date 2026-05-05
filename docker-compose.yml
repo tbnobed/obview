@@ -8,6 +8,9 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_DISABLE_REGISTRATION=${VITE_DISABLE_REGISTRATION:-false}
+        # Short-link domain baked into the client bundle at build time.
+        # e.g. SHORT_LINK_BASE_URL=https://t.obviu.io in your .env
+        - VITE_SHORT_LINK_BASE_URL=${SHORT_LINK_BASE_URL:-}
     container_name: obview_app
     restart: always
     ports:
@@ -25,6 +28,10 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - ADMIN_NAME=${ADMIN_NAME:-Administrator}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      # Short-link domain used by the server when constructing share URLs
+      # returned from the API (e.g. https://t.obviu.io). If unset the
+      # server falls back to the inbound request's host.
+      - SHORT_LINK_BASE_URL=${SHORT_LINK_BASE_URL:-}
       # Flag to signal a Docker environment to use proper database connection strategy
       - IS_DOCKER=true
       # Upload directory for file operations

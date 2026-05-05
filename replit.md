@@ -43,6 +43,7 @@ Preferred communication style: Simple, everyday language.
 - **Password Security**: Salted and hashed passwords using crypto module
 - **Password Reset**: Email-based password reset workflow with temporary tokens
 - **Registration Control**: Configurable registration disable via VITE_DISABLE_REGISTRATION environment variable for Docker deployments
+- **Short Share Links**: Bare-token share URLs (`https://<host>/<token>`, 8-char tokens) with optional dedicated short-link domain. Set `SHORT_LINK_BASE_URL` in `.env` (e.g. `https://t.obviu.io`) — docker-compose fans it out to both a build arg (`VITE_SHORT_LINK_BASE_URL`, baked into the client bundle) and a runtime env var (server uses it when emitting share URLs from the API). The SPA's `/:token` route resolves to either multi-share or legacy single-file share via `share-resolver-page.tsx`. Old `/share/:token` and `/s/:token` URLs remain functional for backward compatibility.
 
 ### LLM Backend (`server/llm-client.ts`)
 - **Dual mode**: Supports local `node-llama-cpp` (CPU) or remote `llama-server` (GPU) via OpenAI-compatible API
