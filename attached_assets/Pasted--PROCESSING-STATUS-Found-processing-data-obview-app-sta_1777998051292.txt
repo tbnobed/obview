@@ -1,0 +1,91 @@
+ 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/85/scrub/ESCHATOLOGY1_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 },
+obview_app  |   shareUnlocks: {
+obview_app  |     Dmhn2oYixTixCO3NZgEbb1BmYN8ZWqk0: {
+obview_app  |       unlockedAt: 1777015767262,
+obview_app  |       pwSig: '9852d35d2f2f06fd',
+obview_app  |       reqEmail: false
+obview_app  |     }
+obview_app  |   }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 },
+obview_app  |   shareUnlocks: {
+obview_app  |     Dmhn2oYixTixCO3NZgEbb1BmYN8ZWqk0: {
+obview_app  |       unlockedAt: 1777015767262,
+obview_app  |       pwSig: '9852d35d2f2f06fd',
+obview_app  |       reqEmail: false
+obview_app  |     }
+obview_app  |   }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 },
+obview_app  |   shareUnlocks: {
+obview_app  |     Dmhn2oYixTixCO3NZgEbb1BmYN8ZWqk0: {
+obview_app  |       unlockedAt: 1777015767262,
+obview_app  |       pwSig: '9852d35d2f2f06fd',
+obview_app  |       reqEmail: false
+obview_app  |     }
+obview_app  |   }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-16T20:42:33.918Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 2 },
+obview_app  |   shareUnlocks: {
+obview_app  |     Dmhn2oYixTixCO3NZgEbb1BmYN8ZWqk0: {
+obview_app  |       unlockedAt: 1777015767262,
+obview_app  |       pwSig: '9852d35d2f2f06fd',
+obview_app  |       reqEmail: false
+obview_app  |     }
+obview_app  |   }
+obview_app  | }
+obview_app  | Auth check - user: { id: 2, username: 'osandoval', role: 'admin' }
+obview_app  | User is authenticated, proceeding
