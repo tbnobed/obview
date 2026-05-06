@@ -1,0 +1,116 @@
+{
+  "ok": true,
+  "generatedAt": "2026-05-06T03:52:39.444Z",
+  "durationMs": 4041,
+  "node": {
+    "version": "v20.20.2",
+    "platform": "linux",
+    "arch": "x64",
+    "pid": 1,
+    "uptimeSec": 483,
+    "rss": 112971776,
+    "rssHuman": "108 MB",
+    "heapUsed": 22279408,
+    "heapUsedHuman": "21.2 MB"
+  },
+  "os": {
+    "hostname": "a5f795d24f8d",
+    "type": "Linux",
+    "release": "6.14.0-29-generic",
+    "arch": "x64",
+    "cpus": 112,
+    "cpuModel": "Intel(R) Xeon(R) CPU E5-4650 v4 @ 2.20GHz",
+    "loadavg": [
+      4.11,
+      2.64,
+      1.17
+    ],
+    "totalMem": 710011686912,
+    "totalMemHuman": "661 GB",
+    "freeMem": 699338854400,
+    "freeMemHuman": "651 GB",
+    "uptimeSec": 970
+  },
+  "postgres": {
+    "ok": true,
+    "version": "PostgreSQL 16.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "dbSize": "10 MB"
+  },
+  "storage": {
+    "uploadDir": "/app/uploads",
+    "absUploadDir": "/app/uploads",
+    "exists": true,
+    "entryCount": 34,
+    "totalBytes": 981697945600,
+    "totalBytesHuman": "914 GB",
+    "freeBytes": 760565026816,
+    "freeBytesHuman": "708 GB",
+    "mountSource": "/dev/sda2[/var/lib/docker/volumes/obview_uploads/_data]",
+    "mountPoint": "/app/uploads",
+    "fsType": "ext4",
+    "mountOptions": "rw,relatime",
+    "isNfs": false,
+    "isRdma": false
+  },
+  "ffmpeg": {
+    "ok": true,
+    "version": "ffmpeg version n7.1.3-46-g957b06a788-20260502 Copyright (c) 2000-2025 the FFmpeg developers",
+    "encoders": {
+      "h264_nvenc": true,
+      "hevc_nvenc": true,
+      "av1_nvenc": true,
+      "libx264": true,
+      "libx265": true
+    },
+    "hwaccels": [
+      "cuda",
+      "vaapi",
+      "qsv",
+      "drm",
+      "opencl",
+      "vulkan"
+    ]
+  },
+  "gpus": {
+    "ok": true,
+    "devices": [
+      {
+        "index": 0,
+        "name": "NVIDIA L4",
+        "driver": "575.64.03",
+        "memoryTotalMb": 23034,
+        "memoryUsedMb": 460,
+        "utilizationPct": 2,
+        "temperatureC": 50
+      }
+    ]
+  },
+  "spark": {
+    "configured": true,
+    "host": "192.168.100.1",
+    "port": 7681,
+    "tcp": {
+      "ok": true,
+      "latencyMs": 2
+    },
+    "http": {
+      "ok": false,
+      "error": "This operation was aborted"
+    }
+  },
+  "env": {
+    "flags": {
+      "NODE_ENV": "production",
+      "UPLOAD_DIR": "/app/uploads",
+      "SPARK_HOST": "192.168.100.1",
+      "SPARK_PORT": "7681",
+      "SPARK_DIAG_URL": "http://192.168.100.1:7681/health"
+    },
+    "secretsPresent": {
+      "DATABASE_URL": true,
+      "SENDGRID_API_KEY": true,
+      "SESSION_SECRET": true,
+      "SPARK_DIAG_URL": true
+    }
+  }
+}
