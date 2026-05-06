@@ -52,7 +52,7 @@ import {
 import { db } from "./db";
 import { sql, inArray, eq } from "drizzle-orm";
 import { VideoProcessor } from "./video-processor";
-import { createTusServer, TUS_USER_HEADER } from "./tus";
+import { createTusServer, createMultipartFinalizer, createMultipartCanceller, HttpError as TusHttpError, TUS_USER_HEADER } from "./tus";
 import {
   transcribeFile,
   segmentsToVtt,
@@ -1857,20 +1857,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // multer-based POST below remains for non-UI integrations (comments, etc.).
   // Auth is enforced here at the Express layer; the tus hooks read the
   // authenticated user id from a trusted server-only header.
+  const tusDataDir = path.join(uploadsDir, ".tus");
+  const partsDir = path.join(uploadsDir, ".parts");
+  const onProcessVideoCb = (file: any, processingId: number) => {
+    processVideoInBackground(file, processingId).catch((err) =>
+      console.error(`[tus] Video processing failed for file ${file.id}:`, err)
+    );
+  };
+  const onTranscribeCb = (args: { fileId: number; inputPath: string; fileType: string }) => {
+    transcribeFile(args).catch((err) =>
+      console.error(`[tus] Transcription failed for file ${args.fileId}:`, err)
+    );
+  };
   const tusServer = createTusServer({
     uploadsDir,
-    tusDataDir: path.join(uploadsDir, ".tus"),
-    onProcessVideo: (file, processingId) => {
-      processVideoInBackground(file, processingId).catch((err) =>
-        console.error(`[tus] Video processing failed for file ${file.id}:`, err)
-      );
-    },
-    onTranscribe: (args) => {
-      transcribeFile(args).catch((err) =>
-        console.error(`[tus] Transcription failed for file ${args.fileId}:`, err)
-      );
-    },
+    tusDataDir,
+    partsDir,
+    onProcessVideo: onProcessVideoCb,
+    onTranscribe: onTranscribeCb,
   });
+  const finalizeMultipart = createMultipartFinalizer({
+    uploadsDir,
+    partsDir,
+    onProcessVideo: onProcessVideoCb,
+    onTranscribe: onTranscribeCb,
+  });
+  const cancelMultipart = createMultipartCanceller({ partsDir });
   const tusHandler = (req: Request, res: Response) => {
     // Stamp the trusted user id so the tus hooks can authorize without
     // having to plumb the Express request all the way through srvx.
@@ -1938,6 +1950,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
   app.all("/api/uploads/tus", isAuthenticated, tusHandler);
   app.all("/api/uploads/tus/*", isAuthenticated, tusHandler);
+
+  // Multipart (parallel) upload control plane. The bytes themselves still
+  // travel through the tus endpoint above — these two endpoints only
+  // assemble the parts after the client signals completion (POST) or
+  // discard them on user cancel (DELETE). See client/src/lib/upload-service.ts
+  // and server/tus.ts for the full picture.
+  app.post("/api/uploads/finalize", isAuthenticated, async (req: Request, res: Response, next) => {
+    try {
+      const groupId = String(req.body?.groupId ?? "");
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const fileRow = await finalizeMultipart({ groupId, currentUserId: userId });
+      res.status(200).json(fileRow);
+    } catch (err: any) {
+      if (err instanceof TusHttpError) {
+        return res.status(err.status).json({ message: err.message });
+      }
+      next(err);
+    }
+  });
+  app.delete("/api/uploads/multipart/:groupId", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      await cancelMultipart({ groupId: req.params.groupId, currentUserId: userId });
+      res.status(204).end();
+    } catch (err: any) {
+      if (err instanceof TusHttpError) {
+        return res.status(err.status).json({ message: err.message });
+      }
+      next(err);
+    }
+  });
 
   app.post(["/api/projects/:projectId/files", "/api/projects/:projectId/upload"], hasProjectEditAccess, upload.single('file'), handleMulterErrors, async (req: FileRequest, res, next) => {
     try {
