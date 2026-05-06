@@ -1,0 +1,41 @@
+obtv-admin@obtv-ai:~/obview$ # 1. Make the RDMA enable idempotent
+sudo systemctl edit nfs-server
+Successfully installed edited file '/etc/systemd/system/nfs-server.service.d/override.conf'.
+obtv-admin@obtv-ai:~/obview$ echo '/var/lib/docker/volumes/obview_uploads/_data 192.168.100.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=1)' \
+  | sudo tee -a /etc/exports
+/var/lib/docker/volumes/obview_uploads/_data 192.168.100.0/24(rw,sync,no_subtree_check,no_root_squash,fsid=1)
+obtv-admin@obtv-ai:~/obview$ sudo systemctl daemon-reload
+sudo systemctl restart nfs-server
+sudo systemctl status nfs-server --no-pager
+sudo exportfs -v
+cat /proc/fs/nfsd/portlist
+Job for nfs-server.service canceled.
+× nfs-server.service - NFS server and services
+     Loaded: loaded (/usr/lib/systemd/system/nfs-server.service; enabled; preset: enabled)
+    Drop-In: /run/systemd/generator/nfs-server.service.d
+             └─order-with-mounts.conf
+             /etc/systemd/system/nfs-server.service.d
+             └─override.conf, rdma.conf
+     Active: failed (Result: exit-code) since Tue 2026-05-05 23:21:11 CDT; 15ms ago
+    Process: 43926 ExecStartPre=/usr/sbin/exportfs -r (code=exited, status=1/FAILURE)
+    Process: 43927 ExecStart=/usr/sbin/rpc.nfsd (code=exited, status=0/SUCCESS)
+    Process: 43930 ExecStartPost=/bin/sh -c grep -q "^rdma 20049$" /proc/fs/nfsd/portlist || echo "rdma 20049" > /proc/fs/nfsd/portlist (code=exited, status=0/SUCCESS)
+    Process: 43933 ExecStartPost=/bin/sh -c echo "rdma 20049" > /proc/fs/nfsd/portlist (code=exited, status=1/FAILURE)
+    Process: 43934 ExecStopPost=/usr/sbin/exportfs -au (code=exited, status=0/SUCCESS)
+    Process: 43937 ExecStopPost=/usr/sbin/exportfs -f (code=exited, status=0/SUCCESS)
+   Main PID: 43927 (code=exited, status=0/SUCCESS)
+        CPU: 48ms
+
+May 05 23:21:10 obtv-ai systemd[1]: Starting nfs-server.service - NFS server and services...
+May 05 23:21:10 obtv-ai exportfs[43926]: exportfs: incompatible duplicated export entries:
+May 05 23:21:10 obtv-ai exportfs[43926]: exportfs:         192.168.100.0/24:/var/lib/docker/volumes/obview_uploads/_data (0x2420) [IGNORED]
+May 05 23:21:10 obtv-ai exportfs[43926]: exportfs:         192.168.100.0/24:/var/lib/docker/volumes/obview_uploads/_data (0x2430)
+May 05 23:21:10 obtv-ai sh[43933]: /bin/sh: 1: echo: echo: I/O error
+May 05 23:21:10 obtv-ai systemd[1]: nfs-server.service: Control process exited, code=exited, status=1/FAILURE
+May 05 23:21:11 obtv-ai systemd[1]: nfs-server.service: Failed with result 'exit-code'.
+May 05 23:21:11 obtv-ai systemd[1]: Stopped nfs-server.service - NFS server and services.
+rdma 20049
+rdma 20049
+tcp 2049
+tcp 2049
+obtv-admin@obtv-ai:~/obview$
