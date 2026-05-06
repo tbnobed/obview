@@ -2288,9 +2288,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Set content disposition to force download
-      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
-      
+      // Set content disposition to force download. Sanitize the filename
+      // before interpolating into the header: file.filename is user-supplied
+      // at upload time and may contain CR/LF/quotes/path separators that
+      // would corrupt the header or enable CRLF injection. Honor an
+      // optional ?filename= override (also sanitized) so the client can
+      // request a different on-disk name without renaming the DB row.
+      const overrideName = typeof req.query.filename === 'string' ? req.query.filename : '';
+      const candidate = overrideName || file.filename || `file-${fileId}`;
+      const safeName = candidate.replace(/[\\/"\r\n]/g, '').slice(0, 255)
+        || `file-${fileId}`;
+      res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+      res.setHeader('Cache-Control', 'private, no-store');
+
       // Send the file
       res.sendFile(file.filePath, { root: '/' });
     } catch (error) {
@@ -2652,6 +2662,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await fsPromises.stat(qualityVersion.path);
       const range = req.headers.range;
 
+      // Optional download mode: when ?download=1 is set, force the browser
+      // to save to disk instead of attempting inline playback. Honors an
+      // optional ?filename= override; otherwise derives a sensible name.
+      const isDownload = req.query.download === '1' || req.query.download === 'true';
+      if (isDownload) {
+        const rawName = typeof req.query.filename === 'string' ? req.query.filename : '';
+        // Strip path separators and quotes to keep the header well-formed.
+        const safeName = rawName.replace(/[\\/"\r\n]/g, '').slice(0, 255)
+          || `file-${fileId}-${quality}.mp4`;
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+        // Don't let intermediaries cache an attachment response.
+        res.setHeader('Cache-Control', 'private, no-store');
+      }
+
       if (range) {
         const parts = range.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
@@ -2663,7 +2687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Accept-Ranges': 'bytes',
           'Content-Length': chunksize,
           'Content-Type': 'video/mp4',
-          'Cache-Control': 'public, max-age=3600'
+          ...(isDownload ? {} : { 'Cache-Control': 'public, max-age=3600' }),
         });
 
         const stream = fs.createReadStream(qualityVersion.path, { start, end });
@@ -2673,7 +2697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Content-Length': stats.size,
           'Content-Type': 'video/mp4',
           'Accept-Ranges': 'bytes',
-          'Cache-Control': 'public, max-age=3600'
+          ...(isDownload ? {} : { 'Cache-Control': 'public, max-age=3600' }),
         });
 
         const stream = fs.createReadStream(qualityVersion.path);

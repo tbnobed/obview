@@ -125,22 +125,23 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
     setMediaInfoOpen(true);
   };
 
-  // Stream a URL into a blob and trigger a Save As with the chosen filename.
-  // Used both for the original download and for any processed quality variant.
+  // Trigger a browser download via a hidden anchor. We deliberately do NOT
+  // round-trip the bytes through fetch+blob: blob storage is capped well
+  // below multi-GB and would silently fail or OOM the tab on large files
+  // (the bug that broke 7 GB Original downloads). Instead we navigate to a
+  // URL that responds with Content-Disposition: attachment so the browser
+  // streams straight to disk. `download` attribute is a hint for the
+  // filename; the server's Content-Disposition wins when both are present.
   const downloadUrlAs = async (url: string, downloadName: string) => {
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Download failed');
-
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
+      const sep = url.includes('?') ? '&' : '?';
+      const downloadHref = `${url}${sep}download=1&filename=${encodeURIComponent(downloadName)}`;
       const a = document.createElement('a');
       a.style.display = 'none';
-      a.href = blobUrl;
+      a.href = downloadHref;
       a.download = downloadName;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(blobUrl);
       document.body.removeChild(a);
 
       toast({
@@ -150,7 +151,7 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
     } catch (error) {
       toast({
         title: "Download failed",
-        description: "Failed to download the file. Please try again.",
+        description: "Failed to start the download. Please try again.",
         variant: "destructive",
       });
     }
@@ -158,7 +159,10 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
 
   const handleDownloadOriginal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    downloadUrlAs(`/api/files/${file.id}/content`, file.filename);
+    // Use /download (forces Content-Disposition: attachment) instead of
+    // /content (inline media stream). For multi-GB originals the browser
+    // must stream to disk, never buffer in memory.
+    downloadUrlAs(`/api/files/${file.id}/download`, file.filename);
   };
 
   // Build a download filename like "myclip_720p.mp4" preserving the original
