@@ -49,6 +49,7 @@ npx drizzle-kit generate
 - **AI Worker (Spark)**: `spark/`
 - **Docker Compose**: `docker-compose.yml`
 - **Entrypoint Script**: `scripts/docker-entrypoint.sh`
+- **Dallas Edge Proxy Config**: `edge/` (NPM custom configs + deploy runbook for the SiteMagic-fronted office accelerator)
 - **Client Theme Config**: `client/src/lib/theme.ts`
 - **Client API Contracts**: `client/src/lib/api-client.ts`
 
