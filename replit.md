@@ -81,10 +81,18 @@ npx drizzle-kit generate
 
 ## Gotchas
 
-- **NFS-RDMA on Ubuntu 24.04**: The `/etc/nfs.conf rdma=y` directive is unreliable. A systemd drop-in is required to persistently enable RDMA for NFS.
+- **NFS-RDMA on Ubuntu 24.04**: The `/etc/nfs.conf rdma=y` directive is unreliable. Use a systemd drop-in for `nfs-server` that writes to `/proc/fs/nfsd/portlist` idempotently:
+  ```
+  ExecStartPost=/bin/sh -c 'grep -q "^rdma 20049$" /proc/fs/nfsd/portlist || echo "rdma 20049" > /proc/fs/nfsd/portlist'
+  ```
+  Writing a duplicate `rdma 20049` returns `I/O error` and fails the unit, so the guard is mandatory. Verify with `cat /proc/fs/nfsd/portlist` showing both `tcp 2049` and `rdma 20049`.
+- **NFS export for uploads**: On the app host (`obtv-ai`), `/etc/exports` must contain exactly one line:
+  `/var/lib/docker/volumes/obview_uploads/_data 192.168.100.0/24(rw,async,no_subtree_check,no_root_squash,fsid=1)`. Duplicate entries (even with different options) cause `exportfs -r` to fail and the unit to exit failed.
+- **Spark NFS client**: On the Spark host, `/etc/fstab` mounts the export with `rdma,port=20049,vers=4.2,_netdev,noatime,x-systemd.automount,x-systemd.mount-timeout=30` at `/mnt/obview-uploads`. The `spark.service` unit must declare `RequiresMountsFor=/mnt/obview-uploads` so it doesn't start before the share is ready (Spark binds to `192.168.100.1`, which on cold boot may not be assigned yet — `Restart=always` covers the race).
 - **Spark AI Worker on Blackwell**: PyPI's `ctranslate2` aarch64 wheel is CPU-only, so `OBVIU_WHISPER_DEVICE=cpu` and `OBVIU_WHISPER_COMPUTE_TYPE=int8` must be set for Whisper to work on ARM64.
 - **Cron Jobs in Docker**: `dcron` does not inherit environment variables. `scripts/docker-entrypoint.sh` persists `DATABASE_URL`/`BACKUP_*` to `/etc/cron-env.sh` for cron scripts to source.
 - **NVENC Compatibility**: The GPU pipeline uses CPU decode + CPU scale + NVENC encode to maximize compatibility with various input codecs and avoid issues with `scale_cuda`'s dimension requirements.
+- **L4 GPU**: Datacenter card with no NVENC session limit (unlike consumer GeForce 3–8 cap). 24 GB VRAM. Driver 575 / CUDA 12.9 in use; container CUDA runtime must be ≤ 12.9.
 
 ## Pointers
 
