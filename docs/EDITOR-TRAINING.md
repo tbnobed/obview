@@ -540,10 +540,39 @@ Approvals turn "looks good" into a recorded decision.
 
 ### Who can approve
 
-By default any logged-in user with edit access on the project. Admins
-can approve any project. Public reviewers (share link users) can
-approve **only if** the share link is configured to allow it (see
+Any logged-in user can approve or request changes on a file —
+**except the editor who uploaded that version.** You can't sign off on
+your own work; that's the whole point of review. The Approve / Request
+Changes buttons are disabled on files you uploaded, with a tooltip
+explaining why. If you re-cut a piece, the new version is its own
+review (a fresh file row), so other reviewers approve it independently
+of v1.
+
+Admins are not exempt — even an admin can't approve a file they
+themselves uploaded. Have another reviewer weigh in.
+
+Public reviewers (share-link users) can approve **only if** the share
+link is configured to allow it (see
 [§12](#12-sharing-with-reviewers-public-links)).
+
+### Reading the review state on the buttons
+
+The two buttons in the player header tell you the current review
+state at a glance:
+
+- **Filled green ring around Approve** — *you* approved this version.
+  Click again to clear (it switches to "request changes" if you click
+  the other button).
+- **Filled amber ring around Request Changes** — *you* requested
+  changes on this version.
+- **Small green "2" badge on Approve** — two other reviewers have
+  approved.
+- **Small amber "1" badge on Request Changes** — one other reviewer
+  asked for changes.
+
+The buttons are also tooltip'd with the same info on hover. Mobile
+users see the same state in the dropdown menu as "Approved ✓",
+"Changes Requested ✓", or `Approve (2)` / `Request Changes (1)`.
 
 ### Approval history
 

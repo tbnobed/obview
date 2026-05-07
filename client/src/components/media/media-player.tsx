@@ -185,8 +185,23 @@ export default function MediaPlayer({
     }
   }, [file?.id, file?.fileType, videoProcessing?.status]);
   
-  // Find user's approval (if any)
-  const userApproval = approvals && approvals.length > 0 ? approvals[0] : null;
+  // Find the current user's own approval on this file (if any). The approvals
+  // query returns ALL reviewers' approvals sorted most-recent first, so we
+  // must filter by user id — picking [0] would show whoever last weighed in.
+  const userApproval = (approvals as Array<{ userId: number; status: string }> | undefined)
+    ?.find(a => a.userId === user?.id) ?? null;
+
+  // Aggregate counts of OTHER reviewers' decisions, used to show review state
+  // on the approve / request-changes buttons.
+  const otherApprovals = (approvals as Array<{ userId: number; status: string }> | undefined)
+    ?.filter(a => a.userId !== user?.id) ?? [];
+  const otherApprovedCount = otherApprovals.filter(a => a.status === 'approved').length;
+  const otherChangesCount = otherApprovals.filter(a => a.status === 'changes_requested' || a.status === 'requested_changes').length;
+
+  // Editors can't approve their own uploads — that's the whole point of review.
+  // Server enforces this too; UI just disables the buttons with a tooltip.
+  const isOwnUpload = !!file && !!user && file.uploadedById === user.id;
+  const canApprove = !!file && !!user && !isOwnUpload;
 
   // Whether a 720p proxy is available — used both to decide which <source> to
   // render and to know whether the HD/720p toggle is meaningful for this file.
@@ -2090,25 +2105,61 @@ export default function MediaPlayer({
                       className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
                     />
 
-                    <Button 
+                    <Button
                       variant="ghost"
-                      size="sm" 
-                      className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
+                      size="sm"
+                      className={cn(
+                        "relative h-8 w-8 p-0 border-0",
+                        userApproval?.status === 'changes_requested' || userApproval?.status === 'requested_changes'
+                          ? "bg-amber-500/25 hover:bg-amber-500/35 ring-1 ring-amber-400"
+                          : "bg-transparent hover:bg-white/10",
+                      )}
                       onClick={handleRequestChanges}
-                      disabled={approveMutation.isPending}
-                      title="Request changes"
+                      disabled={approveMutation.isPending || !canApprove}
+                      title={
+                        isOwnUpload
+                          ? "You can't request changes on your own upload"
+                          : userApproval?.status === 'changes_requested' || userApproval?.status === 'requested_changes'
+                            ? "You requested changes — click to clear/approve instead"
+                            : otherChangesCount > 0
+                              ? `Request changes (${otherChangesCount} other${otherChangesCount === 1 ? '' : 's'} already did)`
+                              : "Request changes"
+                      }
                     >
                       <RequestChangesIcon className="h-[22px] w-[22px]" />
+                      {otherChangesCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center leading-none">
+                          {otherChangesCount}
+                        </span>
+                      )}
                     </Button>
-                    <Button 
+                    <Button
                       variant="ghost"
-                      size="sm" 
-                      className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
+                      size="sm"
+                      className={cn(
+                        "relative h-8 w-8 p-0 border-0",
+                        userApproval?.status === 'approved'
+                          ? "bg-emerald-500/25 hover:bg-emerald-500/35 ring-1 ring-emerald-400"
+                          : "bg-transparent hover:bg-white/10",
+                      )}
                       onClick={handleApprove}
-                      disabled={approveMutation.isPending}
-                      title="Approve"
+                      disabled={approveMutation.isPending || !canApprove}
+                      title={
+                        isOwnUpload
+                          ? "You can't approve your own upload"
+                          : userApproval?.status === 'approved'
+                            ? "You approved this version"
+                            : otherApprovedCount > 0
+                              ? `Approve (${otherApprovedCount} other${otherApprovedCount === 1 ? '' : 's'} already did)`
+                              : "Approve"
+                      }
                     >
                       <ApproveIcon className="h-[22px] w-[22px]" />
+                      {otherApprovedCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full bg-emerald-500 text-[9px] font-bold text-white flex items-center justify-center leading-none">
+                          {otherApprovedCount}
+                        </span>
+                      )}
                     </Button>
 
                     {(user?.role === 'admin' || user?.role === 'editor') && project && (
@@ -2302,22 +2353,36 @@ export default function MediaPlayer({
             
             <DropdownMenuItem
               onClick={handleRequestChanges}
-              disabled={approveMutation.isPending}
-              className="text-amber-600 focus:text-amber-600"
+              disabled={approveMutation.isPending || !canApprove}
+              className={cn(
+                "text-amber-600 focus:text-amber-600",
+                (userApproval?.status === 'changes_requested' || userApproval?.status === 'requested_changes') && "bg-amber-500/15 font-semibold",
+              )}
               data-testid="mobile-request-changes"
             >
               <RequestChangesIcon className="h-4 w-4 mr-2" />
-              Request Changes
+              {isOwnUpload
+                ? "Can't review own upload"
+                : (userApproval?.status === 'changes_requested' || userApproval?.status === 'requested_changes')
+                  ? "Changes Requested ✓"
+                  : `Request Changes${otherChangesCount > 0 ? ` (${otherChangesCount})` : ''}`}
             </DropdownMenuItem>
-            
+
             <DropdownMenuItem
               onClick={handleApprove}
-              disabled={approveMutation.isPending}
-              className="text-emerald-600 focus:text-emerald-600"
+              disabled={approveMutation.isPending || !canApprove}
+              className={cn(
+                "text-emerald-600 focus:text-emerald-600",
+                userApproval?.status === 'approved' && "bg-emerald-500/15 font-semibold",
+              )}
               data-testid="mobile-approve"
             >
               <ApproveIcon className="h-4 w-4 mr-2" />
-              Approve
+              {isOwnUpload
+                ? "Can't review own upload"
+                : userApproval?.status === 'approved'
+                  ? "Approved ✓"
+                  : `Approve${otherApprovedCount > 0 ? ` (${otherApprovedCount})` : ''}`}
             </DropdownMenuItem>
             
             {(user?.role === 'admin' || user?.role === 'editor') && project && (

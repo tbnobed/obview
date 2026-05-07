@@ -4501,8 +4501,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Any authenticated user may approve / request changes (Frame.io-style review).
-      
+      // Any authenticated user may approve / request changes (Frame.io-style review),
+      // EXCEPT the editor who uploaded this file/version. Self-approval defeats the
+      // purpose of review.
+      if (file.uploadedById === req.user.id) {
+        return res.status(403).json({
+          message: "You can't approve or request changes on a file you uploaded. Ask another reviewer to weigh in.",
+        });
+      }
+
       // Validate approval data
       const validationResult = insertApprovalSchema.safeParse({
         ...req.body,
@@ -4629,8 +4636,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Any authenticated user may approve / request changes (Frame.io-style review).
-      
+      // Any authenticated user may approve / request changes (Frame.io-style review),
+      // EXCEPT the editor who uploaded this file/version. Self-approval defeats the
+      // purpose of review.
+      if (file.uploadedById === req.user.id) {
+        return res.status(403).json({
+          message: "You can't approve or request changes on a file you uploaded. Ask another reviewer to weigh in.",
+        });
+      }
+
       // Format the data for the approval schema
       const approvalData = {
         fileId,
