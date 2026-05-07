@@ -38,7 +38,7 @@ const MAX_TOP_PHRASE_RATIO = 0.5;
 function tokenize(text: string): string[] {
   return text
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s']/gu, " ")
+    .replace(new RegExp("[^\\p{L}\\p{N}\\s']", "gu"), " ")
     .split(/\s+/)
     .filter(Boolean);
 }
@@ -98,7 +98,7 @@ export function assessSpeechQuality(
     phraseCounts.set(key, (phraseCounts.get(key) || 0) + 1);
   }
   let topPhraseCount = 0;
-  for (const c of phraseCounts.values()) if (c > topPhraseCount) topPhraseCount = c;
+  for (const c of Array.from(phraseCounts.values())) if (c > topPhraseCount) topPhraseCount = c;
   const repetitionRatio = segmentCount > 0 ? topPhraseCount / segmentCount : 0;
 
   const uniqueTokens = new Set(tokens);

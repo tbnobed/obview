@@ -13,6 +13,9 @@ import connectPg from "connect-pg-simple";
 declare global {
   namespace Express {
     interface User extends SelectUser {}
+    interface Request {
+      user: SelectUser;
+    }
   }
 }
 

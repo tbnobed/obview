@@ -110,6 +110,7 @@ type Comment = {
   parentId: string | null;
   user?: { name: string } | null;
   annotations?: string | null;
+  isResolved?: boolean;
 };
 
 const COMMENT_TOKEN_KEY = (id: string) => `share-comment-token-${id}`;
