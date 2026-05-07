@@ -84,6 +84,8 @@ npx drizzle-kit generate
 
 ## Gotchas
 
+- **Schema changes need a hand-written SQL migration**: `shared/schema.ts` is the Drizzle source of truth, but prod does **not** run `drizzle-kit migrate` against it — `scripts/docker-entrypoint.sh` loops `migrations/*.sql` and tracks applied files in `schema_migrations` (filename + sha256). The numbered SQL files are authored by hand, not generated. Editing schema.ts without adding a corresponding `migrations/NNNN_*.sql` ships a column to dev (via `npm run db:push`) but leaves prod broken on next deploy. Always pair a schema edit with a new migration file using `IF NOT EXISTS` guards so it stays idempotent. The 0024 (`files.deleted_at`) miss was exactly this failure.
+
 - **File soft-delete & auto-purge**: `DELETE /api/files/:id` only sets `files.deleted_at`; disk artifacts and DB row stay. The hourly sweep loop in `server/index.ts` (`[TRASH SWEEP]`) hard-deletes rows older than `FILE_TRASH_RETENTION_DAYS` (default 7) by calling `storage.purgeFile` then `fileSystem.removeFileCompletely` — DB-first ordering is required so a concurrent admin restore cannot leave a live row pointing at unlinked media. Admins manage trash at `/admin/trash` via `/api/admin/trash/files/:id/{restore, ""}`. Projects/folders still use manual purge — no auto-deletion. All "live" file queries (`getFile`, `getFilesByProject`, `getAllFiles`, `getFileByShareToken`, `getFileWithProjectByShareToken`, latest-video lookups) filter `isNull(files.deleted_at)`; admin trash listing bypasses storage to see trashed rows.
 
 - **NFS-RDMA on Ubuntu 24.04**: The `/etc/nfs.conf rdma=y` directive is unreliable. Use a systemd drop-in for `nfs-server` that writes to `/proc/fs/nfsd/portlist` idempotently:
