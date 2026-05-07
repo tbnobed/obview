@@ -3843,46 +3843,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Log activity before deletion
+      // Soft delete: mark deleted_at. Disk files and DB row are preserved
+      // for FILE_TRASH_RETENTION_DAYS (default 7) so an admin can restore
+      // from /api/admin/trash. The cleanup loop in server/index.ts hard-
+      // deletes anything past the retention window.
+      const success = await storage.deleteFile(fileId);
+      if (!success) {
+        return res.status(404).json({ message: "File not found or already trashed" });
+      }
+
       await storage.logActivity({
         action: "delete",
         entityType: "file",
         entityId: file.id,
         userId: req.user.id,
-        metadata: { 
+        metadata: {
           projectId: file.projectId,
           filename: file.filename,
+          softDelete: true,
         },
       });
-      
-      // Comprehensive filesystem cleanup - remove original file and all processed versions
-      console.log(`[FILE DELETE] Starting comprehensive cleanup for file ${fileId}: ${file.filename}`);
-      const cleanupResult = await fileSystem.removeFileCompletely(file.id, file.filePath);
-      
-      // Check if filesystem cleanup had any critical failures
-      if (!cleanupResult.original && !cleanupResult.processed) {
-        console.error(`[FILE DELETE] Critical filesystem cleanup failure for file ${fileId}`);
-        return res.status(409).json({ 
-          message: "Failed to remove file from filesystem. Database not modified to prevent orphaned records." 
-        });
-      }
-      
-      // Log filesystem cleanup results
-      if (!cleanupResult.original) {
-        console.warn(`[FILE DELETE] Failed to remove original file: ${file.filePath}`);
-      }
-      if (!cleanupResult.processed) {
-        console.warn(`[FILE DELETE] Failed to remove processed directory for file ${fileId}`);
-      }
-      
-      // Delete file record from database (this will cascade to related records with our schema)
-      const success = await storage.deleteFile(fileId);
-      
-      if (!success) {
-        return res.status(404).json({ message: "File not found" });
-      }
-      
-      console.log(`[FILE DELETE] ✅ Successfully deleted file ${fileId}: ${file.filename}`);
+
+      console.log(`[FILE DELETE] 🗑  Soft-deleted file ${fileId} (${file.filename}); recoverable from /admin/trash for 7 days`);
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -4776,19 +4758,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ----------------------------------------------------------------------
   app.get("/api/admin/trash", isAdmin, async (_req, res, next) => {
     try {
-      const [trashedProjects, trashedFolders] = await Promise.all([
+      const [trashedProjects, trashedFolders, trashedFiles] = await Promise.all([
         storage.getDeletedProjects(),
         storage.getDeletedFolders(),
+        storage.getDeletedFiles(),
       ]);
 
       // Attach file counts per project so the trash UI can warn the admin
-      // before a permanent purge.
+      // before a permanent purge. Bypass storage.getFilesByProject because
+      // it now hides individually-trashed files; the purge cascade will
+      // remove ALL child rows regardless of files.deleted_at.
       const projectsWithCounts = await Promise.all(trashedProjects.map(async (p) => {
-        const projectFiles = await storage.getFilesByProject(p.id);
-        return { ...p, fileCount: projectFiles.length };
+        const [{ count }] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(filesTable)
+          .where(eq(filesTable.projectId, p.id));
+        return { ...p, fileCount: Number(count) || 0 };
       }));
 
-      res.json({ projects: projectsWithCounts, folders: trashedFolders });
+      res.json({
+        projects: projectsWithCounts,
+        folders: trashedFolders,
+        files: trashedFiles,
+        retentionDays: parseInt(process.env.FILE_TRASH_RETENTION_DAYS || "7", 10),
+      });
+    } catch (e) { next(e); }
+  });
+
+  // File trash: restore + permanent purge. Mirrors the project/folder
+  // pattern. The hourly cleanup loop in server/index.ts also calls these
+  // (via storage directly) once retention expires.
+  app.post("/api/admin/trash/files/:id/restore", isAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+      const ok = await storage.restoreFile(id);
+      if (!ok) return res.status(404).json({ message: "File not in trash" });
+      await storage.logActivity({
+        action: "restore",
+        entityType: "file",
+        entityId: id,
+        userId: req.user.id,
+        metadata: {},
+      });
+      res.json({ ok: true });
+    } catch (e) { next(e); }
+  });
+
+  app.delete("/api/admin/trash/files/:id", isAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ message: "Invalid id" });
+
+      // SAFETY GATE: only purge files that are actually in the trash. We
+      // bypass storage.getFile because that method filters out trashed
+      // rows by design.
+      const [target] = await db
+        .select()
+        .from(filesTable)
+        .where(eq(filesTable.id, id));
+      if (!target) return res.status(404).json({ message: "File not found" });
+      if (!target.deletedAt) {
+        return res.status(409).json({
+          message: "File is not in the trash. Soft-delete it first via DELETE /api/files/:id.",
+        });
+      }
+
+      // RACE-SAFE ORDER: delete the DB row first (atomic guard on
+      // deletedAt IS NOT NULL). If a concurrent restore wins, we must
+      // NOT unlink the disk files.
+      const ok = await storage.purgeFile(id);
+      if (!ok) {
+        return res.status(409).json({
+          message: "File was restored by another admin while purge was running. Disk files were not removed.",
+        });
+      }
+
+      // DB row is gone. Now safe to unlink disk artifacts.
+      const cleanup = await fileSystem.removeFileCompletely(target.id, target.filePath);
+      const filesystemErrors: string[] = [];
+      if (!cleanup.original) filesystemErrors.push(`original: ${target.filePath}`);
+      if (!cleanup.processed) filesystemErrors.push(`processed dir for file ${target.id}`);
+
+      await storage.logActivity({
+        action: "purge",
+        entityType: "file",
+        entityId: id,
+        userId: req.user.id,
+        metadata: { filename: target.filename, filesystemErrors },
+      });
+
+      res.json({ ok: true, filesystemErrors });
     } catch (e) { next(e); }
   });
 

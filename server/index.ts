@@ -102,5 +102,51 @@ app.use((req, res, next) => {
       .catch((err) =>
         console.error("[Startup] Could not resume video processing:", err)
       );
+
+    // -------------------------------------------------------------------
+    // Trash auto-purge loop. Runs hourly. Hard-deletes any soft-deleted
+    // files older than FILE_TRASH_RETENTION_DAYS (default 7) by unlinking
+    // disk artifacts and removing the DB row. This is the ONLY automatic
+    // hard-delete path; soft-deleted projects/folders still require a
+    // manual admin purge from /admin/trash.
+    // -------------------------------------------------------------------
+    const retentionDays = Math.max(1, parseInt(process.env.FILE_TRASH_RETENTION_DAYS || "7", 10));
+    const sweepIntervalMs = 60 * 60 * 1000; // 1 hour
+
+    const sweepTrash = async () => {
+      try {
+        const { storage } = await import("./storage");
+        const fileSystem = await import("./utils/filesystem");
+        const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+        const expired = await storage.getExpiredTrashedFiles(cutoff);
+        if (expired.length === 0) return;
+        console.log(`[TRASH SWEEP] Purging ${expired.length} file(s) past ${retentionDays}-day retention`);
+        for (const f of expired) {
+          // RACE-SAFE ORDER: delete DB row first (atomic guard on
+          // deletedAt IS NOT NULL); only then unlink disk so a concurrent
+          // restore cannot leave the user with a live row pointing at
+          // missing files.
+          const ok = await storage.purgeFile(f.id);
+          if (!ok) {
+            console.log(`[TRASH SWEEP] Skipped file ${f.id} (restored mid-sweep)`);
+            continue;
+          }
+          try {
+            const cleanup = await fileSystem.removeFileCompletely(f.id, f.filePath);
+            if (!cleanup.original) console.warn(`[TRASH SWEEP] Could not unlink ${f.filePath}`);
+            if (!cleanup.processed) console.warn(`[TRASH SWEEP] Could not remove processed dir for file ${f.id}`);
+          } catch (e) {
+            console.error(`[TRASH SWEEP] Filesystem cleanup failed for file ${f.id}:`, e);
+          }
+        }
+      } catch (e) {
+        console.error("[TRASH SWEEP] Iteration failed:", e);
+      }
+    };
+
+    // First sweep 60s after boot so we don't slow down startup.
+    setTimeout(sweepTrash, 60_000);
+    setInterval(sweepTrash, sweepIntervalMs);
+    console.log(`[TRASH SWEEP] Auto-purge loop scheduled every ${sweepIntervalMs / 60000} min (retention: ${retentionDays}d)`);
   });
 })();

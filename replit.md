@@ -75,12 +75,15 @@ npx drizzle-kit generate
 - Role-based access control (admin/user)
 - Configurable registration
 - Short share links
+- Soft-delete trash with 7-day auto-purge for files (admin restore/permanent-delete)
 
 ## User preferences
 
 - Preferred communication style: Simple, everyday language.
 
 ## Gotchas
+
+- **File soft-delete & auto-purge**: `DELETE /api/files/:id` only sets `files.deleted_at`; disk artifacts and DB row stay. The hourly sweep loop in `server/index.ts` (`[TRASH SWEEP]`) hard-deletes rows older than `FILE_TRASH_RETENTION_DAYS` (default 7) by calling `storage.purgeFile` then `fileSystem.removeFileCompletely` — DB-first ordering is required so a concurrent admin restore cannot leave a live row pointing at unlinked media. Admins manage trash at `/admin/trash` via `/api/admin/trash/files/:id/{restore, ""}`. Projects/folders still use manual purge — no auto-deletion. All "live" file queries (`getFile`, `getFilesByProject`, `getAllFiles`, `getFileByShareToken`, `getFileWithProjectByShareToken`, latest-video lookups) filter `isNull(files.deleted_at)`; admin trash listing bypasses storage to see trashed rows.
 
 - **NFS-RDMA on Ubuntu 24.04**: The `/etc/nfs.conf rdma=y` directive is unreliable. Use a systemd drop-in for `nfs-server` that writes to `/proc/fs/nfsd/portlist` idempotently:
   ```

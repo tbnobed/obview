@@ -80,10 +80,14 @@ export const files = pgTable("files", {
   isAvailable: boolean("is_available").notNull().default(true), // Track if file is physically available
   shareToken: text("share_token"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Soft delete: NULL = live, NOT NULL = trashed. A nightly job
+  // (server/index.ts) purges files older than FILE_TRASH_RETENTION_DAYS
+  // (default 7) by unlinking from disk + DELETE row.
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const insertFileSchema = createInsertSchema(files)
-  .omit({ id: true, createdAt: true });
+  .omit({ id: true, createdAt: true, deletedAt: true });
 
 // COMMENT SCHEMA
 export const comments = pgTable("comments", {

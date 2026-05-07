@@ -23,7 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RotateCcw, Trash2 } from "lucide-react";
+import { Loader2, RotateCcw, Trash2, Clock } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 
 type TrashedProject = {
@@ -46,7 +46,37 @@ type TrashedFolder = {
   deletedAt: string;
 };
 
-type TrashResponse = { projects: TrashedProject[]; folders: TrashedFolder[] };
+type TrashedFile = {
+  id: number;
+  filename: string;
+  fileType: string;
+  fileSize: number;
+  projectId: number;
+  uploadedById: number;
+  projectName?: string | null;
+  uploaderUsername?: string | null;
+  uploaderName?: string | null;
+  deletedAt: string;
+};
+
+type TrashResponse = {
+  projects: TrashedProject[];
+  folders: TrashedFolder[];
+  files: TrashedFile[];
+  retentionDays: number;
+};
+
+function formatBytes(n: number): string {
+  if (!n) return "0 B";
+  const u = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(u.length - 1, Math.floor(Math.log10(n) / 3));
+  return `${(n / Math.pow(1000, i)).toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
+}
+
+function daysUntilPurge(deletedAt: string, retentionDays: number): number {
+  const purgeAt = new Date(deletedAt).getTime() + retentionDays * 86_400_000;
+  return Math.max(0, Math.ceil((purgeAt - Date.now()) / 86_400_000));
+}
 
 export default function AdminTrashPage() {
   const [_, navigate] = useLocation();
@@ -102,6 +132,25 @@ export default function AdminTrashPage() {
     },
   });
 
+  const restoreFile = useMutation({
+    mutationFn: async (id: number) => apiRequest("POST", `/api/admin/trash/files/${id}/restore`),
+    onSuccess: () => {
+      toast({ title: "File restored" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/trash"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+    },
+    onError: (e: any) => toast({ title: "Restore failed", description: e?.message ?? "", variant: "destructive" }),
+  });
+
+  const purgeFile = useMutation({
+    mutationFn: async (id: number) => apiRequest("DELETE", `/api/admin/trash/files/${id}`),
+    onSuccess: () => {
+      toast({ title: "File permanently removed", description: "Disk artifacts unlinked." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/trash"] });
+    },
+    onError: (e: any) => toast({ title: "Purge failed", description: e?.message ?? "", variant: "destructive" }),
+  });
+
   return (
     <AppLayout>
       <div className="p-6 space-y-6">
@@ -109,8 +158,9 @@ export default function AdminTrashPage() {
           <div>
             <h1 className="text-2xl font-bold">Trash</h1>
             <p className="text-neutral-500 text-sm mt-1">
-              Soft-deleted projects and folders. Restore puts them back on the dashboard.
+              Soft-deleted projects, folders, and files. Restore puts them back on the dashboard.
               Permanent delete removes the database row and unlinks the files from disk.
+              {data && ` Trashed files auto-purge after ${data.retentionDays} days.`}
             </p>
           </div>
           <Button variant="outline" onClick={() => navigate("/projects")}>Back to projects</Button>
@@ -154,6 +204,59 @@ export default function AdminTrashPage() {
                           size="sm"
                           onClick={() => { setPurgeTarget(p); setPurgeTyped(""); }}
                           data-testid={`purge-project-${p.id}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete forever
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Files ({data.files.length})</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {data.files.length === 0 && <p className="text-sm text-neutral-500">No deleted files.</p>}
+                {data.files.map(f => {
+                  const owner = f.uploaderName || f.uploaderUsername || `user #${f.uploadedById}`;
+                  const daysLeft = daysUntilPurge(f.deletedAt, data.retentionDays);
+                  return (
+                    <div key={f.id} className="flex items-center justify-between border rounded-md p-3 gap-3" data-testid={`trash-file-row-${f.id}`}>
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{f.filename}</div>
+                        <div className="text-xs text-neutral-500 flex flex-wrap gap-2 mt-1 items-center">
+                          <Badge variant="outline" className="font-normal">{f.fileType}</Badge>
+                          <Badge variant="outline" className="font-normal">{formatBytes(f.fileSize)}</Badge>
+                          {f.projectName && <Badge variant="outline" className="font-normal">Project: {f.projectName}</Badge>}
+                          <Badge variant="outline" className="font-normal">By: {owner}</Badge>
+                          <span>Deleted {formatTimeAgo(new Date(f.deletedAt))}</span>
+                          <span className="inline-flex items-center gap-1 text-amber-600">
+                            <Clock className="h-3 w-3" />
+                            Auto-purges in {daysLeft} day{daysLeft === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => restoreFile.mutate(f.id)}
+                          disabled={restoreFile.isPending}
+                          data-testid={`restore-file-${f.id}`}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5 mr-1" /> Restore
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm(`Permanently delete "${f.filename}"? This unlinks it from disk and cannot be undone.`)) {
+                              purgeFile.mutate(f.id);
+                            }
+                          }}
+                          disabled={purgeFile.isPending}
+                          data-testid={`purge-file-${f.id}`}
                         >
                           <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete forever
                         </Button>

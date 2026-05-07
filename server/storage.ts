@@ -103,7 +103,17 @@ export interface IStorage {
   getAllFiles(): Promise<File[]>;
   createFile(file: InsertFile): Promise<File>;
   updateFile(id: number, data: Partial<InsertFile>): Promise<File | undefined>;
+  // Soft delete: marks files.deleted_at. The row + disk files are preserved
+  // for FILE_TRASH_RETENTION_DAYS (default 7) so admins can restore from
+  // /api/admin/trash. Returns true if a live row was trashed.
   deleteFile(id: number): Promise<boolean>;
+  // Trash operations (admin only)
+  restoreFile(id: number): Promise<boolean>;
+  purgeFile(id: number): Promise<boolean>;
+  getDeletedFiles(): Promise<(File & { projectName?: string | null; uploaderUsername?: string | null; uploaderName?: string | null })[]>;
+  // Returns soft-deleted files whose deletedAt is older than `cutoff`. The
+  // caller unlinks disk files and then calls purgeFile on each id.
+  getExpiredTrashedFiles(cutoff: Date): Promise<File[]>;
   
   // Video processing management
   createVideoProcessing(processing: InsertVideoProcessing): Promise<VideoProcessing>;
@@ -490,17 +500,19 @@ export class MemStorage implements IStorage {
 
   // File methods
   async getFile(id: number): Promise<File | undefined> {
-    return this.files.get(id);
+    const f = this.files.get(id);
+    if (!f || (f as any).deletedAt) return undefined;
+    return f;
   }
 
   async getFilesByProject(projectId: number): Promise<File[]> {
     return Array.from(this.files.values()).filter(
-      (file) => file.projectId === projectId
+      (file) => file.projectId === projectId && !(file as any).deletedAt
     );
   }
-  
+
   async getAllFiles(): Promise<File[]> {
-    return Array.from(this.files.values());
+    return Array.from(this.files.values()).filter(f => !(f as any).deletedAt);
   }
 
   async createFile(insertFile: InsertFile): Promise<File> {
@@ -509,8 +521,9 @@ export class MemStorage implements IStorage {
     const file: File = {
       ...insertFile,
       id,
-      createdAt: now
-    };
+      createdAt: now,
+      deletedAt: null,
+    } as File;
     this.files.set(id, file);
     return file;
   }
@@ -525,7 +538,41 @@ export class MemStorage implements IStorage {
   }
 
   async deleteFile(id: number): Promise<boolean> {
+    const f = this.files.get(id);
+    if (!f || (f as any).deletedAt) return false;
+    this.files.set(id, { ...f, deletedAt: new Date() } as any);
+    return true;
+  }
+
+  async restoreFile(id: number): Promise<boolean> {
+    const f = this.files.get(id);
+    if (!f || !(f as any).deletedAt) return false;
+    this.files.set(id, { ...f, deletedAt: null } as any);
+    return true;
+  }
+
+  async purgeFile(id: number): Promise<boolean> {
+    const f = this.files.get(id);
+    if (!f || !(f as any).deletedAt) return false;
     return this.files.delete(id);
+  }
+
+  async getDeletedFiles(): Promise<(File & { projectName?: string | null; uploaderUsername?: string | null; uploaderName?: string | null })[]> {
+    return Array.from(this.files.values())
+      .filter(f => !!(f as any).deletedAt)
+      .map(f => ({
+        ...f,
+        projectName: this.projects.get(f.projectId)?.name ?? null,
+        uploaderUsername: this.users.get(f.uploadedById)?.username ?? null,
+        uploaderName: this.users.get(f.uploadedById)?.name ?? null,
+      }));
+  }
+
+  async getExpiredTrashedFiles(cutoff: Date): Promise<File[]> {
+    return Array.from(this.files.values()).filter(f => {
+      const d = (f as any).deletedAt as Date | null | undefined;
+      return !!d && new Date(d).getTime() < cutoff.getTime();
+    });
   }
 
   // Comment methods
@@ -876,13 +923,13 @@ export class MemStorage implements IStorage {
 
   async getFileByShareToken(token: string): Promise<File | undefined> {
     return Array.from(this.files.values()).find(
-      (file) => file.shareToken === token
+      (file) => file.shareToken === token && !(file as any).deletedAt
     );
   }
 
   async getFileWithProjectByShareToken(token: string): Promise<(File & { projectName: string }) | undefined> {
     const file = Array.from(this.files.values()).find(
-      (file) => file.shareToken === token
+      (file) => file.shareToken === token && !(file as any).deletedAt
     );
     
     if (!file) {
@@ -1580,13 +1627,13 @@ export class DatabaseStorage implements IStorage {
       const [latestVideoFile] = await db
         .select()
         .from(files)
-        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video')))
+        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video'), isNull(files.deletedAt)))
         .orderBy(desc(files.createdAt))
         .limit(1);
       const [{ count: fileCount }] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(files)
-        .where(eq(files.projectId, r.project.id));
+        .where(and(eq(files.projectId, r.project.id), isNull(files.deletedAt)));
       return {
         ...r.project,
         latestVideoFile: latestVideoFile || undefined,
@@ -1701,13 +1748,13 @@ export class DatabaseStorage implements IStorage {
       const [latestVideoFile] = await db
         .select()
         .from(files)
-        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video')))
+        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video'), isNull(files.deletedAt)))
         .orderBy(desc(files.createdAt))
         .limit(1);
       const [{ count: fileCount }] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(files)
-        .where(eq(files.projectId, r.project.id));
+        .where(and(eq(files.projectId, r.project.id), isNull(files.deletedAt)));
       return {
         ...r.project,
         latestVideoFile: latestVideoFile || undefined,
@@ -1737,13 +1784,13 @@ export class DatabaseStorage implements IStorage {
       const [latestVideoFile] = await db
         .select()
         .from(files)
-        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video')))
+        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video'), isNull(files.deletedAt)))
         .orderBy(desc(files.createdAt))
         .limit(1);
       const [{ count: fileCount }] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(files)
-        .where(eq(files.projectId, r.project.id));
+        .where(and(eq(files.projectId, r.project.id), isNull(files.deletedAt)));
       return {
         ...r.project,
         latestVideoFile: latestVideoFile || undefined,
@@ -1758,6 +1805,8 @@ export class DatabaseStorage implements IStorage {
   async getFile(id: number): Promise<File | undefined> {
     // Files belonging to soft-deleted projects are treated as gone for
     // normal reads — they reappear when the project is restored.
+    // Individually trashed files (files.deleted_at IS NOT NULL) are also
+    // hidden from regular reads; admins see them via getDeletedFiles.
     const [row] = await db
       .select({ file: files })
       .from(files)
@@ -1765,14 +1814,19 @@ export class DatabaseStorage implements IStorage {
         eq(projects.id, files.projectId),
         isNull(projects.deletedAt),
       ))
-      .where(eq(files.id, id));
+      .where(and(eq(files.id, id), isNull(files.deletedAt)));
     return row?.file;
   }
 
   async getFilesByProject(projectId: number): Promise<File[]> {
-    return await db.select().from(files).where(eq(files.projectId, projectId));
+    // Hide individually-trashed files. Callers that need ALL rows for an
+    // admin purge must query the `files` table directly.
+    return await db
+      .select()
+      .from(files)
+      .where(and(eq(files.projectId, projectId), isNull(files.deletedAt)));
   }
-  
+
   async getAllFiles(): Promise<File[]> {
     const rows = await db
       .select({ file: files })
@@ -1780,7 +1834,8 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(projects, and(
         eq(projects.id, files.projectId),
         isNull(projects.deletedAt),
-      ));
+      ))
+      .where(isNull(files.deletedAt));
     return rows.map(r => r.file);
   }
 
@@ -1799,11 +1854,62 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteFile(id: number): Promise<boolean> {
+    // Soft delete only. The disk files and DB row remain so an admin can
+    // restore from /api/admin/trash. A nightly cleanup job hard-deletes
+    // anything past FILE_TRASH_RETENTION_DAYS.
+    const result = await db
+      .update(files)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(files.id, id), isNull(files.deletedAt)))
+      .returning({ id: files.id });
+    return result.length > 0;
+  }
+
+  async restoreFile(id: number): Promise<boolean> {
+    const result = await db
+      .update(files)
+      .set({ deletedAt: null })
+      .where(and(eq(files.id, id), isNotNull(files.deletedAt)))
+      .returning({ id: files.id });
+    return result.length > 0;
+  }
+
+  async purgeFile(id: number): Promise<boolean> {
+    // Hard delete — STRICTLY only permitted for trashed rows. Caller MUST
+    // unlink the disk files first; this method only removes the DB row.
     const result = await db
       .delete(files)
-      .where(eq(files.id, id))
-      .returning({ deletedId: files.id });
+      .where(and(eq(files.id, id), isNotNull(files.deletedAt)))
+      .returning({ id: files.id });
     return result.length > 0;
+  }
+
+  async getDeletedFiles(): Promise<(File & { projectName?: string | null; uploaderUsername?: string | null; uploaderName?: string | null })[]> {
+    const rows = await db
+      .select({
+        file: files,
+        projectName: projects.name,
+        uploaderUsername: users.username,
+        uploaderName: users.name,
+      })
+      .from(files)
+      .leftJoin(projects, eq(projects.id, files.projectId))
+      .leftJoin(users, eq(users.id, files.uploadedById))
+      .where(isNotNull(files.deletedAt))
+      .orderBy(desc(files.deletedAt));
+    return rows.map(r => ({
+      ...r.file,
+      projectName: r.projectName ?? null,
+      uploaderUsername: r.uploaderUsername ?? null,
+      uploaderName: r.uploaderName ?? null,
+    }));
+  }
+
+  async getExpiredTrashedFiles(cutoff: Date): Promise<File[]> {
+    return await db
+      .select()
+      .from(files)
+      .where(and(isNotNull(files.deletedAt), sql`${files.deletedAt} < ${cutoff}`));
   }
 
   // Video processing methods
@@ -2168,6 +2274,7 @@ export class DatabaseStorage implements IStorage {
         FROM ${files} f
         LEFT JOIN ${approvals} a ON a.file_id = f.id
         WHERE f.project_id = ANY(${sql.raw(`ARRAY[${projectIds.join(",")}]::int[]`)})
+          AND f.deleted_at IS NULL
         GROUP BY f.id, f.project_id
       )
       SELECT
@@ -2679,6 +2786,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(files.shareToken, token),
         isNull(projects.deletedAt),
+        isNull(files.deletedAt),
       ));
     return file as unknown as File | undefined;
   }
@@ -2706,6 +2814,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(files.shareToken, token),
         isNull(projects.deletedAt),
+        isNull(files.deletedAt),
       ));
 
     return result[0] as unknown as (File & { projectName: string }) | undefined;
