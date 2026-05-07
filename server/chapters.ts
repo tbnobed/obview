@@ -13,15 +13,24 @@ function formatTimestamp(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// Build a per-span timeline. Buckets the chunk's segments into ~30s windows
-// so the LLM sees timestamps anchored INSIDE the span — the only way to stop
-// a small local model from defaulting to "0:00, 0:02, 0:04…" hallucinations.
-function condensedSpanTimeline(
+// Parse a [H:MM:SS] or [MM:SS] string back to seconds. Returns NaN if not a
+// valid timecode — the caller drops the moment in that case.
+function parseTimestampString(s: string): number {
+  const m = s.trim().match(/^(\d+):(\d{2})(?::(\d{2}))?$/);
+  if (!m) return NaN;
+  const a = parseInt(m[1], 10);
+  const b = parseInt(m[2], 10);
+  const c = m[3] != null ? parseInt(m[3], 10) : NaN;
+  if (!isNaN(c)) return a * 3600 + b * 60 + c; // H:MM:SS
+  return a * 60 + b;                            // MM:SS
+}
+
+function condensedTimeline(
   segments: Array<{ start: number; end: number; text: string }>
 ): string {
-  if (segments.length === 0) return "";
-  const span = segments[segments.length - 1].end - segments[0].start;
-  const windowSec = span > 600 ? 60 : span > 180 ? 30 : 15;
+  const lastSeg = segments[segments.length - 1];
+  const totalSec = lastSeg ? lastSeg.end : 0;
+  const windowSec = totalSec > 1800 ? 120 : totalSec > 600 ? 60 : 30;
   const windows: Map<number, string[]> = new Map();
   for (const seg of segments) {
     const bucket = Math.floor(seg.start / windowSec) * windowSec;
@@ -37,55 +46,53 @@ function condensedSpanTimeline(
   return lines.join("\n");
 }
 
-function buildSpanPrompt(
-  spanSegments: Array<{ start: number; end: number; text: string }>,
-  spanStart: number,
-  spanEnd: number,
-  spanIdx: number,
-  spanCount: number
+function buildChaptersPrompt(
+  segments: Array<{ start: number; end: number; text: string }>
 ): string {
-  const timeline = condensedSpanTimeline(spanSegments);
+  const lastSeg = segments[segments.length - 1];
+  const totalDuration = lastSeg ? formatTimestamp(lastSeg.end) : "unknown";
+  const totalSeconds = lastSeg ? Math.round(lastSeg.end) : 0;
+  const timeline = condensedTimeline(segments);
+  const target =
+    totalSeconds < 120 ? "3-5"
+    : totalSeconds < 600 ? "4-7"
+    : totalSeconds < 1800 ? "5-8"
+    : "6-10";
+  // Show 3-4 timestamps from across the video as exemplars so the model
+  // anchors on the real timecode strings instead of inventing integers.
+  const exampleTimestamps: string[] = [];
+  if (lastSeg) {
+    const buckets = [0.1, 0.4, 0.7, 0.95];
+    for (const f of buckets) {
+      const t = Math.floor(lastSeg.end * f);
+      const seg = segments.find((s) => s.start >= t) || segments[segments.length - 1];
+      exampleTimestamps.push(formatTimestamp(Math.floor(seg.start)));
+    }
+  }
+
   return [
-    `You are reviewing PART ${spanIdx + 1} of ${spanCount} of a longer video.`,
-    `This part covers ${formatTimestamp(spanStart)} to ${formatTimestamp(spanEnd)}.`,
+    `Below is a condensed timeline of a video that is ${totalDuration} long. Each line begins with a bracketed timecode like [${exampleTimestamps[0] || "0:00"}] showing where in the video that text occurs.`,
     "",
-    "Timeline of what is said in this part:",
     timeline,
     "",
-    `Task: Pick the SINGLE most notable moment from THIS PART ONLY — a point a reviewer would want to jump to (a decision, a topic shift, a notable claim, a question, an action item, a turning point).`,
+    `Task: Pick the ${target} most notable KEY MOMENTS across the ENTIRE ${totalDuration} of this video — points a reviewer would want to jump to (decisions, topic shifts, notable claims, questions, action items, turning points).`,
     "",
-    "Rules:",
-    `- The "start" value MUST be a timestamp that appears as [m:ss] in the timeline above.`,
-    `- Do NOT invent timestamps. Do NOT use 0 unless 0:00 appears above.`,
-    `- If nothing in this part is notable, output an empty array [].`,
+    "CRITICAL — timestamp format:",
+    `- The "timestamp" field MUST be a string in the EXACT format shown in brackets above (e.g. "${exampleTimestamps[1] || "12:34"}", "${exampleTimestamps[2] || "27:05"}").`,
+    `- DO NOT output bare integers. "14" is wrong. "14:00" or "0:14" is right — they mean different things.`,
+    `- Copy the timestamp string verbatim from the [brackets] in the timeline above.`,
+    `- The video is ${totalDuration} long; your timestamps must span that range, not cluster at the start.`,
     "",
-    "Output ONLY a JSON array with 0 or 1 elements. No markdown, no explanation.",
-    'Element shape: {"start": <seconds as integer>, "title": "<2-6 word label>", "summary": "<1 sentence on why this moment matters>"}',
+    "Other rules:",
+    "- Quality over coverage. Skip filler. If the content has fewer notable moments, return fewer.",
+    "- Spread moments across the whole video; do not return everything from the first few minutes.",
+    `- Suggested anchor points across the video: ${exampleTimestamps.join(", ")}. Your moments do not have to match these exactly, but they should be distributed similarly across the duration.`,
+    "",
+    "Output ONLY a JSON array. No markdown, no explanation.",
+    'Element shape: {"timestamp": "<MM:SS or H:MM:SS>", "title": "<2-6 word label>", "summary": "<1 sentence on why this moment matters>"}',
     "",
     "JSON array:",
   ].join("\n");
-}
-
-// Split segments into N spans of roughly equal time. Empty spans (silent
-// stretches) are dropped — we don't want the LLM trying to find a "key
-// moment" in 90 seconds of dead air.
-function splitIntoSpans(
-  segments: Array<{ start: number; end: number; text: string }>,
-  spanCount: number
-): Array<{ start: number; end: number; segs: typeof segments }> {
-  if (segments.length === 0 || spanCount <= 0) return [];
-  const totalStart = segments[0].start;
-  const totalEnd = segments[segments.length - 1].end;
-  const totalDur = Math.max(1, totalEnd - totalStart);
-  const spanDur = totalDur / spanCount;
-  const spans: Array<{ start: number; end: number; segs: typeof segments }> = [];
-  for (let i = 0; i < spanCount; i++) {
-    const s = totalStart + i * spanDur;
-    const e = i === spanCount - 1 ? totalEnd : totalStart + (i + 1) * spanDur;
-    const segs = segments.filter((seg) => seg.start >= s && seg.start < e);
-    if (segs.length > 0) spans.push({ start: s, end: e, segs });
-  }
-  return spans;
 }
 
 interface Chapter {
@@ -156,15 +163,23 @@ function parseChaptersResponse(raw: string): Chapter[] {
 
   const chapters: Chapter[] = [];
   for (const item of parsed) {
-    const start =
-      typeof item.start === "number"
-        ? item.start
-        : typeof item.start === "string"
-          ? parseFloat(item.start)
-          : NaN;
+    // Prefer the new "timestamp" string field. Fall back to "start" if the
+    // model emits the old shape — but if it's a small integer (< 1000) and
+    // looks like minutes-as-int (the bug that produced the 0:24 screenshot),
+    // we bail rather than render garbage.
+    let start = NaN;
+    if (typeof item.timestamp === "string") {
+      start = parseTimestampString(item.timestamp);
+    } else if (typeof item.start === "string") {
+      start = /^\d+:\d{2}/.test(item.start.trim())
+        ? parseTimestampString(item.start)
+        : parseFloat(item.start);
+    } else if (typeof item.start === "number") {
+      start = item.start;
+    }
     if (isNaN(start) || typeof item.title !== "string") continue;
     chapters.push({
-      start: Math.max(0, start),
+      start: Math.max(0, Math.round(start)),
       title: item.title.trim(),
       summary: typeof item.summary === "string" ? item.summary.trim() : undefined,
     });
@@ -175,9 +190,21 @@ function parseChaptersResponse(raw: string): Chapter[] {
   }
 
   chapters.sort((a, b) => a.start - b.start);
-  // Key moments are sparse highlights — do NOT force the first one to 0:00.
-
   return chapters;
+}
+
+// Heuristic: if every moment lands in the first ~5% of the video AND the
+// video is longer than 2 minutes, the model almost certainly emitted minutes
+// as bare integers ({"start": 14} meant 14:00, not 0:14). Don't ship that.
+function looksLikeMinutesAsIntegers(
+  chapters: Chapter[],
+  totalSeconds: number
+): boolean {
+  if (chapters.length < 3 || totalSeconds < 120) return false;
+  const maxStart = chapters[chapters.length - 1].start;
+  if (maxStart >= totalSeconds * 0.2) return false;
+  // All starts are small integers AND would plausibly fit the video if scaled by 60
+  return chapters.every((c) => c.start < 60) && maxStart * 60 < totalSeconds * 1.1;
 }
 
 async function runChaptersJob(fileId: number): Promise<void> {
@@ -220,26 +247,48 @@ async function runChaptersJob(fileId: number): Promise<void> {
   try {
     const basePrompt = buildChaptersPrompt(transcript.segments);
     const promptLen = basePrompt.length;
-    console.log(`[Chapters] Generating chapters for file ${fileId} (prompt ${promptLen} chars, ${isRemoteMode() ? "remote" : "local"})...`);
+    const totalSeconds = Math.round(
+      transcript.segments[transcript.segments.length - 1].end
+    );
+    console.log(`[Chapters] Generating key moments for file ${fileId} (prompt ${promptLen} chars, ${isRemoteMode() ? "remote" : "local"})...`);
 
     let chapters: Chapter[] | null = null;
-    const MAX_ATTEMPTS = 2;
+    const MAX_ATTEMPTS = 3;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const t0 = Date.now();
+      // Different retry instruction depending on what failed last time.
+      let extra = "";
+      if (attempt === 2) {
+        extra = '\n\nIMPORTANT: Your previous response was not valid JSON. Output ONLY a raw JSON array with no extra text. Example: [{"timestamp":"12:34","title":"Topic shift","summary":"Speaker pivots to ..."}]';
+      } else if (attempt === 3) {
+        extra = `\n\nIMPORTANT: Your previous response had bad timestamps (clustered at the start, or bare integers). The video is ${formatTimestamp(totalSeconds)} long. Every "timestamp" must be a "MM:SS" or "H:MM:SS" string copied from the [brackets] in the timeline above. They must span the whole ${formatTimestamp(totalSeconds)} duration.`;
+      }
       const response = await prompt(
-        attempt === 1
-          ? basePrompt
-          : basePrompt +
-            '\n\nIMPORTANT: Your previous response was not valid JSON. Output ONLY a raw JSON array with no extra text. Example: [{"start":0,"title":"Intro","summary":"Opening"}]',
+        basePrompt + extra,
         { maxTokens: isRemoteMode() ? 2048 : 1024, temperature: attempt === 1 ? 0.2 : 0.1 },
-        `Chapters generation for file ${fileId} (attempt ${attempt})`
+        `Key moments generation for file ${fileId} (attempt ${attempt})`
       );
       const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
       console.log(`[Chapters] File ${fileId} attempt ${attempt} completed in ${elapsed}s`);
 
       try {
-        chapters = parseChaptersResponse(response);
-        console.log(`[Chapters] File ${fileId}: ${chapters.length} chapters parsed`);
+        const parsed = parseChaptersResponse(response);
+        if (looksLikeMinutesAsIntegers(parsed, totalSeconds)) {
+          console.warn(
+            `[Chapters] File ${fileId} attempt ${attempt}: rejecting — moments look like minutes-as-integers (max start ${parsed[parsed.length - 1].start}s vs duration ${totalSeconds}s)`
+          );
+          if (attempt === MAX_ATTEMPTS) {
+            throw new Error("Model returned timestamps that don't span the video duration");
+          }
+          continue;
+        }
+        // Drop any moments that fall outside the video duration.
+        chapters = parsed.filter((c) => c.start <= totalSeconds + 5);
+        if (chapters.length === 0) {
+          if (attempt === MAX_ATTEMPTS) throw new Error("All returned timestamps were outside the video duration");
+          continue;
+        }
+        console.log(`[Chapters] File ${fileId}: ${chapters.length} key moments parsed (range ${formatTimestamp(chapters[0].start)} → ${formatTimestamp(chapters[chapters.length - 1].start)})`);
         break;
       } catch (parseErr: any) {
         console.warn(`[Chapters] File ${fileId} attempt ${attempt} parse failed: ${parseErr.message}`);
