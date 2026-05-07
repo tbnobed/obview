@@ -194,7 +194,9 @@ export const activityLogs = pgTable("activity_logs", {
   action: text("action").notNull(), // "create", "update", "delete", "approve", "comment", etc.
   entityType: text("entity_type").notNull(), // "project", "file", "comment", "user", etc.
   entityId: integer("entity_id").notNull(),
-  userId: integer("user_id").notNull(),
+  // Nullable for unauthenticated actors (public share-link review actions
+  // and reviewer uploads). Identity is preserved in `metadata` instead.
+  userId: integer("user_id"),
   metadata: json("metadata"), // Additional details about the action
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

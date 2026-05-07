@@ -3444,55 +3444,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate request data
-      const { requesterName, requesterEmail } = req.body;
-      
+      const { requesterName, requesterEmail, feedback } = req.body;
+
       if (!requesterName || !requesterEmail) {
-        return res.status(400).json({ 
-          message: "Requester name and email are required" 
+        return res.status(400).json({
+          message: "Requester name and email are required"
         });
       }
-      
+
       // Get project information
       const project = await storage.getProject(file.projectId);
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
-      
-      // Get all project users (collaborators and owner)
-      const projectUsers = await storage.getProjectUsers(file.projectId);
-      const allUsers = await Promise.all(
-        projectUsers.map(pu => storage.getUser(pu.userId))
-      );
-      
-      // Filter out null users and get their emails
-      const validUsers = allUsers.filter(user => user !== undefined);
-      
-      // Send emails to all project members
-      const { sendApprovalEmail } = await import('./utils/sendgrid');
-      const emailPromises = validUsers.map(user => {
-        if (user) {
-          return sendApprovalEmail(
-            user.email,
+
+      // Directed-review parity for share-link reviewers: mark the file as
+      // changes-requested so the editor sees the badge, but leave
+      // requested_changes_by_id NULL — the reviewer has no user account
+      // to FK to. Their identity + feedback live in activity_logs only.
+      // This is the critical side effect of the endpoint, so a failure
+      // here must surface as a 500 rather than a silent success.
+      try {
+        await storage.updateFile(file.id, {
+          reviewStatus: "changes_requested",
+          requestedChangesById: null,
+        } as any);
+      } catch (err) {
+        console.error("[ShareReview] Failed to update file review state:", err);
+        return res.status(500).json({
+          message: "Failed to record change request. Please try again.",
+        });
+      }
+
+      // Audit trail: requester name/email/feedback are persisted in
+      // activity_logs metadata (same pattern as share-link reviewer
+      // uploads). userId is null because the actor is unauthenticated.
+      try {
+        await storage.logActivity({
+          action: "request_changes",
+          entityType: "file",
+          entityId: file.id,
+          userId: null as any,
+          metadata: {
+            projectId: file.projectId,
+            filename: file.filename,
+            version: file.version,
+            source: "share-link",
             requesterName,
-            project.name,
-            file.filename,
-            "changes_requested",
-            null, // No feedback - just notification
-            req.get('origin') || req.get('host'),
-            project.id
-          );
+            requesterEmail,
+            requesterIp: clientIp,
+            feedback: feedback || null,
+          },
+        });
+      } catch (err) {
+        console.error("[ShareReview] Failed to log activity:", err);
+      }
+
+      // Targeted email: notify ONLY the file's uploader (matches the
+      // logged-in directed-review flow). The legacy fan-out to every
+      // project member is gone for share-link "request changes" too.
+      let sent = false;
+      try {
+        const uploader = file.uploadedById
+          ? await storage.getUser(file.uploadedById)
+          : null;
+        if (uploader && process.env.SENDGRID_API_KEY) {
+          const { sendChangesRequestedEmail } = await import('./utils/sendgrid');
+          sent = await sendChangesRequestedEmail({
+            to: uploader.email,
+            actorName: `${requesterName} (via share link)`,
+            recipientName: uploader.name,
+            projectName: project.name,
+            fileName: file.filename,
+            fileVersion: file.version,
+            feedback: feedback || null,
+            appUrl: req.get('origin') || req.get('host') || undefined,
+            projectId: project.id,
+            fileId: file.id,
+          });
         }
-        return Promise.resolve(false);
-      });
-      
-      await Promise.all(emailPromises);
-      
-      console.log(`Public request for changes sent for file ${file.filename} by ${requesterName} (${requesterEmail})`);
-      console.log(`Emails sent to ${validUsers.length} project members`);
-      
-      res.status(200).json({ 
-        message: "Changes requested successfully. Project members have been notified via email.",
-        emailsSent: validUsers.length
+      } catch (err) {
+        console.error("[ShareReview] Failed to send changes-requested email:", err);
+      }
+
+      console.log(`[ShareReview] request_changes for file ${file.id} by ${requesterName} (${requesterEmail}); uploader notified: ${sent}`);
+
+      res.status(200).json({
+        message: "Changes requested successfully. The file's uploader has been notified.",
+        emailsSent: sent ? 1 : 0,
       });
     } catch (error) {
       console.error("Error requesting changes:", error);
