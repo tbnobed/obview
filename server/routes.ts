@@ -1889,28 +1889,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // post-create logic: if the prior latest version had an open change
   // request, email ONLY that requester. Fired-and-forgotten — failures
   // are logged but never block the upload pipeline.
-  const onVersionResponseCb = (args: { file: any; priorRequesterId: number; actorUserId: number }) => {
+  const onVersionResponseCb = (args: {
+    file: any;
+    priorRequesterId: number | null;
+    priorRequesterEmail: string | null;
+    actorUserId: number;
+  }) => {
     if (!process.env.SENDGRID_API_KEY) return;
     (async () => {
       try {
-        const [requester, actor, project] = await Promise.all([
-          storage.getUser(args.priorRequesterId),
+        const [actor, project] = await Promise.all([
           storage.getUser(args.actorUserId),
           storage.getProject(args.file.projectId),
         ]);
-        if (!requester || !actor || !project) return;
+        if (!actor || !project) return;
+        // FK user wins; share-link email is the fallback when there's no
+        // associated user account.
+        let toEmail: string | null = null;
+        let recipientName: string | undefined;
+        if (args.priorRequesterId) {
+          const requester = await storage.getUser(args.priorRequesterId);
+          if (requester) {
+            toEmail = requester.email;
+            recipientName = requester.name;
+          }
+        } else if (args.priorRequesterEmail) {
+          toEmail = args.priorRequesterEmail;
+        }
+        if (!toEmail) return;
         const { sendNewVersionForReviewEmail } = await import('./utils/sendgrid');
         const sent = await sendNewVersionForReviewEmail({
-          to: requester.email,
+          to: toEmail,
           actorName: actor.name,
-          recipientName: requester.name,
+          recipientName,
           projectName: project.name,
           fileName: args.file.filename,
           fileVersion: args.file.version,
           projectId: args.file.projectId,
           fileId: args.file.id,
         });
-        console.log(`[Review] tus new-version email to requester ${requester.email}: ${sent ? 'sent' : 'failed'}`);
+        console.log(`[Review] tus new-version email to requester ${toEmail}: ${sent ? 'sent' : 'failed'}`);
       } catch (err) {
         console.error('[Review] tus new-version email failed:', err);
       }
@@ -2074,10 +2092,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // capture the previous latest version's open change-request (if any)
       // so we can email the requester after the new version lands.
       let priorRequesterId: number | null = null;
+      let priorRequesterEmail: string | null = null;
       if (version > 1) {
         const priorLatest = similarFiles.find(f => f.isLatestVersion) || similarFiles[0];
-        if (priorLatest && (priorLatest as any).requestedChangesById) {
-          priorRequesterId = (priorLatest as any).requestedChangesById;
+        if (priorLatest) {
+          priorRequesterId = (priorLatest as any).requestedChangesById ?? null;
+          priorRequesterEmail = (priorLatest as any).requestedChangesByEmail ?? null;
         }
         await Promise.all(
           similarFiles.map(async (file) => {
@@ -2143,19 +2163,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Directed-review email: if the previous latest version had an open
         // change-request, the editor has now responded with v N+1, so ping
-        // the requester (and ONLY the requester). No initial-upload email
-        // is sent — only the response-to-changes case triggers a notification.
-        if (priorRequesterId && process.env.SENDGRID_API_KEY) {
+        // the requester (and ONLY the requester). FK user takes precedence;
+        // fall back to the share-link email (no user account) if present.
+        // No initial-upload email is ever sent.
+        if ((priorRequesterId || priorRequesterEmail) && process.env.SENDGRID_API_KEY) {
           try {
-            const requester = await storage.getUser(priorRequesterId);
             const project = await storage.getProject(projectId);
-            if (requester && project) {
-              const { sendNewVersionForReviewEmail } = await import('./utils/sendgrid');
-              const appUrl = req.headers.origin || undefined;
+            const appUrl = req.headers.origin || undefined;
+            const { sendNewVersionForReviewEmail } = await import('./utils/sendgrid');
+            let toEmail: string | null = null;
+            let recipientName: string | undefined;
+            if (priorRequesterId) {
+              const requester = await storage.getUser(priorRequesterId);
+              if (requester) {
+                toEmail = requester.email;
+                recipientName = requester.name;
+              }
+            } else if (priorRequesterEmail) {
+              toEmail = priorRequesterEmail;
+            }
+            if (toEmail && project) {
               const sent = await sendNewVersionForReviewEmail({
-                to: requester.email,
+                to: toEmail,
                 actorName: req.user.name,
-                recipientName: requester.name,
+                recipientName,
                 projectName: project.name,
                 fileName: file.filename,
                 fileVersion: file.version,
@@ -2163,7 +2194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 projectId,
                 fileId: file.id,
               });
-              console.log(`[Review] new-version email to requester ${requester.email}: ${sent ? 'sent' : 'failed'}`);
+              console.log(`[Review] new-version email to requester ${toEmail}: ${sent ? 'sent' : 'failed'}`);
             }
           } catch (err) {
             console.error('[Review] Failed to send new-version email:', err);
@@ -3468,6 +3499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateFile(file.id, {
           reviewStatus: "changes_requested",
           requestedChangesById: null,
+          requestedChangesByEmail: requesterEmail,
         } as any);
       } catch (err) {
         console.error("[ShareReview] Failed to update file review state:", err);
@@ -4663,14 +4695,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // closed. Anything else (defensive) leaves the field alone.
       try {
         if (validationResult.data.status === "changes_requested" || validationResult.data.status === "requested_changes") {
+          // A logged-in reviewer overrides any prior share-link email
+          // requester for this file: clear the email column so the next
+          // version-upload notifies the FK user (not the outside email).
           await storage.updateFile(fileId, {
             reviewStatus: "changes_requested",
             requestedChangesById: req.user.id,
+            requestedChangesByEmail: null,
           } as any);
         } else if (validationResult.data.status === "approved") {
           await storage.updateFile(fileId, {
             reviewStatus: "approved",
             requestedChangesById: null,
+            requestedChangesByEmail: null,
           } as any);
         }
       } catch (e) {
@@ -4800,11 +4837,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateFile(fileId, {
             reviewStatus: "changes_requested",
             requestedChangesById: req.user.id,
+            requestedChangesByEmail: null,
           } as any);
         } else if (validationResult.data.status === "approved") {
           await storage.updateFile(fileId, {
             reviewStatus: "approved",
             requestedChangesById: null,
+            requestedChangesByEmail: null,
           } as any);
         }
       } catch (e) {

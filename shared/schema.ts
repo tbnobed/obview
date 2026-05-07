@@ -95,10 +95,15 @@ export const files = pgTable("files", {
   // know who to email when the editor responds.
   reviewStatus: text("review_status").notNull().default("needs_review"),
   requestedChangesById: integer("requested_changes_by_id").references(() => users.id),
+  // For share-link reviewers (no user account): the email address to
+  // notify when the editor uploads a new version. Set by the public
+  // request-changes route, cleared on approve. Only consulted when
+  // requestedChangesById is NULL.
+  requestedChangesByEmail: text("requested_changes_by_email"),
 });
 
 export const insertFileSchema = createInsertSchema(files)
-  .omit({ id: true, createdAt: true, deletedAt: true, reviewStatus: true, requestedChangesById: true });
+  .omit({ id: true, createdAt: true, deletedAt: true, reviewStatus: true, requestedChangesById: true, requestedChangesByEmail: true });
 
 // COMMENT SCHEMA
 export const comments = pgTable("comments", {

@@ -62,7 +62,8 @@ const STALE_LOCK_MS = 60 * 60 * 1000;
 // request. Optional — older callers that don't wire it up still work.
 export type OnVersionResponse = (args: {
   file: any;
-  priorRequesterId: number;
+  priorRequesterId: number | null;
+  priorRequesterEmail: string | null;
   actorUserId: number;
 }) => void;
 
@@ -442,6 +443,7 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
       let existing: any[] = [];
       let similar: any[] = [];
       let priorRequesterId: number | null = null;
+      let priorRequesterEmail: string | null = null;
       try {
         existing = await storage.getFilesByProject(projectId);
         similar = existing.filter((f: any) => f.filename === filename);
@@ -451,12 +453,14 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
             : 1;
         // Capture the prior latest version's open change-request target
         // BEFORE we demote them — used after the insert to email the
-        // reviewer that the editor responded with a new version.
+        // reviewer that the editor responded with a new version. Email
+        // is only consulted when there's no FK user (share-link path).
         if (similar.length > 0) {
           const priorLatest = similar.reduce(
             (a: any, b: any) => (a.version > b.version ? a : b),
           );
           priorRequesterId = priorLatest?.requestedChangesById ?? null;
+          priorRequesterEmail = priorLatest?.requestedChangesByEmail ?? null;
         }
 
         fileRow = await storage.createFile({
@@ -520,10 +524,11 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
             fileType,
           });
         }
-        if (priorRequesterId && opts.onVersionResponse) {
+        if ((priorRequesterId || priorRequesterEmail) && opts.onVersionResponse) {
           opts.onVersionResponse({
             file: fileRow,
             priorRequesterId,
+            priorRequesterEmail,
             actorUserId: currentUserId,
           });
         }
@@ -673,6 +678,7 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
       let fileRow: any;
       let similar: any[] = [];
       let priorRequesterId: number | null = null;
+      let priorRequesterEmail: string | null = null;
       try {
         const existing = await storage.getFilesByProject(projectId);
         similar = existing.filter((f: any) => f.filename === filename);
@@ -685,6 +691,7 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
             (a: any, b: any) => (a.version > b.version ? a : b),
           );
           priorRequesterId = priorLatest?.requestedChangesById ?? null;
+          priorRequesterEmail = priorLatest?.requestedChangesByEmail ?? null;
         }
         fileRow = await storage.createFile({
           filename,
@@ -743,10 +750,11 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
             fileType,
           });
         }
-        if (priorRequesterId && opts.onVersionResponse) {
+        if ((priorRequesterId || priorRequesterEmail) && opts.onVersionResponse) {
           opts.onVersionResponse({
             file: fileRow,
             priorRequesterId,
+            priorRequesterEmail,
             actorUserId: args.currentUserId,
           });
         }
