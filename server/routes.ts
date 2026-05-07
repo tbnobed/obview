@@ -471,7 +471,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // Set up authentication
   setupAuth(app);
-  registerShareLinkRoutes(app, isAuthenticated);
+  registerShareLinkRoutes(app, isAuthenticated, {
+    uploadSingle: upload.single('file'),
+    handleMulterErrors,
+    processUploadedFile: async (file) => {
+      if (file.fileType === "video") {
+        const processing = await storage.createVideoProcessing({ fileId: file.id, status: "pending" });
+        processVideoInBackground(file, processing.id).catch(err =>
+          console.error(`[Video Processing] Failed for file ${file.id}:`, err),
+        );
+      }
+      if (file.fileType === "video" || file.fileType === "audio") {
+        transcribeFile({ fileId: file.id, inputPath: file.filePath, fileType: file.fileType }).catch(err =>
+          console.error(`[Transcription] Background failed for file ${file.id}:`, err),
+        );
+      }
+    },
+  });
 
   // Admin diagnostics: read-only snapshot of the host (CPU/RAM, GPUs via
   // nvidia-smi, FFmpeg + NVENC encoders, uploads/ mount + free space, NFS/

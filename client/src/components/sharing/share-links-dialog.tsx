@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Copy, Trash2, Plus, Link as LinkIcon, ExternalLink,
   Lock, Calendar, Download, MessageSquare, Mail, Shield,
-  ChevronDown, ChevronUp, X,
+  ChevronDown, ChevronUp, X, Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useShareLinks, useCreateShareLink, useRevokeShareLink, useUpdateShareLink, type ShareLinkDTO } from "@/hooks/use-share-links";
@@ -43,13 +43,14 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
   const [expiresAt, setExpiresAt] = useState("");
   const [allowDownloads, setAllowDownloads] = useState(false);
   const [allowComments, setAllowComments] = useState(true);
+  const [allowUploads, setAllowUploads] = useState(false);
   const [requireEmail, setRequireEmail] = useState(false);
   const [watermarkEnabled, setWatermarkEnabled] = useState(false);
   const [watermarkText, setWatermarkText] = useState("");
 
   const resetForm = () => {
     setName(""); setPassword(""); setExpiresAt("");
-    setAllowDownloads(false); setAllowComments(true); setRequireEmail(false);
+    setAllowDownloads(false); setAllowComments(true); setAllowUploads(false); setRequireEmail(false);
     setWatermarkEnabled(false); setWatermarkText("");
   };
 
@@ -58,7 +59,7 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
       name: name || null,
       password: password || null,
       expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
-      allowDownloads, allowComments, requireEmail,
+      allowDownloads, allowComments, allowUploads, requireEmail,
       watermarkEnabled,
       watermarkText: watermarkText.trim() ? watermarkText.trim() : null,
     });
@@ -163,6 +164,15 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
                   checked={allowComments}
                   onChange={setAllowComments}
                 />
+                {scopeType === "project" && (
+                  <SwitchRow
+                    icon={<Upload className="h-4 w-4" />}
+                    label="Allow uploads"
+                    hint="Reviewers can upload files into this project"
+                    checked={allowUploads}
+                    onChange={setAllowUploads}
+                  />
+                )}
                 <SwitchRow
                   icon={<Mail className="h-4 w-4" />}
                   label="Require reviewer email"
@@ -246,7 +256,7 @@ function LinkRow({
   onCopy: () => void;
   onOpen: () => void;
   onRevoke: () => void;
-  onToggle: (field: "allowDownloads" | "allowComments" | "requireEmail", value: boolean) => void;
+  onToggle: (field: "allowDownloads" | "allowComments" | "allowUploads" | "requireEmail", value: boolean) => void;
   onClearPassword: () => void;
   onSetPassword: (pw: string) => void;
   onSetExpires: (iso: string | null) => void;
@@ -307,6 +317,9 @@ function LinkRow({
         <span className="flex items-center gap-2">
           <PermPill on={link.allowDownloads} icon={<Download className="h-3 w-3" />} label="Downloads" />
           <PermPill on={link.allowComments} icon={<MessageSquare className="h-3 w-3" />} label="Comments" />
+          {link.scopeType === "project" && (
+            <PermPill on={link.allowUploads} icon={<Upload className="h-3 w-3" />} label="Uploads" />
+          )}
           <PermPill on={link.requireEmail} icon={<Mail className="h-3 w-3" />} label="Email gate" />
         </span>
       </div>
@@ -327,6 +340,14 @@ function LinkRow({
               checked={link.allowComments}
               onChange={(v) => onToggle("allowComments", v)}
             />
+            {link.scopeType === "project" && (
+              <SwitchRow
+                icon={<Upload className="h-4 w-4" />}
+                label="Allow uploads"
+                checked={link.allowUploads}
+                onChange={(v) => onToggle("allowUploads", v)}
+              />
+            )}
             <SwitchRow
               icon={<Mail className="h-4 w-4" />}
               label="Require reviewer email"

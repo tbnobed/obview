@@ -33,7 +33,9 @@ import {
   Reply,
   Check,
   Filter,
+  Upload as UploadIcon,
 } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 import {
   AnnotationCanvas,
   AnnotationOverlay,
@@ -68,6 +70,7 @@ type ShareInfo = {
   requiresEmail: boolean;
   allowDownloads: boolean;
   allowComments: boolean;
+  allowUploads: boolean;
   watermarkEnabled?: boolean;
   watermarkText?: string | null;
   watermarkLabel?: string | null;
@@ -90,6 +93,7 @@ type Manifest = {
   name: string | null;
   allowDownloads: boolean;
   allowComments: boolean;
+  allowUploads: boolean;
   watermarkEnabled?: boolean;
   watermarkText?: string | null;
   watermarkLabel?: string | null;
@@ -394,7 +398,10 @@ export default function MultiSharePage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {info.allowUploads && (
+          <ReviewerUpload token={token} />
+        )}
         <FileList
           manifest={manifestQ.data}
           loading={manifestQ.isLoading}
@@ -498,6 +505,96 @@ function UnlockGate({
         </CardContent>
       </Card>
     </CenteredShell>
+  );
+}
+
+function ReviewerUpload({ token }: { token: string }) {
+  const { toast } = useToast();
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentName, setCurrentName] = useState<string | null>(null);
+
+  const upload = (file: File) => {
+    setUploading(true);
+    setProgress(0);
+    setCurrentName(file.name);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `/api/public/share/${token}/upload`);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      setUploading(false);
+      setProgress(0);
+      setCurrentName(null);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        toast({ title: "Upload complete", description: file.name });
+        queryClient.invalidateQueries({ queryKey: ["share-manifest", token] });
+      } else {
+        let msg = `Upload failed (${xhr.status})`;
+        try { msg = JSON.parse(xhr.responseText).message || msg; } catch {}
+        toast({ title: "Upload failed", description: msg, variant: "destructive" });
+      }
+    };
+    xhr.onerror = () => {
+      setUploading(false);
+      setProgress(0);
+      setCurrentName(null);
+      toast({ title: "Upload failed", description: "Network error", variant: "destructive" });
+    };
+    const fd = new FormData();
+    fd.append("file", file);
+    xhr.send(fd);
+  };
+
+  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (f) upload(f);
+  };
+
+  return (
+    <Card className="bg-white dark:bg-gray-900 border-neutral-200 dark:border-gray-800">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-md bg-primary/10 dark:bg-[#10a37f]/10 flex items-center justify-center text-primary dark:text-[#10a37f]">
+            <UploadIcon className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium">Upload a file to this project</div>
+            <div className="text-xs text-muted-foreground">
+              {uploading
+                ? `Uploading ${currentName ?? ""} — ${progress}%`
+                : "Pick a file from your computer. The project owner will see it appear in their library."}
+            </div>
+            {uploading && (
+              <div className="mt-2 h-1.5 w-full rounded bg-neutral-200 dark:bg-gray-800 overflow-hidden">
+                <div
+                  className="h-full bg-primary dark:bg-[#10a37f] transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            )}
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            onChange={onPick}
+            data-testid="input-share-upload"
+          />
+          <Button
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            data-testid="button-share-upload"
+          >
+            {uploading ? "Uploading…" : "Choose file"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

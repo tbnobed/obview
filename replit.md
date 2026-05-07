@@ -76,6 +76,7 @@ npx drizzle-kit generate
 - Configurable registration
 - Short share links
 - Soft-delete trash with 7-day auto-purge for files (admin restore/permanent-delete)
+- Reviewer uploads via project share links (toggle `allowUploads`; project-scope only)
 
 ## User preferences
 
@@ -97,6 +98,7 @@ npx drizzle-kit generate
 - **Cron Jobs in Docker**: `dcron` does not inherit environment variables. `scripts/docker-entrypoint.sh` persists `DATABASE_URL`/`BACKUP_*` to `/etc/cron-env.sh` for cron scripts to source.
 - **NVENC Compatibility**: The GPU pipeline uses CPU decode + CPU scale + NVENC encode to maximize compatibility with various input codecs and avoid issues with `scale_cuda`'s dimension requirements.
 - **L4 GPU**: Datacenter card with no NVENC session limit (unlike consumer GeForce 3–8 cap). 24 GB VRAM. Driver 575 / CUDA 12.9 in use; container CUDA runtime must be ≤ 12.9.
+- **Share-link reviewer uploads**: `share_links.allow_uploads` is **only honored when `scope_type='project'`** — `loadGatedLink`-backed `POST /api/public/share/:token/upload` rejects folder/file scopes with 403 and `info`/`manifest` flatten the flag to `false` for non-project scopes so the UI never shows the picker. The route is single-shot multer (50GB cap, no resume — tus is auth-coupled and not exposed publicly). Uploaded `files.uploaded_by_id` is set to `link.created_by_id` (FK requires a real user); reviewer email/IP land in the `activity_logs` metadata only. Per-IP rate limit is shared with the public comment route (20/min). Post-upload pipeline (`processVideoInBackground` + `transcribeFile`) is injected into `registerShareLinkRoutes` from `server/routes.ts` to avoid a circular import.
 - **WAN upload throughput / parallel tus**: Single-flow TCP throughput on the high-RTT (~44ms) office links is window/RTT-capped at ~9 MB/s even on 4 Gbps ISPs; BBR on `obtv-ai` and `nginx-proxy1` made no measurable difference. The fix is client-side parallelism: files ≥100MB are split into N tus uploads (N=`VITE_UPLOAD_PARALLELISM`, 2–8, default 4) and assembled by `POST /api/uploads/finalize`. Per-group working dir is `uploads/.parts/<groupId>/`. Each part re-validates uploaderId + project edit access on every tus PATCH. Finalize uses an mkdir-based lock (`.finalizing`) with a 1-hour staleness TTL for crash recovery; cancel refuses to race a live finalize lock and returns 409.
 - **Nginx Proxy Manager (NPM) custom config**: NPM auto-includes anything in `/data/nginx/custom/`. We use `/data/nginx/custom/server_proxy.conf` to set `proxy_request_buffering off;` (essential for tus / large uploads) on hosts 4 (tbn.obviu.io) and 33 (t.obviu.io) without touching per-host advanced fields. Editing the per-host **Advanced** field is dangerous: NPM's validator runs `nginx -t -g "error_log off;"` which masks the real error, and on a failed validation NPM **deletes the entire host config**, taking the site down until the host is re-saved. The container is `nginx-proxy-manager-app-1`.
 

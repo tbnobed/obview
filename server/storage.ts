@@ -202,11 +202,11 @@ export interface IStorage {
   getCommentReactionsWithUsers(commentId: string, userId?: number, creatorToken?: string): Promise<{ reactionType: string; count: number; userReacted: boolean; users: { name: string; isCurrentUser: boolean }[] }[]>;
 
   // Share Links
-  createShareLink(data: { id: string; token: string; scopeType: string; scopeId: number; name?: string | null; passwordHash?: string | null; expiresAt?: Date | null; allowDownloads: boolean; allowComments: boolean; requireEmail: boolean; watermarkEnabled?: boolean; watermarkText?: string | null; createdById: number }): Promise<ShareLink>;
+  createShareLink(data: { id: string; token: string; scopeType: string; scopeId: number; name?: string | null; passwordHash?: string | null; expiresAt?: Date | null; allowDownloads: boolean; allowComments: boolean; allowUploads?: boolean; requireEmail: boolean; watermarkEnabled?: boolean; watermarkText?: string | null; createdById: number }): Promise<ShareLink>;
   getShareLink(id: string): Promise<ShareLink | undefined>;
   getShareLinkByToken(token: string): Promise<ShareLink | undefined>;
   listShareLinksForScope(scopeType: string, scopeId: number): Promise<ShareLink[]>;
-  updateShareLink(id: string, data: Partial<{ name: string | null; passwordHash: string | null; expiresAt: Date | null; allowDownloads: boolean; allowComments: boolean; requireEmail: boolean; watermarkEnabled: boolean; watermarkText: string | null; revokedAt: Date | null }>): Promise<ShareLink | undefined>;
+  updateShareLink(id: string, data: Partial<{ name: string | null; passwordHash: string | null; expiresAt: Date | null; allowDownloads: boolean; allowComments: boolean; allowUploads: boolean; requireEmail: boolean; watermarkEnabled: boolean; watermarkText: string | null; revokedAt: Date | null }>): Promise<ShareLink | undefined>;
   revokeShareLink(id: string): Promise<boolean>;
 
   // Session store
@@ -1405,7 +1405,8 @@ export class MemStorage implements IStorage {
       id: data.id, token: data.token, scopeType: data.scopeType, scopeId: data.scopeId,
       name: data.name ?? null, passwordHash: data.passwordHash ?? null,
       expiresAt: data.expiresAt ?? null, allowDownloads: !!data.allowDownloads,
-      allowComments: data.allowComments !== false, requireEmail: !!data.requireEmail,
+      allowComments: data.allowComments !== false, allowUploads: !!data.allowUploads,
+      requireEmail: !!data.requireEmail,
       watermarkEnabled: !!data.watermarkEnabled,
       watermarkText: data.watermarkText ?? null,
       revokedAt: null, createdById: data.createdById, createdAt: new Date(),
@@ -3226,6 +3227,7 @@ export class DatabaseStorage implements IStorage {
       expiresAt: data.expiresAt ?? null,
       allowDownloads: !!data.allowDownloads,
       allowComments: data.allowComments !== false,
+      allowUploads: !!data.allowUploads,
       requireEmail: !!data.requireEmail,
       watermarkEnabled: !!data.watermarkEnabled,
       watermarkText: data.watermarkText ?? null,

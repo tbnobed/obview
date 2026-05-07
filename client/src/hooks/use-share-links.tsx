@@ -12,6 +12,7 @@ export type ShareLinkDTO = {
   expiresAt: string | null;
   allowDownloads: boolean;
   allowComments: boolean;
+  allowUploads: boolean;
   requireEmail: boolean;
   watermarkEnabled: boolean;
   watermarkText: string | null;
@@ -50,6 +51,7 @@ export type CreateShareLinkInput = {
   expiresAt?: string | null;
   allowDownloads?: boolean;
   allowComments?: boolean;
+  allowUploads?: boolean;
   requireEmail?: boolean;
   watermarkEnabled?: boolean;
   watermarkText?: string | null;

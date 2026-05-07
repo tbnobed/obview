@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Request, Response, NextFunction, RequestHandler, ErrorRequestHandler } from "express";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as fsPromises from "fs/promises";
@@ -211,9 +211,16 @@ function contentTypeFor(filename: string, fallback = "application/octet-stream")
 
 // ---------- registration ----------
 
+export type ShareLinkRouteDeps = {
+  uploadSingle: RequestHandler;
+  handleMulterErrors: ErrorRequestHandler;
+  processUploadedFile: (file: DbFile, opts: { reviewerEmail?: string | null; reviewerIp?: string | null; linkId: string }) => Promise<void> | void;
+};
+
 export function registerShareLinkRoutes(
   app: Express,
   isAuthenticated: (req: Request, res: Response, next: NextFunction) => void,
+  deps?: ShareLinkRouteDeps,
 ) {
   // ===== management endpoints =====
 
@@ -246,6 +253,7 @@ export function registerShareLinkRoutes(
           expiresAt,
           allowDownloads: !!parsed.data.allowDownloads,
           allowComments: parsed.data.allowComments !== false,
+          allowUploads: !!parsed.data.allowUploads,
           requireEmail: !!parsed.data.requireEmail,
           watermarkEnabled: !!parsed.data.watermarkEnabled,
           watermarkText: parsed.data.watermarkText ?? null,
@@ -308,6 +316,7 @@ export function registerShareLinkRoutes(
       if (parsed.data.name !== undefined) update.name = parsed.data.name;
       if (parsed.data.allowDownloads !== undefined) update.allowDownloads = parsed.data.allowDownloads;
       if (parsed.data.allowComments !== undefined) update.allowComments = parsed.data.allowComments;
+      if (parsed.data.allowUploads !== undefined) update.allowUploads = parsed.data.allowUploads;
       if (parsed.data.requireEmail !== undefined) update.requireEmail = parsed.data.requireEmail;
       if (parsed.data.watermarkEnabled !== undefined) update.watermarkEnabled = parsed.data.watermarkEnabled;
       if (parsed.data.watermarkText !== undefined) update.watermarkText = parsed.data.watermarkText;
@@ -365,6 +374,7 @@ export function registerShareLinkRoutes(
         requiresEmail: link.requireEmail,
         allowDownloads: link.allowDownloads,
         allowComments: link.allowComments,
+        allowUploads: link.allowUploads && link.scopeType === "project",
         watermarkEnabled: link.watermarkEnabled,
         watermarkText: link.watermarkText,
         watermarkLabel: buildWatermarkLabel(req, link),
@@ -434,6 +444,7 @@ export function registerShareLinkRoutes(
         name: link.name,
         allowDownloads: link.allowDownloads,
         allowComments: link.allowComments,
+        allowUploads: link.allowUploads && link.scopeType === "project",
         watermarkEnabled: link.watermarkEnabled,
         watermarkText: link.watermarkText,
         watermarkLabel: buildWatermarkLabel(req, link),
@@ -600,6 +611,107 @@ export function registerShareLinkRoutes(
     if (!cur || cur.resetAt < now) { rate.set(ip, { count: 1, resetAt: now + 60_000 }); return true; }
     if (cur.count >= 20) return false;
     cur.count++; return true;
+  }
+
+  // ===== reviewer uploads (project scope only, when allowUploads=true) =====
+  if (deps) {
+    // Preflight: gate the link BEFORE multer touches the wire so an attacker
+    // can't fill our disk by streaming garbage to invalid/locked tokens.
+    const uploadPreflight = async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const gated = await loadGatedLink(req, res); if (!gated) return;
+        const link = gated.link;
+        if (!link.allowUploads) return res.status(403).json({ message: "Uploads disabled" });
+        if (link.scopeType !== "project") return res.status(403).json({ message: "Uploads only allowed on project shares" });
+        const ip = req.ip || req.socket.remoteAddress || "unknown";
+        if (!takeRate(ip)) return res.status(429).json({ message: "Too many uploads, slow down" });
+        (req as any)._shareUploadCtx = { link, ip };
+        next();
+      } catch (e) { next(e); }
+    };
+
+    // Best-effort cleanup of multer's temp file on any non-2xx outcome so a
+    // late failure (DB error, etc) can't leave orphans on disk.
+    const cleanupOnFailure = (req: Request, res: Response) => {
+      const f = (req as any).file as Express.Multer.File | undefined;
+      if (!f?.path) return;
+      const tryUnlink = () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) return;
+        fsPromises.unlink(f.path).catch(() => {});
+      };
+      res.on("finish", tryUnlink);
+      res.on("close", tryUnlink);
+    };
+
+    app.post(
+      "/api/public/share/:token/upload",
+      uploadPreflight,
+      deps.uploadSingle,
+      deps.handleMulterErrors,
+      async (req: Request, res: Response, next: NextFunction) => {
+        cleanupOnFailure(req, res);
+        try {
+          const ctx = (req as any)._shareUploadCtx as { link: ShareLink; ip: string } | undefined;
+          if (!ctx) return res.status(500).json({ message: "Upload context missing" });
+          const { link, ip } = ctx;
+          const file = (req as any).file as Express.Multer.File | undefined;
+          if (!file) return res.status(400).json({ message: "No file uploaded" });
+
+          const projectId = link.scopeId;
+          const customFilename = (req.body && (req.body.customFilename as string)) || "";
+          const filename = customFilename || file.originalname;
+
+          let fileType = "other";
+          if (file.mimetype.startsWith("video/")) fileType = "video";
+          else if (file.mimetype.startsWith("audio/")) fileType = "audio";
+          else if (file.mimetype.startsWith("image/")) fileType = "image";
+
+          const existing = await storage.getFilesByProject(projectId);
+          const similar = existing.filter(f => f.filename === filename);
+          const version = similar.length > 0 ? Math.max(...similar.map(f => f.version)) + 1 : 1;
+          if (version > 1) {
+            await Promise.all(similar.map(f => storage.updateFile(f.id, { isLatestVersion: false })));
+          }
+
+          const created = await storage.createFile({
+            filename,
+            fileType,
+            fileSize: file.size,
+            filePath: file.path,
+            projectId,
+            uploadedById: link.createdById,
+            version,
+            isLatestVersion: true,
+          });
+
+          const sessionEmail = (req as any).session?.shareUnlocks?.[link.token]?.email ?? null;
+          const reviewerEmail = ((req.body && (req.body.reviewerEmail as string)) || sessionEmail || null) || null;
+
+          res.status(201).json({ id: created.id, filename: created.filename, version: created.version, fileType: created.fileType, fileSize: created.fileSize });
+
+          try {
+            await storage.logActivity({
+              action: "upload",
+              entityType: "file",
+              entityId: created.id,
+              userId: link.createdById,
+              metadata: {
+                projectId,
+                filename: created.filename,
+                version: created.version,
+                source: "share_link",
+                shareLinkId: link.id,
+                reviewerEmail,
+                reviewerIp: ip,
+              },
+            });
+            await deps.processUploadedFile(created, { reviewerEmail, reviewerIp: ip, linkId: link.id });
+          } catch (err) {
+            console.error(`[share-links] post-upload pipeline failed for file ${created.id}:`, err);
+          }
+        } catch (e) { next(e); }
+      },
+    );
   }
 
   app.post("/api/public/share/:token/files/:fileId/comments", async (req, res, next) => {
