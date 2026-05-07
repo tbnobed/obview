@@ -1,0 +1,806 @@
+TC [73561] ERROR:  syntax error at or near ":" at character 48
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_db   | 2026-05-07 05:40:30.820 UTC [73561] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:30.972 UTC [73563] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:30.972 UTC [73563] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:31.050 UTC [73564] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:31.050 UTC [73564] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_db   | 2026-05-07 05:40:31.212 UTC [73566] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:31.212 UTC [73566] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:31.284 UTC [73567] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:31.284 UTC [73567] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:31.424 UTC [73569] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:31.424 UTC [73569] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:31.512 UTC [73570] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:31.512 UTC [73570] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:31.658 UTC [73572] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:31.658 UTC [73572] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:31.736 UTC [73573] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:31.736 UTC [73573] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:31.881 UTC [73575] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:31.881 UTC [73575] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:31.955 UTC [73576] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:31.955 UTC [73576] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:32.096 UTC [73578] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:32.096 UTC [73578] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:32.168 UTC [73579] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:32.168 UTC [73579] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:32.309 UTC [73581] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:32.309 UTC [73581] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:32.384 UTC [73582] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:32.384 UTC [73582] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:32.534 UTC [73584] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:32.534 UTC [73584] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:32.610 UTC [73585] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:32.610 UTC [73585] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:32.746 UTC [73587] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:32.746 UTC [73587] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:32.818 UTC [73588] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:32.818 UTC [73588] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:32.995 UTC [73590] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:32.995 UTC [73590] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:33.073 UTC [73591] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:33.073 UTC [73591] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:33.213 UTC [73593] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:33.213 UTC [73593] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:33.286 UTC [73594] ERROR:  syntax error at or near ":" at character 48
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_db   | 2026-05-07 05:40:33.286 UTC [73594] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:33.430 UTC [73596] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:33.430 UTC [73596] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:33.517 UTC [73597] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:33.517 UTC [73597] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:33.666 UTC [73599] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:33.666 UTC [73599] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:33.742 UTC [73600] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:33.742 UTC [73600] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:33.882 UTC [73602] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:33.882 UTC [73602] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:40:33.955 UTC [73603] ERROR:  syntax error at or near ":" at character 48
+obview_db   | 2026-05-07 05:40:33.955 UTC [73603] STATEMENT:  SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+obview_db   | 2026-05-07 05:40:34.096 UTC [73605] ERROR:  syntax error at or near ":" at character 60
+obview_db   | 2026-05-07 05:40:34.096 UTC [73605] STATEMENT:  INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+obview_db   |                 ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+obview_db   | 2026-05-07 05:42:15.046 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-05-07 05:42:21.592 UTC [27] LOG:  checkpoint complete: wrote 67 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=6.543 s, sync=0.002 s, total=6.547 s; sync files=41, longest=0.001 s, average=0.001 s; distance=340 kB, estimate=340 kB; lsn=0/53B9DF8, redo lsn=0/53B6418
+obview_db   | 2026-05-07 05:47:15.692 UTC [27] LOG:  checkpoint starting: time
+obview_db   | 2026-05-07 05:47:17.601 UTC [27] LOG:  checkpoint complete: wrote 21 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.907 s, sync=0.001 s, total=1.910 s; sync files=14, longest=0.001 s, average=0.001 s; distance=171 kB, estimate=323 kB; lsn=0/53E1238, redo lsn=0/53E1200
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [tus] PATCH f38c5f04 HD-P260507_0505_V2-7.mp4 offset=1442840576 size=1998124135 (72.2%) user=4 part=2/4
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [tus] PATCH 9d8f4e02 HD-P260507_0505_V2-7.mp4 offset=1962934272 size=1998124135 (98.2%) user=4 part=0/4
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [tus] PATCH f38c5f04 HD-P260507_0505_V2-7.mp4 offset=1677721600 size=1998124135 (84.0%) user=4 part=2/4
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [tus] PATCH 3a736887 HD-P260507_0505_V2-7.mp4 offset=1692614656 size=1998124135 (84.7%) user=4 part=3/4
+obview_app  | [tus] response error status=409 body=Upload-Offset conflict
+obview_app  |
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [tus] PATCH f38c5f04 HD-P260507_0505_V2-7.mp4 offset=1912602624 size=1998124135 (95.7%) user=4 part=2/4
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [tus] response error status=404 body=The file for this url was not found
+obview_app  |
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-06T05:38:19.365Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 4 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 4, username: 'Obedtbn', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [tus] response error status=404 body=The file for this url was not found

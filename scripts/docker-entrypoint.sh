@@ -182,10 +182,19 @@ run_migrations() {
 
       # Checksum and filename are well-constrained (sha256 hex + basename), but
       # we still use -v vars instead of string interpolation for safety.
+      # NOTE: psql variable substitution (`:'var'`) is only processed when SQL is
+      # read from stdin or `-f`, NOT when passed via `-c`. Using `-c` here
+      # silently shipped `:'migname'` literally to Postgres on every restart,
+      # producing the well-known `syntax error at or near ":"` and causing
+      # every migration to be re-applied on every startup (the inserts also
+      # failed silently). Feed via a quoted heredoc so psql preprocesses it.
       ALREADY_APPLIED=$(psql "$DATABASE_URL" \
         -v ON_ERROR_STOP=1 \
         -v migname="$MIG_NAME" -v migsum="$MIG_SUM" \
-        -tAc "SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;" 2>/dev/null || echo "")
+        -tA <<'SQL' 2>/dev/null || echo ""
+SELECT 1 FROM schema_migrations WHERE filename=:'migname' AND checksum=:'migsum' LIMIT 1;
+SQL
+)
 
       if [ "$ALREADY_APPLIED" = "1" ]; then
         echo "⏭  Skipping $MIG_NAME (already applied with matching checksum)."
@@ -197,12 +206,18 @@ run_migrations() {
       # Some migrations use DO $$ blocks that catch their own exceptions internally,
       # so only unhandled SQL errors outside those blocks will abort the transaction.
       if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --single-transaction -f "$migration"; then
-        psql "$DATABASE_URL" \
-          -v ON_ERROR_STOP=1 \
-          -v migname="$MIG_NAME" -v migsum="$MIG_SUM" \
-          -c "INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
-              ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();" > /dev/null 2>&1 || true
-        echo "✅ Applied $MIG_NAME"
+        if psql "$DATABASE_URL" \
+            -v ON_ERROR_STOP=1 \
+            -v migname="$MIG_NAME" -v migsum="$MIG_SUM" \
+            <<'SQL' >/dev/null
+INSERT INTO schema_migrations (filename, checksum) VALUES (:'migname', :'migsum')
+  ON CONFLICT (filename) DO UPDATE SET checksum=EXCLUDED.checksum, applied_at=NOW();
+SQL
+        then
+          echo "✅ Applied $MIG_NAME"
+        else
+          echo "⚠️  Applied $MIG_NAME but failed to record it in schema_migrations; it will re-run next startup."
+        fi
       else
         echo "❌ ERROR: $MIG_NAME failed. NOT recorded as applied; will retry on next startup."
         echo "   Investigate the error above before restarting, and consider restoring $BACKUP_FILE if data was affected."
