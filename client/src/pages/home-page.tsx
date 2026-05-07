@@ -17,7 +17,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import ProjectCard from "@/components/projects/project-card";
+import ProjectRow from "@/components/projects/project-row";
 import { cn } from "@/lib/utils";
+import { useViewMode } from "@/hooks/use-view-mode";
+import ViewModeToggle from "@/components/ui/view-mode-toggle";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -69,6 +72,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const [_, navigate] = useLocation();
   const { data: projects, isLoading } = useProjects();
+  const [viewMode, setViewMode] = useViewMode("projects", "grid");
 
   useEffect(() => {
     document.title = "Dashboard | Obviu.io";
@@ -184,15 +188,22 @@ export default function HomePage() {
                 Your most recently updated work
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/projects")}
-              className="text-primary hover:text-primary"
-            >
-              View all
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <ViewModeToggle
+                value={viewMode}
+                onChange={setViewMode}
+                testIdPrefix="home-view"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/projects")}
+                className="text-primary hover:text-primary"
+              >
+                View all
+                <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -200,14 +211,22 @@ export default function HomePage() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : recentProjects.length > 0 ? (
-            <div
-              className="grid gap-4"
-              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
-            >
-              {recentProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </div>
+            viewMode === "grid" ? (
+              <div
+                className="grid gap-4"
+                style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
+              >
+                {recentProjects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {recentProjects.map((project) => (
+                  <ProjectRow key={project.id} project={project} />
+                ))}
+              </div>
+            )
           ) : (
             <Card className="border-2 border-dashed border-border/60 bg-card/40">
               <CardContent className="flex flex-col items-center justify-center px-6 py-14 text-center">

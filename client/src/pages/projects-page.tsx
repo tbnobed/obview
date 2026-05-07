@@ -14,11 +14,14 @@ type ApprovalSummary = {
   changesRequestedFiles: number;
 };
 import ProjectCard from "@/components/projects/project-card";
+import ProjectRow from "@/components/projects/project-row";
 import OwnerChip from "@/components/projects/owner-chip";
 import { useAuth } from "@/hooks/use-auth";
 import { Plus, Search, FileVideo, Loader2, ChevronRight, Globe, User as UserIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useViewMode } from "@/hooks/use-view-mode";
+import ViewModeToggle from "@/components/ui/view-mode-toggle";
 
 // Sticky open-state for the grouped sections so the user's expand/collapse
 // choices survive page navigation and reload.
@@ -65,6 +68,7 @@ export default function ProjectsPage() {
   // dashboard immediately sees every team's project (this is the visibility
   // gap that contributed to the 04-30 accidental delete).
   const [ownerScope, setOwnerScope] = useState<"all" | "mine">("all");
+  const [viewMode, setViewMode] = useViewMode("projects", "grid");
 
   const { data: projects, isLoading, error } = useProjects();
   const { data: folders, isLoading: foldersLoading } = useFolders();
@@ -251,6 +255,13 @@ export default function ProjectsPage() {
               Approved
             </Button>
           </div>
+          <div className="flex items-center">
+            <ViewModeToggle
+              value={viewMode}
+              onChange={setViewMode}
+              testIdPrefix="projects-view"
+            />
+          </div>
         </div>
 
         {/* Project list */}
@@ -269,6 +280,7 @@ export default function ProjectsPage() {
                 <ProjectGroup
                   groupKey="yours"
                   defaultOpen
+                  viewMode={viewMode}
                   header={
                     <div className="flex items-center gap-2">
                       <span
@@ -291,6 +303,7 @@ export default function ProjectsPage() {
                 <ProjectGroup
                   groupKey="global"
                   defaultOpen
+                  viewMode={viewMode}
                   header={
                     <div className="flex items-center gap-2">
                       <span
@@ -326,16 +339,23 @@ export default function ProjectsPage() {
                   }
                   count={g.items.length}
                   items={g.items}
+                  viewMode={viewMode}
                 />
               ))}
             </div>
-          ) : (
+          ) : viewMode === "grid" ? (
             <div
               className="grid gap-4"
               style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
             >
               {filteredProjects.map((project) => (
                 <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filteredProjects.map((project) => (
+                <ProjectRow key={project.id} project={project} />
               ))}
             </div>
           )
@@ -392,6 +412,7 @@ function ProjectGroup({
   items,
   defaultOpen,
   accent,
+  viewMode = "grid",
 }: {
   groupKey: string;
   header: React.ReactNode;
@@ -399,6 +420,7 @@ function ProjectGroup({
   items: Array<React.ComponentProps<typeof ProjectCard>["project"]>;
   defaultOpen: boolean;
   accent?: string;
+  viewMode?: "grid" | "list";
 }) {
   const [open, setOpen] = useGroupOpen(groupKey, defaultOpen);
   const regionId = `project-group-region-${groupKey}`;
@@ -427,16 +449,24 @@ function ProjectGroup({
         <div className="flex-1 ml-2 h-px bg-neutral-200 dark:bg-gray-800" />
       </button>
       {open && (
-        <div
-          id={regionId}
-          role="region"
-          className="grid gap-4"
-          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
-        >
-          {items.map((p) => (
-            <ProjectCard key={p.id} project={p} />
-          ))}
-        </div>
+        viewMode === "grid" ? (
+          <div
+            id={regionId}
+            role="region"
+            className="grid gap-4"
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
+          >
+            {items.map((p) => (
+              <ProjectCard key={p.id} project={p} />
+            ))}
+          </div>
+        ) : (
+          <div id={regionId} role="region" className="flex flex-col gap-2">
+            {items.map((p) => (
+              <ProjectRow key={p.id} project={p} />
+            ))}
+          </div>
+        )
       )}
     </section>
   );

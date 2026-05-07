@@ -7,7 +7,10 @@ import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProjectCard from "@/components/projects/project-card";
+import ProjectRow from "@/components/projects/project-row";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
+import { useViewMode } from "@/hooks/use-view-mode";
+import ViewModeToggle from "@/components/ui/view-mode-toggle";
 import { useFolder, useFolderProjects, useDeleteFolder, useFolders, useCreateFolder } from "@/hooks/use-folders";
 import { useAuth } from "@/hooks/use-auth";
 import { getFolderPath, getDirectSubfolders } from "@/lib/folder-tree";
@@ -139,6 +142,7 @@ export default function FolderPage() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [shareOpen, setShareOpen] = useState(false);
+  const [viewMode, setViewMode] = useViewMode("projects", "grid");
 
   const { data: folder, isLoading: folderLoading, error: folderError } =
     useFolder(folderId) as { data: Folder | undefined; isLoading: boolean; error: Error | null };
@@ -413,14 +417,21 @@ export default function FolderPage() {
               </div>
             </div>
 
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-gray-500" />
-              <Input
-                placeholder="Search projects in this folder..."
-                className="pl-9 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                data-testid="input-folder-page-search"
+            <div className="flex items-center gap-3">
+              <div className="relative max-w-md flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-gray-500" />
+                <Input
+                  placeholder="Search projects in this folder..."
+                  className="pl-9 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-500"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  data-testid="input-folder-page-search"
+                />
+              </div>
+              <ViewModeToggle
+                value={viewMode}
+                onChange={setViewMode}
+                testIdPrefix="folder-view"
               />
             </div>
 
@@ -448,14 +459,22 @@ export default function FolderPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-[#026d55]" />
               </div>
             ) : filtered.length > 0 ? (
-              <div
-                className="grid gap-4"
-                style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
-              >
-                {filtered.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-              </div>
+              viewMode === "grid" ? (
+                <div
+                  className="grid gap-4"
+                  style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
+                >
+                  {filtered.map((project) => (
+                    <ProjectCard key={project.id} project={project} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {filtered.map((project) => (
+                    <ProjectRow key={project.id} project={project} />
+                  ))}
+                </div>
+              )
             ) : (
               <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-900 rounded-lg shadow">
                 <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-[#026d55]/20 flex items-center justify-center mb-4">

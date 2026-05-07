@@ -14,6 +14,9 @@ import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 import { File as StorageFile } from "@shared/schema";
 import MediaInfoDialog from "./media-info-dialog";
 import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
+import MediaRow from "./media-row";
+import { useViewMode } from "@/hooks/use-view-mode";
+import ViewModeToggle from "@/components/ui/view-mode-toggle";
 
 interface MediaCardGridProps {
   files: StorageFile[];
@@ -839,6 +842,7 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
 
 export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFile }: MediaCardGridProps) {
   const latestFiles = files.filter((f) => f.isLatestVersion);
+  const [viewMode, setViewMode] = useViewMode("media", "grid");
 
   const versionCounts = new Map<string, number>();
   for (const f of files) {
@@ -862,28 +866,46 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
           <h2 className="text-xl font-semibold text-white mb-1">Media Files</h2>
           <p className="text-gray-400 text-sm">{latestFiles.length} file{latestFiles.length !== 1 ? 's' : ''}</p>
         </div>
-        
-        {/* View Options - could add list/grid toggle here */}
+
         <div className="flex items-center gap-2">
+          <ViewModeToggle
+            value={viewMode}
+            onChange={setViewMode}
+            testIdPrefix="media-view"
+          />
           <Button variant="outline" size="sm" className="text-gray-400 border-gray-600 hover:border-gray-500">
             Sort by Date
           </Button>
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-        {latestFiles.map((file) => (
-          <MediaCard
-            key={file.id}
-            file={file}
-            onSelect={onSelectFile}
-            onMove={onMoveFile}
-            versionCount={versionCounts.get(`${file.projectId}::${file.filename}`) || 1}
-            approvalStatus={fileApprovals?.[file.id] ?? null}
-          />
-        ))}
-      </div>
+      {viewMode === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          {latestFiles.map((file) => (
+            <MediaCard
+              key={file.id}
+              file={file}
+              onSelect={onSelectFile}
+              onMove={onMoveFile}
+              versionCount={versionCounts.get(`${file.projectId}::${file.filename}`) || 1}
+              approvalStatus={fileApprovals?.[file.id] ?? null}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {latestFiles.map((file) => (
+            <MediaRow
+              key={file.id}
+              file={file}
+              onSelect={onSelectFile}
+              onMove={onMoveFile}
+              versionCount={versionCounts.get(`${file.projectId}::${file.filename}`) || 1}
+              approvalStatus={fileApprovals?.[file.id] ?? null}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
