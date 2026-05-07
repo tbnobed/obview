@@ -337,6 +337,34 @@ async function hasProjectAccess(req: Request, res: Response, next: NextFunction)
   }
 }
 
+// Shared helper: does this user have edit access to this project?
+// Three independent grants — any one is sufficient:
+//   1. Site-wide admin role.
+//   2. Membership in the project with role 'editor' or 'admin'.
+//   3. The project sits in a folder marked isGlobal=true AND the user
+//      has site role 'editor'. Global folders are explicitly modeled as
+//      "shared workspace any editor can work in", so requiring per-
+//      project membership defeats their purpose. (Site role 'user' still
+//      gets read-only access via hasProjectAccess.)
+async function userHasProjectEditAccess(
+  user: { id: number; role: string },
+  projectId: number,
+): Promise<boolean> {
+  if (user.role === "admin") return true;
+  const projectUser = await storage.getProjectUser(projectId, user.id);
+  if (projectUser && (projectUser.role === "editor" || projectUser.role === "admin")) {
+    return true;
+  }
+  if (user.role === "editor") {
+    const project = await storage.getProject(projectId);
+    if (project?.folderId != null) {
+      const folder = await storage.getFolder(project.folderId);
+      if (folder?.isGlobal) return true;
+    }
+  }
+  return false;
+}
+
 // Middleware to check if user has edit access to a project
 async function hasProjectEditAccess(req: Request, res: Response, next: NextFunction) {
   try {
@@ -349,18 +377,10 @@ async function hasProjectEditAccess(req: Request, res: Response, next: NextFunct
       return res.status(400).json({ message: "Invalid project ID" });
     }
 
-    // Admin has edit access to all projects
-    if (req.user.role === "admin") {
+    if (await userHasProjectEditAccess(req.user, projectId)) {
       return next();
     }
-
-    // Check if user is a member of the project with editor role
-    const projectUser = await storage.getProjectUser(projectId, req.user.id);
-    if (!projectUser || (projectUser.role !== "editor" && projectUser.role !== "admin")) {
-      return res.status(403).json({ message: "Insufficient permissions" });
-    }
-
-    next();
+    return res.status(403).json({ message: "Insufficient permissions" });
   } catch (error) {
     next(error);
   }
@@ -410,16 +430,10 @@ async function hasFileEditAccess(req: Request, res: Response, next: NextFunction
       return res.status(404).json({ message: "File not found" });
     }
 
-    if (req.user.role === "admin") {
+    if (await userHasProjectEditAccess(req.user, file.projectId)) {
       return next();
     }
-
-    const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-    if (!projectUser || (projectUser.role !== "editor" && projectUser.role !== "admin")) {
-      return res.status(403).json({ message: "Insufficient permissions" });
-    }
-
-    next();
+    return res.status(403).json({ message: "Insufficient permissions" });
   } catch (error) {
     next(error);
   }
@@ -1315,16 +1329,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       //      back to the project root rather than trashed, so no media
       //      is lost. Descendant subfolders are soft-deleted too.
       if (existingFolder.projectId != null) {
-        // Subfolder path.
-        const members = await storage.getProjectUsers(existingFolder.projectId);
-        const hasEdit =
-          isAdminDel ||
-          members.some(
-            (pu) =>
-              pu.userId === req.user.id &&
-              (pu.role === "admin" || pu.role === "editor"),
-          );
-        if (!hasEdit) {
+        // Subfolder path. Honors global-folder editor grant.
+        if (!(await userHasProjectEditAccess(req.user, existingFolder.projectId))) {
           return res.status(403).json({ message: "Forbidden" });
         }
 
@@ -3962,14 +3968,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user && req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
+      // Creating a share link is a mutation — require edit access (which
+      // honors the global-folder editor grant).
+      if (!(await userHasProjectEditAccess(req.user, file.projectId))) {
+        return res.status(403).json({ message: "You don't have access to this file" });
       }
-      
+
       // Generate a short, random token if one doesn't exist. 6 random bytes
       // = 8 base64url chars (48 bits) — keeps URLs minimal while remaining
       // unguessable for bearer share access. Loop with a pre-check guard
@@ -4017,14 +4021,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has access to the project
-      if (req.user && req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser) {
-          return res.status(403).json({ message: "You don't have access to this file" });
-        }
+      // Sending a share email is a mutation — require edit access (honors
+      // the global-folder editor grant).
+      if (!(await userHasProjectEditAccess(req.user, file.projectId))) {
+        return res.status(403).json({ message: "You don't have access to this file" });
       }
-      
+
       // Generate a short, random token if one doesn't exist. 6 random bytes
       // = 8 base64url chars (48 bits) — short URLs, still unguessable.
       if (!file.shareToken) {
@@ -4077,12 +4079,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
-      // Check if user has edit access to the project
-      if (req.user.role !== "admin") {
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser || projectUser.role !== "editor") {
-          return res.status(403).json({ message: "You don't have permission to delete this file" });
-        }
+      // Check if user has edit access to the project (honors global-folder editor grant).
+      if (!(await userHasProjectEditAccess(req.user, file.projectId))) {
+        return res.status(403).json({ message: "You don't have permission to delete this file" });
       }
       
       // Soft delete: mark deleted_at. Disk files and DB row are preserved
@@ -4311,8 +4310,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasPermission = true; // User owns their authenticated comment
       } else if (!comment.isPublic) {
         // For authenticated comments, also check project edit access
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        hasPermission = !!projectUser && projectUser.role === "editor";
+        // (honors global-folder editor grant).
+        hasPermission = await userHasProjectEditAccess(req.user, file.projectId);
       }
       // Note: Public comments cannot be updated via this route
       
@@ -4653,9 +4652,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!file) {
           return res.status(404).json({ message: "File not found" });
         }
-        
-        const projectUser = await storage.getProjectUser(file.projectId, req.user.id);
-        if (!projectUser && req.user.role !== "admin") {
+
+        // Resolve = mutation, so use edit-level access (which honors the
+        // global-folder editor grant). Plain membership wasn't enough
+        // for editors working inside a global folder.
+        if (!(await userHasProjectEditAccess(req.user, file.projectId))) {
           return res.status(403).json({ message: "You don't have access to this project" });
         }
       } else {
@@ -5295,14 +5296,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sourceProject = await storage.getProject(file.projectId);
       if (!sourceProject) return res.status(404).json({ message: "Source project not found" });
 
-      const isAdminUser = req.user.role === "admin";
-      const hasEditAccess = async (projectId: number) => {
-        if (isAdminUser) return true;
-        const members = await storage.getProjectUsers(projectId);
-        return members.some(
-          (pu) => pu.userId === req.user.id && (pu.role === "admin" || pu.role === "editor"),
-        );
-      };
+      const hasEditAccess = (projectId: number) =>
+        userHasProjectEditAccess(req.user, projectId);
 
       if (!(await hasEditAccess(file.projectId))) {
         return res.status(403).json({ message: "You don't have edit access to this project" });
@@ -6021,14 +6016,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Project not found" });
         }
         
-        // Check if user has edit access to the project
-        if (req.user.role !== "admin") {
-          console.log(`User role is not admin, checking project-specific permissions`);
-          const projectUser = await storage.getProjectUser(parseInt(projectId), req.user.id);
-          if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
-            console.error(`User ${req.user.id} does not have permission to invite users to project ${projectId}`);
-            return res.status(403).json({ message: "You don't have permission to invite users to this project" });
-          }
+        // Check if user has edit access to the project (honors global-folder editor grant).
+        if (!(await userHasProjectEditAccess(req.user, parseInt(projectId)))) {
+          console.error(`User ${req.user.id} does not have permission to invite users to project ${projectId}`);
+          return res.status(403).json({ message: "You don't have permission to invite users to this project" });
         }
         
         // Check if user already exists
@@ -6530,9 +6521,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user.role !== "admin") {
         // Check if the user is the creator of the invitation
         if (invitation.createdById !== req.user.id) {
-          // Check if the user has edit access to the project
-          const projectUser = await storage.getProjectUser(invitation.projectId, req.user.id);
-          if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
+          // System invites (projectId === null) can only be touched by
+          // admins or the creator; for project invites, require project
+          // edit access (honors global-folder editor grant).
+          if (
+            invitation.projectId == null ||
+            !(await userHasProjectEditAccess(req.user, invitation.projectId))
+          ) {
             return res.status(403).json({ message: "You don't have permission to cancel this invitation" });
           }
         }
@@ -6606,13 +6601,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if the user has permission to resend the invitation
       if (req.user.role !== "admin") {
-        console.log(`User role is not admin, checking specific permissions`);
-        // Check if the user is the creator of the invitation
+        // Creator can always resend; for project invites, also allow
+        // anyone with project edit access (honors global-folder editor
+        // grant). System invites (projectId === null) are admin-only
+        // when the user isn't the creator.
         if (invitation.createdById !== req.user.id) {
-          console.log(`User ${req.user.id} is not the creator of this invitation, checking project permissions`);
-          // Check if the user has edit access to the project
-          const projectUser = await storage.getProjectUser(invitation.projectId, req.user.id);
-          if (!projectUser || !["admin", "editor"].includes(projectUser.role)) {
+          if (
+            invitation.projectId == null ||
+            !(await userHasProjectEditAccess(req.user, invitation.projectId))
+          ) {
             console.error(`User ${req.user.id} does not have permission to resend invitation ${invitationId}`);
             return res.status(403).json({ message: "You don't have permission to resend this invitation" });
           }
