@@ -225,7 +225,7 @@ export async function sendApprovalEmail(
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="padding: 20px; border: 1px solid #e2e8f0;">
             <p>Hello,</p>
-            <p><strong>${approverName}</strong> has requested changes to <strong>${fileName}</strong> in project <strong>${projectName}</strong>.</p>
+            <p><strong>${esc(approverName)}</strong> has requested changes to <strong>${esc(fileName)}</strong> in project <strong>${esc(projectName)}</strong>.</p>
             <p>Please log in to review the requested changes.</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${projectUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Log In & Review</a>
@@ -263,8 +263,8 @@ export async function sendApprovalEmail(
           </div>
           <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
             <p>Hello,</p>
-            <p><strong>${approverName}</strong> has ${actionText} <strong>${fileName}</strong> in project <strong>${projectName}</strong>.</p>
-            ${feedback ? `<p><strong>Feedback:</strong> ${feedback}</p>` : ''}
+            <p><strong>${esc(approverName)}</strong> has ${actionText} <strong>${esc(fileName)}</strong> in project <strong>${esc(projectName)}</strong>.</p>
+            ${feedback ? `<p><strong>Feedback:</strong> ${esc(feedback)}</p>` : ''}
             <div style="text-align: center; margin: 30px 0;">
               <a href="${projectUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Project</a>
             </div>
@@ -293,6 +293,144 @@ export async function sendApprovalEmail(
     const errorMsg = `Error preparing approval email to ${to}: ${error instanceof Error ? error.message : String(error)}`;
     console.error(errorMsg);
     logToFile(errorMsg);
+    return false;
+  }
+}
+
+// ----------------------------------------------------------------------
+// Directed-review email helpers. Each one targets a SINGLE recipient who
+// actually needs to act — the editor when changes are requested or the
+// file is approved, and the original change-requester when the editor
+// uploads a new version. Replaces the old "fan out to every project
+// member" behavior for those flows.
+// ----------------------------------------------------------------------
+
+interface ReviewEmailCtx {
+  to: string;
+  actorName: string;       // person who triggered the email (reviewer or uploader)
+  recipientName?: string;  // optional greeting personalization
+  projectName: string;
+  fileName: string;
+  fileVersion?: number;
+  feedback?: string | null;
+  appUrl?: string;
+  projectId: number;
+  fileId?: number;
+}
+
+// Minimal HTML entity escape for any user-controlled string (file name,
+// reviewer feedback, project name, person names) before it's rendered into
+// an email HTML body. Without this a reviewer could inject <script> or
+// arbitrary HTML into the editor's mailbox.
+function esc(s: string | null | undefined): string {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function reviewLink(ctx: ReviewEmailCtx): string {
+  const baseUrl = ctx.appUrl || config.appDomain;
+  if (ctx.fileId) return `${baseUrl}/projects/${ctx.projectId}?file=${ctx.fileId}`;
+  return `${baseUrl}/projects/${ctx.projectId}`;
+}
+
+function reviewButton(href: string, label: string): string {
+  return `<div style="text-align: center; margin: 30px 0;">
+    <a href="${href}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">${label}</a>
+  </div>`;
+}
+
+/** Reviewer asked for changes -> ping the uploader (editor) only. */
+export async function sendChangesRequestedEmail(ctx: ReviewEmailCtx): Promise<boolean> {
+  try {
+    const link = reviewLink(ctx);
+    const versionTag = ctx.fileVersion ? ` (v${ctx.fileVersion})` : '';
+    const subject = `${ctx.actorName} requested changes on "${ctx.fileName}"${versionTag}`;
+    const greeting = ctx.recipientName ? `Hi ${esc(ctx.recipientName)},` : 'Hello,';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #f59e0b; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 22px;">CHANGES REQUESTED</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+          <p>${greeting}</p>
+          <p><strong>${esc(ctx.actorName)}</strong> requested changes on
+          <strong>${esc(ctx.fileName)}</strong>${esc(versionTag)} in project <strong>${esc(ctx.projectName)}</strong>.</p>
+          ${ctx.feedback ? `<p style="background:#fef3c7;padding:12px;border-radius:4px;"><strong>Feedback:</strong><br/>${esc(ctx.feedback)}</p>` : ''}
+          <p>When you're ready, upload a new version and they'll be notified automatically.</p>
+          ${reviewButton(link, 'View File')}
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #64748b; font-size: 12px;">This is an automated notification from Obviu.io.</p>
+        </div>
+      </div>`;
+    const text = `${ctx.actorName} requested changes on ${ctx.fileName}${versionTag} in project ${ctx.projectName}.\n${ctx.feedback ? `\nFeedback: ${ctx.feedback}\n` : ''}\nWhen you're ready, upload a new version and they'll be notified automatically.\n\nView file: ${link}`;
+    return await sendEmail({ to: ctx.to, from: config.emailFrom, subject, html, text });
+  } catch (error) {
+    logToFile(`Error preparing changes-requested email to ${ctx.to}: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
+/** Reviewer approved -> ping the uploader (editor) only. */
+export async function sendFileApprovedEmail(ctx: ReviewEmailCtx): Promise<boolean> {
+  try {
+    const link = reviewLink(ctx);
+    const versionTag = ctx.fileVersion ? ` (v${ctx.fileVersion})` : '';
+    const subject = `${ctx.actorName} approved "${ctx.fileName}"${versionTag}`;
+    const greeting = ctx.recipientName ? `Hi ${esc(ctx.recipientName)},` : 'Hello,';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #10b981; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 22px;">APPROVED</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+          <p>${greeting}</p>
+          <p><strong>${esc(ctx.actorName)}</strong> approved
+          <strong>${esc(ctx.fileName)}</strong>${esc(versionTag)} in project <strong>${esc(ctx.projectName)}</strong>.</p>
+          ${ctx.feedback ? `<p style="background:#ecfdf5;padding:12px;border-radius:4px;"><strong>Note:</strong><br/>${esc(ctx.feedback)}</p>` : ''}
+          ${reviewButton(link, 'View File')}
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #64748b; font-size: 12px;">This is an automated notification from Obviu.io.</p>
+        </div>
+      </div>`;
+    const text = `${ctx.actorName} approved ${ctx.fileName}${versionTag} in project ${ctx.projectName}.${ctx.feedback ? `\n\nNote: ${ctx.feedback}` : ''}\n\nView file: ${link}`;
+    return await sendEmail({ to: ctx.to, from: config.emailFrom, subject, html, text });
+  } catch (error) {
+    logToFile(`Error preparing approved email to ${ctx.to}: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
+/** Editor uploaded a new version in response to a prior change request -> ping the requester. */
+export async function sendNewVersionForReviewEmail(ctx: ReviewEmailCtx): Promise<boolean> {
+  try {
+    const link = reviewLink(ctx);
+    const versionTag = ctx.fileVersion ? ` v${ctx.fileVersion}` : '';
+    const subject = `${ctx.actorName} uploaded a new version of "${ctx.fileName}"${versionTag} for review`;
+    const greeting = ctx.recipientName ? `Hi ${esc(ctx.recipientName)},` : 'Hello,';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #6366f1; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 22px;">NEW VERSION READY FOR REVIEW</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+          <p>${greeting}</p>
+          <p><strong>${esc(ctx.actorName)}</strong> uploaded
+          <strong>${esc(ctx.fileName)}${esc(versionTag)}</strong> in project <strong>${esc(ctx.projectName)}</strong>
+          in response to your earlier change request.</p>
+          ${reviewButton(link, 'Review New Version')}
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #64748b; font-size: 12px;">This is an automated notification from Obviu.io.</p>
+        </div>
+      </div>`;
+    const text = `${ctx.actorName} uploaded ${ctx.fileName}${versionTag} in project ${ctx.projectName} in response to your earlier change request.\n\nReview: ${link}`;
+    return await sendEmail({ to: ctx.to, from: config.emailFrom, subject, html, text });
+  } catch (error) {
+    logToFile(`Error preparing new-version email to ${ctx.to}: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }

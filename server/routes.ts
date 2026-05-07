@@ -1885,18 +1885,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error(`[tus] Transcription failed for file ${args.fileId}:`, err)
     );
   };
+  // Directed-review email for tus uploads. Mirrors the multer route's
+  // post-create logic: if the prior latest version had an open change
+  // request, email ONLY that requester. Fired-and-forgotten — failures
+  // are logged but never block the upload pipeline.
+  const onVersionResponseCb = (args: { file: any; priorRequesterId: number; actorUserId: number }) => {
+    if (!process.env.SENDGRID_API_KEY) return;
+    (async () => {
+      try {
+        const [requester, actor, project] = await Promise.all([
+          storage.getUser(args.priorRequesterId),
+          storage.getUser(args.actorUserId),
+          storage.getProject(args.file.projectId),
+        ]);
+        if (!requester || !actor || !project) return;
+        const { sendNewVersionForReviewEmail } = await import('./utils/sendgrid');
+        const sent = await sendNewVersionForReviewEmail({
+          to: requester.email,
+          actorName: actor.name,
+          recipientName: requester.name,
+          projectName: project.name,
+          fileName: args.file.filename,
+          fileVersion: args.file.version,
+          projectId: args.file.projectId,
+          fileId: args.file.id,
+        });
+        console.log(`[Review] tus new-version email to requester ${requester.email}: ${sent ? 'sent' : 'failed'}`);
+      } catch (err) {
+        console.error('[Review] tus new-version email failed:', err);
+      }
+    })();
+  };
   const tusServer = createTusServer({
     uploadsDir,
     tusDataDir,
     partsDir,
     onProcessVideo: onProcessVideoCb,
     onTranscribe: onTranscribeCb,
+    onVersionResponse: onVersionResponseCb,
   });
   const finalizeMultipart = createMultipartFinalizer({
     uploadsDir,
     partsDir,
     onProcessVideo: onProcessVideoCb,
     onTranscribe: onTranscribeCb,
+    onVersionResponse: onVersionResponseCb,
   });
   const cancelMultipart = createMultipartCanceller({ partsDir });
   const tusHandler = (req: Request, res: Response) => {
@@ -2037,16 +2070,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? Math.max(...similarFiles.map(f => f.version)) + 1 
         : 1;
       
-      // If this is a new version, mark old versions as not latest
+      // If this is a new version, mark old versions as not latest, AND
+      // capture the previous latest version's open change-request (if any)
+      // so we can email the requester after the new version lands.
+      let priorRequesterId: number | null = null;
       if (version > 1) {
+        const priorLatest = similarFiles.find(f => f.isLatestVersion) || similarFiles[0];
+        if (priorLatest && (priorLatest as any).requestedChangesById) {
+          priorRequesterId = (priorLatest as any).requestedChangesById;
+        }
         await Promise.all(
           similarFiles.map(async (file) => {
             await storage.updateFile(file.id, { isLatestVersion: false });
           })
         );
       }
-      
-      // Create file record in storage with custom filename if provided
+
+      // Create file record in storage with custom filename if provided.
+      // New uploads always start in 'needs_review' with no open requester
+      // — the schema defaults handle this; we don't pass them in.
       const file = await storage.createFile({
         filename: filename, // Use custom filename or original filename
         fileType,
@@ -2097,6 +2139,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transcribeFile({ fileId: file.id, inputPath: file.filePath, fileType }).catch(
             (err) => console.error(`[Transcription] Background failed for file ${file.id}:`, err)
           );
+        }
+
+        // Directed-review email: if the previous latest version had an open
+        // change-request, the editor has now responded with v N+1, so ping
+        // the requester (and ONLY the requester). No initial-upload email
+        // is sent — only the response-to-changes case triggers a notification.
+        if (priorRequesterId && process.env.SENDGRID_API_KEY) {
+          try {
+            const requester = await storage.getUser(priorRequesterId);
+            const project = await storage.getProject(projectId);
+            if (requester && project) {
+              const { sendNewVersionForReviewEmail } = await import('./utils/sendgrid');
+              const appUrl = req.headers.origin || undefined;
+              const sent = await sendNewVersionForReviewEmail({
+                to: requester.email,
+                actorName: req.user.name,
+                recipientName: requester.name,
+                projectName: project.name,
+                fileName: file.filename,
+                fileVersion: file.version,
+                appUrl,
+                projectId,
+                fileId: file.id,
+              });
+              console.log(`[Review] new-version email to requester ${requester.email}: ${sent ? 'sent' : 'failed'}`);
+            }
+          } catch (err) {
+            console.error('[Review] Failed to send new-version email:', err);
+          }
         }
       } catch (error) {
         console.error(`[Upload] Background operations failed for file ${file.id}:`, error);
@@ -4547,6 +4618,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Approvals are tracked at the file level only.
       // The parent project status is no longer auto-updated from file approvals.
 
+      // Update the file's directed-review state. "Changes requested" stamps
+      // the file with the requester's id (so a future version upload can
+      // ping them). "Approved" clears any open requester since the loop is
+      // closed. Anything else (defensive) leaves the field alone.
+      try {
+        if (validationResult.data.status === "changes_requested" || validationResult.data.status === "requested_changes") {
+          await storage.updateFile(fileId, {
+            reviewStatus: "changes_requested",
+            requestedChangesById: req.user.id,
+          } as any);
+        } else if (validationResult.data.status === "approved") {
+          await storage.updateFile(fileId, {
+            reviewStatus: "approved",
+            requestedChangesById: null,
+          } as any);
+        }
+      } catch (e) {
+        console.error('[Review] Failed to update file review state:', e);
+      }
+
       // Log activity
       await storage.logActivity({
         action: validationResult.data.status === "approved" ? "approve" : "request_changes",
@@ -4558,63 +4649,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: validationResult.data.status,
         },
       });
-      
-      // Send email notification to project members if SendGrid API key is available
-      if (process.env.SENDGRID_API_KEY) {
+
+      // Targeted email — single recipient: the file's uploader (editor).
+      // The previous fan-out-to-all-members behavior is intentionally gone.
+      if (process.env.SENDGRID_API_KEY && file.uploadedById !== req.user.id) {
         try {
-          // Import the sendApprovalEmail function from utils/sendgrid
-          const { sendApprovalEmail } = await import('./utils/sendgrid');
-          
-          // Get all users in the project
-          const projectUsers = await storage.getProjectUsers(file.projectId);
+          const uploader = await storage.getUser(file.uploadedById);
           const project = await storage.getProject(file.projectId);
-          
-          if (project && projectUsers.length > 0) {
-            // Get emails of all project members except the current user
-            const userPromises = projectUsers
-              .filter(pu => pu.userId !== req.user.id) // Exclude the current user
-              .map(async pu => {
-                const user = await storage.getUser(pu.userId);
-                return user;
-              });
-            
-            const users = await Promise.all(userPromises);
-            const validUsers = users.filter(Boolean);
-            
-            console.log(`Sending approval notification emails to ${validUsers.length} project members`);
-            
-            // Send emails in parallel
-            if (validUsers.length > 0) {
-              // Get the base URL from the request (if provided in headers)
-              const appUrl = req.headers.origin || undefined;
-              
-              // Send email to each project member
-              const emailPromises = validUsers.map(user => {
-                return sendApprovalEmail(
-                  user.email,
-                  req.user.name,
-                  project.name,
-                  file.filename,
-                  validationResult.data.status,
-                  validationResult.data.feedback,
-                  appUrl,
-                  file.projectId
-                );
-              });
-              
-              // Wait for all emails to be sent
-              const emailResults = await Promise.all(emailPromises);
-              const sentCount = emailResults.filter(Boolean).length;
-              
-              console.log(`Successfully sent ${sentCount} of ${emailResults.length} approval notification emails`);
-            }
+          if (uploader && project) {
+            const appUrl = req.headers.origin || undefined;
+            const isApproved = validationResult.data.status === "approved";
+            const sender = isApproved
+              ? (await import('./utils/sendgrid')).sendFileApprovedEmail
+              : (await import('./utils/sendgrid')).sendChangesRequestedEmail;
+            const sent = await sender({
+              to: uploader.email,
+              actorName: req.user.name,
+              recipientName: uploader.name,
+              projectName: project.name,
+              fileName: file.filename,
+              fileVersion: file.version,
+              feedback: validationResult.data.feedback,
+              appUrl,
+              projectId: file.projectId,
+              fileId,
+            });
+            console.log(`[Review] ${isApproved ? 'approved' : 'changes-requested'} email to uploader ${uploader.email}: ${sent ? 'sent' : 'failed'}`);
           }
         } catch (emailError) {
-          console.error('Error sending approval notification emails:', emailError);
-          // Don't fail the request if emails fail to send
+          console.error('[Review] Failed to send targeted email:', emailError);
         }
       }
-      
+
       res.status(201).json(approvalWithUser);
     } catch (error) {
       next(error);
@@ -4688,6 +4754,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Approvals are tracked at the file level only.
       // The parent project status is no longer auto-updated from file approvals.
 
+      // Update directed-review state on the file row (see /approvals route
+      // for the full rationale).
+      try {
+        if (validationResult.data.status === "changes_requested" || validationResult.data.status === "requested_changes") {
+          await storage.updateFile(fileId, {
+            reviewStatus: "changes_requested",
+            requestedChangesById: req.user.id,
+          } as any);
+        } else if (validationResult.data.status === "approved") {
+          await storage.updateFile(fileId, {
+            reviewStatus: "approved",
+            requestedChangesById: null,
+          } as any);
+        }
+      } catch (e) {
+        console.error('[Review] Failed to update file review state:', e);
+      }
+
       // Log activity
       await storage.logActivity({
         action: validationResult.data.status === "approved" ? "approve" : "request_changes",
@@ -4699,7 +4783,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: validationResult.data.status,
         },
       });
-      
+
+      // Targeted email to the uploader only — same behavior as /approvals.
+      if (process.env.SENDGRID_API_KEY && file.uploadedById !== req.user.id) {
+        try {
+          const uploader = await storage.getUser(file.uploadedById);
+          const project = await storage.getProject(file.projectId);
+          if (uploader && project) {
+            const appUrl = req.headers.origin || undefined;
+            const isApproved = validationResult.data.status === "approved";
+            const sender = isApproved
+              ? (await import('./utils/sendgrid')).sendFileApprovedEmail
+              : (await import('./utils/sendgrid')).sendChangesRequestedEmail;
+            const sent = await sender({
+              to: uploader.email,
+              actorName: req.user.name,
+              recipientName: uploader.name,
+              projectName: project.name,
+              fileName: file.filename,
+              fileVersion: file.version,
+              feedback: validationResult.data.feedback,
+              appUrl,
+              projectId: file.projectId,
+              fileId,
+            });
+            console.log(`[Review] ${isApproved ? 'approved' : 'changes-requested'} email to uploader ${uploader.email}: ${sent ? 'sent' : 'failed'}`);
+          }
+        } catch (emailError) {
+          console.error('[Review] Failed to send targeted email:', emailError);
+        }
+      }
+
       // Return success response
       console.log(`Successfully processed ${validationResult.data.status} for file ${fileId}`);
       res.status(200).json(approvalWithUser);

@@ -84,10 +84,21 @@ export const files = pgTable("files", {
   // (server/index.ts) purges files older than FILE_TRASH_RETENTION_DAYS
   // (default 7) by unlinking from disk + DELETE row.
   deletedAt: timestamp("deleted_at"),
+  // Directed review loop. `reviewStatus` reflects the file's current
+  // position in the editor<->reviewer ping-pong:
+  //   'needs_review'      - newly uploaded; awaiting reviewer action
+  //   'changes_requested' - a reviewer asked for changes; uploader must respond
+  //   'approved'          - at least one non-uploader signed off
+  // `requestedChangesById` is set when a reviewer clicks "Request Changes"
+  // and cleared when the uploader posts a new version. The new version's
+  // upload route reads the OLD latest version's `requestedChangesById` to
+  // know who to email when the editor responds.
+  reviewStatus: text("review_status").notNull().default("needs_review"),
+  requestedChangesById: integer("requested_changes_by_id").references(() => users.id),
 });
 
 export const insertFileSchema = createInsertSchema(files)
-  .omit({ id: true, createdAt: true, deletedAt: true });
+  .omit({ id: true, createdAt: true, deletedAt: true, reviewStatus: true, requestedChangesById: true });
 
 // COMMENT SCHEMA
 export const comments = pgTable("comments", {

@@ -56,6 +56,16 @@ const MAX_PART_COUNT = 16;
 // beyond that for any realistic single upload.
 const STALE_LOCK_MS = 60 * 60 * 1000;
 
+// Fired AFTER a tus upload becomes a new version (version > 1) of an
+// existing file. The route layer uses this to send the directed-review
+// "new version" email if the prior latest version had an open change
+// request. Optional — older callers that don't wire it up still work.
+export type OnVersionResponse = (args: {
+  file: any;
+  priorRequesterId: number;
+  actorUserId: number;
+}) => void;
+
 export interface CreateTusServerOptions {
   uploadsDir: string;        // final on-disk destination for completed uploads
   tusDataDir: string;        // working directory tus uses while chunks stream in
@@ -63,6 +73,7 @@ export interface CreateTusServerOptions {
   maxFileSize?: number;
   onProcessVideo: (file: any, processingId: number) => void;
   onTranscribe: (args: { fileId: number; inputPath: string; fileType: string }) => void;
+  onVersionResponse?: OnVersionResponse;
 }
 
 export class HttpError extends Error {
@@ -430,6 +441,7 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
       let fileRow: any;
       let existing: any[] = [];
       let similar: any[] = [];
+      let priorRequesterId: number | null = null;
       try {
         existing = await storage.getFilesByProject(projectId);
         similar = existing.filter((f: any) => f.filename === filename);
@@ -437,6 +449,15 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
           similar.length > 0
             ? Math.max(...similar.map((f: any) => f.version)) + 1
             : 1;
+        // Capture the prior latest version's open change-request target
+        // BEFORE we demote them — used after the insert to email the
+        // reviewer that the editor responded with a new version.
+        if (similar.length > 0) {
+          const priorLatest = similar.reduce(
+            (a: any, b: any) => (a.version > b.version ? a : b),
+          );
+          priorRequesterId = priorLatest?.requestedChangesById ?? null;
+        }
 
         fileRow = await storage.createFile({
           filename,
@@ -499,6 +520,13 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
             fileType,
           });
         }
+        if (priorRequesterId && opts.onVersionResponse) {
+          opts.onVersionResponse({
+            file: fileRow,
+            priorRequesterId,
+            actorUserId: currentUserId,
+          });
+        }
       } catch (err) {
         console.error("[tus] Post-upload pipeline failed:", err);
       }
@@ -517,6 +545,7 @@ export interface MultipartFinalizerOptions {
   partsDir: string;
   onProcessVideo: (file: any, processingId: number) => void;
   onTranscribe: (args: { fileId: number; inputPath: string; fileType: string }) => void;
+  onVersionResponse?: OnVersionResponse;
 }
 
 // Returns an async function that the routes layer calls when the client
@@ -643,6 +672,7 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
       const projectId = manifest.projectId;
       let fileRow: any;
       let similar: any[] = [];
+      let priorRequesterId: number | null = null;
       try {
         const existing = await storage.getFilesByProject(projectId);
         similar = existing.filter((f: any) => f.filename === filename);
@@ -650,6 +680,12 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
           similar.length > 0
             ? Math.max(...similar.map((f: any) => f.version)) + 1
             : 1;
+        if (similar.length > 0) {
+          const priorLatest = similar.reduce(
+            (a: any, b: any) => (a.version > b.version ? a : b),
+          );
+          priorRequesterId = priorLatest?.requestedChangesById ?? null;
+        }
         fileRow = await storage.createFile({
           filename,
           fileType,
@@ -705,6 +741,13 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
             fileId: fileRow.id,
             inputPath: fileRow.filePath,
             fileType,
+          });
+        }
+        if (priorRequesterId && opts.onVersionResponse) {
+          opts.onVersionResponse({
+            file: fileRow,
+            priorRequesterId,
+            actorUserId: args.currentUserId,
           });
         }
       } catch (err) {
