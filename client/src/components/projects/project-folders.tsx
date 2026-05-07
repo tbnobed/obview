@@ -13,7 +13,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Folder as FolderIcon, FolderPlus, ChevronRight, Home } from "lucide-react";
+import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Folder, File as StorageFile } from "@shared/schema";
 
 interface ProjectFoldersStripProps {
@@ -43,6 +53,35 @@ export function ProjectFoldersStrip({
   const { toast } = useToast();
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
+
+  const deleteFolder = useMutation({
+    mutationFn: async (id: number) => apiRequest("DELETE", `/api/folders/${id}`),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/folders`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "files"] });
+      // If the user just deleted the folder they were inside (or one of
+      // its ancestors), pop them back to the project root so they're
+      // not stranded in a now-deleted folder.
+      const deletedId = id;
+      const isAncestorOfCurrent = (() => {
+        if (currentFolderId == null) return false;
+        let cur = folders.find((f) => f.id === currentFolderId);
+        while (cur) {
+          if (cur.id === deletedId) return true;
+          const pid = cur.parentFolderId;
+          cur = pid == null ? undefined : folders.find((f) => f.id === pid);
+        }
+        return false;
+      })();
+      if (isAncestorOfCurrent) onSelectFolder(null);
+      setFolderToDelete(null);
+      toast({ title: "Folder deleted", description: "Files were moved to the project root." });
+    },
+    onError: (e: any) =>
+      toast({ title: "Could not delete folder", description: e?.message ?? "", variant: "destructive" }),
+  });
 
   const childFolders = useMemo(
     () => folders.filter((f) => (f.parentFolderId ?? null) === currentFolderId),
@@ -116,19 +155,71 @@ export function ProjectFoldersStrip({
       {childFolders.length > 0 && (
         <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {childFolders.map((f) => (
-            <button
+            <div
               key={f.id}
-              type="button"
-              onClick={() => onSelectFolder(f.id)}
-              className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-700 bg-[#1a1f26] hover:border-gray-500 text-left text-sm text-gray-200"
-              data-testid={`subfolder-${f.id}`}
+              className="group relative flex items-center gap-2 pl-3 pr-1 py-2 rounded-md border border-gray-700 bg-[#1a1f26] hover:border-gray-500 text-sm text-gray-200"
             >
-              <FolderIcon className="h-4 w-4 text-amber-400 shrink-0" />
-              <span className="truncate">{f.name}</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => onSelectFolder(f.id)}
+                className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                data-testid={`subfolder-${f.id}`}
+              >
+                <FolderIcon className="h-4 w-4 text-amber-400 shrink-0" />
+                <span className="truncate">{f.name}</span>
+              </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFolderToDelete(f);
+                  }}
+                  className="p-1.5 rounded text-gray-400 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  aria-label={`Delete folder ${f.name}`}
+                  data-testid={`delete-subfolder-${f.id}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
+
+      <AlertDialog
+        open={!!folderToDelete}
+        onOpenChange={(o) => { if (!o) setFolderToDelete(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this folder?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {folderToDelete ? (
+                <>
+                  <span className="font-semibold">{folderToDelete.name}</span> and all of its
+                  subfolders will be removed. Any files inside will be moved back to the project
+                  root — nothing is permanently deleted.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteFolder.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (folderToDelete) deleteFolder.mutate(folderToDelete.id);
+              }}
+              disabled={deleteFolder.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid="confirm-delete-subfolder"
+            >
+              {deleteFolder.isPending ? "Deleting…" : "Delete folder"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) setNewName(""); }}>
         <DialogContent>

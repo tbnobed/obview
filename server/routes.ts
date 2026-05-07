@@ -1303,8 +1303,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Folder not found" });
       }
 
-      // Admins or the folder owner can delete the folder.
       const isAdminDel = req.user.role === "admin";
+
+      // Two flavors of folder live in the same table:
+      //   1. Top-level project-grouping folders (projectId == null).
+      //      Owner or admin may delete; cascade soft-deletes every
+      //      project inside.
+      //   2. Project subfolders (projectId != null). Anyone with edit
+      //      access on the parent project may delete (matches who can
+      //      create them). Files inside descendant subfolders are moved
+      //      back to the project root rather than trashed, so no media
+      //      is lost. Descendant subfolders are soft-deleted too.
+      if (existingFolder.projectId != null) {
+        // Subfolder path.
+        const members = await storage.getProjectUsers(existingFolder.projectId);
+        const hasEdit =
+          isAdminDel ||
+          members.some(
+            (pu) =>
+              pu.userId === req.user.id &&
+              (pu.role === "admin" || pu.role === "editor"),
+          );
+        if (!hasEdit) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+
+        // Collect this folder + all descendant subfolders via BFS over
+        // the project's folder set.
+        const allInProject = await storage.getProjectFolders(
+          existingFolder.projectId,
+        );
+        const toDelete = new Set<number>([folderId]);
+        let frontier = [folderId];
+        while (frontier.length > 0) {
+          const next: number[] = [];
+          for (const f of allInProject) {
+            const pid = f.parentFolderId;
+            if (pid != null && frontier.includes(pid) && !toDelete.has(f.id)) {
+              toDelete.add(f.id);
+              next.push(f.id);
+            }
+          }
+          frontier = next;
+        }
+
+        // Move any files in those folders back to the project root.
+        const projectFiles = await storage.getFilesByProject(
+          existingFolder.projectId,
+        );
+        let movedFiles = 0;
+        for (const file of projectFiles) {
+          if (file.folderId != null && toDelete.has(file.folderId)) {
+            await storage.updateFile(file.id, { folderId: null } as any);
+            movedFiles += 1;
+          }
+        }
+
+        // Soft-delete deepest first so partial failures don't orphan
+        // children under a deleted parent in the UI.
+        const orderedIds = Array.from(toDelete).sort((a, b) => b - a);
+        let deletedFolders = 0;
+        for (const id of orderedIds) {
+          const ok = await storage.deleteFolder(id);
+          if (ok) deletedFolders += 1;
+        }
+
+        await storage.logActivity({
+          action: "delete",
+          entityType: "folder",
+          entityId: folderId,
+          userId: req.user.id,
+          metadata: {
+            folderName: existingFolder.name,
+            projectId: existingFolder.projectId,
+            deletedSubfolders: deletedFolders,
+            movedFilesToRoot: movedFiles,
+          },
+        });
+
+        return res.status(200).json({
+          success: true,
+          deletedSubfolders: deletedFolders,
+          movedFilesToRoot: movedFiles,
+        });
+      }
+
+      // Top-level project-grouping folder path (existing behavior).
       if (!isAdminDel && existingFolder.createdById !== req.user.id) {
         return res.status(403).json({ message: "Forbidden" });
       }
