@@ -99,11 +99,11 @@ export default function AIInsightsView({
   const regenChapters = useMutation({
     mutationFn: () => apiRequest("POST", `${base}/chapters/regenerate`),
     onSuccess: () => {
-      toast({ title: "Generating chapters", description: "Analyzing transcript for chapter markers." });
+      toast({ title: "Finding key moments", description: "Analyzing transcript for notable moments." });
       queryClient.invalidateQueries({ queryKey: qKey });
     },
     onError: (err: Error) =>
-      toast({ title: "Failed to generate chapters", description: err.message, variant: "destructive" }),
+      toast({ title: "Failed to find key moments", description: err.message, variant: "destructive" }),
   });
 
   if (isLoading) {
@@ -194,12 +194,12 @@ export default function AIInsightsView({
         </div>
       </div>
 
-      {/* Chapters section */}
+      {/* Key moments section (stored in chapters.* columns for back-compat) */}
       <div>
         <div className="flex items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-white">
             <ListOrdered className="h-4 w-4 text-blue-500" />
-            Chapters
+            Key moments
           </div>
           {!readOnly && (
             <Button
@@ -208,7 +208,7 @@ export default function AIInsightsView({
               className="h-7 px-2 text-xs"
               onClick={() => regenChapters.mutate()}
               disabled={chapInProgress}
-              title="Regenerate chapters"
+              title="Regenerate key moments"
             >
               {chapInProgress ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
@@ -250,13 +250,13 @@ export default function AIInsightsView({
           ) : chapStatus === "processing" || chapStatus === "pending" ? (
             <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-gray-400 py-2">
               <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-              {chapStatus === "pending" ? "Chapters queued…" : "Generating chapters…"}
+              {chapStatus === "pending" ? "Key moments queued…" : "Finding key moments…"}
             </div>
           ) : chapStatus === "failed" ? (
             <div className="text-sm text-red-600 dark:text-red-400">
               <div className="flex items-center gap-1.5 mb-1 font-medium">
                 <AlertCircle className="h-4 w-4" />
-                Chapter generation failed
+                Key moments generation failed
               </div>
               {transcript.chaptersError && (
                 <div className="text-xs opacity-80 break-words">{transcript.chaptersError}</div>
@@ -264,7 +264,7 @@ export default function AIInsightsView({
             </div>
           ) : (
             <div className="text-sm text-neutral-500 dark:text-gray-400 italic py-2">
-              No chapters yet.{!readOnly && " Click Regenerate to create them."}
+              No key moments yet.{!readOnly && " Click Regenerate to find them."}
             </div>
           )}
         </div>

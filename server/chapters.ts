@@ -41,18 +41,31 @@ function buildChaptersPrompt(
   const totalDuration = lastSeg ? formatTimestamp(lastSeg.end) : "unknown";
   const totalSeconds = lastSeg ? Math.round(lastSeg.end) : 0;
   const timeline = condensedTimeline(segments);
+  // Aim for sparse, quality-driven moments instead of wall-to-wall chapters.
+  // ~1 moment per 60–120s on shorter media, capped at 10 for hour-long clips
+  // so the list stays scannable.
+  const target =
+    totalSeconds < 120 ? "3-5"
+    : totalSeconds < 600 ? "4-7"
+    : totalSeconds < 1800 ? "5-8"
+    : "6-10";
 
   return [
     `Below is a condensed timeline of a ${totalDuration} video (${totalSeconds} seconds total). Each line shows the timestamp and a summary of what is being said at that point.`,
     "",
     timeline,
     "",
-    `Task: Divide this ${totalDuration} video into chapters. The chapters must span the ENTIRE video from 0:00 to ${totalDuration}.`,
+    `Task: Identify the ${target} most notable KEY MOMENTS in this video — points a reviewer would actually want to jump to. Examples: a decision is made, a topic visibly shifts, a notable claim is stated, a question is asked, an action item appears, an emotional peak, a turning point.`,
+    "",
+    "Rules:",
+    "- Quality over coverage. Skip filler. Do NOT segment the entire video.",
+    "- Do NOT emit one moment per second or per minute on a fixed grid.",
+    "- Each moment must come from a real event in the timeline above.",
+    "- Spread moments across the video; avoid clustering several within the same 30 seconds.",
+    "- If the content does not contain notable moments, return fewer rather than padding.",
     "",
     "Output ONLY a JSON array. No markdown, no explanation.",
-    'Each element: {"start": <seconds as integer>, "title": "<2-6 word title>", "summary": "<1 sentence>"}',
-    `First chapter starts at 0. Last chapter must start after ${formatTimestamp(Math.round(totalSeconds * 0.75))}.`,
-    "Create 8-15 chapters based on topic changes in the timeline above.",
+    'Each element: {"start": <seconds as integer>, "title": "<2-6 word label>", "summary": "<1 sentence on why this moment matters>"}',
     "",
     "JSON array:",
   ].join("\n");
@@ -145,7 +158,7 @@ function parseChaptersResponse(raw: string): Chapter[] {
   }
 
   chapters.sort((a, b) => a.start - b.start);
-  if (chapters[0].start !== 0) chapters[0].start = 0;
+  // Key moments are sparse highlights — do NOT force the first one to 0:00.
 
   return chapters;
 }
