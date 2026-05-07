@@ -43,7 +43,21 @@ app.use((req, res, next) => {
   next();
 });
 
+async function verifySchemaOrExit() {
+  if (process.env.SKIP_SCHEMA_VERIFY === "1") return;
+  const { spawnSync } = await import("child_process");
+  const res = spawnSync("npx", ["tsx", "scripts/verify-schema.ts"], {
+    stdio: "inherit",
+    env: process.env,
+  });
+  if (res.status !== 0) {
+    console.error("[startup] Aborting: schema drift detected. Add the missing migrations/*.sql or set SKIP_SCHEMA_VERIFY=1 to bypass.");
+    process.exit(1);
+  }
+}
+
 (async () => {
+  await verifySchemaOrExit();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

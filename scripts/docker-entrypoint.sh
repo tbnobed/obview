@@ -252,6 +252,19 @@ else
   echo "✅ All required foreign keys are in place."
 fi
 
+# Schema drift guard: refuse to start if shared/schema.ts declares columns
+# that don't exist in the DB after migrations ran. This catches the case
+# where someone edited schema.ts but forgot to author migrations/NNNN_*.sql.
+echo "Verifying schema matches shared/schema.ts..."
+if [ -f "/app/scripts/verify-schema.ts" ]; then
+  if ! npx tsx /app/scripts/verify-schema.ts; then
+    echo "❌ Aborting startup: schema drift detected (see above)."
+    exit 1
+  fi
+else
+  echo "⚠️  /app/scripts/verify-schema.ts not found; skipping drift check."
+fi
+
 # Create admin user with error handling
 echo "Setting up admin user if needed..."
 if [ -f "/app/scripts/setup.cjs" ]; then
