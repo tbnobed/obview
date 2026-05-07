@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "hP8TPSMWY7wS9sjxa3ifJ"
+uri = "file://docs/EDITOR-TRAINING.md"
+type = "text"
+title = "Obviu.io Editor Training Guide"
