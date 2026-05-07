@@ -14,8 +14,18 @@ export function ProjectThumbnailManager({ projectId }: { projectId: number }) {
   const [busy, setBusy] = useState<"upload" | "delete" | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // The default fetcher in queryClient only uses queryKey[0], which would
+  // hit the list endpoint /api/projects — we need the single-project URL,
+  // so override queryFn here.
   const { data: project, refetch } = useQuery<Project>({
     queryKey: ["/api/projects", projectId],
+    queryFn: async () => {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
     enabled: Number.isFinite(projectId),
   });
 
