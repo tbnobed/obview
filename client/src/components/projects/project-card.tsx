@@ -187,8 +187,26 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </div>
         </CardHeader>
         
-        {/* Video Preview Section */}
-        {project.latestVideoFile ? (
+        {/* Video Preview Section. A project-level custom thumbnail (set
+            in Project Settings) wins over the auto sprite preview. */}
+        {project.customThumbnailPath ? (
+          <div
+            className="relative aspect-video bg-gray-800 rounded-t-none mx-2.5 mb-1 overflow-hidden group"
+            data-testid={`custom-thumb-container-${project.id}`}
+          >
+            <img
+              src={`/api/projects/${project.id}/thumbnail?v=${new Date(project.updatedAt).getTime()}`}
+              alt={project.name}
+              className="absolute inset-0 w-full h-full object-cover"
+              draggable={false}
+            />
+            {project.latestVideoFile && (
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <PlayCircle className="h-8 w-8 text-white" />
+              </div>
+            )}
+          </div>
+        ) : project.latestVideoFile ? (
           <div 
             className="relative aspect-video bg-gray-800 rounded-t-none mx-2.5 mb-1 overflow-hidden group"
             style={{

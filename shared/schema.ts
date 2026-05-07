@@ -52,6 +52,10 @@ export const projects = pgTable("projects", {
   status: text("status").notNull().default("in_progress"), // "in_progress", "in_review", "approved"
   folderId: integer("folder_id").references(() => folders.id, { onDelete: "set null" }), // Optional folder assignment - sets to null if folder deleted
   createdById: integer("created_by_id").notNull(),
+  // Optional admin/owner-uploaded poster image. Stored as a path relative
+  // to UPLOAD_DIR (or an absolute path on disk). When NULL the project
+  // card falls back to the latest video's sprite preview.
+  customThumbnailPath: text("custom_thumbnail_path"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   deletedAt: timestamp("deleted_at"), // Soft delete: NULL = live, NOT NULL = trashed (admins can restore from trash)

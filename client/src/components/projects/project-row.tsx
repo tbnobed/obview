@@ -97,8 +97,15 @@ export default function ProjectRow({ project }: ProjectRowProps) {
         onClick={onClick}
         data-testid={`project-row-${project.id}`}
       >
-        <div className="h-8 w-8 shrink-0 rounded bg-neutral-100 dark:bg-gray-800 flex items-center justify-center">
-          {project.latestVideoFile ? (
+        <div className="h-10 w-14 shrink-0 rounded bg-neutral-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
+          {project.customThumbnailPath ? (
+            <img
+              src={`/api/projects/${project.id}/thumbnail?v=${new Date(project.updatedAt).getTime()}`}
+              alt=""
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+          ) : project.latestVideoFile ? (
             <PlayCircle className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
           ) : (
             <FileVideo className="h-4 w-4 text-neutral-400 dark:text-neutral-500" />

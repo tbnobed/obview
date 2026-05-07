@@ -37,6 +37,7 @@ import InviteForm from "@/components/project/invite-form";
 import { ProjectInvitations } from "@/components/project/project-invitations";
 import { ProjectTeamMembers } from "@/components/project/project-team-members";
 import { ProjectMediaManager } from "@/components/project/project-media-manager";
+import { ProjectThumbnailManager } from "@/components/projects/project-thumbnail-manager";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -714,6 +715,10 @@ export default function ProjectPage() {
             <div>
               <h3 className="text-base font-medium mb-3 dark:text-gray-200">Project Details</h3>
               <ProjectForm projectId={projectId} className="max-w-lg" />
+            </div>
+
+            <div className="border-t border-border/60 pt-6">
+              <ProjectThumbnailManager projectId={projectId} />
             </div>
 
             {user?.role === "admin" && (

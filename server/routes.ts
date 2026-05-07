@@ -1680,8 +1680,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Update the project
-      const updatedProject = await storage.updateProject(projectId, req.body);
+      // Whitelist mutable fields. The PATCH route is intentionally narrow;
+      // server-managed fields (id, createdById, createdAt/updatedAt, deletedAt,
+      // and crucially `customThumbnailPath`, which is set only by the dedicated
+      // upload endpoint) must not be settable from arbitrary client input.
+      // Letting `customThumbnailPath` through here is a path-traversal /
+      // arbitrary-file-read primitive — the GET thumbnail route trusts that
+      // column to be a server-written upload path.
+      const { name, description, status, folderId } = req.body ?? {};
+      const safeUpdate: Record<string, unknown> = {};
+      if (name !== undefined) safeUpdate.name = name;
+      if (description !== undefined) safeUpdate.description = description;
+      if (status !== undefined) safeUpdate.status = status;
+      if ("folderId" in (req.body ?? {})) safeUpdate.folderId = folderId;
+
+      const updatedProject = await storage.updateProject(projectId, safeUpdate as any);
       
       if (!updatedProject) {
         return res.status(404).json({ message: "Project not found" });
@@ -3052,6 +3065,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Internal server error" });
     }
   });
+
+  // -------- Project custom thumbnail (poster image) --------
+  // Owner/editor uploads an arbitrary image (PNG/JPEG/WebP/GIF). The
+  // image is written to uploads/project-thumbs/<projectId>-<ts>.<ext>;
+  // the previous file (if any) is unlinked. The path is stored in
+  // projects.custom_thumbnail_path. Cards/rows fall back to the latest
+  // video sprite when this is NULL.
+  const thumbDir = path.join(uploadsDir, "project-thumbs");
+  try { if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true }); } catch {}
+  const projectThumbUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, thumbDir),
+      filename: (req, file, cb) => {
+        const ext = (path.extname(file.originalname) || ".jpg").toLowerCase();
+        cb(null, `${req.params.projectId}-${Date.now()}${ext}`);
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB cap, plenty for posters
+    fileFilter: (_req, file, cb) => {
+      if (/^image\/(png|jpe?g|webp|gif)$/i.test(file.mimetype)) cb(null, true);
+      else cb(new Error("Only PNG, JPEG, WebP, or GIF images are allowed"));
+    },
+  });
+
+  app.post(
+    "/api/projects/:projectId/thumbnail",
+    hasProjectEditAccess,
+    projectThumbUpload.single("thumbnail"),
+    handleMulterErrors,
+    async (req, res, next) => {
+      try {
+        const projectId = parseInt(req.params.projectId);
+        if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+        const project = await storage.getProject(projectId);
+        if (!project) {
+          try { fs.unlinkSync(req.file.path); } catch {}
+          return res.status(404).json({ message: "Project not found" });
+        }
+        // Best-effort cleanup of the previous custom thumbnail.
+        if (project.customThumbnailPath) {
+          try {
+            const prev = path.isAbsolute(project.customThumbnailPath)
+              ? project.customThumbnailPath
+              : path.join(process.cwd(), project.customThumbnailPath);
+            if (fs.existsSync(prev)) fs.unlinkSync(prev);
+          } catch (e) {
+            console.warn("[project-thumb] failed to remove previous file:", e);
+          }
+        }
+        const updated = await storage.updateProject(projectId, {
+          customThumbnailPath: req.file.path,
+        } as any);
+        await storage.logActivity({
+          action: "update",
+          entityType: "project",
+          entityId: projectId,
+          userId: req.user!.id,
+          metadata: { projectName: updated?.name, change: "custom_thumbnail_set" },
+        });
+        res.json({ ok: true, customThumbnailPath: req.file.path });
+      } catch (error) {
+        if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch {} }
+        next(error);
+      }
+    },
+  );
+
+  app.delete(
+    "/api/projects/:projectId/thumbnail",
+    hasProjectEditAccess,
+    async (req, res, next) => {
+      try {
+        const projectId = parseInt(req.params.projectId);
+        const project = await storage.getProject(projectId);
+        if (!project) return res.status(404).json({ message: "Project not found" });
+        if (project.customThumbnailPath) {
+          try {
+            const prev = path.isAbsolute(project.customThumbnailPath)
+              ? project.customThumbnailPath
+              : path.join(process.cwd(), project.customThumbnailPath);
+            if (fs.existsSync(prev)) fs.unlinkSync(prev);
+          } catch (e) {
+            console.warn("[project-thumb] failed to remove file:", e);
+          }
+        }
+        await storage.updateProject(projectId, { customThumbnailPath: null } as any);
+        await storage.logActivity({
+          action: "update",
+          entityType: "project",
+          entityId: projectId,
+          userId: req.user!.id,
+          metadata: { projectName: project.name, change: "custom_thumbnail_cleared" },
+        });
+        res.json({ ok: true });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  app.get(
+    "/api/projects/:projectId/thumbnail",
+    hasProjectAccess,
+    async (req, res) => {
+      try {
+        const projectId = parseInt(req.params.projectId);
+        const project = await storage.getProject(projectId);
+        if (!project || !project.customThumbnailPath) {
+          return res.status(404).json({ message: "No custom thumbnail" });
+        }
+        const abs = path.isAbsolute(project.customThumbnailPath)
+          ? project.customThumbnailPath
+          : path.join(process.cwd(), project.customThumbnailPath);
+        if (!existsSync(abs)) {
+          return res.status(404).json({ message: "Thumbnail file missing on disk" });
+        }
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.sendFile(path.resolve(abs));
+      } catch (error) {
+        console.error("[project-thumb] serve error:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    },
+  );
 
   // Serve individual thumbnail for cards (uses first frame of sprite)
   app.get("/api/files/:id/thumbnail", isAuthenticated, hasFileAccess, async (req, res) => {
