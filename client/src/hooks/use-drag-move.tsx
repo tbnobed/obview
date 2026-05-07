@@ -14,15 +14,26 @@ export function useMoveProjectToFolder() {
       return await apiRequest("PATCH", `/api/projects/${projectId}`, { folderId });
     },
     onSuccess: (_data, vars) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
-      // Refresh both source and target folder project lists. We don't
-      // know the source folder here so we invalidate the list endpoint
-      // broadly — folder-page queries use this key prefix.
-      queryClient.invalidateQueries({ predicate: (q) => {
-        const k = q.queryKey?.[0];
-        return typeof k === "string" && k.startsWith("/api/folders/") && k.endsWith("/projects");
-      }});
+      // refetchType: 'all' forces a refetch even for inactive (closed
+      // sidebar / unmounted folder page) queries. With the global
+      // staleTime of Infinity, the default 'active' setting would
+      // leave a stale cache entry sitting around so when the user
+      // later expanded the target folder they'd briefly see the old
+      // contents. We want fresh data the next time any folder query
+      // mounts, so refetch everything that matched.
+      const refetchType = "all" as const;
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"], refetchType });
+      queryClient.invalidateQueries({ queryKey: ["/api/folders"], refetchType });
+      // Folder-projects keys are templated single-string keys
+      // (`/api/folders/<id>/projects`). Match both the source and the
+      // target via predicate so neither side serves stale rows.
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey?.[0];
+          return typeof k === "string" && k.startsWith("/api/folders/") && k.endsWith("/projects");
+        },
+        refetchType,
+      });
       toast({
         title: vars.folderId == null ? "Project moved out of folder" : "Project moved",
         description: "The project has been moved.",
@@ -41,7 +52,10 @@ export function useMoveFolderUnderParent() {
       return await apiRequest("PATCH", `/api/folders/${folderId}`, { parentFolderId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
+      // Same rationale as useMoveProjectToFolder: refetchType 'all' so
+      // closed sidebar branches don't keep stale parent/child data
+      // when the user expands them later.
+      queryClient.invalidateQueries({ queryKey: ["/api/folders"], refetchType: "all" });
       toast({ title: "Folder moved", description: "The folder has been re-parented." });
     },
     onError: (err: Error) => {
@@ -57,21 +71,31 @@ export function useMoveFileToProject() {
       return await apiRequest("PATCH", `/api/files/${fileId}/move`, { projectId });
     },
     onSuccess: (_data, vars) => {
+      const refetchType = "all" as const;
       // Both projects' file lists should refresh. We don't know the
       // source project id here, so invalidate everything that looks like
       // a project-scoped file query. Cheap and correct.
-      queryClient.invalidateQueries({ predicate: (q) => {
-        const k = q.queryKey?.[0];
-        return typeof k === "string" && (k.startsWith("/api/projects/") || k === "/api/projects");
-      }});
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${vars.projectId}/files`] });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey?.[0];
+          return typeof k === "string" && (k.startsWith("/api/projects/") || k === "/api/projects");
+        },
+        refetchType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.projectId}/files`],
+        refetchType,
+      });
       // Folder-page project lists carry latest-video / file-count
       // metadata that changes when a file is moved across projects, so
       // they must refresh too.
-      queryClient.invalidateQueries({ predicate: (q) => {
-        const k = q.queryKey?.[0];
-        return typeof k === "string" && k.startsWith("/api/folders/") && k.endsWith("/projects");
-      }});
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey?.[0];
+          return typeof k === "string" && k.startsWith("/api/folders/") && k.endsWith("/projects");
+        },
+        refetchType,
+      });
       toast({ title: "File moved", description: "The file has been moved to the target project." });
     },
     onError: (err: Error) => {
