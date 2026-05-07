@@ -141,6 +141,28 @@ async function extractWav(inputPath: string, outPath: string) {
   }
 }
 
+// Probe a media file with ffprobe and return whether it has at least one
+// audio stream. Returns true on probe failure so we don't block legit work
+// when ffprobe is missing — the spark will still surface a real error.
+// This guards the "muxer cannot find any audio stream" wall of text the
+// spark spits out when you hand it a video shot with the mic muted: we'd
+// rather show "no audio stream — nothing to transcribe".
+async function hasAudioStream(inputPath: string): Promise<boolean | null> {
+  try {
+    const res = await runCmd("ffprobe", [
+      "-v", "error",
+      "-select_streams", "a",
+      "-show_entries", "stream=codec_type",
+      "-of", "csv=p=0",
+      inputPath,
+    ]);
+    if (res.code !== 0) return null; // probe failed — let the spark try
+    return res.stdout.trim().length > 0;
+  } catch {
+    return null;
+  }
+}
+
 export async function isTranscriptionAvailable(): Promise<boolean> {
   if (!TRANSCRIPTION_ENABLED) return false;
   try {
@@ -225,6 +247,26 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
       );
     }
     const sparkRelPath = rel.split(path.sep).join("/");
+
+    // Pre-flight: refuse to ship audio-less files to the spark. Without
+    // this guard the spark's ffmpeg step prints a 4KB stderr dump
+    // ("Output file does not contain any stream") that we'd surface
+    // verbatim in the UI. Mark the transcript failed with a short,
+    // human-readable reason so the Transcript tab shows something useful
+    // and skip the round-trip entirely.
+    if (fs.existsSync(absStored)) {
+      const audio = await hasAudioStream(absStored);
+      if (audio === false) {
+        const message = "No audio stream in this file — nothing to transcribe.";
+        console.log(`[Transcription] File ${fileId}: ${message}`);
+        await storage.updateTranscript(record.id, {
+          status: "failed",
+          errorMessage: message,
+          sparkJobId: null,
+        } as any);
+        return;
+      }
+    }
 
     await storage.updateTranscript(record.id, { status: "processing" });
 

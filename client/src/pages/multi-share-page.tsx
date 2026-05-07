@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -660,6 +661,27 @@ function FileCard({
   onClick: () => void;
 }) {
   const kind = fileKind(file.fileType);
+  // Sprite-based hover scrubbing for video cards. Mirrors the auth-side
+  // MediaCard: load /sprite-metadata once, then on mousemove pick the
+  // matching tile from the sprite sheet via background-position. Avoids
+  // shipping a `<video>` per card (10+ HD videos preloading metadata
+  // would tank the share page on first paint).
+  const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [scrubPosition, setScrubPosition] = useState(0);
+  const scrubRafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (kind !== "video") return;
+    let cancelled = false;
+    fetch(`/api/public/share/${token}/files/${file.id}/sprite-metadata`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => { if (!cancelled && m) setSpriteMetadata(m); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [file.id, kind, token]);
+
+  const spriteSrc = `/api/public/share/${token}/files/${file.id}/sprite`;
   return (
     <button
       onClick={onClick}
@@ -672,20 +694,78 @@ function FileCard({
       )}
       data-testid={`share-file-${file.id}`}
     >
-      <div className="relative aspect-video bg-neutral-100 dark:bg-gray-900 overflow-hidden">
+      <div
+        className="relative aspect-video bg-neutral-100 dark:bg-gray-900 overflow-hidden"
+        onMouseEnter={() => {
+          if (kind !== "video" || !spriteMetadata) return;
+          setIsScrubbing(true);
+          setScrubPosition(0);
+        }}
+        onMouseMove={(e) => {
+          if (kind !== "video" || !spriteMetadata) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          if (rect.width === 0) return;
+          const clientX = e.clientX;
+          if (scrubRafRef.current != null) return;
+          scrubRafRef.current = requestAnimationFrame(() => {
+            scrubRafRef.current = null;
+            const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            setScrubPosition((prev) => (Math.abs(prev - pos) < 0.005 ? prev : pos));
+          });
+        }}
+        onMouseLeave={() => {
+          if (scrubRafRef.current != null) {
+            cancelAnimationFrame(scrubRafRef.current);
+            scrubRafRef.current = null;
+          }
+          setIsScrubbing(false);
+          setScrubPosition(0);
+        }}
+      >
         {kind === "video" ? (
           <>
-            <video
-              preload="metadata"
-              muted
-              className="w-full h-full object-cover bg-black"
-              src={`/api/public/share/${token}/files/${file.id}/scrub`}
-            />
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+            {spriteMetadata ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <div
+                  className="bg-center bg-no-repeat pointer-events-none max-w-full max-h-full"
+                  style={{
+                    aspectRatio: `${spriteMetadata.thumbnailWidth || 16} / ${spriteMetadata.thumbnailHeight || 9}`,
+                    width: (spriteMetadata.thumbnailWidth || 16) >= (spriteMetadata.thumbnailHeight || 9) ? "100%" : "auto",
+                    height: (spriteMetadata.thumbnailWidth || 16) >= (spriteMetadata.thumbnailHeight || 9) ? "auto" : "100%",
+                    backgroundImage: `url(${spriteSrc})`,
+                    backgroundSize: `${spriteMetadata.cols * 100}% ${spriteMetadata.rows * 100}%`,
+                    backgroundPosition: (() => {
+                      if (!isScrubbing) return "0% 0%";
+                      const idx = Math.floor(scrubPosition * (spriteMetadata.thumbnailCount - 1));
+                      const col = idx % spriteMetadata.cols;
+                      const row = Math.floor(idx / spriteMetadata.cols);
+                      const xPercent = spriteMetadata.cols > 1 ? (col / (spriteMetadata.cols - 1)) * 100 : 0;
+                      const yPercent = spriteMetadata.rows > 1 ? (row / (spriteMetadata.rows - 1)) * 100 : 0;
+                      return `${xPercent}% ${yPercent}%`;
+                    })(),
+                  }}
+                />
+              </div>
+            ) : (
+              // Sprite not ready yet (still encoding / legacy file): fall
+              // back to the scrub mp4's first frame so the card isn't blank.
+              <video
+                preload="metadata"
+                muted
+                className="w-full h-full object-cover bg-black"
+                src={`/api/public/share/${token}/files/${file.id}/scrub`}
+              />
+            )}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 pointer-events-none">
               <div className="bg-white/90 rounded-full p-3 shadow-lg">
                 <Play className="h-5 w-5 text-gray-900 fill-gray-900" />
               </div>
             </div>
+            {isScrubbing && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50 pointer-events-none">
+                <div className="h-full bg-primary dark:bg-[#10a37f]" style={{ width: `${scrubPosition * 100}%` }} />
+              </div>
+            )}
           </>
         ) : kind === "image" ? (
           <img
@@ -778,6 +858,11 @@ function FileViewer({
   const [timeFormat, setTimeFormat] = useState<TimeFormat>("Standard");
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [displayAnnotations, setDisplayAnnotations] = useState<Annotation[] | null>(null);
+  // Hover scrub preview over the comment marker rail. Native HTML5
+  // <video controls> can't render a hover thumbnail, so we surface the
+  // preview on the auxiliary marker rail instead — it sits right under
+  // the player and doubles as a seek control.
+  const [scrubPreview, setScrubPreview] = useState<{ time: number; left: number; top: number } | null>(null);
   const [pendingAnnotations, setPendingAnnotations] = useState<Annotation[] | null>(null);
   const [isAnnotating, setIsAnnotating] = useState(false);
   const [mediaContainerSize, setMediaContainerSize] = useState({ width: 0, height: 0 });
@@ -1433,6 +1518,17 @@ function FileViewer({
                   const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
                   seekTo(duration * pos);
                 }}
+                onMouseMove={(e) => {
+                  if (!duration || !isVideo) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                  const previewWidth = 208;
+                  const previewHeight = 150;
+                  const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, e.clientX - previewWidth / 2));
+                  const top = rect.top - previewHeight - 12;
+                  setScrubPreview({ time: duration * pos, left, top });
+                }}
+                onMouseLeave={() => setScrubPreview(null)}
                 data-testid="share-marker-track"
               >
                 <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-neutral-200 dark:bg-gray-800" />
@@ -2013,6 +2109,30 @@ function FileViewer({
           )}
         </Tabs>
       </aside>
+      {scrubPreview && isVideo && typeof document !== "undefined" && createPortal(
+        <div
+          className="pointer-events-none z-50 hidden lg:block fixed"
+          style={{ left: `${scrubPreview.left}px`, top: `${scrubPreview.top}px` }}
+        >
+          <div className="p-2">
+            <video
+              className="rounded bg-gray-800 pointer-events-none block"
+              style={{ maxWidth: "192px", maxHeight: "256px", width: "auto", height: "auto" }}
+              src={`/api/public/share/${token}/files/${file.id}/scrub`}
+              muted
+              playsInline
+              ref={(v) => {
+                if (v && !isNaN(scrubPreview.time)) v.currentTime = scrubPreview.time;
+              }}
+              data-testid="share-scrub-preview"
+            />
+            <div className="text-white text-sm text-center mt-1 font-mono font-bold drop-shadow-lg">
+              {fmtTime(scrubPreview.time)}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

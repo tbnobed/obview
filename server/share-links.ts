@@ -487,6 +487,36 @@ export function registerShareLinkRoutes(
     } catch (e) { next(e); }
   });
 
+  // Hover-scrub sprite + metadata for public/share pages. Same payload as
+  // the authenticated /api/files/:id/sprite{,-metadata} routes; gated by
+  // the share token instead of session auth so reviewers get the same
+  // hover-thumbnail UX as logged-in users.
+  app.get("/api/public/share/:token/files/:fileId/sprite", async (req, res, next) => {
+    try {
+      const gated = await loadGatedLink(req, res); if (!gated) return;
+      const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
+      if (!file) return res.status(404).send("Not found");
+      const processing = await storage.getVideoProcessing(file.id);
+      if (!processing?.thumbnailSpritePath || !existsSync(processing.thumbnailSpritePath)) {
+        return res.status(404).send("Sprite not available");
+      }
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.sendFile(path.resolve(processing.thumbnailSpritePath));
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/public/share/:token/files/:fileId/sprite-metadata", async (req, res, next) => {
+    try {
+      const gated = await loadGatedLink(req, res); if (!gated) return;
+      const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
+      if (!file) return res.status(404).json({ message: "Not found" });
+      const processing = await storage.getVideoProcessing(file.id);
+      if (!processing?.spriteMetadata) return res.status(404).json({ message: "Sprite metadata not available" });
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.json(processing.spriteMetadata);
+    } catch (e) { next(e); }
+  });
+
   app.get("/api/public/share/:token/files/:fileId/qualities/:quality", async (req, res, next) => {
     try {
       const gated = await loadGatedLink(req, res); if (!gated) return;
