@@ -13,12 +13,15 @@ function formatTimestamp(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function condensedTimeline(
+// Build a per-span timeline. Buckets the chunk's segments into ~30s windows
+// so the LLM sees timestamps anchored INSIDE the span — the only way to stop
+// a small local model from defaulting to "0:00, 0:02, 0:04…" hallucinations.
+function condensedSpanTimeline(
   segments: Array<{ start: number; end: number; text: string }>
 ): string {
-  const lastSeg = segments[segments.length - 1];
-  const totalSec = lastSeg ? lastSeg.end : 0;
-  const windowSec = totalSec > 1800 ? 120 : totalSec > 600 ? 60 : 30;
+  if (segments.length === 0) return "";
+  const span = segments[segments.length - 1].end - segments[0].start;
+  const windowSec = span > 600 ? 60 : span > 180 ? 30 : 15;
   const windows: Map<number, string[]> = new Map();
   for (const seg of segments) {
     const bucket = Math.floor(seg.start / windowSec) * windowSec;
@@ -28,47 +31,61 @@ function condensedTimeline(
   const lines: string[] = [];
   for (const [sec, texts] of [...windows.entries()].sort((a, b) => a[0] - b[0])) {
     const combined = texts.join(" ");
-    const snippet = combined.length > 200 ? combined.slice(0, 200) + "..." : combined;
+    const snippet = combined.length > 220 ? combined.slice(0, 220) + "..." : combined;
     lines.push(`[${formatTimestamp(sec)}] ${snippet}`);
   }
   return lines.join("\n");
 }
 
-function buildChaptersPrompt(
-  segments: Array<{ start: number; end: number; text: string }>
+function buildSpanPrompt(
+  spanSegments: Array<{ start: number; end: number; text: string }>,
+  spanStart: number,
+  spanEnd: number,
+  spanIdx: number,
+  spanCount: number
 ): string {
-  const lastSeg = segments[segments.length - 1];
-  const totalDuration = lastSeg ? formatTimestamp(lastSeg.end) : "unknown";
-  const totalSeconds = lastSeg ? Math.round(lastSeg.end) : 0;
-  const timeline = condensedTimeline(segments);
-  // Aim for sparse, quality-driven moments instead of wall-to-wall chapters.
-  // ~1 moment per 60–120s on shorter media, capped at 10 for hour-long clips
-  // so the list stays scannable.
-  const target =
-    totalSeconds < 120 ? "3-5"
-    : totalSeconds < 600 ? "4-7"
-    : totalSeconds < 1800 ? "5-8"
-    : "6-10";
-
+  const timeline = condensedSpanTimeline(spanSegments);
   return [
-    `Below is a condensed timeline of a ${totalDuration} video (${totalSeconds} seconds total). Each line shows the timestamp and a summary of what is being said at that point.`,
+    `You are reviewing PART ${spanIdx + 1} of ${spanCount} of a longer video.`,
+    `This part covers ${formatTimestamp(spanStart)} to ${formatTimestamp(spanEnd)}.`,
     "",
+    "Timeline of what is said in this part:",
     timeline,
     "",
-    `Task: Identify the ${target} most notable KEY MOMENTS in this video — points a reviewer would actually want to jump to. Examples: a decision is made, a topic visibly shifts, a notable claim is stated, a question is asked, an action item appears, an emotional peak, a turning point.`,
+    `Task: Pick the SINGLE most notable moment from THIS PART ONLY — a point a reviewer would want to jump to (a decision, a topic shift, a notable claim, a question, an action item, a turning point).`,
     "",
     "Rules:",
-    "- Quality over coverage. Skip filler. Do NOT segment the entire video.",
-    "- Do NOT emit one moment per second or per minute on a fixed grid.",
-    "- Each moment must come from a real event in the timeline above.",
-    "- Spread moments across the video; avoid clustering several within the same 30 seconds.",
-    "- If the content does not contain notable moments, return fewer rather than padding.",
+    `- The "start" value MUST be a timestamp that appears as [m:ss] in the timeline above.`,
+    `- Do NOT invent timestamps. Do NOT use 0 unless 0:00 appears above.`,
+    `- If nothing in this part is notable, output an empty array [].`,
     "",
-    "Output ONLY a JSON array. No markdown, no explanation.",
-    'Each element: {"start": <seconds as integer>, "title": "<2-6 word label>", "summary": "<1 sentence on why this moment matters>"}',
+    "Output ONLY a JSON array with 0 or 1 elements. No markdown, no explanation.",
+    'Element shape: {"start": <seconds as integer>, "title": "<2-6 word label>", "summary": "<1 sentence on why this moment matters>"}',
     "",
     "JSON array:",
   ].join("\n");
+}
+
+// Split segments into N spans of roughly equal time. Empty spans (silent
+// stretches) are dropped — we don't want the LLM trying to find a "key
+// moment" in 90 seconds of dead air.
+function splitIntoSpans(
+  segments: Array<{ start: number; end: number; text: string }>,
+  spanCount: number
+): Array<{ start: number; end: number; segs: typeof segments }> {
+  if (segments.length === 0 || spanCount <= 0) return [];
+  const totalStart = segments[0].start;
+  const totalEnd = segments[segments.length - 1].end;
+  const totalDur = Math.max(1, totalEnd - totalStart);
+  const spanDur = totalDur / spanCount;
+  const spans: Array<{ start: number; end: number; segs: typeof segments }> = [];
+  for (let i = 0; i < spanCount; i++) {
+    const s = totalStart + i * spanDur;
+    const e = i === spanCount - 1 ? totalEnd : totalStart + (i + 1) * spanDur;
+    const segs = segments.filter((seg) => seg.start >= s && seg.start < e);
+    if (segs.length > 0) spans.push({ start: s, end: e, segs });
+  }
+  return spans;
 }
 
 interface Chapter {
