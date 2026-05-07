@@ -156,6 +156,15 @@ export default function MediaPlayer({
     },
     retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 30000),
     refetchOnWindowFocus: false,
+    // Poll every 3s while encoding is in flight so the player swaps from
+    // the original source to the processed proxy / scrub track the moment
+    // it's ready, instead of waiting for the user to refresh. Stops as
+    // soon as the job hits a terminal state.
+    refetchInterval: (q) => {
+      const s = (q.state.data as any)?.status;
+      return s === 'completed' || s === 'failed' ? false : 3000;
+    },
+    refetchIntervalInBackground: false,
     // Don't show query errors, processing is optional
     meta: { suppressErrorToast: true }
   });

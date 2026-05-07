@@ -51,16 +51,40 @@ const getFileIcon = (fileType: string) => {
   }
 };
 
-// Get processing status for file
-const getProcessingStatus = (fileId: number) => {
+// Get processing status for file. Polls every 3s while a job is running so
+// the badge flips from "Processing" to "Ready" without the user refreshing,
+// and invalidates the parent file list on the pending→completed edge so
+// duration / poster / hasScrubVersion show up immediately.
+const getProcessingStatus = (fileId: number, projectId?: number) => {
+  const queryClient = useQueryClient();
+  const prevStatusRef = useRef<string | undefined>(undefined);
   const { data: processing } = useQuery({
     queryKey: ['/api/files', fileId, 'processing'],
     queryFn: ({ signal }) => apiRequest('GET', `/api/files/${fileId}/processing`, undefined, { signal }),
     enabled: !!fileId,
-    staleTime: 5000, // Cache for 5 seconds
-    retry: false
+    staleTime: 5000,
+    retry: false,
+    refetchInterval: (q) => {
+      const s = (q.state.data as any)?.status;
+      return s === 'completed' || s === 'failed' ? false : 3000;
+    },
+    refetchIntervalInBackground: false,
   });
-  
+
+  useEffect(() => {
+    const status = (processing as any)?.status;
+    if (
+      projectId &&
+      prevStatusRef.current &&
+      prevStatusRef.current !== 'completed' &&
+      status === 'completed'
+    ) {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'files'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
+    }
+    prevStatusRef.current = status;
+  }, [(processing as any)?.status, projectId, queryClient]);
+
   return processing;
 };
 
@@ -271,7 +295,7 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
     }
   };
   
-  const processing = getProcessingStatus(file.id);
+  const processing = getProcessingStatus(file.id, file.projectId);
   
   // Load sprite metadata for video files
   useEffect(() => {

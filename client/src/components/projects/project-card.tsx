@@ -65,6 +65,16 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     enabled: !!project.latestVideoFile,
     retry: false,
     refetchOnWindowFocus: false,
+    // Poll every 3s while encoding is in flight so the project card thumb
+    // gets its scrub sprite + duration without a manual refresh. The
+    // sprite-metadata effect below already keys off
+    // `videoProcessing?.status === 'completed'`, so it fires the moment
+    // this poll flips to completed.
+    refetchInterval: (q) => {
+      const s = (q.state.data as any)?.status;
+      return s === 'completed' || s === 'failed' ? false : 3000;
+    },
+    refetchIntervalInBackground: false,
     // Don't show query errors, processing is optional
     meta: { suppressErrorToast: true }
   });
