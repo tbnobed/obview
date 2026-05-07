@@ -78,7 +78,15 @@ const RETRY_DELAYS = [0, 1000, 3000, 5000, 10000, 30000, 60000, 60000, 120000, 1
 function shouldRetry(err: any): boolean {
   const status = err?.originalResponse?.getStatus?.() ?? 0;
   if (status >= 400 && status < 500) {
-    return status === 408 || status === 423 || status === 429;
+    // 408 Request Timeout, 423 Locked, 429 Too Many Requests are textbook
+    // transient. 409 Conflict from tus is "Upload-Offset conflict": the
+    // prior PATCH actually landed server-side after the client gave up on
+    // it (long-RTT WAN, proxy timeout, retry-while-prior-still-in-flight),
+    // so the retry's Upload-Offset is now stale. tus-js-client's resume
+    // path re-issues HEAD before the next PATCH and picks up the real
+    // server offset, so allowing the retry self-heals the race instead of
+    // failing the whole upload after a single conflict.
+    return status === 408 || status === 409 || status === 423 || status === 429;
   }
   return true;
 }
