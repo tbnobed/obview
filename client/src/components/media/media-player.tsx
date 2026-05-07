@@ -74,6 +74,20 @@ export default function MediaPlayer({
   const [inPoint, setInPoint] = useState<number | null>(null);
   const [isAnnotating, setIsAnnotating] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
+
+  // Pause the underlying main player whenever the compare dialog opens.
+  // The dialog mounts a separate pair of <video> elements on top of the
+  // page; the main player keeps decoding/playing audio behind it
+  // otherwise, producing a third audio source that the compare's own
+  // play/pause controls can't reach. We don't auto-resume on close —
+  // the user can hit play again if they want to.
+  useEffect(() => {
+    if (!isComparing) return;
+    const el = videoRef.current || audioRef.current;
+    if (el && !el.paused) {
+      try { el.pause(); } catch { /* noop */ }
+    }
+  }, [isComparing]);
   const [pendingAnnotations, setPendingAnnotations] = useState<Annotation[] | null>(null);
   const [displayAnnotations, setDisplayAnnotations] = useState<Annotation[] | null>(null);
   const [mediaContainerSize, setMediaContainerSize] = useState({ width: 0, height: 0 });

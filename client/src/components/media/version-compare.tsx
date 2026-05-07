@@ -304,18 +304,21 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
     );
   };
 
-  const renderMedia = (fileId: number, ref: React.RefObject<HTMLVideoElement>, version: StorageFile | undefined) => {
+  const renderMedia = (fileId: number, ref: React.RefObject<HTMLVideoElement>, version: StorageFile | undefined, side: 'left' | 'right') => {
     if (!version) return <div className="w-full h-full bg-gray-900 flex items-center justify-center text-gray-500">No version selected</div>;
     if (version.fileType === 'image') {
       return <img src={mediaUrl(fileId)} alt={version.filename} className="w-full h-full object-contain" />;
     }
+    // Only A (left) plays audio. Without this, both tracks decode and
+    // the user hears them echoing each other (offset by sync drift +
+    // any encoding latency difference between versions).
     return (
       <video
         ref={ref}
         className="w-full h-full object-contain"
         preload="metadata"
         playsInline
-        muted={false}
+        muted={side === 'right'}
       >
         <source src={mediaUrl(fileId)} type="video/mp4" />
       </video>
@@ -365,26 +368,26 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
               <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600/80 text-white">
                 A — v{leftVersion?.version}
               </div>
-              {renderMedia(leftVersionId, leftVideoRef, leftVersion)}
+              {renderMedia(leftVersionId, leftVideoRef, leftVersion, 'left')}
             </div>
             <div className="flex-1 relative">
               <div className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600/80 text-white">
                 B — v{rightVersion?.version}
               </div>
-              {renderMedia(rightVersionId, rightVideoRef, rightVersion)}
+              {renderMedia(rightVersionId, rightVideoRef, rightVersion, 'right')}
             </div>
           </div>
         ) : (
           <div className="relative w-full h-full overflow-hidden select-none">
             <div className="absolute inset-0">
-              {renderMedia(rightVersionId, rightVideoRef, rightVersion)}
+              {renderMedia(rightVersionId, rightVideoRef, rightVersion, 'right')}
             </div>
             <div
               className="absolute inset-0 overflow-hidden"
               style={{ width: `${wipePosition}%` }}
             >
               <div style={{ width: containerRef.current?.offsetWidth || '100%', height: '100%' }}>
-                {renderMedia(leftVersionId, leftVideoRef, leftVersion)}
+                {renderMedia(leftVersionId, leftVideoRef, leftVersion, 'left')}
               </div>
             </div>
 
