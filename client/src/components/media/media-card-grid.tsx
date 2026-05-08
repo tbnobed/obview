@@ -125,93 +125,97 @@ function MediaCard({
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isVersionDropTarget, setIsVersionDropTarget] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const dragDepthRef = useRef(0);
   const scrubRafRef = useRef<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Drag-and-drop a local OS file onto this card to stack it as a new
   // version of the existing file. Gated on `onMove` presence (proxy for
-  // editor permission — the same gate the move action uses). We only
-  // accept browser/OS file drops here; internal app drags (move file
-  // between projects/folders) carry our custom DRAG_MIME and are
-  // ignored so we don't hijack the existing move flow.
+  // editor permission — the same gate the move action uses). We attach
+  // NATIVE DOM listeners (not React's onDrop) because React's synthetic
+  // event delegation interacts badly with HTML5 file drag-and-drop in
+  // some browsers / preview iframes — dragover fires (overlay shows) but
+  // the synthetic drop never reaches the React handler. Native listeners
+  // sidestep that entirely. Internal app drags carry our DRAG_MIME and
+  // are ignored so the move-between-projects flow keeps working.
   const canEdit = !!onMove;
-  const isOsFileDrag = (e: React.DragEvent) => {
-    const types = e.dataTransfer?.types;
-    if (!types) return false;
-    let hasFiles = false;
-    let hasInternal = false;
-    const len = (types as any).length ?? 0;
-    if (typeof (types as any).includes === "function") {
-      hasFiles = (types as any).includes("Files");
-      hasInternal = (types as any).includes("application/x-obviu-dnd");
-    } else {
-      for (let i = 0; i < len; i++) {
-        const t = (types as any)[i];
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || !canEdit) return;
+
+    const isOsFileDrag = (e: DragEvent): boolean => {
+      const types = e.dataTransfer?.types;
+      if (!types) return false;
+      let hasFiles = false;
+      let hasInternal = false;
+      for (let i = 0; i < types.length; i++) {
+        const t = types[i];
         if (t === "Files") hasFiles = true;
         if (t === "application/x-obviu-dnd") hasInternal = true;
       }
-    }
-    return hasFiles && !hasInternal;
-  };
-  const handleVersionDragOver = (e: React.DragEvent) => {
-    if (!canEdit) return;
-    if (!isOsFileDrag(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = "copy";
-    if (!isVersionDropTarget) setIsVersionDropTarget(true);
-  };
-  const handleVersionDragLeave = (e: React.DragEvent) => {
-    if (!canEdit) return;
-    // Only clear when leaving the card outline, not when crossing
-    // between child elements.
-    if (
-      e.currentTarget instanceof Node &&
-      e.relatedTarget instanceof Node &&
-      e.currentTarget.contains(e.relatedTarget as Node)
-    ) {
-      return;
-    }
-    setIsVersionDropTarget(false);
-  };
-  const handleVersionDrop = (e: React.DragEvent) => {
-    console.log("[VERSION-DROP] fire", {
-      canEdit,
-      types: Array.from(e.dataTransfer?.types ?? []),
-      fileCount: e.dataTransfer?.files?.length ?? 0,
-      isOsFile: isOsFileDrag(e),
-      fileId: file.id,
-      projectId: file.projectId,
-    });
-    if (!canEdit) return;
-    if (!isOsFileDrag(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setIsVersionDropTarget(false);
-    const files = Array.from(e.dataTransfer.files || []);
-    if (files.length === 0) {
-      console.warn("[VERSION-DROP] no files in dataTransfer");
-      return;
-    }
-    if (files.length > 1) {
-      toast({
-        title: "Drop one file",
-        description: "Stacking versions only supports one file at a time. Drop a single file onto a tile.",
-        variant: "destructive",
+      return hasFiles && !hasInternal;
+    };
+
+    const onDragEnter = (e: DragEvent) => {
+      if (!isOsFileDrag(e)) return;
+      e.preventDefault();
+      dragDepthRef.current += 1;
+      setIsVersionDropTarget(true);
+    };
+    const onDragOver = (e: DragEvent) => {
+      if (!isOsFileDrag(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    };
+    const onDragLeave = (e: DragEvent) => {
+      if (!isOsFileDrag(e)) return;
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) setIsVersionDropTarget(false);
+    };
+    const onDrop = (e: DragEvent) => {
+      console.log("[VERSION-DROP] native fire", {
+        types: e.dataTransfer ? Array.from(e.dataTransfer.types) : [],
+        fileCount: e.dataTransfer?.files?.length ?? 0,
+        fileId: file.id,
+        projectId: file.projectId,
       });
-      return;
-    }
-    const dropped = files[0];
-    if (!file.projectId) return;
-    // Reuse the existing same-filename = new-version contract used by
-    // the in-player "Upload new version" flow.
-    uploadService.uploadFile(dropped, file.projectId, file.filename);
-    toast({
-      title: "Uploading new version",
-      description: `${dropped.name} → v${(versionCount ?? 1) + 1} of ${file.filename}`,
-    });
-  };
+      if (!isOsFileDrag(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragDepthRef.current = 0;
+      setIsVersionDropTarget(false);
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length === 0) return;
+      if (files.length > 1) {
+        toast({
+          title: "Drop one file",
+          description: "Stacking versions only supports one file at a time.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!file.projectId) return;
+      uploadService.uploadFile(files[0], file.projectId, file.filename);
+      toast({
+        title: "Uploading new version",
+        description: `${files[0].name} → v${(versionCount ?? 1) + 1} of ${file.filename}`,
+      });
+    };
+
+    el.addEventListener("dragenter", onDragEnter);
+    el.addEventListener("dragover", onDragOver);
+    el.addEventListener("dragleave", onDragLeave);
+    el.addEventListener("drop", onDrop);
+    return () => {
+      el.removeEventListener("dragenter", onDragEnter);
+      el.removeEventListener("dragover", onDragOver);
+      el.removeEventListener("dragleave", onDragLeave);
+      el.removeEventListener("drop", onDrop);
+    };
+  }, [canEdit, file.id, file.projectId, file.filename, versionCount, toast]);
   
   // Delete file mutation
   const deleteMutation = useMutation({
@@ -438,6 +442,7 @@ function MediaCard({
 
   return (
     <Card 
+      ref={cardRef}
       className={cn(
         "group relative cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-card border-border hover:border-foreground/20 active:opacity-70",
         isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent",
@@ -457,9 +462,6 @@ function MediaCard({
         }
       }}
       onDragEnd={clearDragPayload}
-      onDragOver={handleVersionDragOver}
-      onDragLeave={handleVersionDragLeave}
-      onDrop={handleVersionDrop}
       data-testid={`media-card-${file.id}`}
     >
       {isVersionDropTarget && (
