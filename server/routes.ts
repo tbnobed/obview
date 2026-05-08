@@ -5600,6 +5600,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (e) { next(e); }
   });
 
+  // Unstack: promote a non-latest version into its own filename group
+  // (its own card). Generates a unique filename within the project so
+  // it doesn't immediately re-merge with siblings, repairs the old
+  // group's latest pointer if the unstacked row was the latest there,
+  // and resets review state on the new standalone file.
+  app.post("/api/files/:id/unstack", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+      if (!(await userHasProjectEditAccess(req.user, file.projectId))) {
+        return res.status(403).json({ message: "You don't have edit access to this project" });
+      }
+
+      const result = await db.transaction(async (tx) => {
+        // Re-read the target row inside the txn with row-level lock so
+        // we make decisions on fresh state — a concurrent stack-version
+        // could have changed filename/version/isLatestVersion between
+        // the pre-read and here.
+        const [locked] = await tx.select().from(filesTable)
+          .where(and(eq(filesTable.id, fileId), isNull(filesTable.deletedAt)))
+          .for("update");
+        if (!locked) {
+          throw Object.assign(new Error("File not found"), { status: 404 });
+        }
+
+        const group = await tx.select().from(filesTable).where(
+          and(
+            eq(filesTable.projectId, locked.projectId),
+            eq(filesTable.filename, locked.filename),
+            isNull(filesTable.deletedAt),
+          )
+        ).for("update");
+        if (group.length <= 1) {
+          throw Object.assign(new Error("File is not part of a stack"), { status: 400 });
+        }
+
+        // Build a unique new filename within the project. Insert " (vN
+        // unlinked)" before the extension and bump a numeric suffix on
+        // collision so we never clash with an existing group. Names are
+        // queried inside the txn; concurrent unstacks on different
+        // groups race only at COMMIT — both can pick the same candidate
+        // and re-merge. Acceptable trade-off here (rare; user can
+        // unstack again or rename).
+        const dot = locked.filename.lastIndexOf(".");
+        const stem = dot > 0 ? locked.filename.slice(0, dot) : locked.filename;
+        const ext = dot > 0 ? locked.filename.slice(dot) : "";
+        const projectFiles = await tx.select({ filename: filesTable.filename })
+          .from(filesTable)
+          .where(and(
+            eq(filesTable.projectId, locked.projectId),
+            isNull(filesTable.deletedAt),
+          ));
+        const taken = new Set(projectFiles.map(f => f.filename));
+        let candidate = `${stem} (v${locked.version} unlinked)${ext}`;
+        let n = 2;
+        while (taken.has(candidate)) {
+          candidate = `${stem} (v${locked.version} unlinked ${n})${ext}`;
+          n += 1;
+        }
+
+        const [updated] = await tx.update(filesTable)
+          .set({
+            filename: candidate,
+            version: 1,
+            isLatestVersion: true,
+            reviewStatus: "needs_review",
+            requestedChangesById: null,
+            requestedChangesByEmail: null,
+          } as any)
+          .where(eq(filesTable.id, fileId))
+          .returning();
+
+        // Repair the old group's latest pointer if we just unstacked
+        // its latest row.
+        if (locked.isLatestVersion) {
+          const remaining = group.filter(f => f.id !== fileId)
+            .sort((a, b) => b.version - a.version);
+          if (remaining[0]) {
+            await tx.update(filesTable)
+              .set({ isLatestVersion: true })
+              .where(eq(filesTable.id, remaining[0].id));
+          }
+        }
+
+        return { updated, prevFilename: locked.filename, prevVersion: locked.version };
+      });
+
+      await storage.logActivity({
+        action: "unstack_version",
+        entityType: "file",
+        entityId: fileId,
+        userId: req.user.id,
+        metadata: {
+          projectId: file.projectId,
+          previousFilename: result.prevFilename,
+          previousVersion: result.prevVersion,
+          newFilename: result.updated.filename,
+        },
+      });
+
+      return res.json(result.updated);
+    } catch (e: any) {
+      if (e?.status) return res.status(e.status).json({ message: e.message });
+      next(e);
+    }
+  });
+
   app.post("/api/admin/scan-files", isAdmin, async (req, res, next) => {
     try {
       const uploadsDir = path.join(process.cwd(), 'uploads');

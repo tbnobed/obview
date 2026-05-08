@@ -96,6 +96,10 @@ interface MediaCardProps {
   onSelect: (fileId: number) => void;
   onMove?: (file: StorageFile) => void;
   versionCount?: number;
+  // Sibling versions in the same filename group (including this one),
+  // sorted ascending by version number. Used to render per-version
+  // download and unlink submenus.
+  versions?: StorageFile[];
   approvalStatus?: "approved" | "changes_requested" | null;
   // Multi-select drag-and-drop. When `isSelected`, the drag carries every
   // selected file id rather than just this one. Clicks with shift/cmd/ctrl
@@ -112,6 +116,7 @@ function MediaCard({
   onSelect,
   onMove,
   versionCount = 1,
+  versions,
   approvalStatus,
   isSelected = false,
   selectionActive = false,
@@ -163,6 +168,20 @@ function MediaCard({
   });
   const stackVersionMutationRef = useRef(stackVersionMutation.mutate);
   stackVersionMutationRef.current = stackVersionMutation.mutate;
+
+  const unstackMutation = useMutation({
+    mutationFn: async (fileId: number) => {
+      return await apiRequest("POST", `/api/files/${fileId}/unstack`);
+    },
+    onSuccess: (updated: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", file.projectId, "files"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}/files`] });
+      toast({ title: "Version unlinked", description: `Now its own file: ${updated?.filename ?? ""}` });
+    },
+    onError: (err: any) => {
+      toast({ title: "Couldn't unlink version", description: err?.message || "Try again.", variant: "destructive" });
+    },
+  });
 
   useEffect(() => {
     const el = cardRef.current;
@@ -737,13 +756,18 @@ function MediaCard({
                   // For videos with completed processing, expose every encoded
                   // resolution alongside the original. For other file types
                   // (audio, image) there are no transcoded variants, so fall
-                  // back to a single download item.
+                  // back to a single download item. When the file is part of
+                  // a stack (versions.length > 1), nest each older version
+                  // under its own submenu so the user can grab any version.
                   const qualities: Array<{ resolution: string; path: string; size: number }> =
                     (processing as any)?.qualities || [];
                   const hasQualityVariants =
                     file.fileType === "video" && qualities.length > 0;
+                  const allVersions = (versions && versions.length > 1)
+                    ? [...versions].sort((a, b) => b.version - a.version)
+                    : null;
 
-                  if (!hasQualityVariants) {
+                  if (!hasQualityVariants && !allVersions) {
                     return (
                       <DropdownMenuItem onClick={handleDownloadOriginal}>
                         <Download className="h-4 w-4 mr-2" />
@@ -752,6 +776,31 @@ function MediaCard({
                     );
                   }
 
+                  const latestQualities = (
+                    <>
+                      <DropdownMenuItem onClick={handleDownloadOriginal}>
+                        <span className="flex-1">Original</span>
+                        <span className="ml-2 text-xs text-neutral-500">
+                          {formatFileSize(file.fileSize)}
+                        </span>
+                      </DropdownMenuItem>
+                      {hasQualityVariants && <DropdownMenuSeparator />}
+                      {qualities.map((q) => (
+                        <DropdownMenuItem
+                          key={q.resolution}
+                          onClick={(e) => handleDownloadQuality(e, q.resolution, q.path)}
+                        >
+                          <span className="flex-1">{q.resolution}</span>
+                          {q.size ? (
+                            <span className="ml-2 text-xs text-neutral-500">
+                              {formatFileSize(q.size)}
+                            </span>
+                          ) : null}
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  );
+
                   return (
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
@@ -759,30 +808,61 @@ function MediaCard({
                         Download
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="w-56">
-                        <DropdownMenuItem onClick={handleDownloadOriginal}>
-                          <span className="flex-1">Original</span>
-                          <span className="ml-2 text-xs text-neutral-500">
-                            {formatFileSize(file.fileSize)}
-                          </span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {qualities.map((q) => (
-                          <DropdownMenuItem
-                            key={q.resolution}
-                            onClick={(e) => handleDownloadQuality(e, q.resolution, q.path)}
-                          >
-                            <span className="flex-1">{q.resolution}</span>
-                            {q.size ? (
-                              <span className="ml-2 text-xs text-neutral-500">
-                                {formatFileSize(q.size)}
-                              </span>
-                            ) : null}
-                          </DropdownMenuItem>
-                        ))}
+                        {allVersions ? (
+                          <>
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>
+                                <span className="flex-1">v{file.version} (latest)</span>
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent className="w-56">
+                                {latestQualities}
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            <DropdownMenuSeparator />
+                            {allVersions.filter(v => v.id !== file.id).map((v) => (
+                              <DropdownMenuItem
+                                key={v.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadUrlAs(`/api/files/${v.id}/download`, file.filename);
+                                }}
+                              >
+                                <span className="flex-1">v{v.version}</span>
+                                <span className="ml-2 text-xs text-neutral-500">
+                                  {formatFileSize(v.fileSize)}
+                                </span>
+                              </DropdownMenuItem>
+                            ))}
+                          </>
+                        ) : (
+                          latestQualities
+                        )}
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
                   );
                 })()}
+                {versions && versions.length > 1 && (
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Layers className="h-4 w-4 mr-2" />
+                      Unlink version
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-48">
+                      {[...versions].sort((a, b) => b.version - a.version).map((v) => (
+                        <DropdownMenuItem
+                          key={v.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            unstackMutation.mutate(v.id);
+                          }}
+                          disabled={unstackMutation.isPending}
+                        >
+                          <span className="flex-1">v{v.version}{v.id === file.id ? " (latest)" : ""}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                )}
                 <DropdownMenuItem onClick={openShareDialog}>
                   <Share2 className="h-4 w-4 mr-2" />
                   Share Link
@@ -964,11 +1044,16 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
     return () => window.removeEventListener("keydown", onKey);
   }, [selectionActive]);
 
-  const versionCounts = new Map<string, number>();
+  const versionsByGroup = new Map<string, StorageFile[]>();
   for (const f of files) {
     const key = `${f.projectId}::${f.filename}`;
-    versionCounts.set(key, (versionCounts.get(key) || 0) + 1);
+    const list = versionsByGroup.get(key);
+    if (list) list.push(f);
+    else versionsByGroup.set(key, [f]);
   }
+  versionsByGroup.forEach((list) => {
+    list.sort((a: StorageFile, b: StorageFile) => a.version - b.version);
+  });
 
   const { data: fileApprovals } = useQuery<Record<number, "approved" | "changes_requested" | null>>({
     queryKey: ['/api/projects', projectId, 'file-approvals'],
@@ -1021,7 +1106,8 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
               file={file}
               onSelect={onSelectFile}
               onMove={onMoveFile}
-              versionCount={versionCounts.get(`${file.projectId}::${file.filename}`) || 1}
+              versionCount={versionsByGroup.get(`${file.projectId}::${file.filename}`)?.length || 1}
+              versions={versionsByGroup.get(`${file.projectId}::${file.filename}`)}
               approvalStatus={fileApprovals?.[file.id] ?? null}
               isSelected={selectedIds.has(file.id)}
               selectionActive={selectionActive}
@@ -1038,7 +1124,8 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
               file={file}
               onSelect={onSelectFile}
               onMove={onMoveFile}
-              versionCount={versionCounts.get(`${file.projectId}::${file.filename}`) || 1}
+              versionCount={versionsByGroup.get(`${file.projectId}::${file.filename}`)?.length || 1}
+              versions={versionsByGroup.get(`${file.projectId}::${file.filename}`)}
               approvalStatus={fileApprovals?.[file.id] ?? null}
               isSelected={selectedIds.has(file.id)}
               selectionActive={selectionActive}

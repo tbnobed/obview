@@ -9,6 +9,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -36,6 +39,10 @@ interface MediaRowProps {
   onSelect: (fileId: number) => void;
   onMove?: (file: StorageFile) => void;
   versionCount?: number;
+  // Sibling versions in the same filename group (including this one),
+  // sorted ascending by version. Used to render per-version download
+  // and unlink submenus.
+  versions?: StorageFile[];
   approvalStatus?: "approved" | "changes_requested" | null;
   // Multi-select drag-and-drop (mirrors MediaCard).
   isSelected?: boolean;
@@ -74,6 +81,7 @@ export default function MediaRow({
   onSelect,
   onMove,
   versionCount = 1,
+  versions,
   approvalStatus,
   isSelected = false,
   selectionActive = false,
@@ -115,6 +123,20 @@ export default function MediaRow({
   });
   const stackVersionMutationRef = useRef(stackVersionMutation.mutate);
   stackVersionMutationRef.current = stackVersionMutation.mutate;
+
+  const unstackMutation = useMutation({
+    mutationFn: async (fileId: number) => {
+      return await apiRequest("POST", `/api/files/${fileId}/unstack`);
+    },
+    onSuccess: (updated: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", file.projectId, "files"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}/files`] });
+      toast({ title: "Version unlinked", description: `Now its own file: ${updated?.filename ?? ""}` });
+    },
+    onError: (err: any) => {
+      toast({ title: "Couldn't unlink version", description: err?.message || "Try again.", variant: "destructive" });
+    },
+  });
 
   useEffect(() => {
     const el = rowRef.current;
@@ -248,18 +270,22 @@ export default function MediaRow({
     }
   };
 
-  const handleDownloadOriginal = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const url = `/api/files/${file.id}/download`;
+  const downloadVersion = (fileId: number, name: string) => {
+    const url = `/api/files/${fileId}/download`;
     const sep = url.includes("?") ? "&" : "?";
     const a = document.createElement("a");
     a.style.display = "none";
-    a.href = `${url}${sep}download=1&filename=${encodeURIComponent(file.filename)}`;
-    a.download = file.filename;
+    a.href = `${url}${sep}download=1&filename=${encodeURIComponent(name)}`;
+    a.download = name;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    toast({ title: "Download started", description: `Downloading ${file.filename}` });
+    toast({ title: "Download started", description: `Downloading ${name}` });
+  };
+
+  const handleDownloadOriginal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    downloadVersion(file.id, file.filename);
   };
 
   const openShareDialog = (e: React.MouseEvent) => {
@@ -395,10 +421,57 @@ export default function MediaRow({
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDownloadOriginal}>
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </DropdownMenuItem>
+              {versions && versions.length > 1 ? (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-48">
+                    {[...versions].sort((a, b) => b.version - a.version).map((v) => (
+                      <DropdownMenuItem
+                        key={v.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadVersion(v.id, file.filename);
+                        }}
+                      >
+                        <span className="flex-1">v{v.version}{v.id === file.id ? " (latest)" : ""}</span>
+                        <span className="ml-2 text-xs text-neutral-500">
+                          {formatFileSize(v.fileSize)}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              ) : (
+                <DropdownMenuItem onClick={handleDownloadOriginal}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </DropdownMenuItem>
+              )}
+              {versions && versions.length > 1 && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Layers className="h-4 w-4 mr-2" />
+                    Unlink version
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-48">
+                    {[...versions].sort((a, b) => b.version - a.version).map((v) => (
+                      <DropdownMenuItem
+                        key={v.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          unstackMutation.mutate(v.id);
+                        }}
+                        disabled={unstackMutation.isPending}
+                      >
+                        <span className="flex-1">v{v.version}{v.id === file.id ? " (latest)" : ""}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              )}
               <DropdownMenuItem onClick={openShareDialog}>
                 <Share2 className="h-4 w-4 mr-2" />
                 Share Link
