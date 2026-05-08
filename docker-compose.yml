@@ -32,6 +32,11 @@ services:
       # returned from the API (e.g. https://t.obviu.io). If unset the
       # server falls back to the inbound request's host.
       - SHORT_LINK_BASE_URL=${SHORT_LINK_BASE_URL:-}
+      # Cross-subdomain session cookie domain. Set to e.g. .obviu.io so the
+      # session cookie is shared between tbn.obviu.io (app) and t.obviu.io
+      # (short-link host) — without it, signed-in viewers land on the public
+      # share page instead of the authenticated project view.
+      - SESSION_COOKIE_DOMAIN=${SESSION_COOKIE_DOMAIN:-}
       # Flag to signal a Docker environment to use proper database connection strategy
       - IS_DOCKER=true
       # Upload directory for file operations
