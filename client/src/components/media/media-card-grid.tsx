@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, MessageSquare, Copy, Check, Layers } from "lucide-react";
+import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers } from "lucide-react";
+import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -208,94 +207,13 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
     );
   };
 
-  // Share dialog state. We open a small dialog so the user can pick between
-  // a view-only link (no comments visible) and a comment-enabled link.
+  // Per-file share-link manager — same UI/permissions as project/folder
+  // shares (password, expiry, downloads, comments, email gate, watermark).
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [shareToken, setShareToken] = useState<string | null>(file.shareToken ?? null);
-  const [shareTokenLoading, setShareTokenLoading] = useState(false);
-  const [copiedVariant, setCopiedVariant] = useState<"viewOnly" | "comments" | null>(null);
 
-  const ensureShareToken = async (): Promise<string | null> => {
-    if (shareToken) return shareToken;
-    setShareTokenLoading(true);
-    try {
-      const res = await apiRequest("POST", `/api/files/${file.id}/share`);
-      const data = await res.json();
-      // Server now returns the raw token directly. Fall back to parsing
-      // the trailing path segment of shareUrl for older server builds
-      // that only returned shareUrl. Old format was /share/<token>; new
-      // format is bare /<token>.
-      let token: string | null = typeof data?.token === "string" ? data.token : null;
-      if (!token && typeof data?.shareUrl === "string") {
-        const m = data.shareUrl.match(/\/(?:share\/)?([^/?#]+)\/?$/);
-        token = m?.[1] ?? null;
-      }
-      if (!token) throw new Error("Failed to obtain share token");
-      setShareToken(token);
-      (file as any).shareToken = token;
-      return token;
-    } finally {
-      setShareTokenLoading(false);
-    }
-  };
-
-  const openShareDialog = async (e: React.MouseEvent) => {
+  const openShareDialog = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCopiedVariant(null);
     setShareDialogOpen(true);
-    try {
-      await ensureShareToken();
-    } catch (err) {
-      toast({
-        title: "Could not create share link",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const buildShareUrl = (token: string, variant?: "viewOnly" | "comments") => {
-    // Use the configured short-link domain when available, falling
-    // back to the current origin. URL format is bare-token at root,
-    // matching ShareLinksDialog.publicShareUrl.
-    const configured = (import.meta.env.VITE_SHORT_LINK_BASE_URL as string | undefined)
-      ?.trim().replace(/\/+$/, "");
-    const base = configured && configured.length > 0 ? configured : window.location.origin;
-    return variant === "viewOnly" ? `${base}/${token}?viewOnly=true` : `${base}/${token}`;
-  };
-
-  const copyShareUrl = async (variant: "viewOnly" | "comments") => {
-    try {
-      const token = await ensureShareToken();
-      if (!token) throw new Error("No token");
-      const url = buildShareUrl(token, variant);
-
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = url;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textArea);
-      }
-
-      setCopiedVariant(variant);
-      toast({
-        title: variant === "viewOnly" ? "View-only link copied" : "Comment link copied",
-        description: variant === "viewOnly"
-          ? "Recipients can watch but won't see or post comments."
-          : "Recipients can view and add comments without an account.",
-      });
-      setTimeout(() => setCopiedVariant(null), 2000);
-    } catch (error) {
-      toast({
-        title: "Failed to copy link",
-        description: "Could not copy the share link. Please try again.",
-        variant: "destructive",
-      });
-    }
   };
   
   const processing = getProcessingStatus(file.id, file.projectId);
@@ -756,86 +674,13 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
         filename={file.filename}
       />
 
-      {/* Share Link Dialog — pick view-only or comment-enabled */}
-      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <DialogContent className="sm:max-w-md" onClick={(e) => e.stopPropagation()}>
-          <DialogHeader>
-            <DialogTitle>Share "{file.filename}"</DialogTitle>
-            <DialogDescription>
-              Anyone with the link can open this file without an account. Choose what they're allowed to do.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-2">
-            {/* View only */}
-            <button
-              type="button"
-              onClick={() => copyShareUrl("viewOnly")}
-              disabled={shareTokenLoading}
-              className="w-full flex items-start gap-3 p-3 rounded-lg border border-neutral-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-[#026d55] hover:bg-neutral-50 dark:hover:bg-gray-800/60 text-left transition-colors disabled:opacity-50"
-              data-testid="button-copy-view-only-link"
-            >
-              <div className="mt-0.5 h-9 w-9 rounded-md bg-neutral-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
-                <Eye className="h-4 w-4 text-neutral-600 dark:text-gray-300" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm text-neutral-900 dark:text-white">
-                  View only
-                </div>
-                <div className="text-xs text-neutral-500 dark:text-gray-400">
-                  Recipients can watch the file but can't see or post comments.
-                </div>
-              </div>
-              {copiedVariant === "viewOnly" ? (
-                <Check className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0 mt-2" />
-              ) : (
-                <Copy className="h-4 w-4 text-neutral-400 shrink-0 mt-2" />
-              )}
-            </button>
-
-            {/* Comments enabled */}
-            <button
-              type="button"
-              onClick={() => copyShareUrl("comments")}
-              disabled={shareTokenLoading}
-              className="w-full flex items-start gap-3 p-3 rounded-lg border border-neutral-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-[#026d55] hover:bg-neutral-50 dark:hover:bg-gray-800/60 text-left transition-colors disabled:opacity-50"
-              data-testid="button-copy-comment-link"
-            >
-              <div className="mt-0.5 h-9 w-9 rounded-md bg-neutral-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
-                <MessageSquare className="h-4 w-4 text-neutral-600 dark:text-gray-300" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm text-neutral-900 dark:text-white">
-                  Comments enabled
-                </div>
-                <div className="text-xs text-neutral-500 dark:text-gray-400">
-                  Recipients can view existing comments and add their own (no account needed).
-                </div>
-              </div>
-              {copiedVariant === "comments" ? (
-                <Check className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0 mt-2" />
-              ) : (
-                <Copy className="h-4 w-4 text-neutral-400 shrink-0 mt-2" />
-              )}
-            </button>
-          </div>
-
-          {shareToken && (
-            <Input
-              readOnly
-              value={buildShareUrl(shareToken)}
-              className="font-mono text-xs"
-              onClick={(e) => (e.target as HTMLInputElement).select()}
-            />
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShareDialogOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ShareLinksDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        scopeType="file"
+        scopeId={file.id}
+        scopeName={file.filename}
+      />
     </Card>
   );
 }

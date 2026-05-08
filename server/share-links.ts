@@ -137,6 +137,7 @@ async function canManageLinkNow(req: Request, link: ShareLink): Promise<boolean>
   if (link.createdById !== req.user.id) return false;
   if (link.scopeType === "project") return canManageProjectShares(req, link.scopeId);
   if (link.scopeType === "folder") return canManageFolderShares(req, link.scopeId);
+  if (link.scopeType === "file") return canManageFileShares(req, link.scopeId);
   return false;
 }
 
@@ -165,6 +166,27 @@ async function canManageFolderShares(req: Request, folderId: number): Promise<bo
   if (!folder) return false;
   if (folder.isGlobal) return false; // only admins manage global folder shares
   return folder.createdById === req.user.id;
+}
+
+// File-scope share-link management mirrors the project edit-access check
+// (admin / project editor-or-admin / site-editor in a global folder). We
+// inline the logic here rather than importing from routes.ts to avoid a
+// circular import (routes.ts → share-links.ts).
+async function canManageFileShares(req: Request, fileId: number): Promise<boolean> {
+  if (!req.user) return false;
+  if (req.user.role === "admin") return true;
+  const file = await storage.getFile(fileId);
+  if (!file) return false;
+  const pu = await storage.getProjectUser(file.projectId, req.user.id);
+  if (pu && (pu.role === "editor" || pu.role === "admin")) return true;
+  if (req.user.role === "editor") {
+    const project = await storage.getProject(file.projectId);
+    if (project?.folderId != null) {
+      const folder = await storage.getFolder(project.folderId);
+      if (folder?.isGlobal) return true;
+    }
+  }
+  return false;
 }
 
 function streamRanged(req: Request, res: Response, filePath: string, contentType: string, downloadName?: string) {
@@ -224,7 +246,7 @@ export function registerShareLinkRoutes(
 ) {
   // ===== management endpoints =====
 
-  const createForScope = async (req: Request, res: Response, scopeType: "project" | "folder", scopeId: number) => {
+  const createForScope = async (req: Request, res: Response, scopeType: "project" | "folder" | "file", scopeId: number) => {
     const parsed = insertShareLinkSchema.safeParse({
       ...req.body,
       scopeType,
@@ -291,6 +313,28 @@ export function registerShareLinkRoutes(
       const folderId = parseInt(req.params.folderId);
       if (!(await canManageFolderShares(req, folderId))) return res.status(403).json({ message: "Forbidden" });
       await createForScope(req, res, "folder", folderId);
+    } catch (e) { next(e); }
+  });
+
+  // File-scoped share links — mirrors project/folder shape so the same
+  // ShareLinksDialog UI can manage per-file links with full permission
+  // controls (password, expiry, downloads, comments, email gate,
+  // watermark). Note: allowUploads stays project-only (enforced at the
+  // public upload endpoint), but the field is harmless on file links.
+  app.post("/api/files/:fileId/share-links", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      if (!(await canManageFileShares(req, fileId))) return res.status(403).json({ message: "Forbidden" });
+      await createForScope(req, res, "file", fileId);
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/files/:fileId/share-links", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      if (!(await canManageFileShares(req, fileId))) return res.status(403).json({ message: "Forbidden" });
+      const links = await storage.listShareLinksForScope("file", fileId);
+      res.json(links.map(sanitizeLink));
     } catch (e) { next(e); }
   });
 

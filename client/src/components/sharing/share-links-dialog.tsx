@@ -18,7 +18,7 @@ import { format, formatDistanceToNow } from "date-fns";
 type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  scopeType: "project" | "folder";
+  scopeType: "project" | "folder" | "file";
   scopeId: number;
   scopeName?: string;
 };
@@ -79,9 +79,11 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Share {scopeType === "project" ? "project" : "folder"}{scopeName ? ` — ${scopeName}` : ""}</DialogTitle>
+          <DialogTitle>Share {scopeType}{scopeName ? ` — ${scopeName}` : ""}</DialogTitle>
           <DialogDescription>
-            One link grants reviewer access to every file in this {scopeType}. Each link has its own password, expiry, and permissions.
+            {scopeType === "file"
+              ? "Each link grants reviewer access to this file with its own password, expiry, and permissions."
+              : `One link grants reviewer access to every file in this ${scopeType}. Each link has its own password, expiry, and permissions.`}
           </DialogDescription>
         </DialogHeader>
 

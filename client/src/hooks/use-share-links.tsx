@@ -21,17 +21,21 @@ export type ShareLinkDTO = {
   createdAt: string;
 };
 
-type ScopeArg = { scopeType: "project" | "folder"; scopeId: number };
+type ScopeArg = { scopeType: "project" | "folder" | "file"; scopeId: number };
 
 const listKey = ({ scopeType, scopeId }: ScopeArg) =>
   scopeType === "project"
     ? ["/api/projects", scopeId, "share-links"]
-    : ["/api/folders", scopeId, "share-links"];
+    : scopeType === "folder"
+      ? ["/api/folders", scopeId, "share-links"]
+      : ["/api/files", scopeId, "share-links"];
 
 const listUrl = ({ scopeType, scopeId }: ScopeArg) =>
   scopeType === "project"
     ? `/api/projects/${scopeId}/share-links`
-    : `/api/folders/${scopeId}/share-links`;
+    : scopeType === "folder"
+      ? `/api/folders/${scopeId}/share-links`
+      : `/api/files/${scopeId}/share-links`;
 
 export function useShareLinks(arg: ScopeArg, enabled = true) {
   return useQuery<ShareLinkDTO[]>({

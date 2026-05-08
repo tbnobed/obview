@@ -18,7 +18,7 @@ import { DownloadButton } from "@/components/download-button";
 import { ExportMarkersButton } from "@/components/export-markers-button";
 import { AnnotationCanvas, AnnotationOverlay, type Annotation } from "@/components/media/annotation-canvas";
 import VersionCompare from "@/components/media/version-compare";
-import { ShareLinkButton } from "@/components/share-link-button";
+import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { Comment, File as StorageFile, Project } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -44,6 +44,7 @@ export default function MediaPlayer({
 }) {
   const { user } = useAuth();
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -2155,13 +2156,16 @@ export default function MediaPlayer({
                     >
                       <UploadVersionIcon className="h-[22px] w-[22px]" />
                     </Button>
-                    <ShareLinkButton 
-                      fileId={file.id} 
-                      size="sm"
+                    <Button
                       variant="ghost"
-                      compact={true}
+                      size="sm"
                       className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
-                    />
+                      onClick={() => setShareDialogOpen(true)}
+                      title="Share this file"
+                      data-testid="button-open-file-share"
+                    >
+                      <ShareFileIcon className="h-[22px] w-[22px]" />
+                    </Button>
 
                     <Button
                       variant="ghost"
@@ -2396,15 +2400,13 @@ export default function MediaPlayer({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-40">
-            {/* Share Link Option - Renders ShareLinkButton inside dropdown */}
-            <DropdownMenuItem asChild>
-              <ShareLinkButton 
-                fileId={file.id} 
-                size="sm"
-                variant="ghost"
-                compact={false}
-                className="w-full justify-start p-2 text-sm font-normal hover:bg-accent focus:bg-accent"
-              />
+            {/* Share file — opens the per-file share-link manager */}
+            <DropdownMenuItem
+              onSelect={(e) => { e.preventDefault(); setShareDialogOpen(true); }}
+              data-testid="menu-share-file"
+            >
+              <ShareFileIcon className="h-4 w-4 mr-2" />
+              Share File
             </DropdownMenuItem>
             
             <DropdownMenuSeparator />
@@ -2646,6 +2648,16 @@ export default function MediaPlayer({
           </Dialog>
         ) : null;
       })()}
+
+      {file && (
+        <ShareLinksDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          scopeType="file"
+          scopeId={file.id}
+          scopeName={file.filename}
+        />
+      )}
     </div>
   );
 }
