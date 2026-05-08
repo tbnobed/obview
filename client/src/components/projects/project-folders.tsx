@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getDragPayload, peekDragPayload } from "@/lib/drag-drop";
+import { useMoveFileToFolder } from "@/hooks/use-drag-move";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +57,25 @@ export function ProjectFoldersStrip({
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
+  // Tracks which drop target is currently being hovered so we can paint
+  // a ring without re-rendering siblings. 'root' = breadcrumb, number =
+  // a child folder tile.
+  const [dragOver, setDragOver] = useState<number | "root" | null>(null);
+  const moveFileToFolder = useMoveFileToFolder();
+
+  // Only accept our own file drags; ignore project/folder drags and OS files.
+  const acceptsFileDrop = (e: React.DragEvent): boolean => {
+    if (!canEdit) return false;
+    const p = peekDragPayload(e);
+    return !!p && p.type === "file" && p.sourceProjectId === projectId;
+  };
+  const handleFileDrop = (e: React.DragEvent, targetFolderId: number | null) => {
+    const p = getDragPayload(e);
+    setDragOver(null);
+    if (!p || p.type !== "file" || p.sourceProjectId !== projectId) return;
+    e.preventDefault();
+    moveFileToFolder.mutate({ fileId: p.id, folderId: targetFolderId, projectId });
+  };
 
   const deleteFolder = useMutation({
     mutationFn: async (id: number) => apiRequest("DELETE", `/api/folders/${id}`),
@@ -121,8 +143,19 @@ export function ProjectFoldersStrip({
         <div className="flex items-center gap-1 text-sm text-gray-300 flex-wrap">
           <button
             type="button"
-            className="inline-flex items-center gap-1 hover:text-white"
+            className={cn(
+              "inline-flex items-center gap-1 hover:text-white px-1.5 py-0.5 rounded transition-colors",
+              dragOver === "root" && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15 text-white",
+            )}
             onClick={() => onSelectFolder(null)}
+            onDragOver={(e) => {
+              if (!acceptsFileDrop(e)) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              if (dragOver !== "root") setDragOver("root");
+            }}
+            onDragLeave={() => setDragOver((d) => (d === "root" ? null : d))}
+            onDrop={(e) => handleFileDrop(e, null)}
             data-testid="project-folders-root"
           >
             <Home className="h-3.5 w-3.5" /> Project root
@@ -132,8 +165,20 @@ export function ProjectFoldersStrip({
               <ChevronRight className="h-3.5 w-3.5 text-gray-500" />
               <button
                 type="button"
-                className="hover:text-white"
+                className={cn(
+                  "hover:text-white px-1.5 py-0.5 rounded transition-colors",
+                  dragOver === f.id && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15 text-white",
+                )}
                 onClick={() => onSelectFolder(f.id)}
+                onDragOver={(e) => {
+                  if (!acceptsFileDrop(e)) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  if (dragOver !== f.id) setDragOver(f.id);
+                }}
+                onDragLeave={() => setDragOver((d) => (d === f.id ? null : d))}
+                onDrop={(e) => handleFileDrop(e, f.id)}
+                data-testid={`breadcrumb-folder-${f.id}`}
               >
                 {f.name}
               </button>
@@ -157,7 +202,19 @@ export function ProjectFoldersStrip({
           {childFolders.map((f) => (
             <div
               key={f.id}
-              className="group relative flex items-center gap-2 pl-3 pr-1 py-2 rounded-md border border-gray-700 bg-[#1a1f26] hover:border-gray-500 text-sm text-gray-200"
+              className={cn(
+                "group relative flex items-center gap-2 pl-3 pr-1 py-2 rounded-md border border-gray-700 bg-[#1a1f26] hover:border-gray-500 text-sm text-gray-200 transition-colors",
+                dragOver === f.id && "ring-2 ring-primary-500 dark:ring-[#10a37f] border-transparent bg-[#10a37f]/15",
+              )}
+              onDragOver={(e) => {
+                if (!acceptsFileDrop(e)) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (dragOver !== f.id) setDragOver(f.id);
+              }}
+              onDragLeave={() => setDragOver((d) => (d === f.id ? null : d))}
+              onDrop={(e) => handleFileDrop(e, f.id)}
+              data-testid={`subfolder-droptarget-${f.id}`}
             >
               <button
                 type="button"

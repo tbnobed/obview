@@ -64,6 +64,38 @@ export function useMoveFolderUnderParent() {
   });
 }
 
+export function useMoveFileToFolder() {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({ fileId, folderId, projectId }: { fileId: number; folderId: number | null; projectId: number }) => {
+      // projectId stays the same — only folderId changes. Server expects
+      // both fields on the move endpoint.
+      return await apiRequest("PATCH", `/api/files/${fileId}/move`, { folderId, projectId });
+    },
+    onSuccess: (_data, vars) => {
+      const refetchType = "all" as const;
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.projectId}/files`],
+        refetchType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/projects", vars.projectId, "files"],
+        refetchType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.projectId}/folders`],
+        refetchType,
+      });
+      toast({
+        title: vars.folderId == null ? "Moved to project root" : "File moved to folder",
+      });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Couldn't move file", description: err.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useMoveFileToProject() {
   const { toast } = useToast();
   return useMutation({
