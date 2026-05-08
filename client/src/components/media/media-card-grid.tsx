@@ -161,19 +161,27 @@ function MediaCard({
       return false;
     };
 
+    let overCount = 0;
     const onDragEnter = (e: DragEvent) => {
-      console.log("[VERSION-DROP] enter", { canEdit: canEditRef.current, types: e.dataTransfer ? Array.from(e.dataTransfer.types) : [] });
+      const types = e.dataTransfer ? Array.from(e.dataTransfer.types).join(",") : "";
+      console.log("[VERSION-DROP] enter types=" + types + " canEdit=" + canEditRef.current);
       if (!canEditRef.current || hasInternalDrag(e)) return;
       e.preventDefault();
       dragDepthRef.current += 1;
       setIsVersionDropTarget(true);
     };
     const onDragOver = (e: DragEvent) => {
+      overCount++;
+      if (overCount % 30 === 1) {
+        const types = e.dataTransfer ? Array.from(e.dataTransfer.types).join(",") : "";
+        console.log("[VERSION-DROP] over#" + overCount + " types=" + types + " effectAllowed=" + e.dataTransfer?.effectAllowed);
+      }
       if (!canEditRef.current || hasInternalDrag(e)) return;
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     };
     const onDragLeave = (e: DragEvent) => {
+      console.log("[VERSION-DROP] leave");
       if (!canEditRef.current || hasInternalDrag(e)) return;
       dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
       if (dragDepthRef.current === 0) setIsVersionDropTarget(false);
