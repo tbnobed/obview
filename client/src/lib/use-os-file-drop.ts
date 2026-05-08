@@ -2,14 +2,19 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { uploadService } from "@/lib/upload-service";
 import { useToast } from "@/hooks/use-toast";
 
-// Native DOM drag listeners that accept OS files dropped onto the
-// element and upload each one to `projectId`. In-app drags (anything
-// carrying our `application/x-obviu-dnd` MIME) are ignored so they
-// keep flowing to the existing move/stack handlers.
+// Window-level capture-phase drag listeners that accept OS files
+// dropped anywhere inside `ref.current` and upload each one to
+// `projectId`. Listening at window/capture means we still see the
+// event even if a descendant component (e.g. a media card with its
+// own drop handler) calls stopPropagation. We bail out if the drop
+// target is inside a descendant that has its own data-os-drop-handled
+// marker — but cards stop propagation only AFTER they handle their
+// own internal drop, so external file drops still flow through.
+//
+// In-app drags (carrying our `application/x-obviu-dnd` MIME) are
+// ignored so the existing move/stack handlers stay in charge.
 //
 // Returns `isDropTarget` so the caller can render a hover ring.
-// Listeners are attached once per mount; `projectId` and `enabled`
-// are tracked through refs so the effect doesn't tear down mid-drag.
 export function useOsFileDrop(
   ref: RefObject<HTMLElement | null>,
   projectId: number | null | undefined,
@@ -29,8 +34,6 @@ export function useOsFileDrop(
   labelRef.current = label;
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
     const dragDepth = { n: 0 };
 
     const isInternal = (e: DragEvent): boolean => {
@@ -49,9 +52,17 @@ export function useOsFileDrop(
       }
       return false;
     };
-
+    const insideRef = (e: DragEvent): boolean => {
+      const el = ref.current;
+      const t = e.target as Node | null;
+      return !!(el && t && el.contains(t));
+    };
     const accept = (e: DragEvent) =>
-      enabledRef.current && projectIdRef.current != null && !isInternal(e) && isFileDrag(e);
+      enabledRef.current &&
+      projectIdRef.current != null &&
+      !isInternal(e) &&
+      isFileDrag(e) &&
+      insideRef(e);
 
     const onDragEnter = (e: DragEvent) => {
       if (!accept(e)) return;
@@ -88,15 +99,20 @@ export function useOsFileDrop(
       });
     };
 
-    el.addEventListener("dragenter", onDragEnter);
-    el.addEventListener("dragover", onDragOver);
-    el.addEventListener("dragleave", onDragLeave);
-    el.addEventListener("drop", onDrop);
+    // Bubble phase: descendants (e.g. media-card-grid card-level
+    // handlers) get first crack and can stopPropagation to claim the
+    // drop (stack-as-version). If no descendant claims it — empty
+    // space inside the project page — the window-bubble handler runs
+    // and uploads as a new file.
+    window.addEventListener("dragenter", onDragEnter);
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("dragleave", onDragLeave);
+    window.addEventListener("drop", onDrop);
     return () => {
-      el.removeEventListener("dragenter", onDragEnter);
-      el.removeEventListener("dragover", onDragOver);
-      el.removeEventListener("dragleave", onDragLeave);
-      el.removeEventListener("drop", onDrop);
+      window.removeEventListener("dragenter", onDragEnter);
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("dragleave", onDragLeave);
+      window.removeEventListener("drop", onDrop);
     };
   }, [ref]);
 
