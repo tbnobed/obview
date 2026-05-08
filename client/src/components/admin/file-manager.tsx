@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, FileIcon, Video, Image, FileText, File, Eye, RefreshCw, HardDrive, FileCheck, AlertCircle } from "lucide-react";
+import { Trash2, FileIcon, Video, Image as ImageIcon, FileText, File, Eye, RefreshCw, HardDrive, FileCheck, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,8 +42,12 @@ interface FileDetails {
     projectName: string;
     uploadedById: number;
     uploadedByName: string;
+    fileType?: string;
   } | null;
 }
+
+type SortKey = "filename" | "size" | "createdAt" | "uploadedByName" | "projectName";
+type SortDir = "asc" | "desc";
 
 interface FileScanResult {
   message: string;
@@ -66,6 +71,23 @@ export default function FileManager() {
   const [cleanupResults, setCleanupResults] = useState<any>(null);
   const [showForceDeleteResults, setShowForceDeleteResults] = useState(false);
   const [forceDeleteResults, setForceDeleteResults] = useState<any>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "createdAt" || key === "size" ? "desc" : "asc");
+    }
+  };
+  const SortIcon = ({ k }: { k: SortKey }) =>
+    sortKey !== k ? <ArrowUpDown className="inline h-3 w-3 ml-1 opacity-50" /> :
+    sortDir === "asc" ? <ArrowUp className="inline h-3 w-3 ml-1" /> :
+    <ArrowDown className="inline h-3 w-3 ml-1" />;
 
   // Fetch uploaded files
   const { data: files, isLoading, error } = useQuery<FileDetails[]>({
@@ -337,15 +359,124 @@ export default function FileManager() {
     },
   });
 
-  // Apply optimistic deletions and search text filter
-  const filteredFiles = files
-    ?.filter(file => !optimisticFiles.includes(file.filename)) // Remove files being deleted
-    .filter(file => 
-      !searchText || 
-      file.filename.toLowerCase().includes(searchText.toLowerCase()) ||
-      (file.metadata?.projectName &&
-       file.metadata.projectName.toLowerCase().includes(searchText.toLowerCase()))
-    );
+  // Apply optimistic deletions, search text filter, and sorting.
+  const filteredFiles = useMemo(() => {
+    if (!files) return undefined;
+    const filtered = files
+      .filter(file => !optimisticFiles.includes(file.filename))
+      .filter(file =>
+        !searchText ||
+        file.filename.toLowerCase().includes(searchText.toLowerCase()) ||
+        (file.metadata?.projectName &&
+          file.metadata.projectName.toLowerCase().includes(searchText.toLowerCase())) ||
+        (file.metadata?.uploadedByName &&
+          file.metadata.uploadedByName.toLowerCase().includes(searchText.toLowerCase()))
+      );
+    const dir = sortDir === "asc" ? 1 : -1;
+    const get = (f: FileDetails): string | number => {
+      switch (sortKey) {
+        case "filename": return f.filename.toLowerCase();
+        case "size": return f.size;
+        case "createdAt": return new Date(f.createdAt).getTime();
+        case "uploadedByName": return (f.metadata?.uploadedByName || "").toLowerCase();
+        case "projectName": return (f.metadata?.projectName || "").toLowerCase();
+      }
+    };
+    return [...filtered].sort((a, b) => {
+      const av = get(a), bv = get(b);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+  }, [files, optimisticFiles, searchText, sortKey, sortDir]);
+
+  // Drop selections that no longer exist (e.g. after delete or filter change).
+  useEffect(() => {
+    if (!filteredFiles) return;
+    const visible = new Set(filteredFiles.map(f => f.filename));
+    setSelected(prev => {
+      let changed = false;
+      const next = new Set<string>();
+      prev.forEach(name => {
+        if (visible.has(name)) next.add(name);
+        else changed = true;
+      });
+      return changed ? next : prev;
+    });
+  }, [filteredFiles]);
+
+  const allVisibleSelected = !!filteredFiles && filteredFiles.length > 0 &&
+    filteredFiles.every(f => selected.has(f.filename));
+  const someVisibleSelected = !!filteredFiles &&
+    filteredFiles.some(f => selected.has(f.filename)) && !allVisibleSelected;
+
+  const toggleAll = () => {
+    if (!filteredFiles) return;
+    setSelected(prev => {
+      if (allVisibleSelected) {
+        const next = new Set(prev);
+        filteredFiles.forEach(f => next.delete(f.filename));
+        return next;
+      }
+      const next = new Set(prev);
+      filteredFiles.forEach(f => next.add(f.filename));
+      return next;
+    });
+  };
+  const toggleOne = (name: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+  };
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (filenames: string[]) => {
+      setOptimisticFiles(prev => [...prev, ...filenames]);
+      const res = await fetch("/api/system/uploads/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ filenames }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json() as Promise<{ succeeded: number; failed: number; results: { filename: string; ok: boolean; error?: string }[] }>;
+    },
+    onSuccess: (data, attempted) => {
+      const okSet = new Set(data.results.filter(r => r.ok).map(r => r.filename));
+      // Remove successes from the cached list so they vanish immediately;
+      // failed rows must reappear so the user can retry them.
+      queryClient.setQueryData<FileDetails[]>(["/api/system/uploads"], (old) =>
+        old ? old.filter(f => !okSet.has(f.filename)) : []
+      );
+      // Drop the entire attempted batch from optimistic-hide — failures
+      // need to be visible again, and successes are already gone from
+      // cache above.
+      setOptimisticFiles(prev => prev.filter(n => !attempted.includes(n)));
+      // Clear successful rows from the selection; keep failed rows
+      // selected so a retry click hits the same set.
+      setSelected(prev => {
+        const next = new Set(prev);
+        okSet.forEach(n => next.delete(n));
+        return next;
+      });
+      if (data.failed > 0) {
+        toast({
+          title: `Deleted ${data.succeeded}, failed ${data.failed}`,
+          description: data.results.filter(r => !r.ok).slice(0, 3).map(r => `${r.filename}: ${r.error}`).join("; "),
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Deleted", description: `Removed ${data.succeeded} file(s).` });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/system/uploads"] });
+    },
+    onError: (err: Error, filenames) => {
+      setOptimisticFiles(prev => prev.filter(n => !filenames.includes(n)));
+      toast({ title: "Bulk delete failed", description: err.message, variant: "destructive" });
+    },
+  });
 
   // Format file size for display
   const formatFileSize = (bytes: number) => {
@@ -362,7 +493,7 @@ export default function FileManager() {
     if (ext === "mp4" || ext === "mov" || ext === "webm" || ext === "avi") {
       return <Video className="h-5 w-5 text-blue-500" />;
     } else if (ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "gif" || ext === "webp") {
-      return <Image className="h-5 w-5 text-green-500" />;
+      return <ImageIcon className="h-5 w-5 text-green-500" />;
     } else if (ext === "pdf" || ext === "doc" || ext === "docx" || ext === "txt") {
       return <FileText className="h-5 w-5 text-orange-500" />;
     } else {
@@ -631,85 +762,204 @@ export default function FileManager() {
         </DialogContent>
       </Dialog>
 
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
+          <div className="text-sm">
+            <strong>{selected.size}</strong> file{selected.size === 1 ? "" : "s"} selected
+            <Button
+              variant="link"
+              size="sm"
+              className="ml-2 h-auto p-0"
+              onClick={() => setSelected(new Set())}
+              data-testid="bulk-clear-selection"
+            >
+              Clear
+            </Button>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setBulkConfirmOpen(true)}
+            disabled={bulkDeleteMutation.isPending}
+            data-testid="bulk-delete-button"
+          >
+            {bulkDeleteMutation.isPending ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-2" />
+            )}
+            Delete selected
+          </Button>
+        </div>
+      )}
+
+      <AlertDialog open={bulkConfirmOpen} onOpenChange={setBulkConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selected.size} file{selected.size === 1 ? "" : "s"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the selected files from disk and marks any linked
+              database records as unavailable. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                bulkDeleteMutation.mutate(Array.from(selected));
+                setBulkConfirmOpen(false);
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid="bulk-delete-confirm"
+            >
+              Delete {selected.size}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {filteredFiles && filteredFiles.length > 0 ? (
         <Card>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>File</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Uploaded</TableHead>
-                  <TableHead>Project</TableHead>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all"
+                      data-testid="bulk-select-all"
+                    />
+                  </TableHead>
+                  <TableHead className="w-24">Preview</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("filename")}>
+                    File<SortIcon k="filename" />
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("size")}>
+                    Size<SortIcon k="size" />
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("createdAt")}>
+                    Uploaded<SortIcon k="createdAt" />
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("uploadedByName")}>
+                    Uploaded by<SortIcon k="uploadedByName" />
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("projectName")}>
+                    Project<SortIcon k="projectName" />
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredFiles.map((file) => (
-                  <TableRow key={file.filename}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                      {getFileIcon(file.filename)}
-                      <span className="truncate max-w-xs" title={file.filename}>
-                        {file.filename}
-                      </span>
-                    </TableCell>
-                    <TableCell>{formatFileSize(file.size)}</TableCell>
-                    <TableCell>
-                      {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
-                    </TableCell>
-                    <TableCell>
-                      {file.metadata?.projectName ? (
-                        <span className="text-primary">{file.metadata.projectName}</span>
-                      ) : (
-                        <span className="text-gray-500 dark:text-gray-400">Unknown</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewFile(file)}
-                          title="View file"
-                          disabled={!file.metadata?.id}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete the file "{file.filename}". This action cannot be undone.
-                                {file.metadata?.projectId && (
-                                  <p className="mt-2 text-amber-600 dark:text-amber-400">
-                                    Warning: This file appears to be linked to a project. Deleting it might break 
-                                    references in the application.
-                                  </p>
-                                )}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteFile(file.filename)}
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredFiles.map((file) => {
+                  const id = file.metadata?.id;
+                  const ftype = file.metadata?.fileType;
+                  // Image files: serve the original. Videos: use the
+                  // sprite-derived thumbnail. Anything else falls back to
+                  // the file-type icon.
+                  let previewUrl: string | null = null;
+                  if (id && ftype === "image") previewUrl = `/api/files/${id}/content`;
+                  else if (id && ftype === "video") previewUrl = `/api/files/${id}/thumbnail`;
+                  const isSelected = selected.has(file.filename);
+                  return (
+                    <TableRow key={file.filename} data-state={isSelected ? "selected" : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleOne(file.filename)}
+                          aria-label={`Select ${file.filename}`}
+                          data-testid={`row-select-${file.filename}`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-12 w-20 rounded border bg-neutral-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
+                          {previewUrl ? (
+                            <img
+                              src={previewUrl}
+                              alt=""
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                              data-testid={`thumb-${file.filename}`}
+                            />
+                          ) : (
+                            getFileIcon(file.filename)
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {getFileIcon(file.filename)}
+                          <span className="truncate max-w-xs" title={file.filename}>
+                            {file.filename}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatFileSize(file.size)}</TableCell>
+                      <TableCell>
+                        {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell>
+                        {file.metadata?.uploadedByName ? (
+                          <span>{file.metadata.uploadedByName}</span>
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {file.metadata?.projectName ? (
+                          <span className="text-primary">{file.metadata.projectName}</span>
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400">Unknown</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewFile(file)}
+                            title="View file"
+                            disabled={!file.metadata?.id}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the file "{file.filename}". This action cannot be undone.
+                                  {file.metadata?.projectId && (
+                                    <p className="mt-2 text-amber-600 dark:text-amber-400">
+                                      Warning: This file appears to be linked to a project. Deleting it might break
+                                      references in the application.
+                                    </p>
+                                  )}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteFile(file.filename)}
+                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

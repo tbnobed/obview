@@ -5800,7 +5800,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 projectId: matchedFile.projectId,
                 projectName: project ? project.name : null,
                 uploadedById: matchedFile.uploadedById,
-                uploadedByName: uploader ? uploader.name : null
+                uploadedByName: uploader ? (uploader.name || uploader.username) : null,
+                fileType: matchedFile.fileType,
               };
             }
           } catch (err) {
@@ -5940,6 +5941,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Bulk-delete uploaded files (admin only). Accepts { filenames: string[] }
+  // and runs the same per-file path-resolution + DB-mark-unavailable +
+  // unlink flow used by the single delete route, returning per-file status.
+  app.post("/api/system/uploads/bulk-delete", isAdmin, async (req, res) => {
+    try {
+      const filenames: unknown = req.body?.filenames;
+      if (!Array.isArray(filenames) || filenames.length === 0) {
+        return res.status(400).json({ message: "filenames must be a non-empty array" });
+      }
+      if (filenames.length > 500) {
+        return res.status(400).json({ message: "Too many files in one request (max 500)" });
+      }
+      const uploadDir = process.env.UPLOAD_DIR || './uploads';
+      const allFiles = await storage.getAllFiles();
+      const results: { filename: string; ok: boolean; error?: string; databaseEntriesUpdated?: number }[] = [];
+      for (const raw of filenames) {
+        if (typeof raw !== "string" || !raw) {
+          results.push({ filename: String(raw), ok: false, error: "invalid filename" });
+          continue;
+        }
+        try {
+          const sanitized = fileSystem.sanitizeFilename(raw);
+          const candidates = [
+            fileSystem.joinPaths(uploadDir, sanitized),
+            fileSystem.joinPaths('./uploads', sanitized),
+            fileSystem.joinPaths('/home/runner/workspace/uploads', sanitized),
+          ];
+          let filePath: string | null = null;
+          for (const p of candidates) {
+            if (await fileSystem.fileExists(p)) { filePath = p; break; }
+          }
+          if (!filePath) {
+            results.push({ filename: raw, ok: false, error: "not found" });
+            continue;
+          }
+          const matchingFiles = allFiles.filter(f =>
+            (f.filePath && f.filePath.includes(sanitized)) || f.filename === sanitized
+          );
+          for (const f of matchingFiles) {
+            await storage.updateFile(f.id, { isAvailable: false });
+          }
+          await fileSystem.deleteFile(filePath);
+          try {
+            await storage.logActivity({
+              action: "delete",
+              entityType: "file",
+              entityId: matchingFiles.length > 0 ? matchingFiles[0].id : 0,
+              userId: req.user?.id || 0,
+              metadata: {
+                filename: sanitized,
+                affectedFileIds: matchingFiles.map(f => f.id),
+                bulk: true,
+              },
+            });
+          } catch {}
+          results.push({ filename: raw, ok: true, databaseEntriesUpdated: matchingFiles.length });
+        } catch (err) {
+          results.push({
+            filename: raw,
+            ok: false,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+      const succeeded = results.filter(r => r.ok).length;
+      res.json({
+        message: `Deleted ${succeeded} of ${results.length} files`,
+        succeeded,
+        failed: results.length - succeeded,
+        results,
+      });
+    } catch (error) {
+      console.error("[BULK DELETE ERROR]", error);
+      res.status(500).json({
+        message: "Bulk delete failed",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   // ===== ACTIVITY LOG ROUTES =====
   // Enrich a list of activity rows with the actor user, the entity name
   // (file/project/folder/user), and a project name for file-scoped events.
