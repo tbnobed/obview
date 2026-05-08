@@ -27,6 +27,7 @@ import {
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { File as StorageFile } from "@shared/schema";
 import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
+import { uploadService } from "@/lib/upload-service";
 import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 import MediaInfoDialog from "./media-info-dialog";
 
@@ -85,6 +86,71 @@ export default function MediaRow({
   const duration = formatDuration((file as any).duration ?? null);
   const [mediaInfoOpen, setMediaInfoOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [isVersionDropTarget, setIsVersionDropTarget] = useState(false);
+
+  // OS-file drop -> upload as new version of this file. See MediaCard
+  // for the full rationale; mirrored here so list view behaves the same
+  // as grid view. Internal app drags (carrying our DRAG_MIME) are
+  // ignored so the existing move-between-projects flow still works.
+  const canEdit = !!onMove;
+  const isOsFileDrag = (e: React.DragEvent) => {
+    const types = e.dataTransfer?.types;
+    if (!types) return false;
+    let hasFiles = false;
+    let hasInternal = false;
+    if (typeof (types as any).includes === "function") {
+      hasFiles = (types as any).includes("Files");
+      hasInternal = (types as any).includes("application/x-obviu-dnd");
+    } else {
+      const len = (types as any).length ?? 0;
+      for (let i = 0; i < len; i++) {
+        const t = (types as any)[i];
+        if (t === "Files") hasFiles = true;
+        if (t === "application/x-obviu-dnd") hasInternal = true;
+      }
+    }
+    return hasFiles && !hasInternal;
+  };
+  const handleVersionDragOver = (e: React.DragEvent) => {
+    if (!canEdit || !isOsFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+    if (!isVersionDropTarget) setIsVersionDropTarget(true);
+  };
+  const handleVersionDragLeave = (e: React.DragEvent) => {
+    if (!canEdit) return;
+    if (
+      e.currentTarget instanceof Node &&
+      e.relatedTarget instanceof Node &&
+      e.currentTarget.contains(e.relatedTarget as Node)
+    ) {
+      return;
+    }
+    setIsVersionDropTarget(false);
+  };
+  const handleVersionDrop = (e: React.DragEvent) => {
+    if (!canEdit || !isOsFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsVersionDropTarget(false);
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length === 0) return;
+    if (files.length > 1) {
+      toast({
+        title: "Drop one file",
+        description: "Stacking versions only supports one file at a time.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!file.projectId) return;
+    uploadService.uploadFile(files[0], file.projectId, file.filename);
+    toast({
+      title: "Uploading new version",
+      description: `${files[0].name} → v${(versionCount ?? 1) + 1} of ${file.filename}`,
+    });
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (fileId: number) => apiRequest("DELETE", `/api/files/${fileId}`),
@@ -152,8 +218,9 @@ export default function MediaRow({
     <>
       <div
         className={cn(
-          "group flex items-center gap-3 px-3 py-2.5 rounded-md border border-border bg-card hover:bg-accent cursor-pointer transition-colors",
+          "group relative flex items-center gap-3 px-3 py-2.5 rounded-md border border-border bg-card hover:bg-accent cursor-pointer transition-colors",
           isSelected && "ring-2 ring-primary border-transparent bg-primary/10",
+          isVersionDropTarget && "ring-2 ring-primary border-transparent bg-primary/10",
         )}
         draggable
         onDragStart={(e) => {
@@ -165,9 +232,17 @@ export default function MediaRow({
           }
         }}
         onDragEnd={clearDragPayload}
+        onDragOver={handleVersionDragOver}
+        onDragLeave={handleVersionDragLeave}
+        onDrop={handleVersionDrop}
         onClick={handleClick}
         data-testid={`media-row-${file.id}`}
       >
+        {isVersionDropTarget && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-primary/85 text-primary-foreground text-sm font-semibold">
+            Drop to add as v{(versionCount ?? 1) + 1} of {file.filename}
+          </div>
+        )}
         {onToggleSelect && (
           <button
             type="button"
