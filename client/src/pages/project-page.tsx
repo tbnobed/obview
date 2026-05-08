@@ -72,15 +72,19 @@ export default function ProjectPage() {
     queryKey: ["/api/users"],
   });
   
-  // Fetch project members to filter out from invite dropdown
+  // Fetch project members to filter out from invite dropdown.
+  // NOTE: the default queryFn only uses queryKey[0] as the URL, so we must
+  // pass the full URL there (or a custom queryFn). Earlier this was
+  // ["/api/projects", projectId, "members"] which silently fetched the
+  // project list instead of the members roster.
   const { data: projectMembers } = useQuery<any[]>({
-    queryKey: ["/api/projects", projectId, "members"],
+    queryKey: [`/api/projects/${projectId}/members`],
     enabled: !!projectId,
   });
   
   // Fetch pending invitations for this project
   const projectInvitationsQuery = useQuery<any[]>({
-    queryKey: ["/api/projects", projectId, "invitations"],
+    queryKey: [`/api/projects/${projectId}/invitations`],
     enabled: !!projectId,
   });
   const { data: pendingInvitations } = projectInvitationsQuery;
@@ -422,9 +426,15 @@ export default function ProjectPage() {
                 // resolves from the project members roster (gated by
                 // hasProjectAccess on the server, so non-members never see
                 // this anyway).
-                const uploader = (projectMembers || []).find(
+                const uploaderFromMembers = (projectMembers || []).find(
                   (m: any) => m?.user?.id === selectedFile.uploadedById,
                 )?.user;
+                // Admins also have allUsers — covers cases where the uploader
+                // isn't (or no longer is) a project member.
+                const uploaderFromAll = (allUsers || []).find(
+                  (u: any) => u?.id === selectedFile.uploadedById,
+                );
+                const uploader = uploaderFromMembers || uploaderFromAll;
                 const uploaderName = uploader?.name || uploader?.username || null;
                 return (
                   <div className="flex flex-col min-w-0">
