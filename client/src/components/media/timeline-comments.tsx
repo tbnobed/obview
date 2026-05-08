@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useComments, useUpdateCommentContent } from "@/hooks/use-comments";
 import CommentForm from "@/components/comments/comment-form";
 import CommentThread from "@/components/comments/comment-thread";
+import { markdownComponents200, markdownComponents300 } from "@/lib/markdown-comment-components";
 import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock, PenTool, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -219,43 +220,7 @@ export default function TimelineComments({
                   <div className="text-xs mb-2" style={{color: 'hsl(var(--comments-text))'}}>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
-                      components={{
-                        // Override image rendering to add proper styling
-                        img: ({ node, ...props }) => (
-                          <img 
-                            {...props} 
-                            className="max-w-full h-auto rounded-md my-1 border border-gray-200 dark:border-gray-600"
-                            style={{ maxHeight: '200px' }}
-                            onClick={(e) => e.stopPropagation()} 
-                          />
-                        ),
-                        // Override link rendering with special handling for file downloads
-                        a: ({ node, href, ...props }) => {
-                          // Check if this is a file download link
-                          const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
-                          
-                          return (
-                            <a 
-                              href={href}
-                              {...props} 
-                              className={`${isFileDownload ? 'text-primary font-medium' : 'text-primary'} hover:underline`}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // For file downloads, we want to trigger the download attribute
-                                if (isFileDownload) {
-                                  e.preventDefault();
-                                  window.open(href, '_blank');
-                                }
-                              }}
-                            >
-                              {isFileDownload && <span className="mr-1">📎</span>}
-                              {props.children}
-                            </a>
-                          );
-                        }
-                      }}
+                      components={markdownComponents200}
                     >
                       {reply.content}
                     </ReactMarkdown>
@@ -575,43 +540,7 @@ export default function TimelineComments({
                         <div className="text-sm mb-3 leading-relaxed" style={{color: 'hsl(var(--comments-text))'}}>
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
-                            components={{
-                              // Override image rendering to add proper styling
-                              img: ({ node, ...props }) => (
-                                <img 
-                                  {...props} 
-                                  className="max-w-full h-auto rounded-md my-1 border border-gray-200 dark:border-gray-600"
-                                  style={{ maxHeight: '300px' }}
-                                  onClick={(e) => e.stopPropagation()} 
-                                />
-                              ),
-                              // Override link rendering with special handling for file downloads
-                              a: ({ node, href, ...props }) => {
-                                // Check if this is a file download link
-                                const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
-                                
-                                return (
-                                  <a 
-                                    href={href}
-                                    {...props} 
-                                    className={`${isFileDownload ? 'text-primary font-medium' : 'text-primary'} hover:underline`}
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // For file downloads, we want to trigger the download attribute
-                                      if (isFileDownload) {
-                                        e.preventDefault();
-                                        window.open(href, '_blank');
-                                      }
-                                    }}
-                                  >
-                                    {isFileDownload && <span className="mr-1">📎</span>}
-                                    {props.children}
-                                  </a>
-                                );
-                              }
-                            }}
+                            components={markdownComponents300}
                           >
                             {comment.content}
                           </ReactMarkdown>

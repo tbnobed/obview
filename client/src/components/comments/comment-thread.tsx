@@ -17,6 +17,7 @@ import { useDeleteComment, useUpdateCommentContent } from "@/hooks/use-comments"
 import ReactionPicker from "./reaction-picker";
 import ReactionsDisplay from "./reactions-display";
 import { useCommentReactionsWithUsers } from "@/hooks/use-reactions";
+import { markdownComponents300Light } from "@/lib/markdown-comment-components";
 
 interface CommentThreadProps {
   comment: CommentUnified & { user?: any };
@@ -287,43 +288,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
             <div className="mt-1 text-xs text-neutral-700 dark:text-gray-300 comment-content">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
-                components={{
-                  // Override image rendering to add proper styling
-                  img: ({ node, ...props }) => (
-                    <img 
-                      {...props} 
-                      className="max-w-full h-auto rounded-md my-1 border border-gray-200"
-                      style={{ maxHeight: '300px' }}
-                      onClick={(e) => e.stopPropagation()} 
-                    />
-                  ),
-                  // Override link rendering with special handling for file downloads
-                  a: ({ node, href, ...props }) => {
-                    // Check if this is a file download link
-                    const isFileDownload = href && href.startsWith('/api/files/') && href.includes('/content');
-                    
-                    return (
-                      <a 
-                        href={href}
-                        {...props} 
-                        className={`${isFileDownload ? 'text-blue-600 font-medium' : 'text-primary'} hover:underline`}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // For file downloads, we want to trigger the download attribute
-                          if (isFileDownload) {
-                            e.preventDefault();
-                            window.open(href, '_blank');
-                          }
-                        }}
-                      >
-                        {isFileDownload && <span className="mr-1">📎</span>}
-                        {props.children}
-                      </a>
-                    );
-                  }
-                }}
+                components={markdownComponents300Light}
               >
                 {comment.content}
               </ReactMarkdown>
@@ -481,27 +446,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                       <div className="mt-0.5 text-xs text-neutral-700 dark:text-gray-300 comment-content">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
-                          components={{
-                            img: ({ node, ...props }) => (
-                              <img 
-                                {...props} 
-                                className="max-w-full h-auto rounded-md my-1 border border-gray-200"
-                                style={{ maxHeight: '300px' }}
-                                onClick={(e) => e.stopPropagation()} 
-                              />
-                            ),
-                            a: ({ node, ...props }) => (
-                              <a 
-                                {...props} 
-                                className="text-primary hover:underline"
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {props.children}
-                              </a>
-                            )
-                          }}
+                          components={markdownComponents300Light}
                         >
                           {reply.content}
                         </ReactMarkdown>
