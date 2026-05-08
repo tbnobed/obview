@@ -176,13 +176,24 @@ function MediaCard({
     setIsVersionDropTarget(false);
   };
   const handleVersionDrop = (e: React.DragEvent) => {
+    console.log("[VERSION-DROP] fire", {
+      canEdit,
+      types: Array.from(e.dataTransfer?.types ?? []),
+      fileCount: e.dataTransfer?.files?.length ?? 0,
+      isOsFile: isOsFileDrag(e),
+      fileId: file.id,
+      projectId: file.projectId,
+    });
     if (!canEdit) return;
     if (!isOsFileDrag(e)) return;
     e.preventDefault();
     e.stopPropagation();
     setIsVersionDropTarget(false);
     const files = Array.from(e.dataTransfer.files || []);
-    if (files.length === 0) return;
+    if (files.length === 0) {
+      console.warn("[VERSION-DROP] no files in dataTransfer");
+      return;
+    }
     if (files.length > 1) {
       toast({
         title: "Drop one file",
