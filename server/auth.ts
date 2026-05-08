@@ -183,6 +183,16 @@ export function setupAuth(app: Express) {
         });
       }
       
+      // Expire any legacy host-only `connect.sid` cookie left over from
+      // before SESSION_COOKIE_DOMAIN was set. Without this, browsers
+      // that already had a host-only cookie keep sending it alongside
+      // the new domain-scoped cookie, the server picks the stale one,
+      // and the user has to log in twice. clearCookie with no Domain
+      // targets the host-only variant only — the new domain-scoped
+      // cookie set by req.login below has a different scope and is
+      // not affected.
+      res.clearCookie("connect.sid", { path: "/" });
+
       // Regenerate session to prevent fixation attacks
       req.session.regenerate((err) => {
         if (err) return next(err);
