@@ -751,7 +751,7 @@ export default function ProjectPage() {
 
       {/* Settings Sheet */}
       <Sheet open={settingsSheetOpen} onOpenChange={setSettingsSheetOpen}>
-        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto bg-card dark:bg-[#0f1320] border-l border-border">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <SettingsIcon className="h-5 w-5 text-primary dark:text-[#10a37f]" />
