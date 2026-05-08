@@ -193,9 +193,12 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
               isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}
             onClick={(e) => {
+              // Swallow the click so the Card's onClick (navigate to
+              // project) doesn't fire. The actual toggle happens via
+              // the Checkbox's onCheckedChange below — calling
+              // onToggleSelect here too would double-fire and cancel.
               e.preventDefault();
               e.stopPropagation();
-              onToggleSelect(project.id, e);
             }}
             onPointerDownCapture={(e) => e.stopPropagation()}
             data-testid={`project-select-toggle-${project.id}`}

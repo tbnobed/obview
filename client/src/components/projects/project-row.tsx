@@ -117,9 +117,12 @@ export default function ProjectRow({ project, isSelected, selectedIds, onToggleS
               isSelected ? "opacity-100" : "opacity-50 group-hover:opacity-100"
             )}
             onClick={(e) => {
+              // See ProjectCard: don't toggle here, the Checkbox's
+              // onCheckedChange owns the state change. We only need to
+              // stop propagation so the row's navigate-on-click
+              // doesn't fire.
               e.preventDefault();
               e.stopPropagation();
-              onToggleSelect(project.id, e);
             }}
             onPointerDownCapture={(e) => e.stopPropagation()}
             data-testid={`project-row-select-${project.id}`}
