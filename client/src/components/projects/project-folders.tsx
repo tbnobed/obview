@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2 } from "lucide-react";
+import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2, Share2 } from "lucide-react";
+import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
 import { getDragPayload, peekDragPayload } from "@/lib/drag-drop";
 import { useMoveFileToFolder, useMoveFilesToFolder } from "@/hooks/use-drag-move";
@@ -57,6 +58,10 @@ export function ProjectFoldersStrip({
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
+  // Folder targeted by the Share dialog. We open ShareLinksDialog with
+  // scopeType="folder" so the link only grants access to files inside
+  // this subfolder, not the whole project.
+  const [folderToShare, setFolderToShare] = useState<Folder | null>(null);
   // Tracks which drop target is currently being hovered so we can paint
   // a ring without re-rendering siblings. 'root' = breadcrumb, number =
   // a child folder tile.
@@ -244,6 +249,20 @@ export function ProjectFoldersStrip({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    setFolderToShare(f);
+                  }}
+                  className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  aria-label={`Share folder ${f.name}`}
+                  data-testid={`share-subfolder-${f.id}`}
+                >
+                  <Share2 className="h-4 w-4" />
+                </button>
+              )}
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setFolderToDelete(f);
                   }}
                   className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
@@ -257,6 +276,14 @@ export function ProjectFoldersStrip({
           ))}
         </div>
       )}
+
+      <ShareLinksDialog
+        open={!!folderToShare}
+        onOpenChange={(o) => { if (!o) setFolderToShare(null); }}
+        scopeType="folder"
+        scopeId={folderToShare?.id ?? 0}
+        scopeName={folderToShare?.name}
+      />
 
       <AlertDialog
         open={!!folderToDelete}

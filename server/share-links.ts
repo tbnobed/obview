@@ -164,7 +164,27 @@ async function canManageFolderShares(req: Request, folderId: number): Promise<bo
   if (req.user.role === "admin") return true;
   const folder = await storage.getFolder(folderId);
   if (!folder) return false;
-  if (folder.isGlobal) return false; // only admins manage global folder shares
+  // Project subfolders (folder.projectId != null) are file groupings INSIDE
+  // a single project — share-link management for them must follow current
+  // project edit access, not stale `createdById`. Without this, a former
+  // editor who created a subfolder could keep minting public links to it
+  // after being removed from the project. Mirrors `canManageFileShares`
+  // (admin / project editor-or-admin / site-editor in a global folder).
+  if (folder.projectId != null) {
+    const pu = await storage.getProjectUser(folder.projectId, req.user.id);
+    if (pu && (pu.role === "editor" || pu.role === "admin")) return true;
+    if (req.user.role === "editor") {
+      const project = await storage.getProject(folder.projectId);
+      if (project?.folderId != null) {
+        const parent = await storage.getFolder(project.folderId);
+        if (parent?.isGlobal) return true;
+      }
+    }
+    return false;
+  }
+  // Sidebar/top-level folders (no projectId): existing rule — only admins
+  // manage shares on global folders, otherwise only the creator.
+  if (folder.isGlobal) return false;
   return folder.createdById === req.user.id;
 }
 
