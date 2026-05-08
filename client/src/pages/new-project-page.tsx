@@ -54,6 +54,7 @@ export default function NewProjectPage() {
               onSuccess={(projectId) => {
                 navigate(`/projects/${projectId}`);
               }}
+              onCancel={() => navigate(backHref)}
             />
           </CardContent>
         </Card>

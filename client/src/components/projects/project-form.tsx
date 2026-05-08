@@ -17,6 +17,7 @@ interface ProjectFormProps {
   projectId?: number;
   defaultFolderId?: number | null;
   onSuccess?: (projectId: number) => void;
+  onCancel?: () => void;
   className?: string;
 }
 
@@ -36,6 +37,7 @@ export default function ProjectForm({
   projectId,
   defaultFolderId = null,
   onSuccess,
+  onCancel,
   className
 }: ProjectFormProps) {
   const { toast } = useToast();
@@ -340,14 +342,27 @@ export default function ProjectForm({
           </FormItem>
         )}
 
-        <Button 
-          type="submit" 
-          disabled={isLoading} 
-          className="w-full"
-        >
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditMode ? 'Update Project' : 'Create Project'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          )}
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="flex-1"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isEditMode ? 'Update Project' : 'Create Project'}
+          </Button>
+        </div>
       </form>
     </Form>
   );
