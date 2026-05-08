@@ -162,6 +162,7 @@ function MediaCard({
     };
 
     const onDragEnter = (e: DragEvent) => {
+      console.log("[VERSION-DROP] enter", { canEdit: canEditRef.current, types: e.dataTransfer ? Array.from(e.dataTransfer.types) : [] });
       if (!canEditRef.current || hasInternalDrag(e)) return;
       e.preventDefault();
       dragDepthRef.current += 1;
