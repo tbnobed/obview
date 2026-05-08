@@ -191,7 +191,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             in Project Settings) wins over the auto sprite preview. */}
         {project.customThumbnailPath ? (
           <div
-            className="relative aspect-video bg-gray-800 rounded-t-none mx-2.5 mb-1 overflow-hidden group"
+            className="relative aspect-video bg-muted rounded-t-none mx-2.5 mb-1 overflow-hidden group"
             data-testid={`custom-thumb-container-${project.id}`}
           >
             <img
@@ -208,7 +208,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           </div>
         ) : project.latestVideoFile ? (
           <div 
-            className="relative aspect-video bg-gray-800 rounded-t-none mx-2.5 mb-1 overflow-hidden group"
+            className="relative aspect-video bg-muted rounded-t-none mx-2.5 mb-1 overflow-hidden group"
             style={{
               cursor: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M8 5v10l8-5-8-5z' fill='%23ffffff'/%3e%3c/svg%3e") 10 10, pointer`
             }}
@@ -241,9 +241,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             {/* Wait for processing and sprite data */}
             {videoProcessing === undefined ? (
               // Loading state - show placeholder while processing query loads
-              <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                <div className="text-center text-gray-400">
-                  <div className="w-8 h-8 border-2 border-gray-600 border-t-white rounded-full animate-spin mx-auto mb-2"></div>
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <div className="text-center text-muted-foreground">
+                  <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin mx-auto mb-2"></div>
                   <p className="text-xs">Loading preview...</p>
                 </div>
               </div>
@@ -295,8 +295,8 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               </div>
             ) : (
               // Fallback for no sprite data - show static thumbnail
-              <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                <div className="text-center text-gray-400">
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <div className="text-center text-muted-foreground">
                   <PlayCircle className="h-8 w-8 mx-auto mb-1.5" />
                   <p className="text-xs">Processing...</p>
                 </div>
@@ -325,8 +325,8 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             </div>
           </div>
         ) : (
-          <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-t-none mx-2.5 mb-1 flex items-center justify-center">
-            <div className="text-center text-gray-400 dark:text-gray-500">
+          <div className="aspect-video bg-gray-100 dark:bg-muted rounded-t-none mx-2.5 mb-1 flex items-center justify-center">
+            <div className="text-center text-muted-foreground dark:text-gray-500">
               <PlayCircle className="h-8 w-8 mx-auto mb-1.5" />
               <p className="text-xs">No video files</p>
             </div>

@@ -155,7 +155,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
         title={compact ? "Share this file" : undefined}
       >
         <ShareFileIcon className="h-[22px] w-[22px]" />
-        {!compact && <span className="text-xs font-medium text-gray-200">Share File</span>}
+        {!compact && <span className="text-xs font-medium">Share File</span>}
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

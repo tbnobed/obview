@@ -140,12 +140,12 @@ export function ProjectFoldersStrip({
   return (
     <div className="px-6 pt-6">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-1 text-sm text-gray-300 flex-wrap">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground flex-wrap">
           <button
             type="button"
             className={cn(
-              "inline-flex items-center gap-1 hover:text-white px-1.5 py-0.5 rounded transition-colors",
-              dragOver === "root" && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15 text-white",
+              "inline-flex items-center gap-1 hover:text-foreground px-1.5 py-0.5 rounded transition-colors",
+              dragOver === "root" && "ring-2 ring-primary bg-primary/15 text-foreground",
             )}
             onClick={() => onSelectFolder(null)}
             onDragOver={(e) => {
@@ -166,8 +166,8 @@ export function ProjectFoldersStrip({
               <button
                 type="button"
                 className={cn(
-                  "hover:text-white px-1.5 py-0.5 rounded transition-colors",
-                  dragOver === f.id && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15 text-white",
+                  "hover:text-foreground px-1.5 py-0.5 rounded transition-colors",
+                  dragOver === f.id && "ring-2 ring-primary bg-primary/15 text-foreground",
                 )}
                 onClick={() => onSelectFolder(f.id)}
                 onDragOver={(e) => {
@@ -203,8 +203,8 @@ export function ProjectFoldersStrip({
             <div
               key={f.id}
               className={cn(
-                "group relative flex items-center gap-2 pl-3 pr-1 py-2 rounded-md border border-gray-700 bg-[#1a1f26] hover:border-gray-500 text-sm text-gray-200 transition-colors",
-                dragOver === f.id && "ring-2 ring-primary-500 dark:ring-[#10a37f] border-transparent bg-[#10a37f]/15",
+                "group relative flex items-center gap-2 pl-3 pr-1 py-2 rounded-md border border-border bg-card hover:border-foreground/30 text-sm text-card-foreground transition-colors",
+                dragOver === f.id && "ring-2 ring-primary border-transparent bg-primary/15",
               )}
               onDragOver={(e) => {
                 if (!acceptsFileDrop(e)) return;
@@ -232,7 +232,7 @@ export function ProjectFoldersStrip({
                     e.stopPropagation();
                     setFolderToDelete(f);
                   }}
-                  className="p-1.5 rounded text-gray-400 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                   aria-label={`Delete folder ${f.name}`}
                   data-testid={`delete-subfolder-${f.id}`}
                 >

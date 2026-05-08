@@ -157,13 +157,13 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
   return (
     <div className="h-full flex flex-col bg-[#1e1e1e] text-white rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-gray-400" />
+          <MessageSquare className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Comments</span>
         </div>
         <div className="flex items-center gap-1">
-          <Filter className="h-3.5 w-3.5 text-gray-400 mr-1" />
+          <Filter className="h-3.5 w-3.5 text-muted-foreground mr-1" />
           {(["all", "unresolved", "resolved"] as const).map((f) => (
             <button
               key={f}
@@ -172,7 +172,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                 "text-xs px-2 py-0.5 rounded-full transition-colors capitalize",
                 filter === f
                   ? "bg-[#10a37f]/20 text-[#10a37f]"
-                  : "text-gray-400 hover:text-gray-200"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {f}
@@ -184,15 +184,15 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
       {/* Comments List */}
       <div className="flex-1 overflow-y-auto">
         {sortedComments.length === 0 && filter !== "all" && (
-          <div className="text-center py-8 text-gray-400 text-sm">
+          <div className="text-center py-8 text-muted-foreground text-sm">
             No {filter} comments
           </div>
         )}
-        <div className="divide-y divide-gray-700">
+        <div className="divide-y divide-border">
           {sortedComments.map((comment: Comment & { user?: any, file?: any }, index: number) => (
             <div 
               key={`${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
-              className={`p-4 hover:bg-gray-800/50 transition-colors ${comment.file?.id ? 'cursor-pointer' : ''}`}
+              className={`p-4 hover:bg-accent transition-colors ${comment.file?.id ? 'cursor-pointer' : ''}`}
               onClick={() => comment.file?.id && navigateToComment(comment)}
               onKeyDown={comment.file?.id ? (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -221,11 +221,11 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                       <span className="text-sm font-medium text-white">
                         {(comment as any).authorName || comment.user?.name || 'Unknown User'}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-muted-foreground">
                         #{index + 1}
                       </span>
                       <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(comment.createdAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -234,8 +234,8 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                   {/* File Info */}
                   {comment.file && (
                     <div className="flex items-center gap-1 mb-2">
-                      <FileVideo className="h-3 w-3 text-gray-400" />
-                      <span className="text-xs text-gray-300">{comment.file.filename}</span>
+                      <FileVideo className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-foreground">{comment.file.filename}</span>
                     </div>
                   )}
 
@@ -247,14 +247,14 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                   )}
 
                   {/* Comment Text */}
-                  <div className="text-sm text-gray-200 mb-3">
+                  <div className="text-sm text-foreground mb-3">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
                         img: ({ node, ...props }) => (
                           <img 
                             {...props} 
-                            className="max-w-full h-auto rounded-md my-1 border border-gray-600"
+                            className="max-w-full h-auto rounded-md my-1 border border-border"
                             style={{ maxHeight: '200px' }}
                             onClick={(e) => e.stopPropagation()} 
                           />
@@ -288,7 +288,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                       <Button 
                         size="sm" 
                         variant="ghost"
-                        className="h-6 px-2 py-0 text-xs text-gray-400 hover:text-white hover:bg-gray-700"
+                        className="h-6 px-2 py-0 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigateToComment(comment);
@@ -299,7 +299,7 @@ export function ProjectCommentsTab({ projectId }: { projectId: number }) {
                       </Button>
                     )}
                     
-                    <button className="text-xs text-gray-400 hover:text-white transition-colors">
+                    <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                       Reply
                     </button>
                   </div>

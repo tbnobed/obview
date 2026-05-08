@@ -133,7 +133,7 @@ export default function MediaRow({
     <>
       <div
         className={cn(
-          "group flex items-center gap-3 px-3 py-2.5 rounded-md border border-gray-800 bg-gray-900 hover:bg-gray-800/60 cursor-pointer transition-colors",
+          "group flex items-center gap-3 px-3 py-2.5 rounded-md border border-border bg-card hover:bg-accent cursor-pointer transition-colors",
         )}
         draggable
         onDragStart={(e) => {
@@ -144,14 +144,14 @@ export default function MediaRow({
         onClick={handleClick}
         data-testid={`media-row-${file.id}`}
       >
-        <div className="h-9 w-9 shrink-0 rounded bg-gray-800 flex items-center justify-center">
-          <Icon className="h-4 w-4 text-gray-400" />
+        <div className="h-9 w-9 shrink-0 rounded bg-muted flex items-center justify-center">
+          <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 min-w-0">
             <span
-              className="truncate text-sm font-medium text-white"
+              className="truncate text-sm font-medium text-card-foreground"
               title={file.filename}
             >
               {file.filename}
@@ -163,7 +163,7 @@ export default function MediaRow({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
             <span className="capitalize">{file.fileType}</span>
             {duration && (
               <>
@@ -197,7 +197,7 @@ export default function MediaRow({
           )}
         </div>
 
-        <div className="shrink-0 text-xs text-gray-400 w-28 text-right hidden sm:block">
+        <div className="shrink-0 text-xs text-muted-foreground w-28 text-right hidden sm:block">
           {formatTimeAgo(file.createdAt)}
         </div>
 
@@ -207,7 +207,7 @@ export default function MediaRow({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-gray-300 hover:bg-gray-700"
+                className="h-8 w-8 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="h-4 w-4" />

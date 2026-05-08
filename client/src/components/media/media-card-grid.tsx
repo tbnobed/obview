@@ -322,7 +322,7 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
 
   return (
     <Card 
-      className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-[#1a1f26] border-gray-700 hover:border-gray-600 active:opacity-70"
+      className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-card border-border hover:border-foreground/20 active:opacity-70"
       onClick={handleCardClick}
       draggable
       onDragStart={(e) => {
@@ -337,7 +337,7 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
       <CardContent className="p-0">
         {/* Thumbnail Container */}
         <div 
-          className="relative aspect-video bg-gray-900 rounded-t-lg overflow-hidden"
+          className="relative aspect-video bg-muted rounded-t-lg overflow-hidden"
           style={{
             cursor: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M8 5v10l8-5-8-5z' fill='%23ffffff'/%3e%3c/svg%3e") 10 10, pointer`
           }}
@@ -385,7 +385,7 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
                   
                   {/* Fallback for failed image loading */}
                   {thumbnailError && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted">
                       <FileIcon className="h-12 w-12 text-gray-500" />
                     </div>
                   )}
@@ -447,7 +447,7 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
                   
                   {/* Fallback for failed thumbnail or while loading */}
                   {(!thumbnailLoaded || thumbnailError) && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted">
                       <FileIcon className="h-12 w-12 text-gray-500" />
                     </div>
                   )}
@@ -485,7 +485,7 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
             </>
           ) : (
             /* Non-video files */
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+            <div className="absolute inset-0 flex items-center justify-center bg-muted">
               <FileIcon className="h-12 w-12 text-gray-500" />
               {file.fileType === 'audio' && duration && (
                 <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded font-mono">
@@ -604,12 +604,12 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
         {/* Card Footer */}
         <div className="p-4">
           {/* Filename */}
-          <h3 className="font-medium text-white text-sm mb-1 truncate" title={file.filename}>
+          <h3 className="font-medium text-card-foreground text-sm mb-1 truncate" title={file.filename}>
             {file.filename}
           </h3>
           
           {/* Metadata */}
-          <div className="flex items-center justify-between text-xs text-gray-400 gap-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
             <div className="flex items-center gap-1 min-w-0">
               <span className="truncate">{formatFileSize(file.fileSize)}</span>
               <span>•</span>
@@ -710,8 +710,8 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-white mb-1">Media Files</h2>
-          <p className="text-gray-400 text-sm">{latestFiles.length} file{latestFiles.length !== 1 ? 's' : ''}</p>
+          <h2 className="text-xl font-semibold text-foreground mb-1">Media Files</h2>
+          <p className="text-muted-foreground text-sm">{latestFiles.length} file{latestFiles.length !== 1 ? 's' : ''}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -720,7 +720,7 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
             onChange={setViewMode}
             testIdPrefix="media-view"
           />
-          <Button variant="outline" size="sm" className="text-gray-400 border-gray-600 hover:border-gray-500">
+          <Button variant="outline" size="sm" className="text-muted-foreground border-border hover:border-foreground/30">
             Sort by Date
           </Button>
         </div>
