@@ -1475,7 +1475,7 @@ export default function MediaPlayer({
     const fileType = file.fileType.toLowerCase();
     
     // Image files
-    if (fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExt || '')) {
+    if (fileType === 'image' || fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExt || '')) {
       return (
         <div className="flex items-center justify-center h-full bg-neutral-900">
           <img
@@ -1488,7 +1488,7 @@ export default function MediaPlayer({
       );
     } 
     // Video files
-    else if (fileType.startsWith('video/') || ['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(fileExt || '')) {
+    else if (fileType === 'video' || fileType.startsWith('video/') || ['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(fileExt || '')) {
       return (
         <div
           ref={mediaContainerRef}
@@ -1597,7 +1597,7 @@ export default function MediaPlayer({
       );
     } 
     // Audio files
-    else if (fileType.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(fileExt || '')) {
+    else if (fileType === 'audio' || fileType.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(fileExt || '')) {
       return (
         <div
           ref={mediaContainerRef}
