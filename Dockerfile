@@ -24,11 +24,18 @@ ENV VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION
 ARG VITE_SHORT_LINK_BASE_URL=
 ENV VITE_SHORT_LINK_BASE_URL=$VITE_SHORT_LINK_BASE_URL
 
+# Canonical app host (e.g. https://tbn.obviu.io). Baked into the client
+# bundle so the share-resolver can full-page redirect signed-in viewers
+# off t.obviu.io onto the authenticated app host.
+ARG VITE_APP_BASE_URL=
+ENV VITE_APP_BASE_URL=$VITE_APP_BASE_URL
+
 RUN ls -la && echo "Content of server directory:" && ls -la server/
 
 RUN echo "=== BUILDING APPLICATION ===" && \
     echo "VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION" && \
     echo "VITE_SHORT_LINK_BASE_URL=$VITE_SHORT_LINK_BASE_URL" && \
+    echo "VITE_APP_BASE_URL=$VITE_APP_BASE_URL" && \
     npm run build && \
     echo "=== BUILD VERIFICATION ===" && \
     ls -la dist/ && \
