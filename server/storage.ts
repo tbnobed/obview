@@ -1857,17 +1857,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteFile(id: number): Promise<boolean> {
-    // Soft delete only. The disk files and DB row remain so an admin can
-    // restore from /api/admin/trash. A nightly cleanup job hard-deletes
-    // anything past FILE_TRASH_RETENTION_DAYS.
+    // Soft delete. Disk files and DB rows remain so an admin can restore
+    // from /api/admin/trash; a nightly cleanup job hard-deletes anything
+    // past FILE_TRASH_RETENTION_DAYS.
     //
-    // If the row being deleted is the latest version in its
-    // (projectId, filename) version stack, promote the next-highest
-    // surviving version to latest. Otherwise the project page (which
-    // filters by isLatestVersion) hides every survivor while the
-    // project-card thumbnail query (which does NOT filter by
-    // isLatestVersion) keeps surfacing the orphaned non-latest row —
-    // exactly the "card shows a deleted file" symptom users hit.
+    // CASCADE the soft-delete across the entire (projectId, filename)
+    // version stack. The UI shows one card per file (= per stack), so
+    // clicking "delete" must remove every version. Otherwise the user
+    // deletes the latest version, the previous version becomes the new
+    // "latest", and the card stubbornly keeps showing the same file.
+    // Use `unstack` first if you only want to separate one version.
     return await db.transaction(async (tx) => {
       const [target] = await tx
         .select()
@@ -1876,32 +1875,16 @@ export class DatabaseStorage implements IStorage {
         .for("update");
       if (!target) return false;
 
-      await tx
+      const result = await tx
         .update(files)
         .set({ deletedAt: new Date() })
-        .where(eq(files.id, id));
-
-      if (target.isLatestVersion) {
-        const survivors = await tx
-          .select()
-          .from(files)
-          .where(and(
-            eq(files.projectId, target.projectId),
-            eq(files.filename, target.filename),
-            isNull(files.deletedAt),
-          ))
-          .for("update");
-        const nextLatest = survivors
-          .filter(f => f.id !== id)
-          .sort((a, b) => b.version - a.version)[0];
-        if (nextLatest) {
-          await tx
-            .update(files)
-            .set({ isLatestVersion: true })
-            .where(eq(files.id, nextLatest.id));
-        }
-      }
-      return true;
+        .where(and(
+          eq(files.projectId, target.projectId),
+          eq(files.filename, target.filename),
+          isNull(files.deletedAt),
+        ))
+        .returning({ id: files.id });
+      return result.length > 0;
     });
   }
 
