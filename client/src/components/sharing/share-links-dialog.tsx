@@ -77,7 +77,7 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto bg-neutral-100 dark:bg-[hsl(210,18%,8%)] dark:border-gray-800">
         <DialogHeader>
           <DialogTitle>Share {scopeType}{scopeName ? ` — ${scopeName}` : ""}</DialogTitle>
           <DialogDescription>
@@ -127,7 +127,7 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
         {createOpen && (
           <>
             <Separator />
-            <div className="space-y-4 rounded-lg border border-neutral-200 dark:border-gray-800 bg-neutral-100 dark:bg-[hsl(210,18%,8%)] p-4">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-medium flex items-center gap-2">
                   <Plus className="h-4 w-4" /> New share link
