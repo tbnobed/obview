@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { File as StorageFile } from "@shared/schema";
-import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
+import { setDragPayload, clearDragPayload, peekDragPayload, getDragPayload } from "@/lib/drag-drop";
 import { uploadService } from "@/lib/upload-service";
 import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 import MediaInfoDialog from "./media-info-dialog";
@@ -100,57 +100,98 @@ export default function MediaRow({
   const canEditRef = useRef(canEdit);
   canEditRef.current = canEdit;
 
+  const stackVersionMutation = useMutation({
+    mutationFn: async ({ targetId, sourceFileId }: { targetId: number; sourceFileId: number }) => {
+      const res = await apiRequest("POST", `/api/files/${targetId}/stack-version`, { sourceFileId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", file.projectId, "files"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}/files`] });
+      toast({ title: "Version stacked", description: `Added as v${(versionCount ?? 1) + 1} of ${file.filename}` });
+    },
+    onError: (err: any) => {
+      toast({ title: "Couldn't stack version", description: err?.message || "Try again.", variant: "destructive" });
+    },
+  });
+  const stackVersionMutationRef = useRef(stackVersionMutation.mutate);
+  stackVersionMutationRef.current = stackVersionMutation.mutate;
+
   useEffect(() => {
     const el = rowRef.current;
     if (!el) return;
 
-    const hasInternalDrag = (e: DragEvent): boolean => {
+    type DragKind = "os-file" | "internal" | "ignore";
+    const classify = (e: DragEvent): DragKind => {
       const types = e.dataTransfer?.types;
-      if (!types) return false;
+      if (!types) return "ignore";
+      let isInternal = false;
       for (let i = 0; i < types.length; i++) {
-        if (types[i] === "application/x-obviu-dnd") return true;
+        if (types[i] === "application/x-obviu-dnd") { isInternal = true; break; }
       }
-      return false;
+      if (isInternal) {
+        const payload = peekDragPayload();
+        if (!payload || payload.type !== "file") return "ignore";
+        const f = fileRef.current;
+        if (payload.sourceProjectId !== f.projectId) return "ignore";
+        if (payload.id === f.id) return "ignore";
+        return "internal";
+      }
+      return "os-file";
     };
+
     const onDragEnter = (e: DragEvent) => {
-      if (!canEditRef.current || hasInternalDrag(e)) return;
+      if (!canEditRef.current || classify(e) === "ignore") return;
       e.preventDefault();
       dragDepthRef.current += 1;
       setIsVersionDropTarget(true);
     };
     const onDragOver = (e: DragEvent) => {
-      if (!canEditRef.current || hasInternalDrag(e)) return;
+      if (!canEditRef.current) return;
+      const kind = classify(e);
+      if (kind === "ignore") return;
       e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      if (e.dataTransfer) e.dataTransfer.dropEffect = kind === "os-file" ? "copy" : "move";
     };
     const onDragLeave = (e: DragEvent) => {
-      if (!canEditRef.current || hasInternalDrag(e)) return;
+      if (!canEditRef.current || classify(e) === "ignore") return;
       dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
       if (dragDepthRef.current === 0) setIsVersionDropTarget(false);
     };
     const onDrop = (e: DragEvent) => {
-      if (!canEditRef.current || hasInternalDrag(e)) return;
+      if (!canEditRef.current) return;
+      const kind = classify(e);
+      if (kind === "ignore") return;
       e.preventDefault();
       e.stopPropagation();
       dragDepthRef.current = 0;
       setIsVersionDropTarget(false);
-      const files = Array.from(e.dataTransfer?.files || []);
-      if (files.length === 0) return;
-      if (files.length > 1) {
+      const f = fileRef.current;
+      if (!f.projectId) return;
+
+      if (kind === "os-file") {
+        const files = Array.from(e.dataTransfer?.files || []);
+        if (files.length === 0) return;
+        if (files.length > 1) {
+          toastRef.current({
+            title: "Drop one file",
+            description: "Stacking versions only supports one file at a time.",
+            variant: "destructive",
+          });
+          return;
+        }
+        uploadService.uploadFile(files[0], f.projectId, f.filename);
         toastRef.current({
-          title: "Drop one file",
-          description: "Stacking versions only supports one file at a time.",
-          variant: "destructive",
+          title: "Uploading new version",
+          description: `${files[0].name} → v${(versionCountRef.current ?? 1) + 1} of ${f.filename}`,
         });
         return;
       }
-      const f = fileRef.current;
-      if (!f.projectId) return;
-      uploadService.uploadFile(files[0], f.projectId, f.filename);
-      toastRef.current({
-        title: "Uploading new version",
-        description: `${files[0].name} → v${(versionCountRef.current ?? 1) + 1} of ${f.filename}`,
-      });
+
+      const payload = getDragPayload(e as unknown as React.DragEvent);
+      const sourceFileId = payload?.type === "file" ? payload.id : null;
+      if (!sourceFileId || sourceFileId === f.id) return;
+      stackVersionMutationRef.current?.({ targetId: f.id, sourceFileId });
     };
 
     el.addEventListener("dragenter", onDragEnter);

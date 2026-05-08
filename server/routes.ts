@@ -50,7 +50,7 @@ import {
   folders as foldersTable,
 } from "@shared/schema";
 import { db } from "./db";
-import { sql, inArray, eq } from "drizzle-orm";
+import { sql, inArray, eq, and, isNull } from "drizzle-orm";
 import { VideoProcessor } from "./video-processor";
 import { createTusServer, createMultipartFinalizer, createMultipartCanceller, HttpError as TusHttpError, TUS_USER_HEADER } from "./tus";
 import {
@@ -5485,6 +5485,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       return res.status(400).json({ message: "Provide folderId or projectId to move the file" });
+    } catch (e) { next(e); }
+  });
+
+  // Stack one existing file as a new version of another file in the same
+  // project. Triggered by drag-dropping a media card onto another card in
+  // the UI. Re-uses the filename-based version-grouping convention: we
+  // copy the target's filename onto the source row, bump version to
+  // max(group)+1, demote prior latest, and (per the directed-review
+  // contract) propagate any open change-request from the prior latest.
+  app.post("/api/files/:targetId/stack-version", isAuthenticated, async (req, res, next) => {
+    try {
+      const targetId = parseInt(req.params.targetId);
+      const schema = z.object({ sourceFileId: z.number().int().positive() });
+      const { sourceFileId } = schema.parse(req.body);
+      if (sourceFileId === targetId) {
+        return res.status(400).json({ message: "Cannot stack a file onto itself" });
+      }
+      const [target, source] = await Promise.all([
+        storage.getFile(targetId),
+        storage.getFile(sourceFileId),
+      ]);
+      if (!target || !source) return res.status(404).json({ message: "File not found" });
+      if (target.projectId !== source.projectId) {
+        return res.status(400).json({ message: "Files must be in the same project" });
+      }
+      if (!(await userHasProjectEditAccess(req.user, target.projectId))) {
+        return res.status(403).json({ message: "You don't have edit access to this project" });
+      }
+
+      // Run target-group demotion, source rewrite, and source-old-group
+      // latest-repair atomically. Without a transaction concurrent stacks
+      // could collide on `version` or leave a group with no latest row.
+      const result = await db.transaction(async (tx) => {
+        const targetGroup = await tx.select().from(filesTable).where(
+          and(
+            eq(filesTable.projectId, target.projectId),
+            eq(filesTable.filename, target.filename),
+            isNull(filesTable.deletedAt),
+          )
+        ).for("update");
+        const targetGroupOthers = targetGroup.filter(f => f.id !== sourceFileId);
+        const nextVersion = targetGroupOthers.length > 0
+          ? Math.max(...targetGroupOthers.map(f => f.version)) + 1
+          : (target.version + 1);
+        const priorLatest = targetGroupOthers.find(f => f.isLatestVersion) || null;
+
+        if (targetGroupOthers.length > 0) {
+          await tx.update(filesTable)
+            .set({ isLatestVersion: false })
+            .where(and(
+              eq(filesTable.projectId, target.projectId),
+              eq(filesTable.filename, target.filename),
+              isNull(filesTable.deletedAt),
+            ));
+        }
+
+        // Promote source into the target group with cleared review state —
+        // a brand-new version always starts in `needs_review` per the
+        // directed-review contract (mirrors the multer/tus upload paths).
+        const [updated] = await tx.update(filesTable)
+          .set({
+            filename: target.filename,
+            version: nextVersion,
+            isLatestVersion: true,
+            folderId: target.folderId,
+            reviewStatus: "needs_review",
+            requestedChangesById: null,
+            requestedChangesByEmail: null,
+          } as any)
+          .where(eq(filesTable.id, sourceFileId))
+          .returning();
+
+        // Repair the source's OLD filename group: if source was the
+        // latest there, promote the next-highest version so the old
+        // group still has exactly one latest row.
+        if (source.filename !== target.filename && source.isLatestVersion) {
+          const oldGroup = await tx.select().from(filesTable).where(
+            and(
+              eq(filesTable.projectId, source.projectId),
+              eq(filesTable.filename, source.filename),
+              isNull(filesTable.deletedAt),
+            )
+          ).for("update");
+          const newOldLatest = oldGroup
+            .filter(f => f.id !== sourceFileId)
+            .sort((a, b) => b.version - a.version)[0];
+          if (newOldLatest) {
+            await tx.update(filesTable)
+              .set({ isLatestVersion: true })
+              .where(eq(filesTable.id, newOldLatest.id));
+          }
+        }
+
+        return { updated, nextVersion, priorLatestId: priorLatest?.id ?? null };
+      });
+
+      await storage.logActivity({
+        action: "stack_version",
+        entityType: "file",
+        entityId: sourceFileId,
+        userId: req.user.id,
+        metadata: {
+          projectId: target.projectId,
+          targetFileId: targetId,
+          newVersion: result.nextVersion,
+          filename: target.filename,
+          priorLatestId: result.priorLatestId,
+          previousFilename: source.filename,
+        },
+      });
+
+      return res.json(result.updated);
     } catch (e) { next(e); }
   });
 
