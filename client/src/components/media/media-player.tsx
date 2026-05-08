@@ -670,6 +670,14 @@ export default function MediaPlayer({
         case 'KeyJ': {
           e.preventDefault();
           if (!mediaElement || mediaError || !file) break;
+          // Shift+J: skip back 10s (no shuttle)
+          if (e.shiftKey) {
+            stopJKLShuttle();
+            const t = Math.max(0, mediaElement.currentTime - 10);
+            performSeek(t);
+            setCurrentTime(t);
+            break;
+          }
           if (jklIntervalRef.current) {
             clearInterval(jklIntervalRef.current);
             jklIntervalRef.current = null;
@@ -699,6 +707,14 @@ export default function MediaPlayer({
         case 'KeyL': {
           e.preventDefault();
           if (!mediaElement || mediaError || !file) break;
+          // Shift+L: skip forward 10s (no shuttle)
+          if (e.shiftKey) {
+            stopJKLShuttle();
+            const t = Math.min(duration, mediaElement.currentTime + 10);
+            performSeek(t);
+            setCurrentTime(t);
+            break;
+          }
           if (jklIntervalRef.current) {
             clearInterval(jklIntervalRef.current);
             jklIntervalRef.current = null;
@@ -1116,9 +1132,17 @@ export default function MediaPlayer({
         break;
 
       // J: rewind shuttle (each press doubles speed: 1x → 2x → 4x → 8x)
+      // Shift+J: skip back 10s (no shuttle)
       case 'KeyJ': {
         e.preventDefault();
         if (!mediaElement || mediaError || !file) break;
+        if (e.shiftKey) {
+          stopJKLShuttle();
+          const t = Math.max(0, mediaElement.currentTime - 10);
+          performSeek(t);
+          setCurrentTime(t);
+          break;
+        }
         // Clear forward playback interval if running
         if (jklIntervalRef.current) {
           clearInterval(jklIntervalRef.current);
@@ -1151,9 +1175,17 @@ export default function MediaPlayer({
       }
 
       // L: fast-forward shuttle (each press doubles speed: 1x → 2x → 4x → 8x)
+      // Shift+L: skip forward 10s (no shuttle)
       case 'KeyL': {
         e.preventDefault();
         if (!mediaElement || mediaError || !file) break;
+        if (e.shiftKey) {
+          stopJKLShuttle();
+          const t = Math.min(duration, mediaElement.currentTime + 10);
+          performSeek(t);
+          setCurrentTime(t);
+          break;
+        }
         // Stop any backward interval
         if (jklIntervalRef.current) {
           clearInterval(jklIntervalRef.current);

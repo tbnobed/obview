@@ -275,11 +275,11 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
         }
         case 'KeyJ':
           e.preventDefault();
-          seekBoth((leftVideoRef.current?.currentTime ?? 0) - 5);
+          seekBoth((leftVideoRef.current?.currentTime ?? 0) - (e.shiftKey ? 10 : 5));
           break;
         case 'KeyL':
           e.preventDefault();
-          seekBoth((leftVideoRef.current?.currentTime ?? 0) + 5);
+          seekBoth((leftVideoRef.current?.currentTime ?? 0) + (e.shiftKey ? 10 : 5));
           break;
         case 'KeyM': {
           e.preventDefault();

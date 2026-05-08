@@ -528,6 +528,13 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
         }
         case "KeyJ": {
           e.preventDefault();
+          if (e.shiftKey) {
+            stopJKLShuttle();
+            const t = Math.max(0, el.currentTime - 10);
+            el.currentTime = t;
+            setCurrentTime(t);
+            break;
+          }
           if (jklIntervalRef.current) {
             clearInterval(jklIntervalRef.current);
             jklIntervalRef.current = null;
@@ -554,6 +561,15 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
         }
         case "KeyL": {
           e.preventDefault();
+          if (e.shiftKey) {
+            stopJKLShuttle();
+            const t = duration
+              ? Math.min(duration, el.currentTime + 10)
+              : el.currentTime + 10;
+            el.currentTime = t;
+            setCurrentTime(t);
+            break;
+          }
           if (jklIntervalRef.current) {
             clearInterval(jklIntervalRef.current);
             jklIntervalRef.current = null;
