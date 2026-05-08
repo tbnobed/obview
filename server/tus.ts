@@ -109,7 +109,19 @@ async function userCanEditProject(userId: number, projectId: number): Promise<bo
   if (!user) return false;
   if (user.role === "admin") return true;
   const pu = await storage.getProjectUser(projectId, userId);
-  return !!pu && (pu.role === "editor" || pu.role === "admin");
+  if (pu && (pu.role === "editor" || pu.role === "admin")) return true;
+  // Site editors get edit access to any project in a global folder.
+  // Mirrors `userHasProjectEditAccess` in server/routes.ts — without
+  // this branch, the chunked uploader rejects editors who can edit
+  // every other surface of the same project.
+  if (user.role === "editor") {
+    const project = await storage.getProject(projectId);
+    if (project?.folderId != null) {
+      const folder = await storage.getFolder(project.folderId);
+      if (folder?.isGlobal) return true;
+    }
+  }
+  return false;
 }
 
 function safeGroupDir(partsDir: string, groupId: string): string {
