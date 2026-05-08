@@ -291,6 +291,12 @@ function MediaCard({
       queryClient.invalidateQueries({ queryKey: ['/api/projects', file.projectId] });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}/files`] });
+      // Invalidate folder-scoped project lists (folder pages render
+      // project cards with latestVideoFile + fileCount; without this the
+      // card keeps showing the deleted file's thumbnail).
+      queryClient.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).startsWith('/api/folders'),
+      });
       // Invalidate file-specific queries (comments, processing, etc.)
       queryClient.invalidateQueries({ queryKey: ['/api/files', file.id, 'comments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/files', file.id, 'processing'] });

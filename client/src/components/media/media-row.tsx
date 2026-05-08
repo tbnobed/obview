@@ -234,6 +234,9 @@ export default function MediaRow({
       queryClient.invalidateQueries({ queryKey: ["/api/projects", file.projectId] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}/files`] });
+      queryClient.invalidateQueries({
+        predicate: (q) => typeof q.queryKey[0] === "string" && (q.queryKey[0] as string).startsWith("/api/folders"),
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/files", file.id, "comments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/files", file.id, "processing"] });
       queryClient.invalidateQueries({ queryKey: ["/api/files", file.id, "approvals"] });
