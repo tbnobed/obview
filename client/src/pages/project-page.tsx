@@ -416,14 +416,52 @@ export default function ProjectPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <h1 className="text-sm font-semibold text-neutral-900 dark:text-white truncate lg:text-base" title={project.name}>
-                  {project.name}
-                </h1>
-                <span className="hidden md:inline text-xs text-neutral-400 dark:text-gray-500 truncate">
-                  · Updated {formatTimeAgo(new Date(project.updatedAt))}
-                </span>
-              </div>
+              {viewMode === 'player' && selectedFile ? (() => {
+                // While playing a file, show the file name + uploader so
+                // reviewers know exactly what they're looking at. Uploader
+                // resolves from the project members roster (gated by
+                // hasProjectAccess on the server, so non-members never see
+                // this anyway).
+                const uploader = (projectMembers || []).find(
+                  (m: any) => m?.user?.id === selectedFile.uploadedById,
+                )?.user;
+                const uploaderName = uploader?.name || uploader?.username || null;
+                return (
+                  <div className="flex flex-col min-w-0">
+                    <h1
+                      className="text-sm font-semibold text-neutral-900 dark:text-white truncate lg:text-base"
+                      title={selectedFile.filename}
+                      data-testid="player-file-title"
+                    >
+                      {selectedFile.filename}
+                    </h1>
+                    <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-gray-500 truncate">
+                      <span className="truncate" title={project.name}>{project.name}</span>
+                      {uploaderName && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span className="truncate" data-testid="player-file-uploader">
+                            Uploaded by {uploaderName}
+                          </span>
+                        </>
+                      )}
+                      <span className="hidden md:inline" aria-hidden>·</span>
+                      <span className="hidden md:inline truncate">
+                        Updated {formatTimeAgo(new Date(selectedFile.createdAt))}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })() : (
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <h1 className="text-sm font-semibold text-neutral-900 dark:text-white truncate lg:text-base" title={project.name}>
+                    {project.name}
+                  </h1>
+                  <span className="hidden md:inline text-xs text-neutral-400 dark:text-gray-500 truncate">
+                    · Updated {formatTimeAgo(new Date(project.updatedAt))}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
