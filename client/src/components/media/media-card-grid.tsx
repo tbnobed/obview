@@ -674,13 +674,15 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
         filename={file.filename}
       />
 
-      <ShareLinksDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        scopeType="file"
-        scopeId={file.id}
-        scopeName={file.filename}
-      />
+      <span onClick={(e) => e.stopPropagation()}>
+        <ShareLinksDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          scopeType="file"
+          scopeId={file.id}
+          scopeName={file.filename}
+        />
+      </span>
     </Card>
   );
 }

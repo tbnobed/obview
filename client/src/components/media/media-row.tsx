@@ -264,13 +264,15 @@ export default function MediaRow({
         filename={file.filename}
       />
 
-      <ShareLinksDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        scopeType="file"
-        scopeId={file.id}
-        scopeName={file.filename}
-      />
+      <span onClick={(e) => e.stopPropagation()}>
+        <ShareLinksDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          scopeType="file"
+          scopeId={file.id}
+          scopeName={file.filename}
+        />
+      </span>
     </>
   );
 }
