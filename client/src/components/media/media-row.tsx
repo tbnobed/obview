@@ -102,8 +102,7 @@ export default function MediaRow({
 
   const stackVersionMutation = useMutation({
     mutationFn: async ({ targetId, sourceFileId }: { targetId: number; sourceFileId: number }) => {
-      const res = await apiRequest("POST", `/api/files/${targetId}/stack-version`, { sourceFileId });
-      return res.json();
+      return await apiRequest("POST", `/api/files/${targetId}/stack-version`, { sourceFileId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", file.projectId, "files"] });
