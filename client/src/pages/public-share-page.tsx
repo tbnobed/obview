@@ -65,6 +65,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import WatermarkOverlay from "@/components/media/watermark-overlay";
+import SharePlayerControls from "@/components/media/share-player-controls";
 
 type TimeFormat = "Frames" | "Standard" | "Timecode";
 
@@ -866,23 +867,19 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
             {isVideo && (
               <video
                 ref={mediaRef as any}
-                controls={!watermarkOn}
+                controls={false}
                 playsInline
                 preload="metadata"
-                controlsList={watermarkOn ? undefined : "nodownload"}
-                disablePictureInPicture={watermarkOn}
+                controlsList="nodownload"
+                disablePictureInPicture
                 onContextMenu={watermarkOn ? (e) => e.preventDefault() : undefined}
-                onClick={
-                  watermarkOn
-                    ? () => {
-                        const v = mediaRef.current as HTMLVideoElement | null;
-                        if (!v) return;
-                        if (v.paused) v.play().catch(() => {});
-                        else v.pause();
-                      }
-                    : undefined
-                }
-                className="w-full h-full object-contain bg-black"
+                onClick={() => {
+                  const v = mediaRef.current as HTMLVideoElement | null;
+                  if (!v) return;
+                  if (v.paused) v.play().catch(() => {});
+                  else v.pause();
+                }}
+                className="w-full h-full object-contain bg-black cursor-pointer"
                 data-testid="share-video-player"
               >
                 <source src={mediaSrc720} type="video/mp4" />
@@ -953,217 +950,52 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 </span>
               </button>
             )}
-            {watermarkOn && (isVideo || isImage) && (
-              <div
-                className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-2 px-3 py-2 bg-gradient-to-t from-black/80 to-transparent"
-                data-testid="watermark-controls"
-              >
-                {isVideo && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const v = mediaRef.current as HTMLVideoElement | null;
-                      if (!v) return;
-                      if (v.paused) v.play().catch(() => {});
-                      else v.pause();
-                    }}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-white hover:bg-white/10"
-                    aria-label={isPaused ? "Play" : "Pause"}
-                    data-testid="button-watermark-playpause"
-                  >
-                    {isPaused ? <Play className="h-4 w-4" fill="currentColor" /> : <Pause className="h-4 w-4" fill="currentColor" />}
-                  </button>
-                )}
-                {isVideo && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const v = mediaRef.current as HTMLVideoElement | null;
-                      if (!v) return;
-                      v.muted = !v.muted;
-                    }}
-                    className="inline-flex items-center justify-center h-8 w-8 rounded-md text-white hover:bg-white/10"
-                    aria-label={isMuted ? "Unmute" : "Mute"}
-                    data-testid="button-watermark-mute"
-                  >
-                    {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                  </button>
-                )}
-                {isVideo && (
-                  <span className="text-xs text-white/80 tabular-nums select-none">
-                    {fmtTime(currentTime) || "00:00"} / {fmtTime(duration) || "00:00"}
-                  </span>
-                )}
-                <div className="ml-auto" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const target = mediaContainerRef.current as HTMLElement | null;
-                    if (document.fullscreenElement) {
-                      document.exitFullscreen().catch(() => {});
-                    } else {
-                      target?.requestFullscreen?.().catch(() => {});
-                    }
-                  }}
-                  className="inline-flex items-center justify-center h-8 w-8 rounded-md text-white hover:bg-white/10"
-                  title="Fullscreen (F)"
-                  aria-label="Toggle fullscreen"
-                  data-testid="button-fullscreen-watermarked"
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Comment markers rail + prev/next */}
-          {!viewOnly && (isVideo || isAudio) && (() => {
-            const tsComments = (commentsQ.data || []).filter(
-              (c) => !c.parentId && c.timestamp != null,
-            );
-            const sorted = [...tsComments].sort(
-              (a, b) => (a.timestamp || 0) - (b.timestamp || 0),
-            );
-            const activeIdx = activeCommentId
-              ? sorted.findIndex((c) => c.id === activeCommentId)
-              : -1;
-            const goPrev = () => {
-              if (!sorted.length) return;
-              if (activeIdx <= 0) jumpToCommentAt(sorted.length - 1, sorted);
-              else jumpToCommentAt(activeIdx - 1, sorted);
-            };
-            const goNext = () => {
-              if (!sorted.length) return;
-              if (activeIdx === -1 || activeIdx >= sorted.length - 1)
-                jumpToCommentAt(0, sorted);
-              else jumpToCommentAt(activeIdx + 1, sorted);
-            };
-            return (
-              <div
-                className="shrink-0 flex items-center gap-2 px-3 py-2 border-t border-gray-800 bg-black"
-                data-testid="share-marker-rail"
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-gray-400 hover:text-gray-100 hover:bg-gray-800"
-                  onClick={goPrev}
-                  disabled={sorted.length === 0}
-                  title="Previous comment"
-                  data-testid="button-prev-comment"
-                >
-                  <ChevronUp className="h-4 w-4" />
-                </Button>
-                <div
-                  className="relative flex-1 h-5 cursor-pointer"
-                  onClick={(e) => {
-                    if (!duration) return;
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                    seekTo(duration * pos);
-                  }}
-                  data-testid="share-marker-track"
-                >
-                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-gray-800" />
-                  {duration > 0 && (
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 h-1 rounded-l-full bg-primary/70"
-                      style={{ left: 0, width: `${(currentTime / duration) * 100}%` }}
-                    />
-                  )}
-                  {duration > 0 && inPoint !== null && outPoint !== null && outPoint > inPoint && (
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 h-2 bg-amber-400/50 border-l-2 border-r-2 border-amber-400 pointer-events-none"
-                      style={{
-                        left: `${(inPoint / duration) * 100}%`,
-                        width: `${((outPoint - inPoint) / duration) * 100}%`,
-                      }}
-                      title={`Range: ${fmtTime(inPoint)} → ${fmtTime(outPoint)}`}
-                      data-testid="public-in-out-range"
-                    />
-                  )}
-                  {duration > 0 && inPoint !== null && (
-                    <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none"
-                      style={{ left: `${(inPoint / duration) * 100}%` }}
-                      title={`In: ${fmtTime(inPoint)}`}
-                    />
-                  )}
-                  {duration > 0 && outPoint !== null && (
-                    <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none"
-                      style={{ left: `${(outPoint / duration) * 100}%` }}
-                      title={`Out: ${fmtTime(outPoint)}`}
-                    />
-                  )}
-                  {/* Range bars for comments with inPoint/outPoint */}
-                  {duration > 0 && sorted.map((c) => {
-                    const ip = c.inPoint;
-                    const op = c.outPoint;
-                    if (ip == null || op == null || op <= ip) return null;
-                    const left = (ip / duration) * 100;
-                    const width = ((op - ip) / duration) * 100;
-                    const isActive = activeCommentId === c.id;
-                    return (
-                      <div
-                        key={`range-${c.id}`}
-                        className={cn(
-                          "absolute top-1/2 -translate-y-1/2 h-1.5 rounded-sm pointer-events-none",
-                          isActive ? "bg-blue-500/70" : "bg-amber-400/70",
-                        )}
-                        style={{ left: `${left}%`, width: `${Math.max(width, 0.3)}%` }}
-                        title={`Range: ${fmtTime(ip)} → ${fmtTime(op)}`}
-                        data-testid={`public-comment-range-${c.id}`}
-                      />
-                    );
-                  })}
-                  {duration > 0 && sorted.map((c) => {
-                    const pos = ((c.timestamp || 0) / duration) * 100;
-                    const isActive = activeCommentId === c.id;
-                    const initial = (c.authorName || "A").charAt(0).toUpperCase();
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className={cn(
-                          "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-5 rounded-full border-2 border-white shadow flex items-center justify-center text-[10px] font-bold text-black transition-transform hover:scale-110",
-                          isActive ? "bg-blue-500 text-white" : "bg-amber-400",
-                        )}
-                        style={{ left: `${pos}%` }}
-                        title={`${c.authorName || "Anonymous"}: ${c.content.slice(0, 80)}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const idx = sorted.findIndex((x) => x.id === c.id);
-                          jumpToCommentAt(idx, sorted);
-                        }}
-                        data-testid={`share-marker-${c.id}`}
-                      >
-                        {initial}
-                      </button>
-                    );
-                  })}
-                </div>
-                <span className="text-[11px] font-mono text-gray-400 tabular-nums">
-                  {sorted.length === 0
-                    ? "0"
-                    : activeIdx >= 0
-                      ? `${activeIdx + 1}/${sorted.length}`
-                      : `${sorted.length}`}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-gray-400 hover:text-gray-100 hover:bg-gray-800"
-                  onClick={goNext}
-                  disabled={sorted.length === 0}
-                  title="Next comment"
-                  data-testid="button-next-comment"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </div>
-            );
-          })()}
+          {/* Custom player controls — matches the authenticated MediaPlayer */}
+          {(isVideo || isAudio) && (
+            <SharePlayerControls
+              mediaRef={mediaRef}
+              containerRef={mediaContainerRef}
+              fileId={file.id}
+              fileType={isVideo ? "video" : "audio"}
+              duration={duration}
+              currentTime={currentTime}
+              isPaused={isPaused}
+              isMuted={isMuted}
+              inPoint={inPoint}
+              outPoint={outPoint}
+              comments={
+                viewOnly
+                  ? []
+                  : (commentsQ.data || []).map((c) => ({
+                      id: c.id,
+                      parentId: c.parentId ?? null,
+                      timestamp: c.timestamp ?? null,
+                      inPoint: (c as any).inPoint ?? null,
+                      outPoint: (c as any).outPoint ?? null,
+                      authorName: c.authorName ?? null,
+                      content: c.content ?? null,
+                    }))
+              }
+              activeCommentId={activeCommentId}
+              onCommentClick={(id) => {
+                const tsComments = (commentsQ.data || []).filter(
+                  (c) => !c.parentId && c.timestamp != null,
+                );
+                const sorted = [...tsComments].sort(
+                  (a, b) => (a.timestamp || 0) - (b.timestamp || 0),
+                );
+                const idx = sorted.findIndex((x) => x.id === id);
+                if (idx >= 0) jumpToCommentAt(idx, sorted);
+              }}
+              watermarkOn={watermarkOn}
+              onSeek={(t) => seekTo(t)}
+            />
+          )}
+
+          {/* (Legacy comment-marker rail removed — markers now ride on the
+              new SharePlayerControls progress bar to match the auth player.) */}
 
           {/* Timecode bar */}
           {(isVideo || isAudio) && (

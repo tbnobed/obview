@@ -59,6 +59,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TranscriptView from "@/components/media/transcript-view";
 import AIInsightsView from "@/components/media/ai-insights-view";
 import WatermarkOverlay from "@/components/media/watermark-overlay";
+import SharePlayerControls from "@/components/media/share-player-controls";
 
 type ShareInfo = {
   scopeType: "project" | "folder" | "file";
@@ -1349,23 +1350,19 @@ function FileViewer({
           {isVideo && (
             <video
               ref={mediaRef as any}
-              controls={!watermarkLabel}
+              controls={false}
               playsInline
               preload="metadata"
-              controlsList={watermarkLabel ? undefined : "nodownload"}
-              disablePictureInPicture={!!watermarkLabel}
+              controlsList="nodownload"
+              disablePictureInPicture
               onContextMenu={watermarkLabel ? (e) => e.preventDefault() : undefined}
-              onClick={
-                watermarkLabel
-                  ? () => {
-                      const v = mediaRef.current as HTMLVideoElement | null;
-                      if (!v) return;
-                      if (v.paused) v.play().catch(() => {});
-                      else v.pause();
-                    }
-                  : undefined
-              }
-              className="w-full h-full object-contain bg-black"
+              onClick={() => {
+                const v = mediaRef.current as HTMLVideoElement | null;
+                if (!v) return;
+                if (v.paused) v.play().catch(() => {});
+                else v.pause();
+              }}
+              className="w-full h-full object-contain bg-black cursor-pointer"
               data-testid="share-video-player"
             >
               <source src={mediaSrc720} type="video/mp4" />
@@ -1435,7 +1432,7 @@ function FileViewer({
               </span>
             </button>
           )}
-          {watermarkLabel && (isVideo || isImage) && (
+          {false && watermarkLabel && (isVideo || isImage) && (
             <div
               className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-2 px-3 py-2 bg-gradient-to-t from-black/80 to-transparent"
               data-testid="watermark-controls"
@@ -1498,172 +1495,44 @@ function FileViewer({
           )}
         </div>
 
-        {/* Comment markers rail + prev/next */}
-        {(isVideo || isAudio) && (() => {
-          const tsComments = (commentsQ.data || []).filter(
-            (c) => !c.parentId && c.timestamp != null,
-          );
-          const sorted = [...tsComments].sort(
-            (a, b) => (a.timestamp || 0) - (b.timestamp || 0),
-          );
-          const activeIdx = activeCommentId
-            ? sorted.findIndex((c) => c.id === activeCommentId)
-            : -1;
-          const goPrev = () => {
-            if (!sorted.length) return;
-            if (activeIdx <= 0) jumpToCommentAt(sorted.length - 1, sorted);
-            else jumpToCommentAt(activeIdx - 1, sorted);
-          };
-          const goNext = () => {
-            if (!sorted.length) return;
-            if (activeIdx === -1 || activeIdx >= sorted.length - 1)
-              jumpToCommentAt(0, sorted);
-            else jumpToCommentAt(activeIdx + 1, sorted);
-          };
-          return (
-            <div
-              className={cn(
-                "shrink-0 flex items-center gap-2 px-3 py-2",
-                fullScreen
-                  ? "border-t border-gray-800 bg-black"
-                  : "rounded-md bg-neutral-50 dark:bg-gray-900 border border-neutral-200 dark:border-gray-800",
-              )}
-              data-testid="share-marker-rail"
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-neutral-500 dark:text-gray-400"
-                onClick={goPrev}
-                disabled={sorted.length === 0}
-                title="Previous comment (Shift+P)"
-                data-testid="button-prev-comment"
-              >
-                <ChevronUp className="h-4 w-4" />
-              </Button>
-              <div
-                className="relative flex-1 h-5 cursor-pointer"
-                onClick={(e) => {
-                  if (!duration) return;
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                  seekTo(duration * pos);
-                }}
-                onMouseMove={(e) => {
-                  if (!duration || !isVideo) return;
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                  const previewWidth = 208;
-                  const previewHeight = 150;
-                  const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, e.clientX - previewWidth / 2));
-                  const top = rect.top - previewHeight - 12;
-                  setScrubPreview({ time: duration * pos, left, top });
-                }}
-                onMouseLeave={() => setScrubPreview(null)}
-                data-testid="share-marker-track"
-              >
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-neutral-200 dark:bg-gray-800" />
-                {duration > 0 && (
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 h-1 rounded-l-full bg-primary/60 dark:bg-[#026d55]/70"
-                    style={{ left: 0, width: `${(currentTime / duration) * 100}%` }}
-                  />
-                )}
-                {/* In/Out range overlay */}
-                {duration > 0 && inPoint !== null && outPoint !== null && outPoint > inPoint && (
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 h-2 bg-amber-400/50 border-l-2 border-r-2 border-amber-400 pointer-events-none"
-                    style={{
-                      left: `${(inPoint / duration) * 100}%`,
-                      width: `${((outPoint - inPoint) / duration) * 100}%`,
-                    }}
-                    title={`Range: ${fmtTime(inPoint)} → ${fmtTime(outPoint)}`}
-                    data-testid="share-in-out-range"
-                  />
-                )}
-                {duration > 0 && inPoint !== null && (
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none"
-                    style={{ left: `${(inPoint / duration) * 100}%` }}
-                    title={`In: ${fmtTime(inPoint)}`}
-                  />
-                )}
-                {duration > 0 && outPoint !== null && (
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none"
-                    style={{ left: `${(outPoint / duration) * 100}%` }}
-                    title={`Out: ${fmtTime(outPoint)}`}
-                  />
-                )}
-                {/* Range bars for comments with inPoint/outPoint */}
-                {duration > 0 && sorted.map((c) => {
-                  const ip = (c as any).inPoint;
-                  const op = (c as any).outPoint;
-                  if (ip == null || op == null || op <= ip) return null;
-                  const left = (ip / duration) * 100;
-                  const width = ((op - ip) / duration) * 100;
-                  const isActive = activeCommentId === c.id;
-                  return (
-                    <div
-                      key={`range-${c.id}`}
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 h-1.5 rounded-sm pointer-events-none",
-                        isActive ? "bg-blue-500/70" : "bg-amber-400/70",
-                      )}
-                      style={{ left: `${left}%`, width: `${Math.max(width, 0.3)}%` }}
-                      title={`Range: ${fmtTime(ip)} → ${fmtTime(op)}`}
-                      data-testid={`share-comment-range-${c.id}`}
-                    />
-                  );
-                })}
-                {duration > 0 && sorted.map((c) => {
-                  const pos = ((c.timestamp || 0) / duration) * 100;
-                  const isActive = activeCommentId === c.id;
-                  const initial =
-                    (c.user?.name || c.authorName || "A").charAt(0).toUpperCase();
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-5 w-5 rounded-full border-2 border-white shadow flex items-center justify-center text-[10px] font-bold text-black transition-transform hover:scale-110",
-                        isActive ? "bg-blue-500 text-white" : "bg-amber-400",
-                      )}
-                      style={{ left: `${pos}%` }}
-                      title={`${c.user?.name || c.authorName || "Anonymous"}: ${c.content.slice(0, 80)}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const idx = sorted.findIndex((x) => x.id === c.id);
-                        jumpToCommentAt(idx, sorted);
-                      }}
-                      data-testid={`share-marker-${c.id}`}
-                    >
-                      {initial}
-                    </button>
-                  );
-                })}
-              </div>
-              <span className="text-[11px] font-mono text-neutral-500 dark:text-gray-400 tabular-nums">
-                {sorted.length === 0
-                  ? "0"
-                  : activeIdx >= 0
-                    ? `${activeIdx + 1}/${sorted.length}`
-                    : `${sorted.length}`}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-neutral-500 dark:text-gray-400"
-                onClick={goNext}
-                disabled={sorted.length === 0}
-                title="Next comment (Shift+N)"
-                data-testid="button-next-comment"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </div>
-          );
-        })()}
+        {/* Custom player controls — matches the authenticated MediaPlayer */}
+        {(isVideo || isAudio) && (
+          <SharePlayerControls
+            mediaRef={mediaRef}
+            containerRef={mediaContainerRef}
+            fileId={file.id}
+            fileType={isVideo ? "video" : "audio"}
+            duration={duration}
+            currentTime={currentTime}
+            isPaused={isPaused}
+            isMuted={isMuted}
+            inPoint={inPoint}
+            outPoint={outPoint}
+            comments={(commentsQ.data || []).map((c) => ({
+              id: c.id,
+              parentId: c.parentId ?? null,
+              timestamp: c.timestamp ?? null,
+              inPoint: (c as any).inPoint ?? null,
+              outPoint: (c as any).outPoint ?? null,
+              authorName: (c.user?.name || c.authorName) ?? null,
+              content: c.content ?? null,
+            }))}
+            activeCommentId={activeCommentId}
+            onCommentClick={(id) => {
+              const tsComments = (commentsQ.data || []).filter(
+                (c) => !c.parentId && c.timestamp != null,
+              );
+              const sorted = [...tsComments].sort(
+                (a, b) => (a.timestamp || 0) - (b.timestamp || 0),
+              );
+              const idx = sorted.findIndex((x) => x.id === id);
+              if (idx >= 0) jumpToCommentAt(idx, sorted);
+            }}
+            watermarkOn={!!watermarkLabel}
+            onSeek={(t) => seekTo(t)}
+          />
+        )}
+
 
         {/* Timecode bar — fullscreen + playable media only */}
         {fullScreen && (isVideo || isAudio) && (
