@@ -12,6 +12,11 @@ export const DRAG_MIME = "application/x-obviu-dnd";
 
 export type DragPayload =
   | { type: "project"; id: number; sourceFolderId: number | null }
+  // Multi-project drag. Drop targets that accept "project" should also
+  // accept "projects" and iterate `ids`. sourceFolderId is the folder
+  // the FIRST selected project came from — used only as a hint so the
+  // target can short-circuit a no-op drop on the same folder.
+  | { type: "projects"; ids: number[]; sourceFolderId: number | null }
   | { type: "folder"; id: number; sourceParentFolderId: number | null; isGlobal: boolean }
   | { type: "file"; id: number; sourceProjectId: number }
   // Multi-file drag (project-scoped). Drop targets that already accept
@@ -24,7 +29,10 @@ export function setDragPayload(e: React.DragEvent, payload: DragPayload) {
   try {
     e.dataTransfer.setData(DRAG_MIME, JSON.stringify(payload));
     // Some browsers also need a text/plain fallback to allow the drag at all.
-    const idHint = payload.type === "files" ? payload.ids.join(",") : String(payload.id);
+    const idHint =
+      payload.type === "files" || payload.type === "projects"
+        ? payload.ids.join(",")
+        : String(payload.id);
     e.dataTransfer.setData("text/plain", `${payload.type}:${idHint}`);
     e.dataTransfer.effectAllowed = "move";
   } catch {

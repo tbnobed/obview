@@ -17,7 +17,7 @@ import ProjectCard from "@/components/projects/project-card";
 import ProjectRow from "@/components/projects/project-row";
 import OwnerChip from "@/components/projects/owner-chip";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Search, FileVideo, Loader2, ChevronRight, Globe, User as UserIcon } from "lucide-react";
+import { Plus, Search, FileVideo, Loader2, ChevronRight, Globe, User as UserIcon, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useViewMode } from "@/hooks/use-view-mode";
@@ -69,6 +69,21 @@ export default function ProjectsPage() {
   // gap that contributed to the 04-30 accidental delete).
   const [ownerScope, setOwnerScope] = useState<"all" | "mine">("all");
   const [viewMode, setViewMode] = useViewMode("projects", "grid");
+  // Multi-select state for bulk drag-into-folder. Lives at the page
+  // level so a Yours-group selection can be combined with a Global
+  // selection in the same drag — and so the "N selected" bar always
+  // reflects the total no matter which group rendered the card.
+  const [selectedSet, setSelectedSet] = useState<Set<number>>(new Set());
+  const selectedIds = useMemo(() => Array.from(selectedSet), [selectedSet]);
+  const toggleSelect = (id: number) => {
+    setSelectedSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedSet(new Set());
 
   const { data: projects, isLoading, error } = useProjects();
   const { data: folders, isLoading: foldersLoading } = useFolders();
@@ -281,6 +296,9 @@ export default function ProjectsPage() {
                   groupKey="yours"
                   defaultOpen
                   viewMode={viewMode}
+                  selectedSet={selectedSet}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleSelect}
                   header={
                     <div className="flex items-center gap-2">
                       <span
@@ -304,6 +322,9 @@ export default function ProjectsPage() {
                   groupKey="global"
                   defaultOpen
                   viewMode={viewMode}
+                  selectedSet={selectedSet}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleSelect}
                   header={
                     <div className="flex items-center gap-2">
                       <span
@@ -330,6 +351,9 @@ export default function ProjectsPage() {
                   key={`owner-${g.ownerId}`}
                   groupKey={`owner-${g.ownerId}`}
                   defaultOpen={false}
+                  selectedSet={selectedSet}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleSelect}
                   header={
                     <OwnerChip
                       ownerId={g.ownerId}
@@ -349,13 +373,25 @@ export default function ProjectsPage() {
               style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
             >
               {filteredProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  isSelected={selectedSet.has(project.id)}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleSelect}
+                />
               ))}
             </div>
           ) : (
             <div className="flex flex-col gap-2">
               {filteredProjects.map((project) => (
-                <ProjectRow key={project.id} project={project} />
+                <ProjectRow
+                  key={project.id}
+                  project={project}
+                  isSelected={selectedSet.has(project.id)}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleSelect}
+                />
               ))}
             </div>
           )
@@ -397,6 +433,30 @@ export default function ProjectsPage() {
             )}
           </div>
         )}
+
+        {selectedSet.size > 0 && (
+          <div
+            className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 flex items-center gap-3 rounded-full border border-border/60 bg-background/95 px-4 py-2 shadow-lg backdrop-blur-sm"
+            data-testid="project-multi-select-bar"
+          >
+            <span className="text-sm font-medium">
+              {selectedSet.size} project{selectedSet.size === 1 ? "" : "s"} selected
+            </span>
+            <span className="hidden text-xs text-muted-foreground sm:inline">
+              Drag any selected card onto a folder to move them all
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={clearSelection}
+              data-testid="project-multi-select-clear"
+            >
+              <X className="mr-1 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
@@ -413,6 +473,9 @@ function ProjectGroup({
   defaultOpen,
   accent,
   viewMode = "grid",
+  selectedSet,
+  selectedIds,
+  onToggleSelect,
 }: {
   groupKey: string;
   header: React.ReactNode;
@@ -421,6 +484,9 @@ function ProjectGroup({
   defaultOpen: boolean;
   accent?: string;
   viewMode?: "grid" | "list";
+  selectedSet?: Set<number>;
+  selectedIds?: number[];
+  onToggleSelect?: (id: number) => void;
 }) {
   const [open, setOpen] = useGroupOpen(groupKey, defaultOpen);
   const regionId = `project-group-region-${groupKey}`;
@@ -457,13 +523,25 @@ function ProjectGroup({
             style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
           >
             {items.map((p) => (
-              <ProjectCard key={p.id} project={p} />
+              <ProjectCard
+                key={p.id}
+                project={p}
+                isSelected={selectedSet?.has(p.id)}
+                selectedIds={selectedIds}
+                onToggleSelect={onToggleSelect}
+              />
             ))}
           </div>
         ) : (
           <div id={regionId} role="region" className="flex flex-col gap-2">
             {items.map((p) => (
-              <ProjectRow key={p.id} project={p} />
+              <ProjectRow
+                key={p.id}
+                project={p}
+                isSelected={selectedSet?.has(p.id)}
+                selectedIds={selectedIds}
+                onToggleSelect={onToggleSelect}
+              />
             ))}
           </div>
         )

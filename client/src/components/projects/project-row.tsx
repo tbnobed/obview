@@ -18,6 +18,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
 import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
+import { Checkbox } from "@/components/ui/checkbox";
 import OwnerChip from "@/components/projects/owner-chip";
 import { getOwnerColor } from "@/lib/owner-color";
 
@@ -30,12 +31,15 @@ type ProjectWithVideo = Project & {
 
 interface ProjectRowProps {
   project: ProjectWithVideo;
+  isSelected?: boolean;
+  selectedIds?: number[];
+  onToggleSelect?: (id: number, e?: React.MouseEvent) => void;
 }
 
 // Compact list-row variant of ProjectCard. Keeps drag-source +
 // delete-confirmation behavior but drops the heavy scrub thumb so
 // list view stays dense and fast on long folders.
-export default function ProjectRow({ project }: ProjectRowProps) {
+export default function ProjectRow({ project, isSelected, selectedIds, onToggleSelect }: ProjectRowProps) {
   const [_, navigate] = useLocation();
   const { user } = useAuth();
   const deleteProjectMutation = useDeleteProject();
@@ -70,11 +74,19 @@ export default function ProjectRow({ project }: ProjectRowProps) {
 
   const onDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
-    setDragPayload(e, {
-      type: "project",
-      id: project.id,
-      sourceFolderId: project.folderId ?? null,
-    });
+    if (isSelected && selectedIds && selectedIds.length > 1) {
+      setDragPayload(e, {
+        type: "projects",
+        ids: selectedIds,
+        sourceFolderId: project.folderId ?? null,
+      });
+    } else {
+      setDragPayload(e, {
+        type: "project",
+        id: project.id,
+        sourceFolderId: project.folderId ?? null,
+      });
+    }
   };
 
   const onClick = (e: React.MouseEvent) => {
@@ -89,6 +101,7 @@ export default function ProjectRow({ project }: ProjectRowProps) {
         className={cn(
           "group flex items-center gap-3 px-3 py-2.5 rounded-md border-l-4 border border-neutral-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:shadow-sm hover:border-primary-200 dark:hover:border-[#10a37f]/40 cursor-pointer transition-colors",
           isOwner && "ring-1 ring-[#026d55]/30 dark:ring-[#026d55]/40",
+          isSelected && "ring-2 ring-primary dark:ring-[#10a37f]",
         )}
         style={{ borderLeftColor: accentColor }}
         draggable
@@ -97,6 +110,27 @@ export default function ProjectRow({ project }: ProjectRowProps) {
         onClick={onClick}
         data-testid={`project-row-${project.id}`}
       >
+        {onToggleSelect && (
+          <div
+            className={cn(
+              "shrink-0 transition-opacity",
+              isSelected ? "opacity-100" : "opacity-50 group-hover:opacity-100"
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleSelect(project.id, e);
+            }}
+            onPointerDownCapture={(e) => e.stopPropagation()}
+            data-testid={`project-row-select-${project.id}`}
+          >
+            <Checkbox
+              checked={!!isSelected}
+              onCheckedChange={() => onToggleSelect(project.id)}
+              aria-label={isSelected ? "Deselect project" : "Select project"}
+            />
+          </div>
+        )}
         <div className="h-10 w-14 shrink-0 rounded bg-neutral-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
           {project.customThumbnailPath ? (
             <img

@@ -24,6 +24,7 @@ import {
 } from "@/lib/drag-drop";
 import {
   useMoveProjectToFolder,
+  useMoveProjectsToFolder,
   useMoveFolderUnderParent,
 } from "@/hooks/use-drag-move";
 import type { Folder, Project, File as MediaFile } from "@shared/schema";
@@ -50,11 +51,13 @@ type ProjectWithVideo = Project & { latestVideoFile?: MediaFile };
 // a drop target (drop projects/folders into it).
 function SubfolderDropCard({ sf }: { sf: Folder }) {
   const moveProject = useMoveProjectToFolder();
+  const moveProjects = useMoveProjectsToFolder();
   const moveFolder = useMoveFolderUnderParent();
   const [isOver, setIsOver] = useState(false);
   const accepts = (p: DragPayload | null): boolean => {
     if (!p) return false;
     if (p.type === "project") return p.sourceFolderId !== sf.id;
+    if (p.type === "projects") return p.ids.length > 0 && p.sourceFolderId !== sf.id;
     if (p.type === "folder") {
       if (p.id === sf.id) return false;
       if (p.sourceParentFolderId === sf.id) return false;
@@ -96,6 +99,7 @@ function SubfolderDropCard({ sf }: { sf: Folder }) {
         setIsOver(false);
         clearDragPayload();
         if (p!.type === "project") moveProject.mutate({ projectId: p!.id, folderId: sf.id });
+        else if (p!.type === "projects") moveProjects.mutate({ projectIds: p!.ids, folderId: sf.id });
         else if (p!.type === "folder") moveFolder.mutate({ folderId: p!.id, parentFolderId: sf.id });
       }}
     >
@@ -169,11 +173,13 @@ export default function FolderPage() {
   // target so a user can drag a project (or folder) anywhere in the
   // grid and it will land inside the folder they're viewing.
   const moveProject = useMoveProjectToFolder();
+  const moveProjectsBulk = useMoveProjectsToFolder();
   const moveFolderUnderParent = useMoveFolderUnderParent();
   const [isPageDragOver, setIsPageDragOver] = useState(false);
   const acceptsAtPageLevel = (p: DragPayload | null): boolean => {
     if (!p || !folder) return false;
     if (p.type === "project") return p.sourceFolderId !== folder.id;
+    if (p.type === "projects") return p.ids.length > 0 && p.sourceFolderId !== folder.id;
     if (p.type === "folder") {
       if (p.id === folder.id) return false;
       if (p.sourceParentFolderId === folder.id) return false;
@@ -195,6 +201,7 @@ export default function FolderPage() {
     setIsPageDragOver(false);
     clearDragPayload();
     if (p!.type === "project") moveProject.mutate({ projectId: p!.id, folderId: folder.id });
+    else if (p!.type === "projects") moveProjectsBulk.mutate({ projectIds: p!.ids, folderId: folder.id });
     else if (p!.type === "folder") moveFolderUnderParent.mutate({ folderId: p!.id, parentFolderId: folder.id });
   };
 

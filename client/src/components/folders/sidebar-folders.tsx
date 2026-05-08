@@ -59,6 +59,7 @@ import {
 } from "@/lib/drag-drop";
 import {
   useMoveProjectToFolder,
+  useMoveProjectsToFolder,
   useMoveFolderUnderParent,
   useMoveFileToProject,
 } from "@/hooks/use-drag-move";
@@ -479,6 +480,7 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
   const toggleGlobal = useToggleFolderGlobal();
   const deleteFolder = useDeleteFolder();
   const moveProject = useMoveProjectToFolder();
+  const moveProjects = useMoveProjectsToFolder();
   const moveFolder = useMoveFolderUnderParent();
   const isToggling =
     toggleGlobal.isPending && toggleGlobal.variables?.folderId === folder.id;
@@ -508,6 +510,7 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
       if (p.sourceParentFolderId === folder.id) return false;
       return true;
     }
+    if (p.type === "projects") return p.ids.length > 0 && p.sourceFolderId !== folder.id;
     return false; // files only land on projects, not folders
   };
   const onRowDragOver = (e: React.DragEvent) => {
@@ -526,6 +529,8 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
     clearDragPayload();
     if (payload!.type === "project") {
       moveProject.mutate({ projectId: payload!.id, folderId: folder.id });
+    } else if (payload!.type === "projects") {
+      moveProjects.mutate({ projectIds: payload!.ids, folderId: folder.id });
     } else if (payload!.type === "folder") {
       moveFolder.mutate({ folderId: payload!.id, parentFolderId: folder.id });
     }

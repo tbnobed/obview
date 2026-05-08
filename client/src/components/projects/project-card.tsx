@@ -22,6 +22,7 @@ import { useDeleteProject } from "@/hooks/use-projects";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
+import { Checkbox } from "@/components/ui/checkbox";
 import OwnerChip from "@/components/projects/owner-chip";
 import { getOwnerColor } from "@/lib/owner-color";
 
@@ -37,9 +38,16 @@ type ProjectWithVideo = Project & {
 
 interface ProjectCardProps {
   project: ProjectWithVideo;
+  // Multi-select integration. When `onToggleSelect` is provided the card
+  // shows a checkbox and participates in bulk drag — dragging any
+  // selected card sends a "projects" payload with every selected id so
+  // a single drop moves the whole batch.
+  isSelected?: boolean;
+  selectedIds?: number[];
+  onToggleSelect?: (id: number, e?: React.MouseEvent) => void;
 }
 
-export default function ProjectCard({ project }: ProjectCardProps) {
+export default function ProjectCard({ project, isSelected, selectedIds, onToggleSelect }: ProjectCardProps) {
   const [_, navigate] = useLocation();
   const { user } = useAuth();
   const deleteProjectMutation = useDeleteProject();
@@ -136,11 +144,19 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   // follow, so plain clicks still navigate as expected.
   const onDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
-    setDragPayload(e, {
-      type: "project",
-      id: project.id,
-      sourceFolderId: project.folderId ?? null,
-    });
+    if (isSelected && selectedIds && selectedIds.length > 1) {
+      setDragPayload(e, {
+        type: "projects",
+        ids: selectedIds,
+        sourceFolderId: project.folderId ?? null,
+      });
+    } else {
+      setDragPayload(e, {
+        type: "project",
+        id: project.id,
+        sourceFolderId: project.folderId ?? null,
+      });
+    }
   };
   const onCardClick = (e: React.MouseEvent) => {
     // Avoid navigating when the click bubbled from a button/dialog
@@ -159,8 +175,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     <>
       <Card
         className={cn(
-          "cursor-pointer transition-shadow hover:shadow-md text-sm active:opacity-70 border-l-4 relative overflow-hidden",
-          isOwner && "ring-1 ring-[#026d55]/30 dark:ring-[#026d55]/40"
+          "group cursor-pointer transition-shadow hover:shadow-md text-sm active:opacity-70 border-l-4 relative overflow-hidden",
+          isOwner && "ring-1 ring-[#026d55]/30 dark:ring-[#026d55]/40",
+          isSelected && "ring-2 ring-primary dark:ring-[#10a37f] shadow-md"
         )}
         style={{ borderLeftColor: accentColor }}
         draggable
@@ -169,6 +186,27 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         onClick={onCardClick}
         data-testid={`project-card-${project.id}`}
       >
+        {onToggleSelect && (
+          <div
+            className={cn(
+              "absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm transition-opacity",
+              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleSelect(project.id, e);
+            }}
+            onPointerDownCapture={(e) => e.stopPropagation()}
+            data-testid={`project-select-toggle-${project.id}`}
+          >
+            <Checkbox
+              checked={!!isSelected}
+              onCheckedChange={() => onToggleSelect(project.id)}
+              aria-label={isSelected ? "Deselect project" : "Select project"}
+            />
+          </div>
+        )}
         <CardHeader className="pb-1 px-3 pt-3">
           <div className="flex justify-between items-start gap-2">
             <CardTitle className="text-sm font-semibold line-clamp-1">{project.name}</CardTitle>

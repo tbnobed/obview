@@ -45,6 +45,59 @@ export function useMoveProjectToFolder() {
   });
 }
 
+// Bulk variant of useMoveProjectToFolder. Mirrors useMoveFilesToFolder:
+// fires N parallel PATCHes and a single invalidation + toast at the end.
+export function useMoveProjectsToFolder() {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({
+      projectIds,
+      folderId,
+    }: {
+      projectIds: number[];
+      folderId: number | null;
+    }) => {
+      const results = await Promise.allSettled(
+        projectIds.map((id) =>
+          apiRequest("PATCH", `/api/projects/${id}`, { folderId }),
+        ),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      return { total: projectIds.length, failed };
+    },
+    onSuccess: (res, vars) => {
+      const refetchType = "all" as const;
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"], refetchType });
+      queryClient.invalidateQueries({ queryKey: ["/api/folders"], refetchType });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey?.[0];
+          return typeof k === "string" && k.startsWith("/api/folders/") && k.endsWith("/projects");
+        },
+        refetchType,
+      });
+      const moved = res.total - res.failed;
+      if (res.failed === 0) {
+        toast({
+          title:
+            vars.folderId == null
+              ? `Moved ${moved} project${moved === 1 ? "" : "s"} out of folder`
+              : `Moved ${moved} project${moved === 1 ? "" : "s"}`,
+        });
+      } else {
+        toast({
+          title: `Moved ${moved} of ${res.total} projects`,
+          description: `${res.failed} could not be moved.`,
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (err: Error) => {
+      toast({ title: "Couldn't move projects", description: err.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useMoveFolderUnderParent() {
   const { toast } = useToast();
   return useMutation({
