@@ -35,7 +35,16 @@ import {
   Check,
   Filter,
   Upload as UploadIcon,
+  LogIn,
 } from "lucide-react";
+
+const APP_BASE = (import.meta.env.VITE_APP_BASE_URL as string | undefined)
+  ?.trim().replace(/\/+$/, "") ?? "";
+
+function signInHref(token: string): string {
+  const returnTo = `/s/${token}${typeof window !== "undefined" ? window.location.search : ""}`;
+  return `${APP_BASE}/auth?returnTo=${encodeURIComponent(returnTo)}`;
+}
 import { queryClient } from "@/lib/queryClient";
 import {
   AnnotationCanvas,
@@ -372,6 +381,15 @@ export default function MultiSharePage() {
                 <Download className="h-3.5 w-3.5 mr-1.5" /> Download
               </a>
             )}
+            {!authLoading && !user && (
+              <a
+                className="inline-flex items-center text-xs border border-gray-700 text-gray-200 rounded-md px-3 py-1.5 hover:bg-gray-800"
+                href={signInHref(token)}
+                data-testid="link-sign-in-active"
+              >
+                <LogIn className="h-3.5 w-3.5 mr-1.5" /> Sign in
+              </a>
+            )}
             <ThemeToggle />
           </div>
         </header>
@@ -414,6 +432,15 @@ export default function MultiSharePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {!authLoading && !user && (
+              <a
+                className="inline-flex items-center text-xs border border-neutral-300 dark:border-gray-700 text-neutral-700 dark:text-gray-200 rounded-md px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-gray-800"
+                href={signInHref(token)}
+                data-testid="link-sign-in-list"
+              >
+                <LogIn className="h-3.5 w-3.5 mr-1.5" /> Sign in
+              </a>
+            )}
             <ThemeToggle />
           </div>
         </div>

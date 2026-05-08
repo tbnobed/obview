@@ -52,7 +52,16 @@ import {
   Reply,
   Check,
   Filter,
+  LogIn,
 } from "lucide-react";
+
+const APP_BASE = (import.meta.env.VITE_APP_BASE_URL as string | undefined)
+  ?.trim().replace(/\/+$/, "") ?? "";
+
+function signInHref(token: string): string {
+  const returnTo = `/share/${token}${typeof window !== "undefined" ? window.location.search : ""}`;
+  return `${APP_BASE}/auth?returnTo=${encodeURIComponent(returnTo)}`;
+}
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   AnnotationCanvas,
@@ -254,6 +263,7 @@ export default function PublicSharePage() {
 }
 
 function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) {
+  const { user, isLoading: authLoading } = useAuth();
   const viewOnly =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("viewOnly") === "true";
@@ -785,6 +795,15 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          {!authLoading && !user && (
+            <a
+              className="inline-flex items-center text-xs border border-gray-700 text-gray-200 rounded-md px-2.5 py-1 hover:bg-gray-800 h-7"
+              href={signInHref(token)}
+              data-testid="link-sign-in-share"
+            >
+              <LogIn className="h-3.5 w-3.5 mr-1" /> Sign in
+            </a>
+          )}
           {!viewOnly && (
           <Dialog open={rcOpen} onOpenChange={setRcOpen}>
             <DialogTrigger asChild>
