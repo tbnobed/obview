@@ -1530,6 +1530,7 @@ function FileViewer({
             }}
             watermarkOn={!!watermarkLabel}
             onSeek={(t) => seekTo(t)}
+            scrubSrc={`/api/public/share/${token}/files/${file.id}/scrub`}
           />
         )}
 
@@ -2083,30 +2084,8 @@ function FileViewer({
           )}
         </Tabs>
       </aside>
-      {scrubPreview && isVideo && typeof document !== "undefined" && createPortal(
-        <div
-          className="pointer-events-none z-50 hidden lg:block fixed"
-          style={{ left: `${scrubPreview.left}px`, top: `${scrubPreview.top}px` }}
-        >
-          <div className="p-2">
-            <video
-              className="rounded bg-gray-800 pointer-events-none block"
-              style={{ maxWidth: "192px", maxHeight: "256px", width: "auto", height: "auto" }}
-              src={`/api/public/share/${token}/files/${file.id}/scrub`}
-              muted
-              playsInline
-              ref={(v) => {
-                if (v && !isNaN(scrubPreview.time)) v.currentTime = scrubPreview.time;
-              }}
-              data-testid="share-scrub-preview"
-            />
-            <div className="text-white text-sm text-center mt-1 font-mono font-bold drop-shadow-lg">
-              {fmtTime(scrubPreview.time)}
-            </div>
-          </div>
-        </div>,
-        document.body,
-      )}
+      {/* (Legacy scrub-preview portal removed — SharePlayerControls now
+          owns the hover preview via its scrubSrc prop.) */}
     </div>
   );
 }

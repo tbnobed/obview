@@ -991,6 +991,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               }}
               watermarkOn={watermarkOn}
               onSeek={(t) => seekTo(t)}
+              scrubSrc={`/api/share/${token}/scrub`}
             />
           )}
 
