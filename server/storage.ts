@@ -1860,12 +1860,49 @@ export class DatabaseStorage implements IStorage {
     // Soft delete only. The disk files and DB row remain so an admin can
     // restore from /api/admin/trash. A nightly cleanup job hard-deletes
     // anything past FILE_TRASH_RETENTION_DAYS.
-    const result = await db
-      .update(files)
-      .set({ deletedAt: new Date() })
-      .where(and(eq(files.id, id), isNull(files.deletedAt)))
-      .returning({ id: files.id });
-    return result.length > 0;
+    //
+    // If the row being deleted is the latest version in its
+    // (projectId, filename) version stack, promote the next-highest
+    // surviving version to latest. Otherwise the project page (which
+    // filters by isLatestVersion) hides every survivor while the
+    // project-card thumbnail query (which does NOT filter by
+    // isLatestVersion) keeps surfacing the orphaned non-latest row —
+    // exactly the "card shows a deleted file" symptom users hit.
+    return await db.transaction(async (tx) => {
+      const [target] = await tx
+        .select()
+        .from(files)
+        .where(and(eq(files.id, id), isNull(files.deletedAt)))
+        .for("update");
+      if (!target) return false;
+
+      await tx
+        .update(files)
+        .set({ deletedAt: new Date() })
+        .where(eq(files.id, id));
+
+      if (target.isLatestVersion) {
+        const survivors = await tx
+          .select()
+          .from(files)
+          .where(and(
+            eq(files.projectId, target.projectId),
+            eq(files.filename, target.filename),
+            isNull(files.deletedAt),
+          ))
+          .for("update");
+        const nextLatest = survivors
+          .filter(f => f.id !== id)
+          .sort((a, b) => b.version - a.version)[0];
+        if (nextLatest) {
+          await tx
+            .update(files)
+            .set({ isLatestVersion: true })
+            .where(eq(files.id, nextLatest.id));
+        }
+      }
+      return true;
+    });
   }
 
   async restoreFile(id: number): Promise<boolean> {
