@@ -227,19 +227,95 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   }, [isDragging, handleWipeMove]);
 
   useEffect(() => {
+    const FPS = 30;
+    const seekBoth = (t: number) => {
+      const lv = leftVideoRef.current;
+      const rv = rightVideoRef.current;
+      const dur = Math.max(lv?.duration || 0, rv?.duration || 0, duration);
+      const clamped = Math.max(0, Math.min(dur || t, t));
+      if (lv) lv.currentTime = clamped;
+      if (rv) rv.currentTime = clamped;
+      setCurrentTime(clamped);
+    };
+    const stepFrames = (frames: number) => {
+      const lv = leftVideoRef.current;
+      if (!lv) return;
+      if (!lv.paused) {
+        lv.pause();
+        rightVideoRef.current?.pause();
+      }
+      seekBoth(lv.currentTime + frames / FPS);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (mode !== 'wipe') return;
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        setWipePosition(p => Math.max(0, p - 2));
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        setWipePosition(p => Math.min(100, p + 2));
+      const target = e.target as HTMLElement;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.contentEditable === 'true'
+      ) return;
+
+      switch (e.code) {
+        case 'Space':
+        case 'KeyK': {
+          e.preventDefault();
+          const lv = leftVideoRef.current;
+          const rv = rightVideoRef.current;
+          if (!lv || !rv) break;
+          if (lv.paused) {
+            rv.currentTime = lv.currentTime;
+            lv.play().catch(() => {});
+            rv.play().catch(() => {});
+          } else {
+            lv.pause();
+            rv.pause();
+          }
+          break;
+        }
+        case 'KeyJ':
+          e.preventDefault();
+          seekBoth((leftVideoRef.current?.currentTime ?? 0) - 5);
+          break;
+        case 'KeyL':
+          e.preventDefault();
+          seekBoth((leftVideoRef.current?.currentTime ?? 0) + 5);
+          break;
+        case 'KeyM': {
+          e.preventDefault();
+          const lv = leftVideoRef.current;
+          if (lv) lv.muted = !lv.muted;
+          break;
+        }
+        case 'Home':
+          e.preventDefault();
+          seekBoth(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          seekBoth(duration || 0);
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (mode === 'wipe' && !e.shiftKey) {
+            setWipePosition(p => Math.max(0, p - 2));
+          } else {
+            stepFrames(e.shiftKey ? -10 : -1);
+          }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (mode === 'wipe' && !e.shiftKey) {
+            setWipePosition(p => Math.min(100, p + 2));
+          } else {
+            stepFrames(e.shiftKey ? 10 : 1);
+          }
+          break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode]);
+  }, [mode, duration]);
 
   const formatTime = (time: number) => {
     if (time == null || isNaN(time)) return "00:00:00:00";

@@ -582,6 +582,10 @@ export default function MediaPlayer({
   // Global keyboard shortcut listener — works anywhere on page unless typing in a form
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // When the compare dialog is open it owns the keyboard. Otherwise
+      // shortcuts double-fire (toggling play on the underlying player and
+      // stepping its timeline while the user is interacting with compare).
+      if (isComparing) return;
       const target = e.target as HTMLElement;
       const isInTextInput = target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
@@ -747,7 +751,7 @@ export default function MediaPlayer({
 
     document.addEventListener('keydown', handleGlobalKeyDown, true);
     return () => document.removeEventListener('keydown', handleGlobalKeyDown, true);
-  }, [file, files, mediaError, isPlaying, isFullscreen, isMuted, duration, frameRate, inPoint]);
+  }, [file, files, mediaError, isPlaying, isFullscreen, isMuted, duration, frameRate, inPoint, isComparing]);
 
   // Extract frame rate from video when it loads metadata
   useEffect(() => {
