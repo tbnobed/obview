@@ -1096,6 +1096,27 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                       title={`Out: ${fmtTime(outPoint)}`}
                     />
                   )}
+                  {/* Range bars for comments with inPoint/outPoint */}
+                  {duration > 0 && sorted.map((c) => {
+                    const ip = c.inPoint;
+                    const op = c.outPoint;
+                    if (ip == null || op == null || op <= ip) return null;
+                    const left = (ip / duration) * 100;
+                    const width = ((op - ip) / duration) * 100;
+                    const isActive = activeCommentId === c.id;
+                    return (
+                      <div
+                        key={`range-${c.id}`}
+                        className={cn(
+                          "absolute top-1/2 -translate-y-1/2 h-1.5 rounded-sm pointer-events-none",
+                          isActive ? "bg-blue-500/70" : "bg-amber-400/70",
+                        )}
+                        style={{ left: `${left}%`, width: `${Math.max(width, 0.3)}%` }}
+                        title={`Range: ${fmtTime(ip)} → ${fmtTime(op)}`}
+                        data-testid={`public-comment-range-${c.id}`}
+                      />
+                    );
+                  })}
                   {duration > 0 && sorted.map((c) => {
                     const pos = ((c.timestamp || 0) / duration) * 100;
                     const isActive = activeCommentId === c.id;

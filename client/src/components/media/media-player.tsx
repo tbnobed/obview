@@ -2008,6 +2008,25 @@ export default function MediaPlayer({
                   
                   {/* Comment markers rail */}
                   <div className="relative h-5 overflow-visible pointer-events-none" aria-hidden="true">
+                    {/* Range bars for comments with inPoint/outPoint */}
+                    {duration > 0 && comments && comments.map((comment: Comment) => {
+                      if (comment.parentId !== null && comment.parentId !== undefined) return null;
+                      const ip = (comment as any).inPoint;
+                      const op = (comment as any).outPoint;
+                      if (ip == null || op == null || op <= ip) return null;
+                      const left = (ip / duration) * 100;
+                      const width = ((op - ip) / duration) * 100;
+                      const isActive = activeCommentId === comment.id;
+                      return (
+                        <div
+                          key={`range-${comment.id}`}
+                          className={`absolute top-1/2 -translate-y-1/2 h-1.5 rounded-sm pointer-events-none ${isActive ? 'bg-blue-500/70' : 'bg-yellow-400/70'}`}
+                          style={{ left: `${left}%`, width: `${Math.max(width, 0.3)}%` }}
+                          title={`Range: ${formatTime(ip)} → ${formatTime(op)}`}
+                          data-testid={`comment-range-${comment.id}`}
+                        />
+                      );
+                    })}
                     {duration > 0 && comments && comments.length > 0 && comments.map((comment: Comment) => {
                       // Only show markers for comments with timestamps (not replies)
                       if (comment.parentId !== null && comment.parentId !== undefined) return null;
