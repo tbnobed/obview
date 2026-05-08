@@ -11,6 +11,13 @@ services:
         # Short-link domain baked into the client bundle at build time.
         # e.g. SHORT_LINK_BASE_URL=https://t.obviu.io in your .env
         - VITE_SHORT_LINK_BASE_URL=${SHORT_LINK_BASE_URL:-}
+        # Canonical app host (e.g. https://tbn.obviu.io). Baked into the
+        # client bundle. When a signed-in viewer hits a short share URL on
+        # t.obviu.io, the resolver does a full-page redirect to this host
+        # so they land on the authenticated app even if t.obviu.io's nginx
+        # only proxies share endpoints. Leave unset in dev / replit so
+        # navigation stays in-app.
+        - VITE_APP_BASE_URL=${APP_BASE_URL:-}
     container_name: obview_app
     restart: always
     ports:

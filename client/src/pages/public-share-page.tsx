@@ -203,10 +203,16 @@ export default function PublicSharePage() {
   useEffect(() => {
     if (authLoading || !user || !fileQ.data) return;
     if (!fileQ.data.projectId) return;
-    setLocation(
-      `/projects/${fileQ.data.projectId}?media=${fileQ.data.id}`,
-      { replace: true },
-    );
+    const path = `/projects/${fileQ.data.projectId}?media=${fileQ.data.id}`;
+    // Cross-host redirect when on a short-link host. See multi-share-page
+    // for the full rationale — wouter's setLocation only does pushState.
+    const appBase = (import.meta.env.VITE_APP_BASE_URL as string | undefined)
+      ?.trim().replace(/\/+$/, "") ?? "";
+    if (appBase && (typeof window === "undefined" || !window.location.origin.startsWith(appBase))) {
+      window.location.replace(`${appBase}${path}`);
+    } else {
+      setLocation(path, { replace: true });
+    }
   }, [authLoading, user, fileQ.data, setLocation]);
 
   if (!token) {

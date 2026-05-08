@@ -213,28 +213,33 @@ export default function MultiSharePage() {
     if (info.expired) return;
     const search = new URLSearchParams(window.location.search);
     const presetFile = search.get("file");
+    let path: string | null = null;
     if (info.scopeType === "project") {
-      const target = presetFile
+      path = presetFile
         ? `/projects/${info.scopeId}?media=${presetFile}`
         : `/projects/${info.scopeId}`;
-      setLocation(target, { replace: true });
     } else if (info.scopeType === "file" && info.fileProjectId) {
-      setLocation(
-        `/projects/${info.fileProjectId}?media=${info.scopeId}`,
-        { replace: true },
-      );
+      path = `/projects/${info.fileProjectId}?media=${info.scopeId}`;
     } else if (info.scopeType === "folder") {
       // Project subfolder: land on the project page with the subfolder
       // pre-selected via ?folder=. Sidebar/global folder (no parent
       // project): land on the standalone /folders/:id page.
-      if (info.folderProjectId) {
-        setLocation(
-          `/projects/${info.folderProjectId}?folder=${info.scopeId}`,
-          { replace: true },
-        );
-      } else {
-        setLocation(`/folders/${info.scopeId}`, { replace: true });
-      }
+      path = info.folderProjectId
+        ? `/projects/${info.folderProjectId}?folder=${info.scopeId}`
+        : `/folders/${info.scopeId}`;
+    }
+    if (!path) return;
+    // Cross-host redirect when the canonical app lives on a different
+    // host than the short-link host (e.g. tbn.obviu.io vs t.obviu.io).
+    // Wouter's setLocation only does in-app pushState, which leaves the
+    // user on t.obviu.io where the authenticated app routes / API may
+    // not be served. Empty VITE_APP_BASE_URL -> stay in-app.
+    const appBase = (import.meta.env.VITE_APP_BASE_URL as string | undefined)
+      ?.trim().replace(/\/+$/, "") ?? "";
+    if (appBase && (typeof window === "undefined" || !window.location.origin.startsWith(appBase))) {
+      window.location.replace(`${appBase}${path}`);
+    } else {
+      setLocation(path, { replace: true });
     }
   }, [authLoading, user, infoQ.data, setLocation]);
 
