@@ -365,6 +365,18 @@ export default function ProjectPage() {
     }
   };
 
+  const isEditor = user?.role === "admin" || user?.role === "editor";
+
+  // OS-file drag onto the project page background → upload into this
+  // project. Card-level handlers (stack-as-version) call
+  // stopPropagation on drop so they win when the drop lands on a card.
+  // Must be declared above any early returns to keep hook order stable.
+  const projectDropRef = useRef<HTMLDivElement | null>(null);
+  const isProjectFileDrop = useOsFileDrop(projectDropRef, projectId, {
+    enabled: isEditor,
+    label: project?.name || `project ${projectId}`,
+  });
+
   if (projectLoading) {
     return (
       <AppLayout>
@@ -388,17 +400,6 @@ export default function ProjectPage() {
       </AppLayout>
     );
   }
-
-  const isEditor = user?.role === "admin" || user?.role === "editor";
-
-  // OS-file drag onto the project page background → upload into this
-  // project. Card-level handlers (stack-as-version) call
-  // stopPropagation on drop so they win when the drop lands on a card.
-  const projectDropRef = useRef<HTMLDivElement | null>(null);
-  const isProjectFileDrop = useOsFileDrop(projectDropRef, projectId, {
-    enabled: isEditor,
-    label: project?.name || `project ${projectId}`,
-  });
   
   // Status update is now handled in the MediaPlayer component
 
