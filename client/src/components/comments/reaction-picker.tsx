@@ -45,7 +45,7 @@ export default function ReactionPicker({
     <div className="relative">
       <Button 
         variant="link" 
-        className="text-[10px] p-0 h-auto text-gray-300 hover:text-yellow-500 transition-colors"
+        className="text-[10px] p-0 h-auto text-muted-foreground hover:text-yellow-500 transition-colors"
         onClick={() => setShowPicker(!showPicker)}
         disabled={addReaction.isPending || removeReaction.isPending}
       >

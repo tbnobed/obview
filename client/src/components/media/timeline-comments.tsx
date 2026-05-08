@@ -168,22 +168,22 @@ export default function TimelineComments({
     if (replies.length === 0) return null;
     
     return (
-      <div className={`mt-3 space-y-3 ${depth > 0 ? 'ml-4 pl-4 border-l border-gray-600' : ''}`}>
+      <div className={`mt-3 space-y-3 ${depth > 0 ? 'ml-4 pl-4 border-l border-border' : ''}`}>
         {replies.map((reply: any) => (
           <div key={`${(reply as any).isPublic ? 'public' : 'auth'}-${reply.id}`}>
             <div className="flex gap-3">
               <Avatar className="h-6 w-6 flex-shrink-0">
                 <AvatarImage src={reply.user?.avatar} />
-                <AvatarFallback className="bg-gray-600 text-white text-xs">
+                <AvatarFallback className="bg-muted text-foreground text-xs">
                   {getUserInitials((reply as any).authorName || reply.user?.name || reply.user?.username || 'U')}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-white">
+                  <span className="text-xs font-medium" style={{color: 'hsl(var(--comments-text))'}}>
                     {(reply as any).authorName || reply.user?.name || reply.user?.username || 'Unknown User'}
                   </span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>
                     {new Date(reply.createdAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -192,7 +192,7 @@ export default function TimelineComments({
                     <Textarea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="min-h-[60px] text-xs bg-gray-800 border-gray-600 text-gray-100"
+                      className="min-h-[60px] text-xs"
                       data-testid={`textarea-edit-comment-${reply.id}`}
                     />
                     <div className="flex items-center gap-2">
@@ -216,7 +216,7 @@ export default function TimelineComments({
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-gray-200 mb-2">
+                  <div className="text-xs mb-2" style={{color: 'hsl(var(--comments-text))'}}>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -238,7 +238,7 @@ export default function TimelineComments({
                             <a 
                               href={href}
                               {...props} 
-                              className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
+                              className={`${isFileDownload ? 'text-primary font-medium' : 'text-primary'} hover:underline`}
                               target="_blank" 
                               rel="noopener noreferrer"
                               onClick={(e) => {
@@ -270,7 +270,7 @@ export default function TimelineComments({
                 {/* Action Buttons and Emoji Picker on same row for nested replies */}
                 <div className="flex items-center gap-3 mt-1">
                   <button 
-                    className="text-xs font-medium transition-colors text-gray-300 hover:text-cyan-400"
+                    className="text-xs font-medium transition-colors text-muted-foreground hover:text-primary"
                     onClick={(e) => {
                       e.stopPropagation();
                       setReplyingToId(replyingToId === reply.id ? null : reply.id);
@@ -281,7 +281,7 @@ export default function TimelineComments({
                   
                   {canEditComment(reply) && editingId !== reply.id && (
                     <button
-                      className="text-xs text-gray-300 hover:text-cyan-400 transition-colors flex items-center"
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleStartEdit(reply);
@@ -294,7 +294,7 @@ export default function TimelineComments({
 
                   {canDeleteComment(reply) && (
                     <button 
-                      className="text-xs text-gray-300 hover:text-red-500 transition-colors flex items-center"
+                      className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteComment(reply);
@@ -314,12 +314,11 @@ export default function TimelineComments({
 
                 {/* Reply Form for nested replies */}
                 {replyingToId === reply.id && (
-                  <div className="mt-3 pl-4 border-l-2 border-gray-600">
+                  <div className="mt-3 pl-4 border-l-2 border-border">
                     <CommentForm
                       fileId={fileId}
                       parentId={reply.id}
                       onSuccess={() => setReplyingToId(null)}
-                      className="bg-gray-800 border-gray-600"
                     />
                   </div>
                 )}
@@ -435,8 +434,8 @@ export default function TimelineComments({
             className={cn(
               "text-xs px-2 py-0.5 rounded-full transition-colors capitalize",
               filter === f
-                ? "bg-primary/20 text-primary dark:bg-[#10a37f]/20 dark:text-[#10a37f]"
-                : "text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-200"
+                ? "bg-primary/20 text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {f}
@@ -500,7 +499,7 @@ export default function TimelineComments({
                     {/* Avatar - Mobile: smaller, Desktop: normal */}
                     <Avatar className="h-7 w-7 flex-shrink-0 lg:h-8 lg:w-8">
                       <AvatarImage src={comment.user?.avatar} />
-                      <AvatarFallback className="bg-gray-600 text-white text-xs">
+                      <AvatarFallback className="bg-muted text-foreground text-xs">
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
@@ -549,7 +548,7 @@ export default function TimelineComments({
                           <Textarea
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
-                            className="min-h-[80px] text-sm bg-gray-800 border-gray-600 text-gray-100"
+                            className="min-h-[80px] text-sm"
                             data-testid={`textarea-edit-comment-${comment.id}`}
                           />
                           <div className="flex items-center gap-2">
@@ -595,7 +594,7 @@ export default function TimelineComments({
                                   <a 
                                     href={href}
                                     {...props} 
-                                    className={`${isFileDownload ? 'text-blue-400 font-medium' : 'text-blue-400'} hover:underline`}
+                                    className={`${isFileDownload ? 'text-primary font-medium' : 'text-primary'} hover:underline`}
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     onClick={(e) => {
@@ -627,7 +626,7 @@ export default function TimelineComments({
                       {/* Action buttons - Mobile: smaller spacing, Desktop: normal */}
                       <div className="flex gap-2 mt-2 lg:gap-3">
                         <button
-                          className="text-xs font-medium transition-colors text-gray-300 hover:text-cyan-400"
+                          className="text-xs font-medium transition-colors text-muted-foreground hover:text-primary"
                           onClick={(e) => {
                             e.stopPropagation();
                             setReplyingToId(replyingToId === comment.id ? null : comment.id);
@@ -642,7 +641,7 @@ export default function TimelineComments({
                             variant="link" 
                             className={cn(
                               "text-xs p-0 h-auto font-medium transition-colors",
-                              "text-gray-300 hover:text-green-500"
+                              "text-muted-foreground hover:text-green-500"
                             )}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -660,7 +659,7 @@ export default function TimelineComments({
                         {canEditComment(comment) && editingId !== comment.id && (
                           <Button
                             variant="link"
-                            className="text-xs p-0 h-auto font-medium text-gray-300 hover:text-cyan-400 transition-colors"
+                            className="text-xs p-0 h-auto font-medium text-muted-foreground hover:text-primary transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStartEdit(comment);
@@ -674,7 +673,7 @@ export default function TimelineComments({
                         {canDeleteComment(comment) && (
                           <Button
                             variant="link"
-                            className="text-xs p-0 h-auto font-medium text-gray-300 hover:text-red-500 transition-colors"
+                            className="text-xs p-0 h-auto font-medium text-muted-foreground hover:text-destructive transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteComment(comment);
@@ -704,7 +703,6 @@ export default function TimelineComments({
                         fileId={fileId}
                         parentId={comment.id}
                         onSuccess={() => setReplyingToId(null)}
-                        className="bg-gray-800 border-gray-600"
                       />
                     </div>
                   )}
@@ -732,7 +730,7 @@ export default function TimelineComments({
       </div>
 
       {/* Comment Input - Mobile: hidden, Desktop: visible flex footer */}
-      <div className="hidden lg:block shrink-0 border-t" style={{borderColor: 'hsl(210, 15%, 18%)'}}>
+      <div className="hidden lg:block shrink-0 border-t" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}

@@ -326,7 +326,7 @@ export default function CommentForm({
     <div 
       className={cn("w-full p-2 lg:p-3", className)} 
       style={{
-        backgroundColor: 'hsl(210, 20%, 12%)'
+        backgroundColor: 'hsl(var(--comments-bg))'
       }}
       data-comment-form
     >
@@ -363,7 +363,7 @@ export default function CommentForm({
                 ? `Add a comment at ${formatTime(currentTime)}...`
                 : "Leave your comment..."
           }
-          className="flex-1 bg-transparent text-white placeholder-gray-400 text-sm resize-none border-none outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
+          className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground text-sm resize-none border-none outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
           style={{ 
             fontFamily: 'inherit',
             resize: 'none'
@@ -376,22 +376,22 @@ export default function CommentForm({
         <button
           type="submit"
           disabled={content.trim() === "" || createCommentMutation.isPending}
-          className="flex-shrink-0 p-1.5 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors lg:p-2"
+          className="flex-shrink-0 p-1.5 rounded bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors lg:p-2"
           data-testid="button-submit-comment"
           onClick={handleSubmit}
         >
           {createCommentMutation.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 text-white animate-spin lg:h-4 lg:w-4" />
+            <Loader2 className="h-3.5 w-3.5 text-primary-foreground animate-spin lg:h-4 lg:w-4" />
           ) : (
-            <Send className="h-3.5 w-3.5 text-white lg:h-4 lg:w-4" />
+            <Send className="h-3.5 w-3.5 text-primary-foreground lg:h-4 lg:w-4" />
           )}
         </button>
       </div>
       
       {/* Timestamp indicator and tools - Mobile: compact spacing, Desktop: normal spacing */}
       {!parentId && currentTime !== undefined && (
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-600 lg:mt-3 lg:pt-3">
-          <div className="flex items-center gap-1.5 text-xs text-gray-400 lg:gap-2">
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border lg:mt-3 lg:pt-3">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground lg:gap-2">
             <Clock className="h-3 w-3" />
             {hasRange ? (
               <span className="inline-flex items-center gap-1">
@@ -403,7 +403,7 @@ export default function CommentForm({
                   <button
                     type="button"
                     onClick={onClearInOutPoints}
-                    className="ml-1 text-gray-400 hover:text-white"
+                    className="ml-1 text-muted-foreground hover:text-foreground"
                     title="Clear range (press I/O again to reset)"
                     data-testid="button-clear-in-out"
                   >
@@ -424,7 +424,7 @@ export default function CommentForm({
                 type="button" 
                 size="icon" 
                 variant="ghost" 
-                className="h-6 w-6 rounded text-gray-400 hover:text-white hover:bg-gray-700 lg:h-7 lg:w-7"
+                className="h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted lg:h-7 lg:w-7"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
               >
@@ -449,7 +449,7 @@ export default function CommentForm({
                 type="button" 
                 size="icon" 
                 variant="ghost" 
-                className="h-6 w-6 rounded text-gray-400 hover:text-white hover:bg-gray-700 lg:h-7 lg:w-7"
+                className="h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted lg:h-7 lg:w-7"
                 onClick={() => {
                   if (isUploading) return;
                   const imageInput = document.createElement('input');
@@ -477,10 +477,10 @@ export default function CommentForm({
                   size="icon" 
                   variant="ghost" 
                   className={cn(
-                    "h-6 w-6 rounded hover:bg-gray-700 lg:h-7 lg:w-7",
+                    "h-6 w-6 rounded hover:bg-muted lg:h-7 lg:w-7",
                     pendingAnnotations && pendingAnnotations.length > 0 
                       ? "text-[#026d55]" 
-                      : "text-gray-400 hover:text-yellow-400"
+                      : "text-muted-foreground hover:text-yellow-500 dark:hover:text-yellow-400"
                   )}
                   onClick={onStartAnnotation}
                   title="Draw on frame"
@@ -495,7 +495,7 @@ export default function CommentForm({
                   type="button" 
                   size="icon" 
                   variant="ghost" 
-                  className="h-6 w-6 rounded text-gray-400 hover:text-blue-400 hover:bg-gray-700 lg:h-7 lg:w-7"
+                  className="h-6 w-6 rounded text-muted-foreground hover:text-primary hover:bg-muted lg:h-7 lg:w-7"
                   onClick={() => !isUploading && setShowEmojiPicker(!showEmojiPicker)}
                   disabled={isUploading}
                 >
@@ -522,21 +522,21 @@ export default function CommentForm({
                         transform: 'translate(-50%, -50%)',
                         zIndex: 1000,
                         width: window.innerWidth <= 1024 ? '280px' : '320px',
-                        backgroundColor: 'hsl(210, 20%, 12%)',
-                        borderColor: 'hsl(210, 15%, 18%)'
+                        backgroundColor: 'hsl(var(--popover))',
+                        borderColor: 'hsl(var(--border))'
                       }}
                     >
                       <div className="emoji-picker-container">
                         {/* Emoji Category Tabs - Mobile: smaller padding, Desktop: normal */}
-                        <div className="border-b border-gray-600 flex overflow-x-auto">
+                        <div className="border-b border-border flex overflow-x-auto">
                           {Object.keys(emojiCategories).map((category) => (
                             <button
                               key={category}
                               type="button"
                               className={`px-1.5 py-1 text-xs font-medium lg:px-2 ${
                                 activeEmojiCategory === category
-                                  ? "text-blue-400 border-b-2 border-blue-400"
-                                  : "text-gray-400 hover:text-gray-300"
+                                  ? "text-primary border-b-2 border-primary"
+                                  : "text-muted-foreground hover:text-foreground"
                               }`}
                               onClick={() => setActiveEmojiCategory(category)}
                             >
@@ -550,7 +550,7 @@ export default function CommentForm({
                           {emojiCategories[activeEmojiCategory as keyof typeof emojiCategories].map((emoji, index) => (
                             <div
                               key={index}
-                              className="p-1 rounded cursor-pointer flex items-center justify-center hover:bg-gray-700 text-lg lg:p-1.5 lg:text-xl"
+                              className="p-1 rounded cursor-pointer flex items-center justify-center hover:bg-muted text-lg lg:p-1.5 lg:text-xl"
                               onClick={() => {
                                 // Get the textarea DOM element directly
                                 if (textareaRef.current) {
@@ -599,8 +599,8 @@ export default function CommentForm({
                         </div>
                         
                         {/* Helper text - Mobile: smaller padding, Desktop: normal */}
-                        <div className="px-2 pb-2 pt-1 border-t border-gray-600 lg:px-3">
-                          <div className="text-xs text-gray-400 text-center">
+                        <div className="px-2 pb-2 pt-1 border-t border-border lg:px-3">
+                          <div className="text-xs text-muted-foreground text-center">
                             Click an emoji to add it
                           </div>
                         </div>
@@ -619,8 +619,8 @@ export default function CommentForm({
               className={cn(
                 "h-6 text-xs px-1.5 lg:h-7 lg:px-2",
                 includeTimestamp 
-                  ? "text-blue-400" 
-                  : "text-gray-400 hover:text-blue-400"
+                  ? "text-primary" 
+                  : "text-muted-foreground hover:text-primary"
               )}
               onClick={() => setIncludeTimestamp(!includeTimestamp)}
             >

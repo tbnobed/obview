@@ -24,6 +24,16 @@
   --destructive-foreground: 60 9.1% 97.8%;
   --ring: 175 70% 41%;
   --radius: 0.5rem;
+
+  /* Comments section — light mode */
+  --comments-bg: 210 20% 96%;
+  --comments-card: 0 0% 100%;
+  --comments-card-border: 210 16% 86%;
+  --comments-text: 210 14% 12%;
+  --comments-muted: 210 8% 38%;
+  --comments-accent-blue: 217 91% 50%;
+  --comments-timestamp-bg: 42 95% 88%;
+  --comments-timestamp-fg: 42 80% 25%;
 }
 
 .dark {
