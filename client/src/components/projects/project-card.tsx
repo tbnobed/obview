@@ -22,6 +22,7 @@ import { useDeleteProject } from "@/hooks/use-projects";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
+import { useOsFileDrop } from "@/lib/use-os-file-drop";
 import { Checkbox } from "@/components/ui/checkbox";
 import OwnerChip from "@/components/projects/owner-chip";
 import { getOwnerColor } from "@/lib/owner-color";
@@ -171,13 +172,22 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
   // color so the dashboard reads as "your stuff vs. theirs" at a glance.
   const accentColor = isOwner ? "#026d55" : getOwnerColor(project.createdById);
 
+  // Accept OS-file drops onto the card → upload as new files into this
+  // project. In-app drags (project move, file move) are ignored by the
+  // hook so existing flows still work. Server enforces edit access on
+  // the upload route, so unauthorized drops just toast an error.
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const isFileDropTarget = useOsFileDrop(cardRef, project.id, { label: project.name });
+
   return (
     <>
       <Card
+        ref={cardRef}
         className={cn(
           "group cursor-pointer transition-shadow hover:shadow-md text-sm active:opacity-70 border-l-4 relative overflow-hidden",
           isOwner && "ring-1 ring-[#026d55]/30 dark:ring-[#026d55]/40",
-          isSelected && "ring-2 ring-primary dark:ring-[#10a37f] shadow-md"
+          isSelected && "ring-2 ring-primary dark:ring-[#10a37f] shadow-md",
+          isFileDropTarget && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg"
         )}
         style={{ borderLeftColor: accentColor }}
         draggable

@@ -30,6 +30,7 @@ import type { File as StorageFile } from "@shared/schema";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { useOsFileDrop } from "@/lib/use-os-file-drop";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import ProjectForm from "@/components/projects/project-form";
 import { ProjectActivityTab } from "@/components/project/project-activity-tab";
@@ -389,6 +390,15 @@ export default function ProjectPage() {
   }
 
   const isEditor = user?.role === "admin" || user?.role === "editor";
+
+  // OS-file drag onto the project page background → upload into this
+  // project. Card-level handlers (stack-as-version) call
+  // stopPropagation on drop so they win when the drop lands on a card.
+  const projectDropRef = useRef<HTMLDivElement | null>(null);
+  const isProjectFileDrop = useOsFileDrop(projectDropRef, projectId, {
+    enabled: isEditor,
+    label: project?.name || `project ${projectId}`,
+  });
   
   // Status update is now handled in the MediaPlayer component
 
@@ -651,10 +661,14 @@ export default function ProjectPage() {
       </header>
       
       {/* Main Content — always media */}
-      <div className={cn(
-        "bg-neutral-50 dark:bg-[#080b12]",
-        viewMode === "player" ? "flex-1 min-h-0 flex flex-col p-0" : "overflow-auto p-0 lg:p-6"
-      )}>
+      <div
+        ref={projectDropRef}
+        className={cn(
+          "bg-neutral-50 dark:bg-[#080b12]",
+          viewMode === "player" ? "flex-1 min-h-0 flex flex-col p-0" : "overflow-auto p-0 lg:p-6",
+          isProjectFileDrop && "ring-2 ring-inset ring-primary"
+        )}
+      >
         <div className={cn(
           viewMode === "player"
             ? "bg-black flex-1 min-h-0 flex flex-col"

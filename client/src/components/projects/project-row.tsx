@@ -14,10 +14,11 @@ import {
 import { cn } from "@/lib/utils";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Trash2, PlayCircle, FileVideo } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
 import { setDragPayload, clearDragPayload } from "@/lib/drag-drop";
+import { useOsFileDrop } from "@/lib/use-os-file-drop";
 import { Checkbox } from "@/components/ui/checkbox";
 import OwnerChip from "@/components/projects/owner-chip";
 import { getOwnerColor } from "@/lib/owner-color";
@@ -54,6 +55,10 @@ export default function ProjectRow({ project, isSelected, selectedIds, onToggleS
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [typedName, setTypedName] = useState("");
+
+  // OS file → upload-into-project (mirrors ProjectCard).
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const isFileDropTarget = useOsFileDrop(rowRef, project.id, { label: project.name });
 
   const openDeleteDialog = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -98,10 +103,12 @@ export default function ProjectRow({ project, isSelected, selectedIds, onToggleS
   return (
     <>
       <div
+        ref={rowRef}
         className={cn(
           "group flex items-center gap-3 px-3 py-2.5 rounded-md border-l-4 border border-neutral-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:shadow-sm hover:border-primary-200 dark:hover:border-[#10a37f]/40 cursor-pointer transition-colors",
           isOwner && "ring-1 ring-[#026d55]/30 dark:ring-[#026d55]/40",
           isSelected && "ring-2 ring-primary dark:ring-[#10a37f]",
+          isFileDropTarget && "ring-2 ring-primary shadow-md",
         )}
         style={{ borderLeftColor: accentColor }}
         draggable

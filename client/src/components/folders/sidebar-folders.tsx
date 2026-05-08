@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useOsFileDrop } from "@/lib/use-os-file-drop";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -411,6 +412,8 @@ function SidebarProjectRow({ project, location }: { project: any; location: stri
   const active = location === `/project/${project.id}`;
   const moveFile = useMoveFileToProject();
   const [isDragOver, setIsDragOver] = useState(false);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const isFileDropTarget = useOsFileDrop(rowRef, project.id, { label: project.name });
 
   const onDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
@@ -441,12 +444,13 @@ function SidebarProjectRow({ project, location }: { project: any; location: stri
   return (
     <Link href={`/project/${project.id}`}>
       <div
+        ref={rowRef}
         className={cn(
           "px-2 py-1 text-xs rounded-md cursor-pointer truncate transition-colors",
           active
             ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400"
             : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-gray-900/70",
-          isDragOver && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15",
+          (isDragOver || isFileDropTarget) && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15",
         )}
         draggable
         onDragStart={onDragStart}
