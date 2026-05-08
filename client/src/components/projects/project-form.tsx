@@ -12,8 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon, Loader2, Trash2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useFolders } from "@/hooks/use-folders";
-import { buildFolderTree, type FolderNode } from "@/lib/folder-tree";
 
 interface ProjectFormProps {
   projectId?: number;
@@ -43,7 +41,6 @@ export default function ProjectForm({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const isEditMode = !!projectId;
-  const { data: folders } = useFolders();
   // Local-only thumbnail state for the create flow. We can't POST the image
   // until we have a project id back from the server, so the file is staged
   // here and uploaded in a follow-up request after create succeeds.
@@ -251,59 +248,6 @@ export default function ProjectForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="folderId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Folder (optional)</FormLabel>
-              <Select
-                onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
-                value={field.value ? field.value.toString() : "none"}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full" data-testid="select-folder">
-                    <SelectValue placeholder="Select a folder or leave unorganized" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">No folder (unorganized)</SelectItem>
-                  {(() => {
-                    // Render every folder as its full path ("Post Production / Podcasts")
-                    // so the user knows exactly which level they're picking. The folder
-                    // dropdown collapses the global / private distinction into a single
-                    // sorted tree walk so deeply nested options stay grouped under their
-                    // parent.
-                    const tree = buildFolderTree(folders);
-                    const items: { id: number; label: string; depth: number }[] = [];
-                    const walk = (nodes: FolderNode[], trail: string[]) => {
-                      for (const n of nodes) {
-                        const nextTrail = [...trail, n.name];
-                        items.push({ id: n.id, label: nextTrail.join(" / "), depth: trail.length });
-                        if (n.children.length) walk(n.children, nextTrail);
-                      }
-                    };
-                    walk(tree, []);
-                    return items.map((it) => (
-                      <SelectItem
-                        key={it.id}
-                        value={it.id.toString()}
-                        data-testid={`select-folder-${it.id}`}
-                      >
-                        {it.label}
-                      </SelectItem>
-                    ));
-                  })()}
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Organize this project by placing it in a folder
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
         <FormField
           control={form.control}
           name="status"
