@@ -128,6 +128,8 @@ interface PublicComment {
   authorEmail: string | null;
   content: string;
   timestamp: number | null;
+  inPoint?: number | null;
+  outPoint?: number | null;
   parentId: string | null;
   createdAt: string;
   creatorToken?: string;
@@ -275,6 +277,10 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
   const [displayAnnotations, setDisplayAnnotations] = useState<Annotation[] | null>(null);
   const [pendingAnnotations, setPendingAnnotations] = useState<Annotation[] | null>(null);
   const [isAnnotating, setIsAnnotating] = useState(false);
+  // Frame.io-style in/out range. Both null = single-point comment at playhead;
+  // both set with outPoint > inPoint = range comment posted with inPoint/outPoint.
+  const [inPoint, setInPoint] = useState<number | null>(null);
+  const [outPoint, setOutPoint] = useState<number | null>(null);
   const [mediaContainerSize, setMediaContainerSize] = useState({ width: 0, height: 0 });
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
@@ -441,6 +447,21 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           e.preventDefault();
           el.muted = !el.muted;
           break;
+        case "KeyI":
+          e.preventDefault();
+          setInPoint(el.currentTime);
+          toast({ title: `In point: ${fmtTime(el.currentTime) || "0:00"}`, description: "Press O to set the out point" });
+          break;
+        case "KeyO":
+          e.preventDefault();
+          setOutPoint(el.currentTime);
+          toast({
+            title: `Out point: ${fmtTime(el.currentTime) || "0:00"}`,
+            description: inPoint !== null
+              ? `Range: ${fmtTime(inPoint)} → ${fmtTime(el.currentTime)}`
+              : "Set an in point with I first",
+          });
+          break;
         case "KeyF":
           if (isVideo) {
             e.preventDefault();
@@ -593,7 +614,13 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
   const post = useMutation({
     mutationFn: async () => {
       const el = mediaRef.current;
-      const ts = el && (isVideo || isAudio) ? Math.floor(el.currentTime) : null;
+      const playhead = el && (isVideo || isAudio) ? Math.floor(el.currentTime) : null;
+      const hasRange =
+        (isVideo || isAudio) &&
+        inPoint !== null &&
+        outPoint !== null &&
+        outPoint > inPoint;
+      const ts = hasRange ? Math.floor(inPoint as number) : playhead;
       const r = await fetch(`/api/share/${token}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -601,6 +628,8 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           content,
           authorName: name || "Anonymous",
           timestamp: ts,
+          inPoint: hasRange ? Math.floor(inPoint as number) : undefined,
+          outPoint: hasRange ? Math.floor(outPoint as number) : undefined,
           annotations:
             pendingAnnotations && pendingAnnotations.length
               ? JSON.stringify(pendingAnnotations)
@@ -620,6 +649,8 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
       setContent("");
       setPendingAnnotations(null);
       setDisplayAnnotations(null);
+      setInPoint(null);
+      setOutPoint(null);
       commentsQ.refetch();
       toast({ title: "Comment posted" });
     },
@@ -1040,6 +1071,31 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                       style={{ left: 0, width: `${(currentTime / duration) * 100}%` }}
                     />
                   )}
+                  {duration > 0 && inPoint !== null && outPoint !== null && outPoint > inPoint && (
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 h-2 bg-amber-400/50 border-l-2 border-r-2 border-amber-400 pointer-events-none"
+                      style={{
+                        left: `${(inPoint / duration) * 100}%`,
+                        width: `${((outPoint - inPoint) / duration) * 100}%`,
+                      }}
+                      title={`Range: ${fmtTime(inPoint)} → ${fmtTime(outPoint)}`}
+                      data-testid="public-in-out-range"
+                    />
+                  )}
+                  {duration > 0 && inPoint !== null && (
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none"
+                      style={{ left: `${(inPoint / duration) * 100}%` }}
+                      title={`In: ${fmtTime(inPoint)}`}
+                    />
+                  )}
+                  {duration > 0 && outPoint !== null && (
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-amber-400 pointer-events-none"
+                      style={{ left: `${(outPoint / duration) * 100}%` }}
+                      title={`Out: ${fmtTime(outPoint)}`}
+                    />
+                  )}
                   {duration > 0 && sorted.map((c) => {
                     const pos = ((c.timestamp || 0) / duration) * 100;
                     const isActive = activeCommentId === c.id;
@@ -1290,10 +1346,12 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                         seekTo(c.timestamp!);
                                       }}
                                       className="text-xs font-mono px-2 py-1 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))] hover:opacity-80 transition-opacity"
-                                      title="Jump to this moment"
+                                      title={(c as any).inPoint != null && (c as any).outPoint != null ? `Range ${fmtTime((c as any).inPoint)} → ${fmtTime((c as any).outPoint)}` : "Jump to this moment"}
                                       data-testid={`button-seek-${c.id}`}
                                     >
-                                      {fmtTime(c.timestamp)}
+                                      {(c as any).inPoint != null && (c as any).outPoint != null
+                                        ? `${fmtTime((c as any).inPoint)} → ${fmtTime((c as any).outPoint)}`
+                                        : fmtTime(c.timestamp)}
                                     </button>
                                   )}
                                   {hasAnno && (
@@ -1483,14 +1541,39 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                     <Send className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                {(isVideo || isAudio) && (
-                  <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
-                    <span>Will be posted at {fmtTime(currentTime) || "00:00"}</span>
-                    <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
-                      {fmtTime(currentTime) || "00:00"}
-                    </span>
-                  </div>
-                )}
+                {(isVideo || isAudio) && (() => {
+                  const hasRange = inPoint !== null && outPoint !== null && outPoint > inPoint;
+                  return (
+                    <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                      {hasRange ? (
+                        <>
+                          <span className="inline-flex items-center gap-1">
+                            <span>Range</span>
+                            <button
+                              type="button"
+                              onClick={() => { setInPoint(null); setOutPoint(null); }}
+                              className="ml-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white"
+                              title="Clear range"
+                              data-testid="button-public-clear-in-out"
+                            >
+                              ×
+                            </button>
+                          </span>
+                          <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
+                            {fmtTime(inPoint!)} → {fmtTime(outPoint!)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Will be posted at {fmtTime(currentTime) || "00:00"} · I/O for range</span>
+                          <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
+                            {fmtTime(currentTime) || "00:00"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
                 {isVideo && (
                   <div className="flex items-center gap-2">
                     <Button

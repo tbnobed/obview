@@ -234,7 +234,11 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                   className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-gray-800 text-neutral-800 dark:text-gray-300 transition-colors duration-200"
                   onClick={() => onTimeClick && onTimeClick(comment.timestamp || 0)}
                 >
-                  <span className="font-mono">{formatTime(comment.timestamp)}</span>
+                  <span className="font-mono">
+                    {(comment as any).inPoint != null && (comment as any).outPoint != null
+                      ? `${formatTime((comment as any).inPoint)} → ${formatTime((comment as any).outPoint)}`
+                      : formatTime(comment.timestamp)}
+                  </span>
                   {comment.isResolved && (
                     <Check className="h-3 w-3 text-green-500" />
                   )}

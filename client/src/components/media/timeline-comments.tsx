@@ -32,6 +32,9 @@ interface TimelineCommentsProps {
   onClearAnnotations?: () => void;
   onCommentHover?: (comment: any) => void;
   onCommentLeave?: () => void;
+  inPoint?: number | null;
+  outPoint?: number | null;
+  onClearInOutPoints?: () => void;
 }
 
 export default function TimelineComments({ 
@@ -46,6 +49,9 @@ export default function TimelineComments({
   onClearAnnotations,
   onCommentHover,
   onCommentLeave,
+  inPoint,
+  outPoint,
+  onClearInOutPoints,
 }: TimelineCommentsProps) {
   const timelineRef = useRef<HTMLDivElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
@@ -413,6 +419,9 @@ export default function TimelineComments({
           pendingAnnotations={pendingAnnotations}
           onStartAnnotation={onStartAnnotation}
           onClearAnnotations={onClearAnnotations}
+          inPoint={inPoint}
+          outPoint={outPoint}
+          onClearInOutPoints={onClearInOutPoints}
         />
       </div>
       
@@ -516,7 +525,9 @@ export default function TimelineComments({
                                   color: 'hsl(var(--comments-timestamp-fg))'
                                 }}
                               >
-                                {formatTime(comment.timestamp)}
+                                {(comment as any).inPoint != null && (comment as any).outPoint != null
+                                  ? `${formatTimeShort((comment as any).inPoint)} → ${formatTimeShort((comment as any).outPoint)}`
+                                  : formatTime(comment.timestamp)}
                               </span>
                               {(comment as any).annotations && (
                                 <PenTool className="h-3 w-3 text-yellow-400" title="Has drawing annotation" />
@@ -729,6 +740,9 @@ export default function TimelineComments({
           pendingAnnotations={pendingAnnotations}
           onStartAnnotation={onStartAnnotation}
           onClearAnnotations={onClearAnnotations}
+          inPoint={inPoint}
+          outPoint={outPoint}
+          onClearInOutPoints={onClearInOutPoints}
         />
       </div>
     </div>

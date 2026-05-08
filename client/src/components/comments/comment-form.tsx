@@ -22,6 +22,13 @@ interface CommentFormProps {
   pendingAnnotations?: Annotation[] | null;
   onStartAnnotation?: () => void;
   onClearAnnotations?: () => void;
+  // Frame.io-style range. When both are set, the comment is posted as a span
+  // (timestamp == inPoint, plus dedicated inPoint/outPoint columns). The form
+  // calls onClearInOutPoints after a successful post so the player drops its
+  // range overlay.
+  inPoint?: number | null;
+  outPoint?: number | null;
+  onClearInOutPoints?: () => void;
 }
 
 export default function CommentForm({ 
@@ -33,6 +40,9 @@ export default function CommentForm({
   pendingAnnotations,
   onStartAnnotation,
   onClearAnnotations,
+  inPoint,
+  outPoint,
+  onClearInOutPoints,
 }: CommentFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -84,6 +94,12 @@ export default function CommentForm({
     }
   }, [content]);
 
+  const hasRange =
+    !parentId &&
+    inPoint !== null && inPoint !== undefined &&
+    outPoint !== null && outPoint !== undefined &&
+    outPoint > inPoint;
+
   // Create comment mutation
   const createCommentMutation = useMutation({
     mutationFn: async (commentContent: string) => {
@@ -91,8 +107,16 @@ export default function CommentForm({
         content: commentContent,
         fileId,
         parentId: parentId || null,
-        timestamp: includeTimestamp && currentTime !== undefined ? Math.floor(currentTime) : null,
+        timestamp: hasRange
+          ? Math.floor(inPoint as number)
+          : includeTimestamp && currentTime !== undefined
+          ? Math.floor(currentTime)
+          : null,
       };
+      if (hasRange) {
+        commentData.inPoint = Math.floor(inPoint as number);
+        commentData.outPoint = Math.floor(outPoint as number);
+      }
       if (pendingAnnotations && pendingAnnotations.length > 0) {
         commentData.annotations = JSON.stringify(pendingAnnotations);
       }
@@ -106,6 +130,7 @@ export default function CommentForm({
         textareaRef.current.value = "";
       }
       if (onClearAnnotations) onClearAnnotations();
+      if (hasRange && onClearInOutPoints) onClearInOutPoints();
       
       toast({
         title: "Comment added",
@@ -368,7 +393,27 @@ export default function CommentForm({
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-600 lg:mt-3 lg:pt-3">
           <div className="flex items-center gap-1.5 text-xs text-gray-400 lg:gap-2">
             <Clock className="h-3 w-3" />
-            <span>Will be posted at {includeTimestamp ? formatTime(currentTime) : 'current time'}</span>
+            {hasRange ? (
+              <span className="inline-flex items-center gap-1">
+                <span className="font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                  {formatTime(inPoint as number)} → {formatTime(outPoint as number)}
+                </span>
+                <span>range</span>
+                {onClearInOutPoints && (
+                  <button
+                    type="button"
+                    onClick={onClearInOutPoints}
+                    className="ml-1 text-gray-400 hover:text-white"
+                    title="Clear range (press I/O again to reset)"
+                    data-testid="button-clear-in-out"
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            ) : (
+              <span>Will be posted at {includeTimestamp ? formatTime(currentTime) : 'current time'}</span>
+            )}
           </div>
           
           <div className="flex items-center gap-0.5 lg:gap-1">

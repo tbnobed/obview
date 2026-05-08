@@ -158,6 +158,12 @@ export const commentsUnified = pgTable("comments_unified", {
   parentId: text("parent_id").references((): any => commentsUnified.id), // Self-reference with UUID
   content: text("content").notNull(),
   timestamp: integer("timestamp"), // For timestamped video comments (seconds)
+  // Optional in/out range (Frame.io / Premiere style). When both are set the
+  // comment refers to a span (e.g. "this section drags") rather than a single
+  // moment. `timestamp` is still populated (= inPoint) so existing code paths
+  // that key off a single time keep working.
+  inPoint: integer("in_point"),
+  outPoint: integer("out_point"),
   annotations: text("annotations"), // JSON string of drawing annotations on frame
   isResolved: boolean("is_resolved").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -170,6 +176,8 @@ export const insertCommentsUnifiedSchema = createInsertSchema(commentsUnified)
     content: z.string().min(1, "Comment cannot be empty").max(1000, "Comment must be 1000 characters or less"),
     authorEmail: z.string().email("Invalid email format").optional(),
     timestamp: z.number().min(0).optional().nullable().transform(val => val === null ? undefined : val),
+    inPoint: z.number().min(0).optional().nullable().transform(val => val === null ? undefined : val),
+    outPoint: z.number().min(0).optional().nullable().transform(val => val === null ? undefined : val),
     parentId: z.string().uuid().optional().nullable().transform(val => val || undefined),
   });
 

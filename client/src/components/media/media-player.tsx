@@ -268,6 +268,8 @@ export default function MediaPlayer({
   useEffect(() => {
     didMountQualityRef.current = false;
     setUseOriginalQuality(false);
+    setInPoint(null);
+    setOutPoint(null);
   }, [file?.id]);
 
   // Approval mutation
@@ -1969,6 +1971,34 @@ export default function MediaPlayer({
                         className="video-progress-fill absolute top-0 left-0 h-full bg-primary dark:bg-[#026d55] rounded-full"
                         style={{ width: `${(currentTime / duration) * 100}%` }}
                       ></div>
+                      {/* In/Out range overlay (Frame.io / Premiere style) */}
+                      {duration > 0 && inPoint !== null && outPoint !== null && outPoint > inPoint && (
+                        <div
+                          className="absolute top-0 h-full bg-amber-400/40 border-l-2 border-r-2 border-amber-400 pointer-events-none"
+                          style={{
+                            left: `${(inPoint / duration) * 100}%`,
+                            width: `${((outPoint - inPoint) / duration) * 100}%`,
+                          }}
+                          data-testid="in-out-range-overlay"
+                          title={`Range: ${formatTime(inPoint)} → ${formatTime(outPoint)}`}
+                        />
+                      )}
+                      {duration > 0 && inPoint !== null && (
+                        <div
+                          className="absolute -top-1 h-4 w-0.5 bg-amber-400 pointer-events-none"
+                          style={{ left: `${(inPoint / duration) * 100}%` }}
+                          title={`In: ${formatTime(inPoint)}`}
+                          data-testid="in-point-marker"
+                        />
+                      )}
+                      {duration > 0 && outPoint !== null && (
+                        <div
+                          className="absolute -top-1 h-4 w-0.5 bg-amber-400 pointer-events-none"
+                          style={{ left: `${(outPoint / duration) * 100}%` }}
+                          title={`Out: ${formatTime(outPoint)}`}
+                          data-testid="out-point-marker"
+                        />
+                      )}
                       <div
                         className="playhead absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-primary dark:bg-[#026d55] rounded-full shadow-md -ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
                         style={{ left: `${(currentTime / duration) * 100}%` }}
@@ -2480,6 +2510,9 @@ export default function MediaPlayer({
                 onClearAnnotations={handleClearAnnotations}
                 onCommentHover={handleCommentHover}
                 onCommentLeave={handleCommentLeave}
+                inPoint={inPoint}
+                outPoint={outPoint}
+                onClearInOutPoints={() => { setInPoint(null); setOutPoint(null); }}
               />
             </TabsContent>
             

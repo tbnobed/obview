@@ -763,6 +763,8 @@ export function registerShareLinkRoutes(
       };
       if (email) payload.authorEmail = email;
       if (req.body.timestamp != null) payload.timestamp = req.body.timestamp;
+      if (req.body.inPoint != null) payload.inPoint = req.body.inPoint;
+      if (req.body.outPoint != null) payload.outPoint = req.body.outPoint;
       if (req.body.parentId) payload.parentId = req.body.parentId;
       if (req.body.annotations) {
         payload.annotations =
