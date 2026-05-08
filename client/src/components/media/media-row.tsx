@@ -90,13 +90,19 @@ export default function MediaRow({
   const rowRef = useRef<HTMLDivElement | null>(null);
   const dragDepthRef = useRef(0);
 
-  // OS-file drop -> upload as new version. Native DOM listeners (not
-  // React onDrop) — see MediaCard for rationale.
   const canEdit = !!onMove;
+  const fileRef = useRef(file);
+  fileRef.current = file;
+  const versionCountRef = useRef(versionCount);
+  versionCountRef.current = versionCount;
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+  const canEditRef = useRef(canEdit);
+  canEditRef.current = canEdit;
 
   useEffect(() => {
     const el = rowRef.current;
-    if (!el || !canEdit) return;
+    if (!el) return;
 
     const hasInternalDrag = (e: DragEvent): boolean => {
       const types = e.dataTransfer?.types;
@@ -107,23 +113,23 @@ export default function MediaRow({
       return false;
     };
     const onDragEnter = (e: DragEvent) => {
-      if (hasInternalDrag(e)) return;
+      if (!canEditRef.current || hasInternalDrag(e)) return;
       e.preventDefault();
       dragDepthRef.current += 1;
       setIsVersionDropTarget(true);
     };
     const onDragOver = (e: DragEvent) => {
-      if (hasInternalDrag(e)) return;
+      if (!canEditRef.current || hasInternalDrag(e)) return;
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     };
     const onDragLeave = (e: DragEvent) => {
-      if (hasInternalDrag(e)) return;
+      if (!canEditRef.current || hasInternalDrag(e)) return;
       dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
       if (dragDepthRef.current === 0) setIsVersionDropTarget(false);
     };
     const onDrop = (e: DragEvent) => {
-      if (hasInternalDrag(e)) return;
+      if (!canEditRef.current || hasInternalDrag(e)) return;
       e.preventDefault();
       e.stopPropagation();
       dragDepthRef.current = 0;
@@ -131,18 +137,19 @@ export default function MediaRow({
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) return;
       if (files.length > 1) {
-        toast({
+        toastRef.current({
           title: "Drop one file",
           description: "Stacking versions only supports one file at a time.",
           variant: "destructive",
         });
         return;
       }
-      if (!file.projectId) return;
-      uploadService.uploadFile(files[0], file.projectId, file.filename);
-      toast({
+      const f = fileRef.current;
+      if (!f.projectId) return;
+      uploadService.uploadFile(files[0], f.projectId, f.filename);
+      toastRef.current({
         title: "Uploading new version",
-        description: `${files[0].name} → v${(versionCount ?? 1) + 1} of ${file.filename}`,
+        description: `${files[0].name} → v${(versionCountRef.current ?? 1) + 1} of ${f.filename}`,
       });
     };
 
@@ -156,7 +163,7 @@ export default function MediaRow({
       el.removeEventListener("dragleave", onDragLeave);
       el.removeEventListener("drop", onDrop);
     };
-  }, [canEdit, file.id, file.projectId, file.filename, versionCount, toast]);
+  }, []);
 
   const deleteMutation = useMutation({
     mutationFn: (fileId: number) => apiRequest("DELETE", `/api/files/${fileId}`),

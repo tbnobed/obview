@@ -132,19 +132,25 @@ function MediaCard({
   const queryClient = useQueryClient();
 
   // Drag-and-drop a local OS file onto this card to stack it as a new
-  // version of the existing file. Gated on `onMove` presence (proxy for
-  // editor permission — the same gate the move action uses). We attach
-  // NATIVE DOM listeners (not React's onDrop) because React's synthetic
-  // event delegation interacts badly with HTML5 file drag-and-drop in
-  // some browsers / preview iframes — dragover fires (overlay shows) but
-  // the synthetic drop never reaches the React handler. Native listeners
-  // sidestep that entirely. Internal app drags carry our DRAG_MIME and
-  // are ignored so the move-between-projects flow keeps working.
+  // version of the existing file. Native DOM listeners (not React onDrop)
+  // — synthetic events drop the `drop` event in some preview/iframe
+  // contexts even when dragover fires. Stable refs hold the latest file
+  // metadata so the listener-attach effect runs ONCE per mount and
+  // doesn't get torn down on every render (which can race with an
+  // in-flight drag).
   const canEdit = !!onMove;
+  const fileRef = useRef(file);
+  fileRef.current = file;
+  const versionCountRef = useRef(versionCount);
+  versionCountRef.current = versionCount;
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+  const canEditRef = useRef(canEdit);
+  canEditRef.current = canEdit;
 
   useEffect(() => {
     const el = cardRef.current;
-    if (!el || !canEdit) return;
+    if (!el) return;
 
     const hasInternalDrag = (e: DragEvent): boolean => {
       const types = e.dataTransfer?.types;
@@ -156,29 +162,30 @@ function MediaCard({
     };
 
     const onDragEnter = (e: DragEvent) => {
-      if (hasInternalDrag(e)) return;
+      if (!canEditRef.current || hasInternalDrag(e)) return;
       e.preventDefault();
       dragDepthRef.current += 1;
       setIsVersionDropTarget(true);
     };
     const onDragOver = (e: DragEvent) => {
-      if (hasInternalDrag(e)) return;
+      if (!canEditRef.current || hasInternalDrag(e)) return;
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     };
     const onDragLeave = (e: DragEvent) => {
-      if (hasInternalDrag(e)) return;
+      if (!canEditRef.current || hasInternalDrag(e)) return;
       dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
       if (dragDepthRef.current === 0) setIsVersionDropTarget(false);
     };
     const onDrop = (e: DragEvent) => {
       console.log("[VERSION-DROP] native fire", {
+        canEdit: canEditRef.current,
         types: e.dataTransfer ? Array.from(e.dataTransfer.types) : [],
         fileCount: e.dataTransfer?.files?.length ?? 0,
-        fileId: file.id,
-        projectId: file.projectId,
+        fileId: fileRef.current.id,
+        projectId: fileRef.current.projectId,
       });
-      if (hasInternalDrag(e)) return;
+      if (!canEditRef.current || hasInternalDrag(e)) return;
       e.preventDefault();
       e.stopPropagation();
       dragDepthRef.current = 0;
@@ -186,18 +193,19 @@ function MediaCard({
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) return;
       if (files.length > 1) {
-        toast({
+        toastRef.current({
           title: "Drop one file",
           description: "Stacking versions only supports one file at a time.",
           variant: "destructive",
         });
         return;
       }
-      if (!file.projectId) return;
-      uploadService.uploadFile(files[0], file.projectId, file.filename);
-      toast({
+      const f = fileRef.current;
+      if (!f.projectId) return;
+      uploadService.uploadFile(files[0], f.projectId, f.filename);
+      toastRef.current({
         title: "Uploading new version",
-        description: `${files[0].name} → v${(versionCount ?? 1) + 1} of ${file.filename}`,
+        description: `${files[0].name} → v${(versionCountRef.current ?? 1) + 1} of ${f.filename}`,
       });
     };
 
@@ -211,7 +219,7 @@ function MediaCard({
       el.removeEventListener("dragleave", onDragLeave);
       el.removeEventListener("drop", onDrop);
     };
-  }, [canEdit, file.id, file.projectId, file.filename, versionCount, toast]);
+  }, []);
   
   // Delete file mutation
   const deleteMutation = useMutation({
