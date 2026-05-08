@@ -146,32 +146,28 @@ function MediaCard({
     const el = cardRef.current;
     if (!el || !canEdit) return;
 
-    const isOsFileDrag = (e: DragEvent): boolean => {
+    const hasInternalDrag = (e: DragEvent): boolean => {
       const types = e.dataTransfer?.types;
       if (!types) return false;
-      let hasFiles = false;
-      let hasInternal = false;
       for (let i = 0; i < types.length; i++) {
-        const t = types[i];
-        if (t === "Files") hasFiles = true;
-        if (t === "application/x-obviu-dnd") hasInternal = true;
+        if (types[i] === "application/x-obviu-dnd") return true;
       }
-      return hasFiles && !hasInternal;
+      return false;
     };
 
     const onDragEnter = (e: DragEvent) => {
-      if (!isOsFileDrag(e)) return;
+      if (hasInternalDrag(e)) return;
       e.preventDefault();
       dragDepthRef.current += 1;
       setIsVersionDropTarget(true);
     };
     const onDragOver = (e: DragEvent) => {
-      if (!isOsFileDrag(e)) return;
+      if (hasInternalDrag(e)) return;
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     };
     const onDragLeave = (e: DragEvent) => {
-      if (!isOsFileDrag(e)) return;
+      if (hasInternalDrag(e)) return;
       dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
       if (dragDepthRef.current === 0) setIsVersionDropTarget(false);
     };
@@ -182,7 +178,7 @@ function MediaCard({
         fileId: file.id,
         projectId: file.projectId,
       });
-      if (!isOsFileDrag(e)) return;
+      if (hasInternalDrag(e)) return;
       e.preventDefault();
       e.stopPropagation();
       dragDepthRef.current = 0;
