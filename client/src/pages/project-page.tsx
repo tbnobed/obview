@@ -451,7 +451,7 @@ export default function ProjectPage() {
                         <>
                           <span aria-hidden>·</span>
                           <span className="truncate" data-testid="player-file-uploader">
-                            Uploaded by {uploaderName}
+                            {uploaderName}
                           </span>
                         </>
                       )}
