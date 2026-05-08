@@ -57,6 +57,13 @@ export function setupAuth(app: Express) {
     sessionStore = undefined; // Use default memory store
   }
 
+  // Optional cookie domain (e.g. ".obviu.io") so the session is shared
+  // across every subdomain — needed for short-link hosts like t.obviu.io
+  // to see the user as logged in and skip the public review page. Leave
+  // SESSION_COOKIE_DOMAIN unset in dev / replit preview so the cookie
+  // stays host-only.
+  const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim() || undefined;
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'obviu-secret',
     resave: false,
@@ -66,7 +73,8 @@ export function setupAuth(app: Express) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: 'lax'
+      sameSite: 'lax',
+      ...(cookieDomain && { domain: cookieDomain })
     },
     rolling: true
   };
