@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Check,
   Download,
   Eye,
   FileAudio,
@@ -35,6 +36,11 @@ interface MediaRowProps {
   onMove?: (file: StorageFile) => void;
   versionCount?: number;
   approvalStatus?: "approved" | "changes_requested" | null;
+  // Multi-select drag-and-drop (mirrors MediaCard).
+  isSelected?: boolean;
+  selectionActive?: boolean;
+  selectedIds?: number[];
+  onToggleSelect?: (fileId: number, event: React.MouseEvent) => void;
 }
 
 const formatDuration = (seconds: number | null) => {
@@ -68,6 +74,10 @@ export default function MediaRow({
   onMove,
   versionCount = 1,
   approvalStatus,
+  isSelected = false,
+  selectionActive = false,
+  selectedIds,
+  onToggleSelect,
 }: MediaRowProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -100,6 +110,15 @@ export default function MediaRow({
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest("button, [role='menu'], [role='dialog'], a")) return;
+    if (onToggleSelect) {
+      const wantsToggle = e.shiftKey || e.metaKey || e.ctrlKey || selectionActive;
+      if (wantsToggle) {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggleSelect(file.id, e);
+        return;
+      }
+    }
     onSelect(file.id);
   };
 
@@ -134,16 +153,43 @@ export default function MediaRow({
       <div
         className={cn(
           "group flex items-center gap-3 px-3 py-2.5 rounded-md border border-border bg-card hover:bg-accent cursor-pointer transition-colors",
+          isSelected && "ring-2 ring-primary border-transparent bg-primary/10",
         )}
         draggable
         onDragStart={(e) => {
           e.stopPropagation();
-          setDragPayload(e, { type: "file", id: file.id, sourceProjectId: file.projectId });
+          if (isSelected && selectedIds && selectedIds.length > 1) {
+            setDragPayload(e, { type: "files", ids: selectedIds, sourceProjectId: file.projectId });
+          } else {
+            setDragPayload(e, { type: "file", id: file.id, sourceProjectId: file.projectId });
+          }
         }}
         onDragEnd={clearDragPayload}
         onClick={handleClick}
         data-testid={`media-row-${file.id}`}
       >
+        {onToggleSelect && (
+          <button
+            type="button"
+            aria-label={isSelected ? "Deselect file" : "Select file"}
+            aria-pressed={isSelected}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSelect(file.id, e);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            draggable={false}
+            className={cn(
+              "h-5 w-5 shrink-0 rounded border flex items-center justify-center transition-all",
+              isSelected
+                ? "bg-primary border-primary text-primary-foreground opacity-100"
+                : "border-muted-foreground/40 text-transparent opacity-0 group-hover:opacity-100",
+            )}
+            data-testid={`select-file-row-${file.id}`}
+          >
+            {isSelected && <Check className="h-3.5 w-3.5" />}
+          </button>
+        )}
         <div className="h-9 w-9 shrink-0 rounded bg-muted flex items-center justify-center">
           <Icon className="h-4 w-4 text-muted-foreground" />
         </div>

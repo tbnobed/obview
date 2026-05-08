@@ -96,6 +96,65 @@ export function useMoveFileToFolder() {
   });
 }
 
+// Bulk variant of useMoveFileToFolder — moves N files in parallel and
+// fires a single invalidation + toast when they're all done. Used by
+// drag-and-drop multi-select on the project page.
+export function useMoveFilesToFolder() {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({
+      fileIds,
+      folderId,
+      projectId,
+    }: {
+      fileIds: number[];
+      folderId: number | null;
+      projectId: number;
+    }) => {
+      const results = await Promise.allSettled(
+        fileIds.map((id) =>
+          apiRequest("PATCH", `/api/files/${id}/move`, { folderId, projectId }),
+        ),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      return { total: fileIds.length, failed };
+    },
+    onSuccess: (res, vars) => {
+      const refetchType = "all" as const;
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.projectId}/files`],
+        refetchType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/projects", vars.projectId, "files"],
+        refetchType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.projectId}/folders`],
+        refetchType,
+      });
+      const moved = res.total - res.failed;
+      if (res.failed === 0) {
+        toast({
+          title:
+            vars.folderId == null
+              ? `Moved ${moved} file${moved === 1 ? "" : "s"} to project root`
+              : `Moved ${moved} file${moved === 1 ? "" : "s"} to folder`,
+        });
+      } else {
+        toast({
+          title: `Moved ${moved} of ${res.total} files`,
+          description: `${res.failed} could not be moved.`,
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (err: Error) => {
+      toast({ title: "Couldn't move files", description: err.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useMoveFileToProject() {
   const { toast } = useToast();
   return useMutation({

@@ -429,12 +429,12 @@ function SidebarProjectRow({ project, location }: { project: any; location: stri
   };
   const onDrop = (e: React.DragEvent) => {
     const p = getDragPayload(e);
-    if (!accepts(p)) return;
+    if (!accepts(p) || p?.type !== "file") return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
     clearDragPayload();
-    moveFile.mutate({ fileId: p!.id, projectId: project.id });
+    moveFile.mutate({ fileId: p.id, projectId: project.id });
   };
 
   return (

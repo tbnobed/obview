@@ -13,7 +13,10 @@ export const DRAG_MIME = "application/x-obviu-dnd";
 export type DragPayload =
   | { type: "project"; id: number; sourceFolderId: number | null }
   | { type: "folder"; id: number; sourceParentFolderId: number | null; isGlobal: boolean }
-  | { type: "file"; id: number; sourceProjectId: number };
+  | { type: "file"; id: number; sourceProjectId: number }
+  // Multi-file drag (project-scoped). Drop targets that already accept
+  // "file" should also accept "files" and iterate `ids`.
+  | { type: "files"; ids: number[]; sourceProjectId: number };
 
 let activePayload: DragPayload | null = null;
 
@@ -21,7 +24,8 @@ export function setDragPayload(e: React.DragEvent, payload: DragPayload) {
   try {
     e.dataTransfer.setData(DRAG_MIME, JSON.stringify(payload));
     // Some browsers also need a text/plain fallback to allow the drag at all.
-    e.dataTransfer.setData("text/plain", `${payload.type}:${payload.id}`);
+    const idHint = payload.type === "files" ? payload.ids.join(",") : String(payload.id);
+    e.dataTransfer.setData("text/plain", `${payload.type}:${idHint}`);
     e.dataTransfer.effectAllowed = "move";
   } catch {
     // ignore — DataTransfer can throw in edge cases (cross-origin iframes etc.)

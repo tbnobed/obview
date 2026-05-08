@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers } from "lucide-react";
+import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, X } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -96,9 +96,27 @@ interface MediaCardProps {
   onMove?: (file: StorageFile) => void;
   versionCount?: number;
   approvalStatus?: "approved" | "changes_requested" | null;
+  // Multi-select drag-and-drop. When `isSelected`, the drag carries every
+  // selected file id rather than just this one. Clicks with shift/cmd/ctrl
+  // (or any click while another card is already selected) toggle selection
+  // instead of opening the file.
+  isSelected?: boolean;
+  selectionActive?: boolean;
+  selectedIds?: number[];
+  onToggleSelect?: (fileId: number, event: React.MouseEvent) => void;
 }
 
-function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }: MediaCardProps) {
+function MediaCard({
+  file,
+  onSelect,
+  onMove,
+  versionCount = 1,
+  approvalStatus,
+  isSelected = false,
+  selectionActive = false,
+  selectedIds,
+  onToggleSelect,
+}: MediaCardProps) {
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -245,7 +263,19 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
   
   const FileIcon = getFileIcon(file.fileType);
   
-  const handleCardClick = () => {
+  // Selection-aware click: shift/cmd/ctrl always toggles; if another card
+  // is already selected, plain click also toggles (Finder-style sticky
+  // selection). Otherwise plain click opens the file.
+  const handleCardClick = (e?: React.MouseEvent) => {
+    if (e && onToggleSelect) {
+      const wantsToggle = e.shiftKey || e.metaKey || e.ctrlKey || selectionActive;
+      if (wantsToggle) {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggleSelect(file.id, e);
+        return;
+      }
+    }
     onSelect(file.id);
   };
 
@@ -322,14 +352,22 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
 
   return (
     <Card 
-      className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-card border-border hover:border-foreground/20 active:opacity-70"
+      className={cn(
+        "group cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-card border-border hover:border-foreground/20 active:opacity-70",
+        isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent",
+      )}
       onClick={handleCardClick}
       draggable
       onDragStart={(e) => {
         // Carry source project id so drop targets can avoid no-op moves
-        // and so the server can reject same-project drops cleanly.
+        // and so the server can reject same-project drops cleanly. If this
+        // card is part of an active selection, drag the whole set.
         e.stopPropagation();
-        setDragPayload(e, { type: "file", id: file.id, sourceProjectId: file.projectId });
+        if (isSelected && selectedIds && selectedIds.length > 1) {
+          setDragPayload(e, { type: "files", ids: selectedIds, sourceProjectId: file.projectId });
+        } else {
+          setDragPayload(e, { type: "file", id: file.id, sourceProjectId: file.projectId });
+        }
       }}
       onDragEnd={clearDragPayload}
       data-testid={`media-card-${file.id}`}
@@ -495,8 +533,30 @@ function MediaCard({ file, onSelect, onMove, versionCount = 1, approvalStatus }:
             </div>
           )}
 
-          {/* Status Badge */}
+          {/* Status Badge + selection checkbox */}
           <div className="absolute top-2 left-2 flex items-center gap-1.5">
+            {onToggleSelect && (
+              <button
+                type="button"
+                aria-label={isSelected ? "Deselect file" : "Select file"}
+                aria-pressed={isSelected}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSelect(file.id, e);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                draggable={false}
+                className={cn(
+                  "h-5 w-5 rounded border flex items-center justify-center transition-all",
+                  isSelected
+                    ? "bg-primary border-primary text-primary-foreground opacity-100"
+                    : "bg-black/50 border-white/60 text-transparent opacity-0 group-hover:opacity-100",
+                )}
+                data-testid={`select-file-${file.id}`}
+              >
+                {isSelected && <Check className="h-3.5 w-3.5" />}
+              </button>
+            )}
             <div className={cn("w-3 h-3 rounded-full", statusInfo.color)}></div>
             {versionCount > 1 && (
               <div className="flex items-center gap-1 bg-black/70 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
@@ -691,6 +751,70 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
   const latestFiles = files.filter((f) => f.isLatestVersion);
   const [viewMode, setViewMode] = useViewMode("media", "grid");
 
+  // Multi-select state for drag-and-drop into subfolders. Selection is
+  // local to this list; switching folders / projects re-mounts the parent
+  // and resets it. After a move/refetch we drop ids that aren't visible
+  // anymore so a plain click opens (instead of toggling) and the header
+  // banner doesn't stick around in "selection mode".
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [lastSelectedId, setLastSelectedId] = useState<number | null>(null);
+  const visibleIdSet = new Set(latestFiles.map((f) => f.id));
+  // Identity-based signature, NOT count — moves can replace IDs without
+  // changing the list length (e.g. one in, one out from a sibling folder).
+  const visibleIdSignature = latestFiles.map((f) => f.id).join(",");
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      let changed = false;
+      const next = new Set<number>();
+      Array.from(prev).forEach((id) => {
+        if (visibleIdSet.has(id)) next.add(id);
+        else changed = true;
+      });
+      return changed ? next : prev;
+    });
+    setLastSelectedId((prev) => (prev != null && !visibleIdSet.has(prev) ? null : prev));
+    // visibleIdSet is rebuilt from latestFiles on every render; the signature
+    // is what actually decides when to re-prune.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleIdSignature]);
+
+  const orderedIds = latestFiles.map((f) => f.id);
+  const onToggleSelect = (fileId: number, e: React.MouseEvent) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      // Shift+click = range select from lastSelectedId to fileId.
+      if (e.shiftKey && lastSelectedId != null && lastSelectedId !== fileId) {
+        const a = orderedIds.indexOf(lastSelectedId);
+        const b = orderedIds.indexOf(fileId);
+        if (a !== -1 && b !== -1) {
+          const [lo, hi] = a < b ? [a, b] : [b, a];
+          for (let i = lo; i <= hi; i++) next.add(orderedIds[i]);
+          return next;
+        }
+      }
+      if (next.has(fileId)) next.delete(fileId);
+      else next.add(fileId);
+      return next;
+    });
+    setLastSelectedId(fileId);
+  };
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setLastSelectedId(null);
+  };
+  const selectionActive = selectedIds.size > 0;
+  const selectedIdArray = Array.from(selectedIds);
+
+  // Esc clears the selection — same affordance Finder/Drive use.
+  useEffect(() => {
+    if (!selectionActive) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") clearSelection();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectionActive]);
+
   const versionCounts = new Map<string, number>();
   for (const f of files) {
     const key = `${f.projectId}::${f.filename}`;
@@ -708,13 +832,27 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-1">Media Files</h2>
-          <p className="text-muted-foreground text-sm">{latestFiles.length} file{latestFiles.length !== 1 ? 's' : ''}</p>
+          <p className="text-muted-foreground text-sm">
+            {selectionActive
+              ? `${selectedIds.size} selected — drag onto a folder to move`
+              : `${latestFiles.length} file${latestFiles.length !== 1 ? "s" : ""}`}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {selectionActive && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearSelection}
+              data-testid="clear-selection-button"
+            >
+              <X className="h-4 w-4 mr-1" /> Clear
+            </Button>
+          )}
           <ViewModeToggle
             value={viewMode}
             onChange={setViewMode}
@@ -736,6 +874,10 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
               onMove={onMoveFile}
               versionCount={versionCounts.get(`${file.projectId}::${file.filename}`) || 1}
               approvalStatus={fileApprovals?.[file.id] ?? null}
+              isSelected={selectedIds.has(file.id)}
+              selectionActive={selectionActive}
+              selectedIds={selectedIdArray}
+              onToggleSelect={onToggleSelect}
             />
           ))}
         </div>
@@ -749,6 +891,10 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
               onMove={onMoveFile}
               versionCount={versionCounts.get(`${file.projectId}::${file.filename}`) || 1}
               approvalStatus={fileApprovals?.[file.id] ?? null}
+              isSelected={selectedIds.has(file.id)}
+              selectionActive={selectionActive}
+              selectedIds={selectedIdArray}
+              onToggleSelect={onToggleSelect}
             />
           ))}
         </div>

@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getDragPayload, peekDragPayload } from "@/lib/drag-drop";
-import { useMoveFileToFolder } from "@/hooks/use-drag-move";
+import { useMoveFileToFolder, useMoveFilesToFolder } from "@/hooks/use-drag-move";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,19 +62,33 @@ export function ProjectFoldersStrip({
   // a child folder tile.
   const [dragOver, setDragOver] = useState<number | "root" | null>(null);
   const moveFileToFolder = useMoveFileToFolder();
+  const moveFilesToFolder = useMoveFilesToFolder();
 
   // Only accept our own file drags; ignore project/folder drags and OS files.
+  // Both single-file and multi-file (selection) drags are accepted as long
+  // as they originate from this same project.
   const acceptsFileDrop = (e: React.DragEvent): boolean => {
     if (!canEdit) return false;
     const p = peekDragPayload(e);
-    return !!p && p.type === "file" && p.sourceProjectId === projectId;
+    if (!p) return false;
+    if (p.type === "file" && p.sourceProjectId === projectId) return true;
+    if (p.type === "files" && p.sourceProjectId === projectId && p.ids.length > 0) return true;
+    return false;
   };
   const handleFileDrop = (e: React.DragEvent, targetFolderId: number | null) => {
     const p = getDragPayload(e);
     setDragOver(null);
-    if (!p || p.type !== "file" || p.sourceProjectId !== projectId) return;
-    e.preventDefault();
-    moveFileToFolder.mutate({ fileId: p.id, folderId: targetFolderId, projectId });
+    if (!p) return;
+    if (p.type === "file" && p.sourceProjectId === projectId) {
+      e.preventDefault();
+      moveFileToFolder.mutate({ fileId: p.id, folderId: targetFolderId, projectId });
+      return;
+    }
+    if (p.type === "files" && p.sourceProjectId === projectId && p.ids.length > 0) {
+      e.preventDefault();
+      moveFilesToFolder.mutate({ fileIds: p.ids, folderId: targetFolderId, projectId });
+      return;
+    }
   };
 
   const deleteFolder = useMutation({
