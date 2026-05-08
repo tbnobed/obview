@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Image as ImageIcon, Loader2, Trash2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFolders } from "@/hooks/use-folders";
 import { buildFolderTree, type FolderNode } from "@/lib/folder-tree";
@@ -44,6 +44,33 @@ export default function ProjectForm({
   const [isLoading, setIsLoading] = useState(false);
   const isEditMode = !!projectId;
   const { data: folders } = useFolders();
+  // Local-only thumbnail state for the create flow. We can't POST the image
+  // until we have a project id back from the server, so the file is staged
+  // here and uploaded in a follow-up request after create succeeds.
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [pendingThumb, setPendingThumb] = useState<File | null>(null);
+  const [thumbPreview, setThumbPreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pendingThumb) { setThumbPreview(null); return; }
+    const url = URL.createObjectURL(pendingThumb);
+    setThumbPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [pendingThumb]);
+  const onPickThumb = () => fileRef.current?.click();
+  const onThumbChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) {
+      toast({ title: "Unsupported image", description: "Use PNG, JPEG, WebP, or GIF.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Image too large", description: "Max 10 MB.", variant: "destructive" });
+      return;
+    }
+    setPendingThumb(file);
+  };
   
   // Fetch project data if in edit mode
   const { data: project } = useQuery<any>({
@@ -97,17 +124,55 @@ export default function ProjectForm({
       if (response.ok) {
         try {
           const responseData = JSON.parse(responseText);
+
           toast({
             title: isEditMode ? "Project updated" : "Project created",
             description: isEditMode ? "Project updated successfully" : "Project created successfully"
           });
-          
+
           // Invalidate relevant queries
           queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
           if (isEditMode) {
             queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
           }
-          
+
+          // Fire-and-forget the staged thumbnail so the user isn't blocked
+          // on the create spinner. The project already exists; if the
+          // image upload fails we surface a single follow-up toast and
+          // they can retry from project settings.
+          if (!isEditMode && pendingThumb && responseData?.id) {
+            const newId = responseData.id;
+            const file = pendingThumb;
+            (async () => {
+              try {
+                const fd = new FormData();
+                fd.append("thumbnail", file);
+                const tRes = await fetch(`/api/projects/${newId}/thumbnail`, {
+                  method: "POST",
+                  body: fd,
+                  credentials: "include",
+                });
+                if (!tRes.ok) {
+                  const tText = await tRes.text();
+                  toast({
+                    title: "Thumbnail upload failed",
+                    description: (tText || "Try again from project settings.") + " Project was created.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+                queryClient.invalidateQueries({ queryKey: [`/api/projects/${newId}`] });
+              } catch (tErr: any) {
+                toast({
+                  title: "Thumbnail upload failed",
+                  description: (tErr?.message || "Try again from project settings.") + " Project was created.",
+                  variant: "destructive",
+                });
+              }
+            })();
+          }
+
           if (onSuccess) onSuccess(responseData.id);
         } catch (parseError) {
           console.error("Error parsing response:", parseError);
@@ -266,6 +331,69 @@ export default function ProjectForm({
           )}
         />
         
+        {!isEditMode && (
+          <FormItem>
+            <FormLabel>Thumbnail (optional)</FormLabel>
+            <div className="flex items-start gap-4">
+              <div className="h-24 w-40 shrink-0 rounded-md border bg-neutral-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
+                {thumbPreview ? (
+                  <img
+                    src={thumbPreview}
+                    alt="Thumbnail preview"
+                    className="w-full h-full object-cover"
+                    data-testid="create-thumb-preview"
+                  />
+                ) : (
+                  <div className="text-center text-neutral-400">
+                    <ImageIcon className="h-6 w-6 mx-auto mb-1" />
+                    <span className="text-xs">No image</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  onChange={onThumbChosen}
+                  data-testid="create-thumb-input"
+                />
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={onPickThumb}
+                  disabled={isLoading}
+                  data-testid="create-thumb-pick"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {pendingThumb ? "Replace image" : "Choose image"}
+                </Button>
+                {pendingThumb && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPendingThumb(null)}
+                    disabled={isLoading}
+                    data-testid="create-thumb-clear"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remove
+                  </Button>
+                )}
+                <p className="text-xs text-neutral-500 dark:text-gray-400">
+                  PNG, JPEG, WebP, or GIF. Max 10 MB.
+                </p>
+              </div>
+            </div>
+            <FormDescription>
+              Custom poster image. If unset, the card uses the latest video preview.
+            </FormDescription>
+          </FormItem>
+        )}
+
         <Button 
           type="submit" 
           disabled={isLoading} 
