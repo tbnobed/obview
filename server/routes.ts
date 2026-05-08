@@ -5775,11 +5775,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const files = await fileSystem.listFiles(uploadDir);
       
       // Get details for each file
-      const fileDetails = await Promise.all(
+      const fileDetails = (await Promise.all(
         files.map(async (filename) => {
           const filePath = fileSystem.joinPaths(uploadDir, filename);
           const stats = await fileSystem.getFileStats(filePath);
-          
+          // Skip subdirectories (e.g. `processed/`, `project-thumbs/`) —
+          // the admin file manager only manages individual upload files,
+          // and unlink() on a directory throws EISDIR.
+          if (stats.isDirectory()) return null;
+
           // Try to get file metadata from database if available
           let fileMetadata = null;
           try {
@@ -5818,8 +5822,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             metadata: fileMetadata
           };
         })
-      );
-      
+      )).filter((f): f is NonNullable<typeof f> => f !== null);
+
       // Sort files by modified date (newest first)
       fileDetails.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
       
@@ -5877,6 +5881,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Refuse to delete directories — admin file manager only handles
+      // individual upload files; unlink() on a dir throws EISDIR.
+      try {
+        const stats = await fileSystem.getFileStats(filePath);
+        if (stats.isDirectory()) {
+          return res.status(400).json({
+            message: "Refusing to delete a directory via the file manager.",
+          });
+        }
+      } catch {
+        // fall through; the unlink path will surface a real error
+      }
+
       // Look for any database entries that reference this file
       const allFiles = await storage.getAllFiles();
       const matchingFiles = allFiles.filter(file => 
@@ -5976,6 +5993,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             results.push({ filename: raw, ok: false, error: "not found" });
             continue;
           }
+          try {
+            const st = await fileSystem.getFileStats(filePath);
+            if (st.isDirectory()) {
+              results.push({ filename: raw, ok: false, error: "is a directory" });
+              continue;
+            }
+          } catch {}
           const matchingFiles = allFiles.filter(f =>
             (f.filePath && f.filePath.includes(sanitized)) || f.filename === sanitized
           );
