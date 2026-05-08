@@ -414,6 +414,12 @@ export function registerShareLinkRoutes(
       // For file shares, also expose the parent project id so an authenticated
       // viewer can be redirected to /projects/:projectId?media=:fileId.
       let fileProjectId: number | null = null;
+      // For folder shares, expose the owning project id when this is a
+      // PROJECT SUBFOLDER (folders.projectId != null). The client uses it
+      // to redirect signed-in viewers to /projects/:fid?folder=:folderId
+      // instead of leaving them stranded on the public share page.
+      // NULL means a sidebar/global folder (no parent project).
+      let folderProjectId: number | null = null;
       if (!expired) {
         if (link.scopeType === "project") {
           const p = await storage.getProject(link.scopeId);
@@ -421,6 +427,7 @@ export function registerShareLinkRoutes(
         } else if (link.scopeType === "folder") {
           const f = await storage.getFolder(link.scopeId);
           scopeName = f?.name ?? "";
+          folderProjectId = f?.projectId ?? null;
         } else if (link.scopeType === "file") {
           const f = await storage.getFile(link.scopeId);
           scopeName = f?.filename ?? "";
@@ -431,6 +438,7 @@ export function registerShareLinkRoutes(
         scopeType: link.scopeType,
         scopeId: link.scopeId,
         fileProjectId,
+        folderProjectId,
         name: link.name,
         scopeName,
         expired,

@@ -116,7 +116,16 @@ export default function ProjectPage() {
   const [settingsSheetOpen, setSettingsSheetOpen] = useState(false);
   const [showUsersDropdown, setShowUsersDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentSubfolderId, setCurrentSubfolderId] = useState<number | null>(null);
+  // Initialize from ?folder=N in the URL so deep links from a folder
+  // share land directly inside that subfolder (otherwise the user gets
+  // dropped at the project root and has to click into the folder again).
+  // Read once on mount; subsequent navigation is local state.
+  const [currentSubfolderId, setCurrentSubfolderId] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    const f = new URLSearchParams(window.location.search).get("folder");
+    const n = f ? parseInt(f, 10) : NaN;
+    return Number.isFinite(n) ? n : null;
+  });
   const [movingFile, setMovingFile] = useState<StorageFile | null>(null);
   
 

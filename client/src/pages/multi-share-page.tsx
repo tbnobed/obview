@@ -65,6 +65,7 @@ type ShareInfo = {
   scopeType: "project" | "folder" | "file";
   scopeId: number;
   fileProjectId: number | null;
+  folderProjectId: number | null;
   name: string | null;
   scopeName: string;
   expired: boolean;
@@ -222,6 +223,18 @@ export default function MultiSharePage() {
         `/projects/${info.fileProjectId}?media=${info.scopeId}`,
         { replace: true },
       );
+    } else if (info.scopeType === "folder") {
+      // Project subfolder: land on the project page with the subfolder
+      // pre-selected via ?folder=. Sidebar/global folder (no parent
+      // project): land on the standalone /folders/:id page.
+      if (info.folderProjectId) {
+        setLocation(
+          `/projects/${info.folderProjectId}?folder=${info.scopeId}`,
+          { replace: true },
+        );
+      } else {
+        setLocation(`/folders/${info.scopeId}`, { replace: true });
+      }
     }
   }, [authLoading, user, infoQ.data, setLocation]);
 
