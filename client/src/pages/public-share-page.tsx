@@ -285,6 +285,15 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
     if (typeof window === "undefined") return;
     if (name) localStorage.setItem("share-reviewer-name", name);
   }, [name]);
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const pendingActionRef = useRef<(() => void) | null>(null);
+  const requireName = (action: () => void) => {
+    if (name.trim()) { action(); return; }
+    pendingActionRef.current = action;
+    setNameDraft("");
+    setNameDialogOpen(true);
+  };
   const [content, setContent] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [videoAspect, setVideoAspect] = useState<number | null>(null);
@@ -1367,7 +1376,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                 className="h-7 text-xs"
                                 disabled={!replyContent.trim() || replyPost.isPending}
                                 onClick={() =>
-                                  replyPost.mutate({ parentId: c.id, text: replyContent.trim() })
+                                  requireName(() => replyPost.mutate({ parentId: c.id, text: replyContent.trim() }))
                                 }
                                 data-testid={`button-post-reply-${c.id}`}
                               >
@@ -1402,7 +1411,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="hidden sm:block bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
+                  className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
                   data-testid="input-share-author"
                 />
                 <div className="relative">
@@ -1428,7 +1437,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                         !post.isPending
                       ) {
                         e.preventDefault();
-                        post.mutate();
+                        requireName(() => post.mutate());
                       }
                     }}
                     data-testid="textarea-share-comment"
@@ -1511,7 +1520,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                       size="icon"
                       className="h-7 w-7 pointer-events-auto"
                       disabled={!content.trim() || post.isPending}
-                      onClick={() => post.mutate()}
+                      onClick={() => requireName(() => post.mutate())}
                       data-testid="button-post-share-comment"
                       title="Post"
                     >
@@ -1596,6 +1605,49 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           </Tabs>
         </aside>
       </div>
+      <Dialog open={nameDialogOpen} onOpenChange={setNameDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>What's your name?</DialogTitle>
+          </DialogHeader>
+          <Input
+            autoFocus
+            placeholder="Your name"
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && nameDraft.trim()) {
+                e.preventDefault();
+                const v = nameDraft.trim();
+                setName(v);
+                setNameDialogOpen(false);
+                const fn = pendingActionRef.current;
+                pendingActionRef.current = null;
+                if (fn) setTimeout(fn, 0);
+              }
+            }}
+            data-testid="input-name-prompt"
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              disabled={!nameDraft.trim()}
+              onClick={() => {
+                const v = nameDraft.trim();
+                if (!v) return;
+                setName(v);
+                setNameDialogOpen(false);
+                const fn = pendingActionRef.current;
+                pendingActionRef.current = null;
+                if (fn) setTimeout(fn, 0);
+              }}
+              data-testid="button-name-prompt-save"
+            >
+              Save & post
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
