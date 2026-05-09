@@ -1384,7 +1384,7 @@ function FileViewer({
       <div
         className={cn(
           fullScreen
-            ? "flex-1 min-h-0 min-w-0 flex flex-col bg-black"
+            ? "flex-1 min-h-0 min-w-0 flex flex-col justify-center bg-black"
             : "lg:col-span-2 flex flex-col gap-4 min-h-0",
         )}
       >
@@ -1393,9 +1393,14 @@ function FileViewer({
           className={cn(
             "relative",
             fullScreen
-              ? "flex-1 min-h-0 w-full flex items-center justify-center bg-black"
-              : "flex-1 min-h-0 rounded-lg overflow-hidden bg-black border border-neutral-200 dark:border-gray-800 shadow-sm flex items-center justify-center",
+              ? "w-full mx-auto flex items-center justify-center bg-black"
+              : "rounded-lg overflow-hidden bg-black border border-neutral-200 dark:border-gray-800 shadow-sm flex items-center justify-center mx-auto",
           )}
+          style={
+            videoAspect
+              ? { aspectRatio: videoAspect, maxHeight: "100%", maxWidth: "100%" }
+              : { flex: "1 1 0%", minHeight: 0 }
+          }
         >
           {isVideo && (
             <video
@@ -1412,8 +1417,7 @@ function FileViewer({
                 if (v.paused) v.play().catch(() => {});
                 else v.pause();
               }}
-              style={videoAspect ? { aspectRatio: videoAspect } : undefined}
-              className="max-w-full max-h-full bg-black cursor-pointer"
+              className="w-full h-full object-contain bg-black cursor-pointer"
               data-testid="share-video-player"
             >
               <source src={mediaSrc720} type="video/mp4" />
