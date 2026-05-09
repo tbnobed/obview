@@ -891,6 +891,7 @@ function FileViewer({
   }, [name]);
   const [content, setContent] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
+  const [videoAspect, setVideoAspect] = useState<number | null>(null);
   const { toast } = useToast();
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
@@ -968,6 +969,8 @@ function FileViewer({
     };
     const onMeta = () => {
       if (Number.isFinite(el.duration)) setDuration(el.duration);
+      const v = el as HTMLVideoElement;
+      if (v.videoWidth && v.videoHeight) setVideoAspect(v.videoWidth / v.videoHeight);
     };
     const onPlay = () => { setIsPaused(false); start(); };
     const onPause = () => { setIsPaused(true); stop(); };
@@ -1409,7 +1412,8 @@ function FileViewer({
                 if (v.paused) v.play().catch(() => {});
                 else v.pause();
               }}
-              className="w-full h-full object-cover bg-black cursor-pointer"
+              style={videoAspect ? { aspectRatio: videoAspect } : undefined}
+              className="max-w-full max-h-full bg-black cursor-pointer"
               data-testid="share-video-player"
             >
               <source src={mediaSrc720} type="video/mp4" />
