@@ -1657,7 +1657,7 @@ function FileViewer({
       <aside
         className={cn(
           fullScreen
-            ? "w-full lg:w-[360px] shrink-0 bg-white dark:bg-[#0f1218] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[40vh] lg:h-auto"
+            ? "w-full lg:w-[360px] shrink-0 bg-white dark:bg-[#0f1218] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[50vh] lg:h-auto"
             : "rounded-lg bg-white dark:bg-[#0f1218] border border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]",
         )}
       >
@@ -1701,7 +1701,7 @@ function FileViewer({
             value="comments"
             className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
           >
-            <div className="flex items-center gap-1 px-3 py-1.5 border-b border-neutral-200 dark:border-gray-800 shrink-0">
+            <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 border-b border-neutral-200 dark:border-gray-800 shrink-0">
               <Filter className="h-3.5 w-3.5 mr-1 text-neutral-400 dark:text-gray-500" />
               {(["all", "unresolved", "resolved"] as const).map((f) => (
                 <button
@@ -1973,13 +1973,13 @@ function FileViewer({
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
+                  className="hidden sm:block bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
                   data-testid="input-share-author"
                 />
                 <div className="relative">
                   <textarea
                     ref={commentInputRef}
-                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pr-10 min-h-[60px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
+                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pr-10 min-h-[40px] sm:min-h-[60px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
                     placeholder={
                       isVideo || isAudio
                         ? `Add a comment at ${fmtTime(currentTime) || "0:00"}...`
@@ -2014,7 +2014,7 @@ function FileViewer({
                 {(isVideo || isAudio) && (() => {
                   const hasRange = inPoint !== null && outPoint !== null && outPoint > inPoint;
                   return (
-                    <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                    <div className="hidden sm:flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
                       {hasRange ? (
                         <>
                           <span className="inline-flex items-center gap-1">
@@ -2045,7 +2045,7 @@ function FileViewer({
                   );
                 })()}
                 {isVideo && (
-                  <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-2">
                     <Button
                       type="button"
                       size="sm"

@@ -1138,7 +1138,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               value="comments"
               className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
             >
-              <div className="flex items-center gap-1 px-3 py-1.5 border-b border-neutral-200 dark:border-gray-800 shrink-0">
+              <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 border-b border-neutral-200 dark:border-gray-800 shrink-0">
                 <Filter className="h-3.5 w-3.5 mr-1 text-neutral-400 dark:text-gray-500" />
                 {(["all", "unresolved", "resolved"] as const).map((f) => (
                   <button
@@ -1398,13 +1398,13 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
+                  className="hidden sm:block bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
                   data-testid="input-share-author"
                 />
                 <div className="relative">
                   <textarea
                     ref={commentInputRef}
-                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pr-10 min-h-[60px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
+                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pr-10 min-h-[40px] sm:min-h-[60px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
                     placeholder={
                       isVideo || isAudio
                         ? `Add a comment at ${fmtTime(currentTime) || "0:00"}...`
@@ -1439,7 +1439,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 {(isVideo || isAudio) && (() => {
                   const hasRange = inPoint !== null && outPoint !== null && outPoint > inPoint;
                   return (
-                    <div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                    <div className="hidden sm:flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
                       {hasRange ? (
                         <>
                           <span className="inline-flex items-center gap-1">
@@ -1470,7 +1470,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   );
                 })()}
                 {isVideo && (
-                  <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-2">
                     <Button
                       type="button"
                       size="sm"
