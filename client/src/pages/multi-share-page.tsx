@@ -1409,7 +1409,7 @@ function FileViewer({
                 if (v.paused) v.play().catch(() => {});
                 else v.pause();
               }}
-              className="w-full h-full object-contain bg-black cursor-pointer"
+              className="w-full h-full object-cover bg-black cursor-pointer"
               data-testid="share-video-player"
             >
               <source src={mediaSrc720} type="video/mp4" />
