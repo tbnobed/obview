@@ -1057,7 +1057,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
             className="flex-1 min-h-0 flex flex-col"
           >
             <div className="px-2 py-1 border-b border-neutral-200 dark:border-gray-800">
-              <TabsList className="h-7 bg-neutral-100 dark:bg-gray-900">
+              <TabsList className="h-7 bg-transparent p-0 gap-1">
                 {!viewOnly && (
                   <TabsTrigger
                     value="comments"
