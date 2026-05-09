@@ -819,7 +819,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
   const heading = file.projectName || "Shared file";
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-black text-gray-100 overflow-hidden">
+    <div className="w-screen flex flex-col bg-black text-gray-100 overflow-hidden" style={{ height: '100dvh' }}>
       {/* Slim top bar */}
       <header className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -1416,6 +1416,10 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                     }
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
+                    onFocus={() => {
+                      const el = mediaRef.current;
+                      if (el && !el.paused) el.pause();
+                    }}
                     onKeyDown={(e) => {
                       if (
                         e.key === "Enter" &&
