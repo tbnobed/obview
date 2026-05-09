@@ -28,6 +28,7 @@ import {
   Music,
   File as FileIcon,
   PencilLine,
+  Smile,
   X as XIcon,
   Pencil,
   Trash2,
@@ -889,6 +890,7 @@ function FileViewer({
     if (name) localStorage.setItem("share-reviewer-name", name);
   }, [name]);
   const [content, setContent] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
   const { toast } = useToast();
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
@@ -1925,7 +1927,7 @@ function FileViewer({
                 <div className="relative">
                   <textarea
                     ref={commentInputRef}
-                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pr-10 min-h-[40px] sm:min-h-[60px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
+                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pb-9 min-h-[64px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
                     placeholder={
                       isVideo || isAudio
                         ? `Add a comment at ${fmtTime(currentTime) || "0:00"}...`
@@ -1946,16 +1948,91 @@ function FileViewer({
                     }}
                     data-testid="textarea-share-comment"
                   />
-                  <Button
-                    size="icon"
-                    className="absolute bottom-2 right-2 h-7 w-7"
-                    disabled={!content.trim() || post.isPending}
-                    onClick={() => post.mutate()}
-                    data-testid="button-post-share-comment"
-                    title="Post"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between pointer-events-none">
+                    <div className="flex items-center gap-0.5 pointer-events-auto">
+                      {isVideo && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-neutral-500 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
+                          onClick={() => {
+                            if (mediaRef.current && !mediaRef.current.paused) mediaRef.current.pause();
+                            setDisplayAnnotations(null);
+                            setIsAnnotating(true);
+                          }}
+                          title={pendingAnnotations && pendingAnnotations.length ? "Edit drawing" : "Annotate frame"}
+                          data-testid="button-share-annotate"
+                        >
+                          <PencilLine className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <div className="relative">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-neutral-500 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-white"
+                          onClick={() => setShowEmoji((v) => !v)}
+                          title="Add emoji"
+                          data-testid="button-share-emoji"
+                        >
+                          <Smile className="h-4 w-4" />
+                        </Button>
+                        {showEmoji && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setShowEmoji(false)} />
+                            <div className="absolute z-50 bottom-9 left-0 bg-white dark:bg-gray-900 border border-neutral-200 dark:border-gray-700 rounded-md shadow-lg p-2 grid grid-cols-8 gap-1 w-[256px]">
+                              {["👍","❤️","😂","🔥","🎉","👏","😮","😢","✅","❌","🙏","💯","🚀","👀","💡","⚠️","🤔","😍","😅","😎","🙌","💪","✨","⭐"].map((e) => (
+                                <button
+                                  key={e}
+                                  type="button"
+                                  className="text-lg hover:bg-neutral-100 dark:hover:bg-gray-800 rounded p-1"
+                                  onClick={() => {
+                                    const ta = commentInputRef.current;
+                                    const start = ta?.selectionStart ?? content.length;
+                                    const end = ta?.selectionEnd ?? content.length;
+                                    setContent(content.slice(0, start) + e + content.slice(end));
+                                    setShowEmoji(false);
+                                    setTimeout(() => {
+                                      ta?.focus();
+                                      const pos = start + e.length;
+                                      ta?.setSelectionRange(pos, pos);
+                                    }, 0);
+                                  }}
+                                >
+                                  {e}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      {pendingAnnotations && pendingAnnotations.length > 0 && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-neutral-500 hover:text-red-600 dark:text-gray-400"
+                          onClick={() => { setPendingAnnotations(null); setDisplayAnnotations(null); }}
+                          title="Clear drawing"
+                          data-testid="button-share-clear-annotation"
+                        >
+                          <XIcon className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <Button
+                      size="icon"
+                      className="h-7 w-7 pointer-events-auto"
+                      disabled={!content.trim() || post.isPending}
+                      onClick={() => post.mutate()}
+                      data-testid="button-post-share-comment"
+                      title="Post"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 {(isVideo || isAudio) && (() => {
                   const hasRange = inPoint !== null && outPoint !== null && outPoint > inPoint;
@@ -1990,50 +2067,8 @@ function FileViewer({
                     </div>
                   );
                 })()}
-                {isVideo && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs"
-                      onClick={() => {
-                        if (mediaRef.current && !mediaRef.current.paused) {
-                          mediaRef.current.pause();
-                        }
-                        setDisplayAnnotations(null);
-                        setIsAnnotating(true);
-                      }}
-                      data-testid="button-share-annotate"
-                      title="Draw on the frame"
-                    >
-                      <PencilLine className="h-3.5 w-3.5 mr-1.5" />
-                      {pendingAnnotations && pendingAnnotations.length
-                        ? "Edit drawing"
-                        : "Annotate"}
-                    </Button>
-                    {pendingAnnotations && pendingAnnotations.length > 0 && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 text-xs text-neutral-500 dark:text-gray-400"
-                        onClick={() => {
-                          setPendingAnnotations(null);
-                          setDisplayAnnotations(null);
-                        }}
-                        title="Clear drawing"
-                        data-testid="button-share-clear-annotation"
-                      >
-                        <XIcon className="h-3.5 w-3.5 mr-1" /> Clear
-                      </Button>
-                    )}
-                    {pendingAnnotations && pendingAnnotations.length > 0 && (
-                      <span className="text-[10px] text-neutral-500 dark:text-gray-400">
-                        Drawing attached
-                      </span>
-                    )}
-                  </div>
+                {isVideo && pendingAnnotations && pendingAnnotations.length > 0 && (
+                  <span className="text-[10px] text-neutral-500 dark:text-gray-400">Drawing attached</span>
                 )}
               </div>
             )}
