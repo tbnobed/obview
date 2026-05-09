@@ -425,7 +425,7 @@ export default function SharePlayerControls({
                   >
                     <div
                       className={cn(
-                        "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-black shadow-lg border-2 border-white",
+                        "w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-black shadow-md border border-white",
                         isActive ? "bg-blue-500" : "bg-yellow-400",
                       )}
                     >
