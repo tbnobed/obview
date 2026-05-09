@@ -57,6 +57,7 @@ export default function MediaPlayer({
   // to visible when the prop isn't provided.
   const isSidebarHidden = isSidebarHiddenProp ?? false;
   const [useOriginalQuality, setUseOriginalQuality] = useState(false);
+  const [videoAspect, setVideoAspect] = useState<number | null>(null);
   const [activeCommentId, setActiveCommentId] = useState<string | undefined>(undefined);
   const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
   const [selectedVersionFile, setSelectedVersionFile] = useState<File | null>(null);
@@ -776,6 +777,9 @@ export default function MediaPlayer({
     const handleMetadata = () => {
       // Try to detect frame rate from video playback quality or use 30 as safe default
       setFrameRate(30);
+      if (video.videoWidth && video.videoHeight) {
+        setVideoAspect(video.videoWidth / video.videoHeight);
+      }
     };
     video.addEventListener('loadedmetadata', handleMetadata);
     return () => video.removeEventListener('loadedmetadata', handleMetadata);
@@ -1833,11 +1837,15 @@ export default function MediaPlayer({
   return (
     <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden lg:gap-0 gap-0 lg:px-0 lg:mx-0 lg:max-w-none">
       {/* Media area wrapper - Mobile: stacked, Desktop: flex-1 to fill remaining space */}
-      <div className="flex-1 min-w-0 lg:h-full overflow-hidden">
+      <div className="shrink-0 min-w-0 lg:flex-1 lg:h-full overflow-hidden">
         {/* Media Viewer - Mobile-first with explicit desktop overrides */}
         <div className="relative mx-auto w-full p-0 lg:mx-0 lg:max-w-none lg:p-0 lg:h-full lg:flex lg:flex-col">
         {/* Media container - Mobile: aspect ratio, Desktop: full height */}
-        <div ref={mediaContainerRef} className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md lg:aspect-none lg:flex-1 lg:min-h-0">
+        <div
+          ref={mediaContainerRef}
+          className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md lg:aspect-none lg:flex-1 lg:min-h-0 lg:mx-auto"
+          style={videoAspect ? { aspectRatio: videoAspect, maxHeight: "100%", maxWidth: "100%", flex: "0 1 auto" } : undefined}
+        >
           {renderMediaContent()}
           {isAnnotating && mediaContainerSize.width > 0 && (
             <AnnotationCanvas
@@ -2507,7 +2515,7 @@ export default function MediaPlayer({
       {file && (
         <div
           className={cn(
-            "w-full h-full max-h-[50vh] min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t border-neutral-200 dark:border-gray-800 lg:border-t-0 lg:border-l overflow-hidden lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0",
+            "w-full flex-1 min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t border-neutral-200 dark:border-gray-800 lg:border-t-0 lg:border-l overflow-hidden lg:flex-none lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0",
             isSidebarHidden && "hidden"
           )}
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
