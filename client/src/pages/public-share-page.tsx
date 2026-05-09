@@ -1056,8 +1056,8 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
             defaultValue={viewOnly ? "transcript" : "comments"}
             className="flex-1 min-h-0 flex flex-col"
           >
-            <div className="px-3 py-2.5 border-b border-neutral-200 dark:border-gray-800">
-              <TabsList className="bg-neutral-100 dark:bg-gray-900">
+            <div className="px-2 py-1 border-b border-neutral-200 dark:border-gray-800">
+              <TabsList className="h-7 bg-neutral-100 dark:bg-gray-900">
                 {!viewOnly && (
                   <TabsTrigger
                     value="comments"
