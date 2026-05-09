@@ -892,6 +892,19 @@ function FileViewer({
   const [content, setContent] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [videoAspect, setVideoAspect] = useState<number | null>(null);
+  const [useOriginalQuality, setUseOriginalQuality] = useState(false);
+  const pendingSeekRef = useRef<{ t: number; play: boolean } | null>(null);
+  const processingQ = useQuery<any>({
+    queryKey: ["/api/public/share", token, "files", file?.id, "processing"],
+    queryFn: async () => {
+      if (!file?.id) return null;
+      const r = await fetch(`/api/public/share/${token}/files/${file.id}/processing`, { credentials: "include" });
+      if (!r.ok) return null;
+      return r.json();
+    },
+    enabled: !!file?.id && file?.fileType === "video",
+  });
+  const has720p = !!(processingQ.data?.status === "completed" && processingQ.data?.qualities?.some((q: any) => q.resolution === "720p"));
   const { toast } = useToast();
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
@@ -971,6 +984,12 @@ function FileViewer({
       if (Number.isFinite(el.duration)) setDuration(el.duration);
       const v = el as HTMLVideoElement;
       if (v.videoWidth && v.videoHeight) setVideoAspect(v.videoWidth / v.videoHeight);
+      const pending = pendingSeekRef.current;
+      if (pending && Number.isFinite(el.duration)) {
+        pendingSeekRef.current = null;
+        try { el.currentTime = Math.min(pending.t, el.duration - 0.05); } catch {}
+        if (pending.play) el.play().catch(() => {});
+      }
     };
     const onPlay = () => { setIsPaused(false); start(); };
     const onPause = () => { setIsPaused(true); stop(); };
@@ -1000,7 +1019,7 @@ function FileViewer({
       el.removeEventListener("durationchange", onMeta);
       el.removeEventListener("volumechange", onVolume);
     };
-  }, [file.id]);
+  }, [file.id, useOriginalQuality, has720p]);
 
   // Reset per-file transient state when switching files (FileViewer is reused)
   useEffect(() => {
@@ -1404,6 +1423,7 @@ function FileViewer({
         >
           {isVideo && (
             <video
+              key={`${useOriginalQuality ? "hd" : "720p"}-${has720p ? 1 : 0}`}
               ref={mediaRef as any}
               controls={false}
               playsInline
@@ -1420,8 +1440,14 @@ function FileViewer({
               className="w-full h-full object-contain bg-black cursor-pointer"
               data-testid="share-video-player"
             >
-              <source src={mediaSrc720} type="video/mp4" />
-              <source src={mediaSrc} type="video/mp4" />
+              {useOriginalQuality || !has720p ? (
+                <source src={mediaSrc} type="video/mp4" />
+              ) : (
+                <>
+                  <source src={mediaSrc720} type="video/mp4" />
+                  <source src={mediaSrc} type="video/mp4" />
+                </>
+              )}
             </video>
           )}
           {isAudio && (
@@ -1586,6 +1612,16 @@ function FileViewer({
             watermarkOn={!!watermarkLabel}
             onSeek={(t) => seekTo(t)}
             scrubSrc={`/api/public/share/${token}/files/${file.id}/scrub`}
+            has720p={has720p}
+            useOriginalQuality={useOriginalQuality}
+            onToggleQuality={() => {
+              const el = mediaRef.current;
+              pendingSeekRef.current = {
+                t: el?.currentTime ?? 0,
+                play: !!(el && !el.paused),
+              };
+              setUseOriginalQuality((v) => !v);
+            }}
           />
         )}
 
@@ -1770,6 +1806,15 @@ function FileViewer({
                                     title="Has annotation"
                                   >
                                     <PencilLine className="h-3 w-3" /> Drawing
+                                  </span>
+                                )}
+                                {c.isResolved && (
+                                  <span
+                                    className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                                    title="Resolved"
+                                    data-testid={`badge-resolved-${c.id}`}
+                                  >
+                                    <Check className="h-3 w-3" /> Resolved
                                   </span>
                                 )}
                               </div>

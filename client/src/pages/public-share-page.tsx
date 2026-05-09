@@ -288,6 +288,18 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
   const [content, setContent] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [videoAspect, setVideoAspect] = useState<number | null>(null);
+  const [useOriginalQuality, setUseOriginalQuality] = useState(false);
+  const pendingSeekRef = useRef<{ t: number; play: boolean } | null>(null);
+  const processingQ = useQuery<any>({
+    queryKey: ["/api/share", token, "processing"],
+    queryFn: async () => {
+      const r = await fetch(`/api/share/${token}/processing`, { credentials: "include" });
+      if (!r.ok) return null;
+      return r.json();
+    },
+    enabled: !!token && file?.fileType === "video",
+  });
+  const has720p = !!(processingQ.data?.status === "completed" && processingQ.data?.qualities?.some((q: any) => q.resolution === "720p"));
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPaused, setIsPaused] = useState(true);
@@ -377,6 +389,12 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
       if (Number.isFinite(el.duration)) setDuration(el.duration);
       const v = el as HTMLVideoElement;
       if (v.videoWidth && v.videoHeight) setVideoAspect(v.videoWidth / v.videoHeight);
+      const pending = pendingSeekRef.current;
+      if (pending && Number.isFinite(el.duration)) {
+        pendingSeekRef.current = null;
+        try { el.currentTime = Math.min(pending.t, el.duration - 0.05); } catch {}
+        if (pending.play) el.play().catch(() => {});
+      }
     };
     const onPlay = () => { setIsPaused(false); start(); };
     const onPause = () => { setIsPaused(true); stop(); };
@@ -406,7 +424,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
       el.removeEventListener("durationchange", onMeta);
       el.removeEventListener("volumechange", onVolume);
     };
-  }, [file.id]);
+  }, [file.id, useOriginalQuality, has720p]);
 
   const handleSaveAnnotation = (annotations: Annotation[]) => {
     setPendingAnnotations(annotations.length ? annotations : null);
@@ -913,6 +931,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           >
             {isVideo && (
               <video
+                key={`${useOriginalQuality ? "hd" : "720p"}-${has720p ? 1 : 0}`}
                 ref={mediaRef as any}
                 controls={false}
                 playsInline
@@ -929,8 +948,14 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 className="w-full h-full object-contain bg-black cursor-pointer"
                 data-testid="share-video-player"
               >
-                <source src={mediaSrc720} type="video/mp4" />
-                <source src={mediaSrc} type="video/mp4" />
+                {useOriginalQuality || !has720p ? (
+                  <source src={mediaSrc} type="video/mp4" />
+                ) : (
+                  <>
+                    <source src={mediaSrc720} type="video/mp4" />
+                    <source src={mediaSrc} type="video/mp4" />
+                  </>
+                )}
               </video>
             )}
             {isAudio && (
@@ -1039,6 +1064,16 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               watermarkOn={watermarkOn}
               onSeek={(t) => seekTo(t)}
               scrubSrc={`/api/share/${token}/scrub`}
+              has720p={has720p}
+              useOriginalQuality={useOriginalQuality}
+              onToggleQuality={() => {
+                const el = mediaRef.current;
+                pendingSeekRef.current = {
+                  t: el?.currentTime ?? 0,
+                  play: !!(el && !el.paused),
+                };
+                setUseOriginalQuality((v) => !v);
+              }}
             />
           )}
 
@@ -1215,6 +1250,15 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                       title="Has annotation"
                                     >
                                       <PencilLine className="h-3 w-3" /> Drawing
+                                    </span>
+                                  )}
+                                  {c.isResolved && (
+                                    <span
+                                      className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                                      title="Resolved"
+                                      data-testid={`badge-resolved-${c.id}`}
+                                    >
+                                      <Check className="h-3 w-3" /> Resolved
                                     </span>
                                   )}
                                 </div>
