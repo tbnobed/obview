@@ -681,10 +681,13 @@ export function registerShareLinkRoutes(
       if (!file) return res.status(404).json({ message: "Not found" });
       const all = await storage.getUnifiedCommentsByFileV2(file.id);
 
-      // Public reviewers may only see public comments. Strip creatorToken.
-      const visible = all
-        .filter((c: any) => c.isPublic === true)
-        .map((c: any) => { const { creatorToken, ...rest } = c; return rest; });
+      // Show every comment on the file (matches /api/share/:token/comments
+      // for single-file shares — reviewers expect to see the full thread,
+      // not just other reviewers' public posts). Strip creatorToken.
+      const visible = all.map((c: any) => {
+        const { creatorToken, ...rest } = c;
+        return rest;
+      });
 
       // Enrich with author names so registered users don't appear as "Anonymous"
       const userIds = Array.from(new Set(visible.map((c: any) => c.userId).filter((x: any) => x != null)));

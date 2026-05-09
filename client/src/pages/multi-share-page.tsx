@@ -1580,55 +1580,6 @@ function FileViewer({
         )}
 
 
-        {/* Timecode bar — fullscreen + playable media only */}
-        {fullScreen && (isVideo || isAudio) && (
-          <div
-            className="shrink-0 flex items-center justify-center gap-2 px-4 py-2 border-t border-gray-800 bg-black"
-            data-testid="timecode-bar"
-          >
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1.5 rounded-md bg-gray-900/70 hover:bg-gray-800 border border-gray-700 px-3 py-1.5 font-mono text-sm text-gray-100"
-                  data-testid="button-timecode-format"
-                  aria-label="Time format"
-                  title="Time format"
-                >
-                  <span data-testid="text-timecode">
-                    {formatTimecode(currentTime, timeFormat)}
-                  </span>
-                  <ChevronDown className="h-3 w-3 text-gray-400" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="bg-gray-900 border-gray-700 text-gray-100 min-w-[140px]"
-              >
-                <DropdownMenuLabel className="text-gray-400 text-xs font-normal">
-                  Time Format
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-gray-800" />
-                {(["Frames", "Standard", "Timecode"] as TimeFormat[]).map(
-                  (fmt) => (
-                    <DropdownMenuItem
-                      key={fmt}
-                      onClick={() => setTimeFormat(fmt)}
-                      className={cn(
-                        "cursor-pointer focus:bg-gray-800 focus:text-gray-100",
-                        timeFormat === fmt && "text-primary",
-                      )}
-                      data-testid={`menu-timeformat-${fmt.toLowerCase()}`}
-                    >
-                      {fmt}
-                    </DropdownMenuItem>
-                  ),
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-
         {/* File meta bar — only in non-fullscreen mode (fullscreen has top bar) */}
         {!fullScreen && (
           <div className="flex items-center justify-between rounded-lg bg-white dark:bg-gray-900 border border-neutral-200 dark:border-gray-800 px-4 py-3 shrink-0">
@@ -1723,11 +1674,6 @@ function FileViewer({
               {commentsQ.isLoading && (
                 <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
                   Loading comments...
-                </p>
-              )}
-              {!commentsQ.isLoading && commentsQ.data && commentsQ.data.length === 0 && commentFilter === "all" && (
-                <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
-                  No comments yet. Be the first to leave one.
                 </p>
               )}
               {(() => {
