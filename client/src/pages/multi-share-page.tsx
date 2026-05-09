@@ -1384,7 +1384,7 @@ function FileViewer({
       <div
         className={cn(
           fullScreen
-            ? "flex-1 min-h-0 min-w-0 flex flex-col justify-center bg-black"
+            ? "shrink-0 min-w-0 flex flex-col bg-black lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink"
             : "lg:col-span-2 flex flex-col gap-4 min-h-0",
         )}
       >
@@ -1618,7 +1618,7 @@ function FileViewer({
       <aside
         className={cn(
           fullScreen
-            ? "w-full lg:w-[360px] shrink-0 bg-white dark:bg-[#0f1218] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[50vh] lg:h-auto"
+            ? "w-full lg:w-[360px] flex-1 lg:flex-none lg:shrink-0 bg-white dark:bg-[#0f1218] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col min-h-0 lg:h-auto"
             : "rounded-lg bg-white dark:bg-[#0f1218] border border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]",
         )}
       >

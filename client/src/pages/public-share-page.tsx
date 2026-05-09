@@ -905,7 +905,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
       {/* Body: player + sidebar */}
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden bg-black">
         {/* Player column */}
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col justify-center bg-black">
+        <div className="shrink-0 min-w-0 flex flex-col bg-black lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink">
           <div
             ref={mediaContainerRef}
             className="relative w-full mx-auto flex items-center justify-center bg-black"
@@ -1049,7 +1049,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
 
         {/* Sidebar */}
         <aside
-          className="w-full lg:w-[360px] shrink-0 flex flex-col bg-white dark:bg-[#0a0d12] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 min-h-0 overflow-hidden"
+          className="w-full lg:w-[360px] flex-1 lg:flex-none lg:shrink-0 flex flex-col bg-white dark:bg-[#0a0d12] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 min-h-0 overflow-hidden"
           data-testid="share-sidebar"
         >
           <Tabs
