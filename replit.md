@@ -112,6 +112,48 @@ npx drizzle-kit generate
   2. `client/src/pages/share-resolver-page.tsx` reads `info` first; if `viewerAuthenticated && !expired`, it does `window.location.replace(VITE_APP_BASE_URL + path)` *before* mounting `MultiSharePage`/`PublicSharePage`. `multi-share-page.tsx` and `public-share-page.tsx` carry the same cross-host fallback (using `useAuth().user`) for direct visits to `/s/:token` and `/share/:token`. **Prod must build with `APP_BASE_URL=https://tbn.obviu.io`** (passed through to `VITE_APP_BASE_URL` in `docker-compose.yml`) so the bundle is baked with the canonical app host. Leave it unset in dev / replit (single-host) — code falls back to in-app `setLocation`. `client/src/pages/project-page.tsx` reads `?folder=N` on mount and seeds `currentSubfolderId` so a folder share lands inside the subfolder, not the project root.
 - **Nginx Proxy Manager (NPM) custom config**: NPM auto-includes anything in `/data/nginx/custom/`. We use `/data/nginx/custom/server_proxy.conf` to set `proxy_request_buffering off;` (essential for tus / large uploads) on hosts 4 (tbn.obviu.io) and 33 (t.obviu.io) without touching per-host advanced fields. Editing the per-host **Advanced** field is dangerous: NPM's validator runs `nginx -t -g "error_log off;"` which masks the real error, and on a failed validation NPM **deletes the entire host config**, taking the site down until the host is re-saved. The container is `nginx-proxy-manager-app-1`.
 
+## Deferred / parked work
+
+### Adobe Premiere Pro panel (UXP) — circle back
+
+**Why now:** Editors want comments + markers inside Premiere instead of round-tripping FCPXML. CEP is dead Sept 2026 — UXP only. UXP went GA in Premiere 25.6 (Dec 2025).
+
+**Branch + env strategy (do not touch prod):**
+- Long-lived branches off `main`: `panel/server` (API tokens, CORS, `/api/v1/*`) and `panel/plugin` (UXP plugin, separate repo `obviu-premiere-panel/` so it doesn't pull into the app image).
+- All schema changes additive (new tables / nullable cols only) until merged, so prod hotfixes on `main` keep merging cleanly into the panel branches.
+- Stand up `~/obview-staging` on `obtv-ai` as a second Compose stack with `COMPOSE_PROJECT_NAME=obview_stg`, separate DB volume (`obview_stg` DB), separate uploads volume, port 5001, NPM host `stg.obviu.io`, `SESSION_COOKIE_DOMAIN` left unset. Nightly `pg_dump | psql` from prod → staging.
+- Hotfix loop: fix on `main` → deploy `~/obview` → `git merge main` into panel branches → staging redeploys.
+
+**Server-side prerequisites (in this repo, on `panel/server`):**
+1. `users.api_token` (random 40-char, stored hashed) + Settings UI to generate/revoke.
+2. Bearer-token middleware that sets `req.user` (in addition to existing session cookie).
+3. CORS allowlist for the Adobe UXP webview origin (TBD on first run — log `Origin` header from the panel during dev).
+4. Stable read API under `/api/v1/`:
+   - `GET /api/v1/projects`
+   - `GET /api/v1/projects/:id/files`
+   - `GET /api/v1/files/:id` (includes `versions[]`)
+   - `GET /api/v1/files/:id/comments` (timestamp, in/out, status, author, resolved)
+   - `GET /api/v1/files/:id/transcript`
+5. Tus auth via bearer token (already cookie-gated; mirror to bearer).
+6. Phase-2 only: outbound webhooks (`comment.created`, `file.versioned`, `review.changed`).
+
+**Panel scope (separate repo `obviu-premiere-panel/`, UXP via `require('premierepro')`):**
+- **Phase 1 (read-only):** sign in via API token, browse projects → files → versions, "Pull comments to markers" (color by status: open=red, resolved=green, changes-requested=orange; range comments → marker spans), "Jump to comment" (set sequence CTI), polling refresh every 30s.
+- **Phase 2 (write-back):** reply / resolve / approve from inside Premiere; "Send for review" → AME export → tus upload as a new version of an existing file.
+- **Phase 3:** AME watch-folder auto-upload, optional burn-in watermark/timecode, multi-workspace switcher.
+
+**Distribution:**
+- Direct `.ccx` from `tbn.obviu.io/downloads/obviu-premiere.ccx` first (no review).
+- Adobe Creative Cloud Marketplace listing later (1–4 wk review per submission, 10% fee on paid). Required for mass distribution + auto-update.
+
+**Effort estimate:** server prereqs ~3–5 days, Phase 1 panel ~1.5–2 wk, Phase 2 ~2–3 wk, marketplace submission ~2 days work + 1 month calendar.
+
+**Open decisions before kickoff:**
+- Phase 1 read-only first vs. straight to write-back?
+- Ship `.ccx` direct first, marketplace later — confirmed approach.
+- Markers from latest version only, or any historical version?
+- Confirm `~/obview-staging` provisioning + `stg.obviu.io` NPM host + port 5001 + Spark NFS share access.
+
 ## Pointers
 
 - **Radix UI Documentation**: [https://www.radix-ui.com/](https://www.radix-ui.com/)
