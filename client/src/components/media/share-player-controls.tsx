@@ -227,11 +227,11 @@ export default function SharePlayerControls({
 
   return (
     <div
-      className="bg-white dark:bg-black/90 backdrop-blur p-2 pb-4 border-t border-neutral-200 dark:border-gray-800 lg:p-3 lg:pb-4"
-      style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom, 0px))" }}
+      className="bg-white dark:bg-black/90 backdrop-blur px-2 pt-1 pb-2 border-t border-neutral-200 dark:border-gray-800 lg:px-3 lg:pt-1.5 lg:pb-2"
+      style={{ paddingBottom: "max(8px, env(safe-area-inset-bottom, 0px))" }}
       data-testid="share-player-controls"
     >
-      <div className="flex flex-col space-y-1">
+      <div className="flex flex-col">
         {/* Controls row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -239,11 +239,11 @@ export default function SharePlayerControls({
               onClick={togglePlay}
               variant="ghost"
               size="icon"
-              className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0"
+              className="h-8 w-8 text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0"
               title={isPaused ? "Play" : "Pause"}
               data-testid="button-play-pause"
             >
-              {isPaused ? <Play className="h-6 w-6" /> : <Pause className="h-6 w-6" />}
+              {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
             </Button>
 
             <div className="hidden lg:flex items-center space-x-2">
@@ -316,7 +316,7 @@ export default function SharePlayerControls({
         {/* Progress bar + comment markers rail */}
         <div className="w-full flex flex-col gap-0 relative">
           <div
-            className="relative py-2 cursor-pointer"
+            className="relative py-1 cursor-pointer"
             style={{
               touchAction: "pan-x",
               WebkitTouchCallout: "none",

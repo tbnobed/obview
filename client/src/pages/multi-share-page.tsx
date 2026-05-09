@@ -1991,7 +1991,7 @@ function FileViewer({
                   );
                 })()}
                 {isVideo && (
-                  <div className="hidden sm:flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       size="sm"
