@@ -1412,7 +1412,7 @@ function FileViewer({
     <div
       className={cn(
         fullScreen
-          ? "flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden bg-black"
+          ? "flex-1 min-h-0 flex flex-col landscape:flex-row lg:flex-row overflow-hidden bg-black"
           : "grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(70vh+88px)] lg:min-h-[520px]",
       )}
     >
@@ -1420,7 +1420,7 @@ function FileViewer({
       <div
         className={cn(
           fullScreen
-            ? "shrink-0 min-w-0 flex flex-col bg-black lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink"
+            ? "shrink-0 min-w-0 flex flex-col bg-black landscape:flex-1 landscape:min-h-0 landscape:justify-center landscape:shrink lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink"
             : "lg:col-span-2 flex flex-col gap-4 min-h-0",
         )}
       >
@@ -1671,7 +1671,7 @@ function FileViewer({
       <aside
         className={cn(
           fullScreen
-            ? "w-full lg:w-[360px] flex-1 lg:flex-none lg:shrink-0 bg-white dark:bg-[#0f1218] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col min-h-0 lg:h-auto"
+            ? "w-full landscape:w-[44%] landscape:max-w-[360px] lg:w-[360px] flex-1 landscape:flex-none landscape:shrink-0 lg:flex-none lg:shrink-0 bg-white dark:bg-[#0f1218] border-t landscape:border-t-0 landscape:border-l lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col min-h-0 landscape:h-auto lg:h-auto"
             : "rounded-lg bg-white dark:bg-[#0f1218] border border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]",
         )}
       >

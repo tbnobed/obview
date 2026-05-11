@@ -930,9 +930,9 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
       </header>
 
       {/* Body: player + sidebar */}
-      <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden bg-black">
+      <div className="flex-1 min-h-0 flex flex-col landscape:flex-row lg:flex-row overflow-hidden bg-black">
         {/* Player column */}
-        <div className="shrink-0 min-w-0 flex flex-col bg-black lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink">
+        <div className="shrink-0 min-w-0 flex flex-col bg-black landscape:flex-1 landscape:min-h-0 landscape:justify-center landscape:shrink lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink">
           <div
             ref={mediaContainerRef}
             className="relative w-full mx-auto flex items-center justify-center bg-black"
@@ -1093,7 +1093,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
 
         {/* Sidebar */}
         <aside
-          className="w-full lg:w-[360px] flex-1 lg:flex-none lg:shrink-0 flex flex-col bg-white dark:bg-[#0a0d12] border-t lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 min-h-0 overflow-hidden"
+          className="w-full landscape:w-[44%] landscape:max-w-[360px] lg:w-[360px] flex-1 landscape:flex-none landscape:shrink-0 lg:flex-none lg:shrink-0 flex flex-col bg-white dark:bg-[#0a0d12] border-t landscape:border-t-0 landscape:border-l lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 min-h-0 overflow-hidden"
           data-testid="share-sidebar"
         >
           <Tabs
