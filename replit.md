@@ -96,6 +96,7 @@ Quick index of what lives there:
 - NVENC pipeline + L4 GPU notes
 - Directed review loop / approval emails (incl. share-link reviewer email fallback)
 - Share-link reviewer uploads (project-scope only)
+- Folder shares: sidebar vs project-subfolder branch (scope resolution)
 - WAN parallel tus uploads
 - Site-to-site cap = UniFi SiteMagic IPsec CPU
 - Cross-subdomain session cookie (`SESSION_COOKIE_DOMAIN`)
