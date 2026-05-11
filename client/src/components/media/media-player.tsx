@@ -1873,10 +1873,10 @@ export default function MediaPlayer({
         </div>
         
         {/* Bottom controls area - Mobile: minimal padding, Desktop: compact */}
-        <div className="bg-white dark:bg-black/90 backdrop-blur p-2 pb-4 border-t border-neutral-200 dark:border-gray-800 lg:p-3 lg:pb-4" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
+        <div className="bg-white dark:bg-black/90 backdrop-blur p-2 pb-[max(16px,env(safe-area-inset-bottom,0px))] border-t border-neutral-200 dark:border-gray-800 landscape:p-1 landscape:pb-1 lg:p-3 lg:pb-4">
           {/* Media player controls - Only shown when no error */}
           {!mediaError && (
-              <div className="flex flex-col space-y-1">
+              <div className="flex flex-col space-y-1 landscape:space-y-0">
                 {/* Controls row */}
                 {/* Controls row - Mobile: compact, Desktop: spacious */}
                 <div className="flex items-center justify-between">
@@ -1885,12 +1885,12 @@ export default function MediaPlayer({
                       onClick={togglePlay}
                       variant="ghost"
                       size="icon"
-                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0"
+                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0 landscape:h-7 landscape:w-7"
                     >
                       {isPlaying ? (
-                        <Pause className="h-6 w-6" />
+                        <Pause className="h-6 w-6 landscape:h-4 landscape:w-4" />
                       ) : (
-                        <Play className="h-6 w-6" />
+                        <Play className="h-6 w-6 landscape:h-4 landscape:w-4" />
                       )}
                     </Button>
                     
@@ -1952,10 +1952,10 @@ export default function MediaPlayer({
                       onClick={toggleFullscreen}
                       variant="ghost"
                       size="icon"
-                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] landscape:h-7 landscape:w-7"
                       title="Toggle fullscreen"
                     >
-                      <Maximize className="h-5 w-5" />
+                      <Maximize className="h-5 w-5 landscape:h-4 landscape:w-4" />
                     </Button>
                   </div>
                 </div>
