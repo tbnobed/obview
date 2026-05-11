@@ -356,7 +356,7 @@ export default function MultiSharePage() {
     return (
       <div className="w-screen flex flex-col bg-black text-gray-100 overflow-hidden" style={{ height: '100dvh' }}>
         {/* Slim top bar */}
-        <header className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0">
+        <header className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0 landscape:hidden lg:landscape:flex">
           <div className="flex items-center gap-2 min-w-0">
             <Button
               variant="ghost"
@@ -1688,7 +1688,7 @@ function FileViewer({
           })()}
           className="flex-1 min-h-0 flex flex-col"
         >
-          <div className="px-2 py-1 border-b border-neutral-200 dark:border-gray-800">
+          <div className="px-2 py-1 border-b border-neutral-200 dark:border-gray-800 landscape:hidden lg:landscape:block">
             <TabsList className="h-7 bg-transparent p-0 gap-1">
               <TabsTrigger value="comments" className="text-xs px-3">
                 Comments

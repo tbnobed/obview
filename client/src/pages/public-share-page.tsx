@@ -830,7 +830,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
   return (
     <div className="w-screen flex flex-col bg-black text-gray-100 overflow-hidden" style={{ height: '100dvh' }}>
       {/* Slim top bar */}
-      <header className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0">
+      <header className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0 landscape:hidden lg:landscape:flex">
         <div className="flex items-center gap-2 min-w-0">
           <Logo className="h-6 w-auto" />
           <div className="text-xs text-gray-400 truncate hidden sm:block">{heading}</div>
@@ -1100,7 +1100,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
             defaultValue={viewOnly ? "transcript" : "comments"}
             className="flex-1 min-h-0 flex flex-col"
           >
-            <div className="px-2 py-1 border-b border-neutral-200 dark:border-gray-800">
+            <div className="px-2 py-1 border-b border-neutral-200 dark:border-gray-800 landscape:hidden lg:landscape:block">
               <TabsList className="h-7 bg-transparent p-0 gap-1">
                 {!viewOnly && (
                   <TabsTrigger
