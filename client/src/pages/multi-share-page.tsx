@@ -1420,7 +1420,7 @@ function FileViewer({
       <div
         className={cn(
           fullScreen
-            ? "shrink-0 min-w-0 flex flex-col bg-black landscape:flex-1 landscape:min-h-0 landscape:justify-center landscape:shrink lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink"
+            ? "shrink-0 min-w-0 flex flex-col bg-black max-h-[60dvh] landscape:max-h-none lg:max-h-none landscape:flex-1 landscape:min-h-0 landscape:justify-center landscape:shrink lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink"
             : "lg:col-span-2 flex flex-col gap-4 min-h-0",
         )}
       >
