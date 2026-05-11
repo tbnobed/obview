@@ -1835,9 +1835,9 @@ export default function MediaPlayer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden lg:gap-0 gap-0 lg:px-0 lg:mx-0 lg:max-w-none">
+    <div className="flex flex-col landscape:flex-row lg:flex-row w-full h-full overflow-hidden lg:gap-0 gap-0 lg:px-0 lg:mx-0 lg:max-w-none">
       {/* Media area wrapper - Mobile: stacked, Desktop: flex-1 to fill remaining space */}
-      <div className="shrink-0 min-w-0 lg:flex-1 lg:h-full overflow-hidden">
+      <div className="shrink-0 min-w-0 max-h-[60dvh] landscape:max-h-none lg:max-h-none landscape:flex-1 landscape:h-full lg:flex-1 lg:h-full overflow-hidden">
         {/* Media Viewer - Mobile-first with explicit desktop overrides */}
         <div className="relative mx-auto w-full p-0 lg:mx-0 lg:max-w-none lg:p-0 lg:h-full lg:flex lg:flex-col">
         {/* Media container - Mobile: aspect ratio, Desktop: full height */}
@@ -2515,7 +2515,7 @@ export default function MediaPlayer({
       {file && (
         <div
           className={cn(
-            "w-full flex-1 min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t border-neutral-200 dark:border-gray-800 lg:border-t-0 lg:border-l overflow-hidden lg:flex-none lg:w-[387px] lg:h-full lg:max-h-full lg:shrink-0",
+            "w-full landscape:w-[44%] landscape:max-w-[387px] lg:w-[387px] flex-1 min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t landscape:border-t-0 landscape:border-l lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden landscape:flex-none landscape:shrink-0 landscape:h-full landscape:max-h-full lg:flex-none lg:h-full lg:max-h-full lg:shrink-0",
             isSidebarHidden && "hidden"
           )}
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
