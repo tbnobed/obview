@@ -1,0 +1,99 @@
+iperf3 -c 192.168.3.80 -p 5201 -t 30
+Connecting to host 192.168.3.80, port 5201
+[  5] local 192.168.200.201 port 53398 connected to 192.168.3.80 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec   170 MBytes  1.42 Gbits/sec   15   6.65 MBytes
+[  5]   1.00-2.00   sec  44.2 MBytes   371 Mbits/sec    0   6.75 MBytes
+[  5]   2.00-3.00   sec  88.8 MBytes   744 Mbits/sec    0   7.12 MBytes
+[  5]   3.00-4.00   sec  89.2 MBytes   749 Mbits/sec    0   7.02 MBytes
+[  5]   4.00-5.00   sec  43.9 MBytes   368 Mbits/sec    0   7.15 MBytes
+[  5]   5.00-6.00   sec  89.0 MBytes   747 Mbits/sec    0   7.07 MBytes
+[  5]   6.00-7.00   sec  89.9 MBytes   754 Mbits/sec    0   6.42 MBytes
+[  5]   7.00-8.00   sec  89.1 MBytes   748 Mbits/sec    0   7.23 MBytes
+[  5]   8.00-9.00   sec  44.6 MBytes   374 Mbits/sec    0   6.68 MBytes
+[  5]   9.00-10.00  sec  89.2 MBytes   749 Mbits/sec    0   6.53 MBytes
+[  5]  10.00-11.00  sec  44.5 MBytes   373 Mbits/sec    0   6.85 MBytes
+[  5]  11.00-12.00  sec  89.5 MBytes   751 Mbits/sec    0   6.67 MBytes
+[  5]  12.00-13.00  sec  89.6 MBytes   752 Mbits/sec    0   6.73 MBytes
+[  5]  13.00-14.00  sec  89.8 MBytes   753 Mbits/sec    0   6.76 MBytes
+[  5]  14.00-15.00  sec  44.6 MBytes   374 Mbits/sec    0   6.72 MBytes
+[  5]  15.00-16.00  sec  90.0 MBytes   755 Mbits/sec    0   6.85 MBytes
+[  5]  16.00-17.00  sec  89.4 MBytes   750 Mbits/sec    0   6.85 MBytes
+[  5]  17.00-18.00  sec  88.5 MBytes   742 Mbits/sec    0   7.15 MBytes
+[  5]  18.00-19.00  sec  44.9 MBytes   376 Mbits/sec    0   7.18 MBytes
+[  5]  19.00-20.00  sec  89.1 MBytes   748 Mbits/sec    0   6.53 MBytes
+[  5]  20.00-21.00  sec  44.8 MBytes   375 Mbits/sec    0   6.74 MBytes
+[  5]  21.00-22.00  sec  90.0 MBytes   755 Mbits/sec    0   7.06 MBytes
+[  5]  22.00-23.00  sec  89.4 MBytes   750 Mbits/sec    0   6.95 MBytes
+[  5]  23.00-24.00  sec  84.2 MBytes   707 Mbits/sec    0   6.47 MBytes
+[  5]  24.00-25.00  sec  45.0 MBytes   377 Mbits/sec    0   6.94 MBytes
+[  5]  25.00-26.00  sec  89.0 MBytes   747 Mbits/sec    0   6.71 MBytes
+[  5]  26.00-27.00  sec  88.9 MBytes   746 Mbits/sec    0   7.48 MBytes
+[  5]  27.00-28.00  sec  88.8 MBytes   744 Mbits/sec    0   7.48 MBytes
+[  5]  28.00-29.00  sec  45.0 MBytes   377 Mbits/sec    0   6.34 MBytes
+[  5]  29.00-30.00  sec  89.9 MBytes   753 Mbits/sec    0   6.80 MBytes
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-30.00  sec  2.30 GBytes   659 Mbits/sec   15             sender
+[  5]   0.00-30.04  sec  2.21 GBytes   631 Mbits/sec                  receiver
+
+iperf Done.
+obtv-admin@obtv-ai:~/obview$ ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute
+       valid_lft forever preferred_lft forever
+2: eno1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 18:66:da:f9:f7:3c brd ff:ff:ff:ff:ff:ff
+    altname enp1s0f0
+3: eno2: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 18:66:da:f9:f7:3d brd ff:ff:ff:ff:ff:ff
+    altname enp1s0f1
+4: eno3: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 18:66:da:f9:f7:3e brd ff:ff:ff:ff:ff:ff
+    altname enp2s0f0
+5: eno4: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 18:66:da:f9:f7:3f brd ff:ff:ff:ff:ff:ff
+    altname enp2s0f1
+6: enp3s0f0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+    link/ether 1c:86:0b:23:c0:c4 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.200.201/22 brd 192.168.203.255 scope global dynamic noprefixroute enp3s0f0
+       valid_lft 84627sec preferred_lft 84627sec
+    inet6 fe80::6165:584:988f:a0e0/64 scope link noprefixroute
+       valid_lft forever preferred_lft forever
+7: enp68s0f0np0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc mq state UP group default qlen 1000
+    link/ether 10:70:fd:b2:eb:3e brd ff:ff:ff:ff:ff:ff
+    inet 192.168.100.2/24 brd 192.168.100.255 scope global noprefixroute enp68s0f0np0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::1270:fdff:feb2:eb3e/64 scope link
+       valid_lft forever preferred_lft forever
+8: enp3s0f1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 1c:86:0b:23:c0:c5 brd ff:ff:ff:ff:ff:ff
+9: enp68s0f1np1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9000 qdisc mq state UP group default qlen 1000
+    link/ether 10:70:fd:b2:eb:3f brd ff:ff:ff:ff:ff:ff
+    inet 192.168.101.2/24 brd 192.168.101.255 scope global noprefixroute enp68s0f1np1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::1270:fdff:feb2:eb3f/64 scope link
+       valid_lft forever preferred_lft forever
+10: br-4f95d6fafedb: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 3a:b1:1f:9e:2e:47 brd ff:ff:ff:ff:ff:ff
+    inet 172.18.0.1/16 brd 172.18.255.255 scope global br-4f95d6fafedb
+       valid_lft forever preferred_lft forever
+    inet6 fe80::38b1:1fff:fe9e:2e47/64 scope link
+       valid_lft forever preferred_lft forever
+11: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default
+    link/ether e6:48:ab:ad:9b:0b brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::e448:abff:fead:9b0b/64 scope link
+       valid_lft forever preferred_lft forever
+12: veth0a43c87@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br-4f95d6fafedb state UP group default
+    link/ether da:7b:48:84:f5:4a brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet6 fe80::d87b:48ff:fe84:f54a/64 scope link
+       valid_lft forever preferred_lft forever
+659: veth4612e56@if2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br-4f95d6fafedb state UP group default
+    link/ether 96:8c:da:c8:76:60 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet6 fe80::948c:daff:fec8:7660/64 scope link
+       valid_lft forever preferred_lft forever
