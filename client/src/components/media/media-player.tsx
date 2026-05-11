@@ -1839,11 +1839,11 @@ export default function MediaPlayer({
       {/* Media area wrapper - Mobile: stacked, Desktop: flex-1 to fill remaining space */}
       <div className="shrink-0 min-w-0 max-h-[60dvh] landscape:max-h-none lg:max-h-none landscape:flex-1 landscape:h-full lg:flex-1 lg:h-full overflow-hidden">
         {/* Media Viewer - Mobile-first with explicit desktop overrides */}
-        <div className="relative mx-auto w-full p-0 lg:mx-0 lg:max-w-none lg:p-0 lg:h-full lg:flex lg:flex-col">
+        <div className="relative mx-auto w-full p-0 lg:mx-0 lg:max-w-none lg:p-0 landscape:h-full landscape:flex landscape:flex-col lg:h-full lg:flex lg:flex-col">
         {/* Media container - Mobile: aspect ratio, Desktop: full height */}
         <div
           ref={mediaContainerRef}
-          className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md lg:aspect-none lg:flex-1 lg:min-h-0 lg:mx-auto"
+          className="relative w-full aspect-[16/9] bg-black overflow-hidden lg:rounded-md landscape:aspect-none landscape:flex-1 landscape:min-h-0 landscape:mx-auto lg:aspect-none lg:flex-1 lg:min-h-0 lg:mx-auto"
           style={videoAspect ? { aspectRatio: videoAspect, maxHeight: "100%", maxWidth: "100%", flex: "0 1 auto" } : undefined}
         >
           {renderMediaContent()}
