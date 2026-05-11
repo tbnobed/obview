@@ -2523,7 +2523,7 @@ export default function MediaPlayer({
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
             {/* Tab controls — single horizontally-scrollable strip works for
                 both desktop and mobile so all 5 labels fit without truncation. */}
-            <div className="flex items-center px-2 py-2 lg:px-3 border-b border-neutral-200 dark:border-gray-800 overflow-x-auto">
+            <div className="flex items-center px-2 py-2 lg:px-3 border-b border-neutral-200 dark:border-gray-800 overflow-x-auto landscape:hidden lg:landscape:flex">
               <TabsList className="bg-transparent inline-flex w-max p-0 gap-1">
                 <TabsTrigger value="comments" className="text-xs px-2.5" onClick={() => setShowCommentsTab(true)}>
                   Comments

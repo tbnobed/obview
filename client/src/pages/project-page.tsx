@@ -410,8 +410,13 @@ export default function ProjectPage() {
        "flex flex-col",
        viewMode === "player" ? "h-full min-h-0" : "min-h-full"
      )}>
-      {/* Project Header — combined global + project bar, single row */}
-      <header className="bg-white dark:bg-[#0a0d14] border-b border-neutral-200 dark:border-gray-800/80">
+      {/* Project Header — combined global + project bar, single row.
+          Hidden in landscape on phones while a file is open so the player + comments
+          get the full viewport (URL bar + header would otherwise eat ~30% of height). */}
+      <header className={cn(
+        "bg-white dark:bg-[#0a0d14] border-b border-neutral-200 dark:border-gray-800/80",
+        viewMode === "player" && "landscape:hidden lg:landscape:block",
+      )}>
         <div className="px-3 py-2 flex items-center justify-between gap-3 lg:px-4 lg:py-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <Button
