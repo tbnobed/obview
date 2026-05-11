@@ -84,6 +84,14 @@ async function gatherScopeFiles(link: ShareLink): Promise<DbFile[]> {
     return files.filter(f => f.isLatestVersion !== false);
   }
   if (link.scopeType === "folder") {
+    const folder = await storage.getFolder(link.scopeId);
+    if (!folder) return [];
+    // Project subfolder: contains files directly via files.folderId.
+    if (folder.projectId != null) {
+      const fs2 = await storage.getFilesByProject(folder.projectId);
+      return fs2.filter(f => f.folderId === link.scopeId && f.isLatestVersion !== false);
+    }
+    // Sidebar/top-level folder: contains projects; union their files.
     const projects = await storage.getProjectsByFolder(link.scopeId);
     const all: DbFile[] = [];
     for (const p of projects) {
@@ -101,6 +109,13 @@ async function fileBelongsToScope(link: ShareLink, fileId: number): Promise<DbFi
   if (link.scopeType === "file") return link.scopeId === f.id ? f : undefined;
   if (link.scopeType === "project") return link.scopeId === f.projectId ? f : undefined;
   if (link.scopeType === "folder") {
+    const folder = await storage.getFolder(link.scopeId);
+    if (!folder) return undefined;
+    // Project subfolder: file must be directly in this subfolder.
+    if (folder.projectId != null) {
+      return f.folderId === link.scopeId && f.projectId === folder.projectId ? f : undefined;
+    }
+    // Sidebar folder: file's project must live in this folder.
     const proj = await storage.getProject(f.projectId);
     return proj && proj.folderId === link.scopeId ? f : undefined;
   }
