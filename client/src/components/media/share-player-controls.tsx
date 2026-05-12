@@ -488,17 +488,17 @@ export default function SharePlayerControls({
               style={{ left: `${scrubLeft}px`, bottom: `${scrubTop}px`, zIndex: 2147483646 }}
               data-testid="scrub-preview-portal"
             >
-              <div className="bg-black/90 rounded-lg p-2 shadow-2xl border border-gray-700">
+              <div>
                 <video
                   ref={previewVideoRef}
-                  className="rounded bg-gray-800 pointer-events-none block"
+                  className="rounded pointer-events-none block"
                   style={{ maxWidth: "192px", maxHeight: "256px", width: "auto", height: "auto" }}
                   src={scrubSrc}
                   muted
                   playsInline
                   data-testid="video-scrub-preview"
                 />
-                <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
+                <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                   {formatSMPTE(scrubTime, frameRate)}
                 </div>
               </div>
