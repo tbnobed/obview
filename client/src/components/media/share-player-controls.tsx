@@ -200,11 +200,10 @@ export default function SharePlayerControls({
     const previewWidth = 208;
     const desiredLeft = e.clientX - previewWidth / 2;
     const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-    // Anchor the preview's BOTTOM 12px above the progress bar; the rendered
-    // height varies (portrait videos go up to 256px), so we use translateY in
-    // the portal element to push the preview fully above the timeline. Hard-
-    // coding a height here caused tall portrait previews to overlap the bar.
-    const top = rect.top - 12;
+    // Pin the preview's BOTTOM 8px above the progress bar via CSS `bottom`
+    // (stored in scrubTop). This avoids translateY/height-estimate math and
+    // works for portrait + landscape previews alike.
+    const top = window.innerHeight - rect.top + 8;
     setScrubTime(t);
     setScrubLeft(left);
     setScrubTop(top);
@@ -486,17 +485,10 @@ export default function SharePlayerControls({
         ? createPortal(
             <div
               className="fixed pointer-events-none"
-              style={{ left: `${scrubLeft}px`, top: `${scrubTop}px`, transform: "translateY(-100%)", zIndex: 2147483646 }}
+              style={{ left: `${scrubLeft}px`, bottom: `${scrubTop}px`, zIndex: 2147483646 }}
               data-testid="scrub-preview-portal"
             >
               <div className="bg-black/90 rounded-lg p-2 shadow-2xl border border-gray-700">
-                {/* Timestamp ABOVE the preview so translateY(-100%) keeps the
-                    video frame's bottom edge right above the timeline cursor
-                    instead of lifting the whole box (timestamp + video) high
-                    above the user's pointer. */}
-                <div className="text-white text-lg text-center mb-1 font-mono font-bold drop-shadow-lg px-2 py-1">
-                  {formatSMPTE(scrubTime, frameRate)}
-                </div>
                 <video
                   ref={previewVideoRef}
                   className="rounded bg-gray-800 pointer-events-none block"
@@ -506,6 +498,9 @@ export default function SharePlayerControls({
                   playsInline
                   data-testid="video-scrub-preview"
                 />
+                <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
+                  {formatSMPTE(scrubTime, frameRate)}
+                </div>
               </div>
             </div>,
             document.body,

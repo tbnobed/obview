@@ -995,11 +995,11 @@ export default function MediaPlayer({
     const previewWidth = 208;
     const desiredLeft = e.clientX - previewWidth / 2;
     const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-    // Anchor preview's BOTTOM 12px above progress bar (translateY(-100%) on
-    // the portal element). Preview height is variable (portrait videos up to
-    // 256px+); a fixed previewHeight estimate let tall previews overlap the
-    // timeline below the cursor.
-    const top = rect.top - 12;
+    // Pin the preview's BOTTOM 8px above the progress bar. We store this as a
+    // CSS `bottom` value (distance from viewport bottom) so the preview hugs
+    // the timeline regardless of its own height — landscape and portrait
+    // previews both end up directly above the cursor.
+    const top = window.innerHeight - rect.top + 8;
     
     setScrubPreviewLeft(left);
     setScrubPreviewTop(top);
@@ -2397,17 +2397,10 @@ export default function MediaPlayer({
           style={{
             position: 'fixed',
             left: `${scrubPreviewLeft}px`,
-            top: `${scrubPreviewTop}px`,
-            transform: 'translateY(-100%)',
+            bottom: `${scrubPreviewTop}px`,
           }}
         >
           <div className="p-2">
-            {/* Timestamp ABOVE the preview so translateY(-100%) anchors the
-                video frame's bottom right above the timeline cursor instead
-                of lifting the whole box (timestamp + video) too high. */}
-            <div className="text-white text-lg text-center mb-1 font-mono font-bold drop-shadow-lg px-2 py-1">
-              {formatTime(scrubPreviewTime)}
-            </div>
             <div className="relative">
               {/* Video-based scrub preview. Size is constrained by max width
                   AND max height so portrait/vertical sources (very common for
@@ -2431,6 +2424,9 @@ export default function MediaPlayer({
                   }
                 }}
               />
+            </div>
+            <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
+              {formatTime(scrubPreviewTime)}
             </div>
           </div>
         </div>,
