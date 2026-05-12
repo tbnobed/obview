@@ -2402,6 +2402,12 @@ export default function MediaPlayer({
           }}
         >
           <div className="p-2">
+            {/* Timestamp ABOVE the preview so translateY(-100%) anchors the
+                video frame's bottom right above the timeline cursor instead
+                of lifting the whole box (timestamp + video) too high. */}
+            <div className="text-white text-lg text-center mb-1 font-mono font-bold drop-shadow-lg px-2 py-1">
+              {formatTime(scrubPreviewTime)}
+            </div>
             <div className="relative">
               {/* Video-based scrub preview. Size is constrained by max width
                   AND max height so portrait/vertical sources (very common for
@@ -2425,9 +2431,6 @@ export default function MediaPlayer({
                   }
                 }}
               />
-            </div>
-            <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
-              {formatTime(scrubPreviewTime)}
             </div>
           </div>
         </div>,
