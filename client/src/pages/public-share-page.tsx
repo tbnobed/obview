@@ -935,8 +935,12 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
         <div className="shrink-0 min-w-0 flex flex-col bg-black max-h-[60dvh] landscape:max-h-none lg:max-h-none landscape:flex-1 landscape:min-h-0 landscape:justify-center landscape:shrink lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink">
           <div
             ref={mediaContainerRef}
-            className="relative w-full mx-auto flex items-center justify-center bg-black"
-            style={videoAspect ? { aspectRatio: videoAspect, maxHeight: "100%", maxWidth: "100%" } : { flex: "1 1 0%", minHeight: 0 }}
+            className="relative w-full mx-auto flex items-center justify-center bg-black flex-1 min-h-0"
+            // Don't use aspectRatio in landscape/desktop: the column is height-
+            // constrained and SharePlayerControls renders below this box. With
+            // aspectRatio + maxHeight:100% the video swallows the column and
+            // the controls (incl. comment-marker rail) get clipped.
+            style={undefined}
           >
             {isVideo && (
               <video

@@ -1429,13 +1429,19 @@ function FileViewer({
           className={cn(
             "relative",
             fullScreen
-              ? "w-full mx-auto flex items-center justify-center bg-black"
+              ? "w-full mx-auto flex items-center justify-center bg-black flex-1 min-h-0"
               : "rounded-lg overflow-hidden bg-black border border-neutral-200 dark:border-gray-800 shadow-sm flex items-center justify-center mx-auto",
           )}
           style={
-            videoAspect
+            // In landscape (and desktop) the column is height-constrained and
+            // also has SharePlayerControls below — using aspectRatio with
+            // maxHeight:100% lets the video eat the full column height and
+            // pushes the controls (and the comment-marker rail) off-screen.
+            // Drop the aspectRatio in those modes; flex-1 + object-contain on
+            // the <video> preserves the picture without dominating the column.
+            videoAspect && !fullScreen
               ? { aspectRatio: videoAspect, maxHeight: "100%", maxWidth: "100%" }
-              : { flex: "1 1 0%", minHeight: 0 }
+              : undefined
           }
         >
           {isVideo && (
