@@ -198,10 +198,13 @@ export default function SharePlayerControls({
     }
     if (fileType !== "video" || !scrubSrc) return;
     const previewWidth = 208;
-    const previewHeight = 150;
     const desiredLeft = e.clientX - previewWidth / 2;
     const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-    const top = rect.top - previewHeight - 12;
+    // Anchor the preview's BOTTOM 12px above the progress bar; the rendered
+    // height varies (portrait videos go up to 256px), so we use translateY in
+    // the portal element to push the preview fully above the timeline. Hard-
+    // coding a height here caused tall portrait previews to overlap the bar.
+    const top = rect.top - 12;
     setScrubTime(t);
     setScrubLeft(left);
     setScrubTop(top);
@@ -483,7 +486,7 @@ export default function SharePlayerControls({
         ? createPortal(
             <div
               className="fixed pointer-events-none"
-              style={{ left: `${scrubLeft}px`, top: `${scrubTop}px`, zIndex: 2147483646 }}
+              style={{ left: `${scrubLeft}px`, top: `${scrubTop}px`, transform: "translateY(-100%)", zIndex: 2147483646 }}
               data-testid="scrub-preview-portal"
             >
               <div className="bg-black/90 rounded-lg p-2 shadow-2xl border border-gray-700">

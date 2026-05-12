@@ -993,10 +993,13 @@ export default function MediaPlayer({
     
     // Position preview using viewport coordinates  
     const previewWidth = 208;
-    const previewHeight = 150;
     const desiredLeft = e.clientX - previewWidth / 2;
     const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-    const top = rect.top - previewHeight - 12;
+    // Anchor preview's BOTTOM 12px above progress bar (translateY(-100%) on
+    // the portal element). Preview height is variable (portrait videos up to
+    // 256px+); a fixed previewHeight estimate let tall previews overlap the
+    // timeline below the cursor.
+    const top = rect.top - 12;
     
     setScrubPreviewLeft(left);
     setScrubPreviewTop(top);
@@ -2394,7 +2397,8 @@ export default function MediaPlayer({
           style={{
             position: 'fixed',
             left: `${scrubPreviewLeft}px`,
-            top: `${scrubPreviewTop}px`
+            top: `${scrubPreviewTop}px`,
+            transform: 'translateY(-100%)',
           }}
         >
           <div className="p-2">
