@@ -1989,12 +1989,15 @@ export default function MediaPlayer({
                         const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
                         const hoverTime = duration * pos;
                         
-                        // Position preview using viewport coordinates
+                        // Position preview using viewport coordinates.
+                        // `top` here is stored as a CSS `bottom` value
+                        // (distance from viewport bottom) so the preview's
+                        // bottom edge sits 8px above the timeline regardless
+                        // of preview height (portrait vs landscape scrubs).
                         const previewWidth = 208; // w-48 + padding = 192 + 16
-                        const previewHeight = 150; // Approximate height
                         const desiredLeft = e.clientX - previewWidth / 2;
                         const left = Math.max(8, Math.min(window.innerWidth - previewWidth - 8, desiredLeft));
-                        const top = rect.top - previewHeight - 12;
+                        const top = window.innerHeight - rect.top + 8;
                         
                         setScrubPreviewTime(hoverTime);
                         setScrubPreviewLeft(left);
