@@ -2400,29 +2400,32 @@ export default function MediaPlayer({
             bottom: `${scrubPreviewTop}px`,
           }}
         >
-          <div className="bg-black/90 rounded-md p-1 shadow-2xl border border-gray-700">
-            {/* Compact preview so it sits tightly above the timeline cursor.
-                Constrain both dimensions so portrait sources render at true
-                aspect instead of being cropped, but keep the box small. */}
-            <video
-              className="rounded bg-gray-800 pointer-events-none block mx-auto"
-              style={{
-                maxWidth: '160px',
-                maxHeight: '120px',
-                width: 'auto',
-                height: 'auto',
-              }}
-              data-testid="video-scrub-preview"
-              src={`/api/files/${file.id}/scrub`}
-              muted
-              playsInline
-              ref={(video) => {
-                if (video && !isNaN(scrubPreviewTime)) {
-                  video.currentTime = scrubPreviewTime;
-                }
-              }}
-            />
-            <div className="text-white text-xs text-center font-mono font-bold drop-shadow-lg leading-tight">
+          <div className="p-2">
+            <div className="relative">
+              {/* Video-based scrub preview. Size is constrained by max width
+                  AND max height so portrait/vertical sources (very common for
+                  social media) render at their true aspect instead of being
+                  cropped by object-cover into a landscape box. */}
+              <video
+                className="rounded bg-gray-800 pointer-events-none block"
+                style={{
+                  maxWidth: '192px',
+                  maxHeight: '256px',
+                  width: 'auto',
+                  height: 'auto',
+                }}
+                data-testid="video-scrub-preview"
+                src={`/api/files/${file.id}/scrub`}
+                muted
+                playsInline
+                ref={(video) => {
+                  if (video && !isNaN(scrubPreviewTime)) {
+                    video.currentTime = scrubPreviewTime;
+                  }
+                }}
+              />
+            </div>
+            <div className="text-white text-lg text-center mt-1 font-mono font-bold drop-shadow-lg px-2 py-1">
               {formatTime(scrubPreviewTime)}
             </div>
           </div>
