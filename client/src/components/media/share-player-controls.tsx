@@ -368,8 +368,12 @@ export default function SharePlayerControls({
             </div>
           </div>
 
-          {/* Comment markers rail (mirrors the auth player) */}
-          <div className="relative h-5 overflow-visible pointer-events-none" aria-hidden="true">
+          {/* Comment markers rail — absolutely positioned over the progress
+              bar so it consumes zero vertical layout space. Critical on short
+              viewports (iPhone landscape) where the player column is height-
+              constrained and any extra row below the progress bar would be
+              clipped by the parent's overflow-hidden. */}
+          <div className="pointer-events-none absolute left-0 right-0 -bottom-2 h-5 overflow-visible" aria-hidden="true">
             {duration > 0 &&
               tsComments.map((c) => {
                 const ip = c.inPoint;
