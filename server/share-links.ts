@@ -423,6 +423,12 @@ export function registerShareLinkRoutes(
 
   app.get("/api/public/share/:token/info", async (req, res, next) => {
     try {
+      // Auth state is per-request and must never be cached. Without
+      // these headers Express's default ETag flips the response to a
+      // 304 and the browser keeps reusing a stale `viewerAuthenticated:
+      // false` body even after the user signs in.
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+      res.setHeader("Pragma", "no-cache");
       const link = await storage.getShareLinkByToken(req.params.token);
       if (!link || link.revokedAt) return res.status(404).json({ message: "Not found" });
       const expired = isExpired(link);
