@@ -274,8 +274,11 @@ export default function ProjectPage() {
       }
       
       // If we found any media parameters, always switch to media tab
+      // and open the player (otherwise the URL just selects a file but
+      // leaves the user staring at the grid).
       if (hasTimeParam || hasMediaParam) {
         setActiveTab("media");
+        if (hasMediaParam) setViewMode("player");
       }
     }
   }, [location, files]);
