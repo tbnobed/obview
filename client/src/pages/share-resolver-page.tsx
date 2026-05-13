@@ -69,10 +69,16 @@ export default function ShareResolverPage() {
             const path = buildAuthedTarget(info, presetFile);
             if (path) {
               setResolved("redirecting");
-              const target = APP_BASE ? `${APP_BASE}${path}` : path;
-              // Full-page navigation. Wouter's setLocation only does
-              // pushState on the current host, which fails when the
-              // short-link host doesn't serve the authenticated app.
+              // Skip the cross-host hop when we're already on the app
+              // host. Full-page navigation either way: wouter's
+              // setLocation only does pushState on the current host,
+              // which fails when the short-link host doesn't serve the
+              // authenticated app.
+              const onAppHost =
+                !APP_BASE ||
+                (typeof window !== "undefined" &&
+                  window.location.origin.startsWith(APP_BASE));
+              const target = onAppHost ? path : `${APP_BASE}${path}`;
               window.location.replace(target);
               return;
             }
@@ -86,24 +92,23 @@ export default function ShareResolverPage() {
         });
         if (cancelled) return;
         if (legacy.ok) {
-          // Same trick for the legacy file-share path: if the metadata
-          // includes the parent project id and we're authed (best-effort
-          // check via /api/user — the legacy endpoint doesn't expose a
-          // viewerAuthenticated flag), redirect cross-host.
+          // Legacy file-share path: metadata now exposes
+          // viewerAuthenticated server-side, so we don't need a separate
+          // /api/user round-trip (which is unreliable on the short-link
+          // host if its nginx doesn't proxy the auth route).
           const meta = await legacy.json().catch(() => null);
-          if (meta?.projectId && meta?.id) {
-            try {
-              const me = await fetch(`/api/user`, { credentials: "include" });
-              if (me.ok) {
-                setResolved("redirecting");
-                const path = `/projects/${meta.projectId}?media=${meta.id}`;
-                const target = APP_BASE ? `${APP_BASE}${path}` : path;
-                window.location.replace(target);
-                return;
-              }
-            } catch {
-              // fall through to public page
-            }
+          if (meta?.projectId && meta?.id && meta?.viewerAuthenticated) {
+            setResolved("redirecting");
+            const path = `/projects/${meta.projectId}?media=${meta.id}`;
+            // Skip the cross-host hop when we're already on the app host
+            // (avoids a needless full-page reload + flash).
+            const onAppHost =
+              !APP_BASE ||
+              (typeof window !== "undefined" &&
+                window.location.origin.startsWith(APP_BASE));
+            const target = onAppHost ? path : `${APP_BASE}${path}`;
+            window.location.replace(target);
+            return;
           }
           setResolved("legacy");
           return;

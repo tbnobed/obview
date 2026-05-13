@@ -3288,7 +3288,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileSize: fileWithProject.fileSize,
         projectId: fileWithProject.projectId,
         projectName: fileWithProject.projectName,
-        createdAt: fileWithProject.createdAt
+        createdAt: fileWithProject.createdAt,
+        // Server-side auth check so the resolver doesn't need a separate
+        // round-trip to /api/user (which is unreliable on the short-link
+        // host if its nginx doesn't proxy the auth route).
+        viewerAuthenticated: !!(req.isAuthenticated && req.isAuthenticated() && req.user),
       });
     } catch (error) {
       console.error("Error fetching shared file metadata:", error);
