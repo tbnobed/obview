@@ -1,0 +1,64 @@
+obtv-admin@obtv-ai:~/obview$ docker compose build --no-cache app && docker compose up -d app
+[+] Building 242.8s (43/43) FINISHED
+ => [internal] load local bake definitions                                                                                   0.0s
+ => => reading from stdin 688B                                                                                               0.0s
+ => [internal] load build definition from Dockerfile                                                                         0.0s
+ => => transferring dockerfile: 7.02kB                                                                                       0.0s
+ => [internal] load metadata for docker.io/library/node:20-bookworm-slim                                                     0.5s
+ => [internal] load metadata for docker.io/library/debian:bookworm-slim                                                      0.5s
+ => [internal] load .dockerignore                                                                                            0.0s
+ => => transferring context: 505B                                                                                            0.0s
+ => [internal] load build context                                                                                            0.0s
+ => => transferring context: 312.14kB                                                                                        0.0s
+ => CACHED [builder 1/8] FROM docker.io/library/node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d  0.0s
+ => => resolve docker.io/library/node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5feb  0.0s
+ => CACHED [whisper-builder 1/6] FROM docker.io/library/debian:bookworm-slim@sha256:67b30a61dc87758f0caf819646104f29ecbda97  0.0s
+ => => resolve docker.io/library/debian:bookworm-slim@sha256:67b30a61dc87758f0caf819646104f29ecbda97d920aaf5edc834128ac8493  0.0s
+ => [whisper-builder 2/6] RUN apt-get update && apt-get install -y --no-install-recommends         git make g++ cmake ca-c  23.6s
+ => [builder 2/8] RUN apt-get update && apt-get install -y --no-install-recommends         python3 make g++ git cmake buil  29.0s
+ => [production  2/22] RUN apt-get update && apt-get install -y --no-install-recommends         postgresql-client           12.4s
+ => [production  3/22] RUN curl -fsSL -o /tmp/ff.tar.xz       "https://github.com/BtbN/FFmpeg-Builds/releases/download/lat  13.9s
+ => [whisper-builder 3/6] WORKDIR /src                                                                                       0.1s
+ => [whisper-builder 4/6] RUN git clone --depth 1 --branch v1.5.4 https://github.com/ggerganov/whisper.cpp.git               1.6s
+ => [whisper-builder 5/6] WORKDIR /src/whisper.cpp                                                                           0.0s
+ => [whisper-builder 6/6] RUN make -j$(nproc) &&     test -f ./main && cp ./main /usr/local/bin/whisper-cpp &&     chmod +  50.2s
+ => [production  4/22] WORKDIR /app                                                                                          0.0s
+ => [builder 3/8] WORKDIR /app                                                                                               0.2s
+ => [builder 4/8] COPY package*.json ./                                                                                      0.0s
+ => [builder 5/8] RUN npm ci                                                                                                30.5s
+ => [builder 6/8] COPY . .                                                                                                   0.6s
+ => [builder 7/8] RUN ls -la && echo "Content of server directory:" && ls -la server/                                        0.3s
+ => [builder 8/8] RUN echo "=== BUILDING APPLICATION ===" &&     echo "VITE_DISABLE_REGISTRATION=true" &&     echo "VITE_S  13.8s
+ => [production  5/22] COPY --from=whisper-builder /usr/local/bin/whisper-cpp /usr/local/bin/whisper-cpp                     0.0s
+ => [production  6/22] COPY --from=builder /app/server ./server                                                              0.0s
+ => [production  7/22] COPY --from=builder /app/dist ./dist                                                                  0.1s
+ => [production  8/22] COPY --from=builder /app/client ./client                                                              0.1s
+ => [production  9/22] COPY --from=builder /app/shared ./shared                                                              0.0s
+ => [production 10/22] COPY --from=builder /app/tsconfig.json ./tsconfig.json                                                0.0s
+ => [production 11/22] COPY --from=builder /app/node_modules ./node_modules                                                  8.1s
+ => [production 12/22] COPY --from=builder /app/package*.json ./                                                             0.9s
+ => [production 13/22] COPY --from=builder /app/drizzle.config.ts ./                                                         0.0s
+ => [production 14/22] COPY --from=builder /app/vite.config.ts ./                                                            0.0s
+ => [production 15/22] RUN cp vite.config.ts vite.config.js                                                                  0.2s
+ => [production 16/22] RUN mkdir -p /app/server/public &&     cp -r /app/dist/public/* /app/server/public/ &&     echo "✅    0.4s
+ => [production 17/22] COPY --from=builder /app/migrations ./migrations                                                      0.0s
+ => [production 18/22] COPY --from=builder /app/scripts ./scripts                                                            0.0s
+ => [production 19/22] COPY --from=builder /app/.env* ./                                                                     0.6s
+ => [production 20/22] RUN chmod +x ./scripts/*.sh                                                                           0.3s
+ => [production 21/22] RUN mkdir -p /var/spool/cron/crontabs &&     printf '0 3 * * * /app/scripts/backup-cron.sh >> /var/l  0.3s
+ => [production 22/22] RUN mkdir -p /app/uploads/processed /app/models &&     chmod -R 755 /app/uploads /app/models &&       0.3s
+ => exporting to image                                                                                                     146.8s
+ => => exporting layers                                                                                                    120.6s
+ => => exporting manifest sha256:bc92f9f0fbc323e761d38f990b1c4cd7ab9e4aa6ba37cac9ec580b9d9951f86d                            0.0s
+ => => exporting config sha256:c687cb506e8bd2ea61e5b6ddcc3204dbbd17ea2754d6cc56eac8111e0264726a                              0.0s
+ => => exporting attestation manifest sha256:8b58ac734b6108898c544283ed70fe15b447fe7e17fac973154412eca1a6df63                0.0s
+ => => exporting manifest list sha256:66f09d477bf6d768020d20fbc312c7318e6e55edae1d9e99cf6587761007b534                       0.0s
+ => => naming to docker.io/library/obview-app:latest                                                                         0.0s
+ => => unpacking to docker.io/library/obview-app:latest                                                                     26.1s
+ => resolving provenance for metadata file                                                                                   0.0s
+[+] build 1/1
+ ✔ Image obview-app Built                                                                                                   242.9s
+[+] up 2/2
+ ✔ Container obview_db  Healthy                                                                                              15.3s
+ ✔ Container obview_app Started                                                                                              15.7s
+obtv-admin@obtv-ai:~/obview$
