@@ -429,6 +429,10 @@ export function registerShareLinkRoutes(
       // For file shares, also expose the parent project id so an authenticated
       // viewer can be redirected to /projects/:projectId?media=:fileId.
       let fileProjectId: number | null = null;
+      // Folder the file lives in (so the signed-in viewer lands on that
+      // folder inside the project, not the project root). NULL means the
+      // file is at the project root.
+      let fileFolderId: number | null = null;
       // For folder shares, expose the owning project id when this is a
       // PROJECT SUBFOLDER (folders.projectId != null). The client uses it
       // to redirect signed-in viewers to /projects/:fid?folder=:folderId
@@ -447,12 +451,14 @@ export function registerShareLinkRoutes(
           const f = await storage.getFile(link.scopeId);
           scopeName = f?.filename ?? "";
           fileProjectId = f?.projectId ?? null;
+          fileFolderId = f?.folderId ?? null;
         }
       }
       res.json({
         scopeType: link.scopeType,
         scopeId: link.scopeId,
         fileProjectId,
+        fileFolderId,
         folderProjectId,
         name: link.name,
         scopeName,

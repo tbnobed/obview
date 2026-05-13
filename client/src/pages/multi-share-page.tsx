@@ -83,6 +83,7 @@ type ShareInfo = {
   scopeType: "project" | "folder" | "file";
   scopeId: number;
   fileProjectId: number | null;
+  fileFolderId: number | null;
   folderProjectId: number | null;
   name: string | null;
   scopeName: string;
@@ -237,7 +238,11 @@ export default function MultiSharePage() {
         ? `/projects/${info.scopeId}?media=${presetFile}`
         : `/projects/${info.scopeId}`;
     } else if (info.scopeType === "file" && info.fileProjectId) {
-      path = `/projects/${info.fileProjectId}?media=${info.scopeId}`;
+      // Include the file's folder so the project page opens to the
+      // subfolder where the media lives instead of the project root.
+      path = info.fileFolderId
+        ? `/projects/${info.fileProjectId}?folder=${info.fileFolderId}&media=${info.scopeId}`
+        : `/projects/${info.fileProjectId}?media=${info.scopeId}`;
     } else if (info.scopeType === "folder") {
       // Project subfolder: land on the project page with the subfolder
       // pre-selected via ?folder=. Sidebar/global folder (no parent
