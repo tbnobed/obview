@@ -3261,6 +3261,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Public share metadata - get file metadata for shared files without authentication
   app.get("/api/share/:token/metadata", async (req, res, next) => {
     try {
+      // Auth state (viewerAuthenticated) varies per-request and must
+      // never be cached. Without these headers Express's default ETag
+      // returns 304 and the browser keeps reusing a stale auth value.
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+      res.setHeader("Pragma", "no-cache");
       const token = req.params.token;
       // Find file by share token with project information
       const fileWithProject = await storage.getFileWithProjectByShareToken(token);
