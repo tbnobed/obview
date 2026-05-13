@@ -8,6 +8,7 @@ import { storage } from "./storage";
 import * as fileSystem from "./utils/filesystem";
 import { hashPassword, comparePasswords } from "./auth";
 import { insertShareLinkSchema, updateShareLinkSchema, insertCommentsUnifiedSchema } from "@shared/schema";
+import { generateFCPXML, generateEDL, generateCSV } from "./utils/marker-export";
 import type { ShareLink, File as DbFile } from "@shared/schema";
 import { segmentsToVtt, segmentsToSrt } from "./transcription";
 
@@ -640,6 +641,56 @@ export function registerShareLinkRoutes(
       if (!file) return res.status(404).send("Not found");
       if (file.isAvailable === false || !(await fileSystem.fileExists(file.filePath))) return res.status(404).send("Not available");
       await streamRanged(req, res, file.filePath, contentTypeFor(file.filename, file.fileType), file.filename);
+    } catch (e) { next(e); }
+  });
+
+  // Marker exports (FCP XML / EDL / CSV). These contain only timestamped
+  // comment text — same data already exposed in the share's side panel —
+  // so they are NOT gated behind allowDownloads. Reviewers on a share link
+  // need them to round-trip notes into Premiere/Resolve regardless of
+  // whether source-media downloads are enabled.
+  app.get("/api/public/share/:token/files/:fileId/export/:format", async (req, res, next) => {
+    try {
+      const gated = await loadGatedLink(req, res); if (!gated) return;
+      const format = req.params.format;
+      if (!["xml", "edl", "csv"].includes(format)) {
+        return res.status(400).json({ message: "Unsupported format. Use xml, edl, or csv." });
+      }
+      const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
+      if (!file) return res.status(404).json({ message: "File not found" });
+
+      const comments = await storage.getUnifiedCommentsByFileV2(file.id);
+      const topLevel = comments
+        .filter(c => !c.parentId)
+        .map(c => ({
+          content: c.content,
+          authorName: c.authorName,
+          timestamp: c.timestamp,
+          createdAt: c.createdAt,
+        }));
+
+      const rawDuration = parseFloat(req.query.duration as string);
+      const duration = isNaN(rawDuration) || rawDuration < 0 ? 60 : Math.min(rawDuration, 86400);
+      const rawFps = parseInt(req.query.fps as string);
+      const fps = isNaN(rawFps) || rawFps < 1 || rawFps > 120 ? 30 : rawFps;
+      const baseName = file.filename.replace(/\.[^.]+$/, "");
+
+      if (format === "xml") {
+        const xml = generateFCPXML(file.filename, duration, topLevel, fps);
+        res.setHeader("Content-Type", "application/xml");
+        res.setHeader("Content-Disposition", `attachment; filename="${baseName}_markers.xml"`);
+        return res.send(xml);
+      } else if (format === "edl") {
+        const edl = generateEDL(file.filename, duration, topLevel, fps);
+        res.setHeader("Content-Type", "text/plain");
+        res.setHeader("Content-Disposition", `attachment; filename="${baseName}_markers.edl"`);
+        return res.send(edl);
+      } else {
+        const csv = generateCSV(topLevel, fps);
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader("Content-Disposition", `attachment; filename="${baseName}_markers.csv"`);
+        return res.send(csv);
+      }
     } catch (e) { next(e); }
   });
 

@@ -1611,6 +1611,8 @@ function FileViewer({
             containerRef={mediaContainerRef}
             fileId={file.id}
             fileType={isVideo ? "video" : "audio"}
+            filename={file.filename}
+            shareToken={token}
             duration={duration}
             currentTime={currentTime}
             isPaused={isPaused}

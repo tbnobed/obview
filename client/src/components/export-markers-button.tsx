@@ -19,6 +19,9 @@ interface ExportMarkersButtonProps {
   size?: "sm" | "default" | "icon";
   compact?: boolean;
   className?: string;
+  // When set, hits the public share endpoint instead of the auth endpoint
+  // so unauthenticated reviewers on a share link can export markers too.
+  shareToken?: string;
 }
 
 export function ExportMarkersButton({
@@ -29,6 +32,7 @@ export function ExportMarkersButton({
   size = "icon",
   compact = false,
   className,
+  shareToken,
 }: ExportMarkersButtonProps) {
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -36,7 +40,9 @@ export function ExportMarkersButton({
   const handleExport = async (format: "xml" | "edl" | "csv") => {
     setIsDownloading(true);
     try {
-      const url = `/api/files/${fileId}/export/${format}?duration=${duration}&fps=30`;
+      const url = shareToken
+        ? `/api/public/share/${shareToken}/files/${fileId}/export/${format}?duration=${duration}&fps=30`
+        : `/api/files/${fileId}/export/${format}?duration=${duration}&fps=30`;
       const response = await fetch(url, { credentials: "include" });
 
       if (!response.ok) {

@@ -23,6 +23,7 @@ import { createPortal } from "react-dom";
 import { Maximize, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ExportMarkersButton } from "@/components/export-markers-button";
 
 type SharedComment = {
   id: string;
@@ -39,6 +40,11 @@ interface Props {
   containerRef: React.RefObject<HTMLDivElement | null>;
   fileId: number;
   fileType: "video" | "audio";
+
+  // Filename + share token enable the marker-export dropdown for guests on
+  // a share link (FCP XML / EDL / CSV). Both must be set or it stays hidden.
+  filename?: string;
+  shareToken?: string;
 
   // Live media state lifted by the parent (the share pages already track
   // these so they can render the timecode + I/O markers elsewhere).
@@ -100,6 +106,8 @@ export default function SharePlayerControls({
   containerRef,
   fileId,
   fileType,
+  filename,
+  shareToken,
   duration,
   currentTime,
   isPaused,
@@ -277,6 +285,18 @@ export default function SharePlayerControls({
             >
               {formatSMPTE(currentTime, frameRate)} / {formatSMPTE(duration, frameRate)}
             </span>
+
+            {filename && shareToken && (
+              <ExportMarkersButton
+                fileId={fileId}
+                filename={filename}
+                duration={duration}
+                shareToken={shareToken}
+                variant="ghost"
+                size="icon"
+                className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55]"
+              />
+            )}
 
             {fileType === "video" && has720p && onToggleQuality && (
               <Button
