@@ -4493,13 +4493,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Comment not found" });
       }
       
-      // Log activity
+      // Log activity. entityId is INTEGER in the schema, so use fileId
+      // and stash the UUID commentId in metadata (matches the pattern
+      // used by the delete-comment handler below).
       await storage.logActivity({
         action: updatedComment.isResolved ? "resolve_comment" : "unresolve_comment",
         entityType: "comment",
-        entityId: commentId,
+        entityId: comment.fileId,
         userId: req.user.id,
-        metadata: { 
+        metadata: {
+          commentId,
           fileId: comment.fileId,
           projectId: file.projectId,
         },
