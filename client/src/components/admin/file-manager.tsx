@@ -43,6 +43,7 @@ interface FileDetails {
     uploadedById: number;
     uploadedByName: string;
     fileType?: string;
+    originalFilename?: string;
   } | null;
 }
 
@@ -367,6 +368,8 @@ export default function FileManager() {
       .filter(file =>
         !searchText ||
         file.filename.toLowerCase().includes(searchText.toLowerCase()) ||
+        (file.metadata?.originalFilename &&
+          file.metadata.originalFilename.toLowerCase().includes(searchText.toLowerCase())) ||
         (file.metadata?.projectName &&
           file.metadata.projectName.toLowerCase().includes(searchText.toLowerCase())) ||
         (file.metadata?.uploadedByName &&
@@ -375,7 +378,7 @@ export default function FileManager() {
     const dir = sortDir === "asc" ? 1 : -1;
     const get = (f: FileDetails): string | number => {
       switch (sortKey) {
-        case "filename": return f.filename.toLowerCase();
+        case "filename": return (f.metadata?.originalFilename || f.filename).toLowerCase();
         case "size": return f.size;
         case "createdAt": return new Date(f.createdAt).getTime();
         case "uploadedByName": return (f.metadata?.uploadedByName || "").toLowerCase();
@@ -890,9 +893,14 @@ export default function FileManager() {
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
-                          {getFileIcon(file.filename)}
-                          <span className="truncate max-w-xs" title={file.filename}>
-                            {file.filename}
+                          {getFileIcon(file.metadata?.originalFilename || file.filename)}
+                          <span
+                            className="truncate max-w-xs"
+                            title={file.metadata?.originalFilename
+                              ? `${file.metadata.originalFilename}\n(stored as ${file.filename})`
+                              : file.filename}
+                          >
+                            {file.metadata?.originalFilename || file.filename}
                           </span>
                         </div>
                       </TableCell>

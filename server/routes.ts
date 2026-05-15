@@ -6129,6 +6129,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 uploadedById: matchedFile.uploadedById,
                 uploadedByName: uploader ? (uploader.name || uploader.username) : null,
                 fileType: matchedFile.fileType,
+                // Original user-provided filename. The disk name (`filename`
+                // at the top level) is the timestamp-random string we
+                // rename to on tus finish — useless to humans.
+                originalFilename: matchedFile.filename,
               };
             }
           } catch (err) {
