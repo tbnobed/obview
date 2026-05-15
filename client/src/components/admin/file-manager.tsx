@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,91 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+interface SpriteMeta {
+  cols: number;
+  rows: number;
+  thumbnailWidth: number;
+  thumbnailHeight: number;
+  thumbnailCount: number;
+  duration: number;
+}
+
+/**
+ * Hover-scrubbable video preview. Lazily fetches sprite metadata the
+ * first time the row is hovered, then renders the sprite as a CSS
+ * background sized to (cols x rows) tiles and shifts the position to
+ * the tile under the cursor. Falls back to the static cropped
+ * thumbnail when sprite metadata is unavailable.
+ */
+function ScrubbablePreview({ fileId }: { fileId: number }) {
+  const [meta, setMeta] = useState<SpriteMeta | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const fetchedRef = useRef(false);
+
+  const loadMeta = () => {
+    if (fetchedRef.current || failed) return;
+    fetchedRef.current = true;
+    fetch(`/api/files/${fileId}/sprite-metadata`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((m: SpriteMeta) => {
+        if (m && m.cols > 0 && m.rows > 0 && m.thumbnailCount > 0) setMeta(m);
+        else setFailed(true);
+      })
+      .catch(() => setFailed(true));
+  };
+
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!meta || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(0.9999, (e.clientX - rect.left) / rect.width));
+    setIdx(Math.floor(ratio * meta.thumbnailCount));
+  };
+
+  if (!meta) {
+    // Either we haven't fetched yet, or sprite metadata isn't available.
+    // Show the cropped first-frame thumbnail and prime the fetch on hover.
+    return (
+      <div
+        ref={containerRef}
+        className="w-full h-full"
+        onMouseEnter={loadMeta}
+      >
+        <img
+          src={`/api/files/${fileId}/thumbnail`}
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+        />
+      </div>
+    );
+  }
+
+  const col = idx % meta.cols;
+  const row = Math.floor(idx / meta.cols);
+  // Position math: with backgroundSize cols*100% x rows*100%, valid
+  // positions are 0..100% mapped across (cols-1) / (rows-1) steps.
+  const xPct = meta.cols > 1 ? (col / (meta.cols - 1)) * 100 : 0;
+  const yPct = meta.rows > 1 ? (row / (meta.rows - 1)) * 100 : 0;
+
+  return (
+    <div
+      ref={containerRef}
+      className="w-full h-full cursor-col-resize"
+      onMouseMove={onMouseMove}
+      onMouseLeave={() => setIdx(0)}
+      style={{
+        backgroundImage: `url(/api/files/${fileId}/sprite)`,
+        backgroundSize: `${meta.cols * 100}% ${meta.rows * 100}%`,
+        backgroundPosition: `${xPct}% ${yPct}%`,
+        backgroundRepeat: "no-repeat",
+      }}
+    />
+  );
+}
 
 interface FileDetails {
   filename: string;
@@ -858,12 +943,6 @@ export default function FileManager() {
                 {filteredFiles.map((file) => {
                   const id = file.metadata?.id;
                   const ftype = file.metadata?.fileType;
-                  // Image files: serve the original. Videos: use the
-                  // sprite-derived thumbnail. Anything else falls back to
-                  // the file-type icon.
-                  let previewUrl: string | null = null;
-                  if (id && ftype === "image") previewUrl = `/api/files/${id}/content`;
-                  else if (id && ftype === "video") previewUrl = `/api/files/${id}/thumbnail`;
                   const isSelected = selected.has(file.filename);
                   return (
                     <TableRow key={file.filename} data-state={isSelected ? "selected" : undefined}>
@@ -876,15 +955,19 @@ export default function FileManager() {
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="h-12 w-20 rounded border bg-neutral-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
-                          {previewUrl ? (
+                        <div
+                          className="h-12 w-20 rounded border bg-neutral-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center"
+                          data-testid={`thumb-${file.filename}`}
+                        >
+                          {id && ftype === "video" ? (
+                            <ScrubbablePreview fileId={id} />
+                          ) : id && ftype === "image" ? (
                             <img
-                              src={previewUrl}
+                              src={`/api/files/${id}/content`}
                               alt=""
                               className="w-full h-full object-cover"
                               loading="lazy"
                               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                              data-testid={`thumb-${file.filename}`}
                             />
                           ) : (
                             getFileIcon(file.filename)
