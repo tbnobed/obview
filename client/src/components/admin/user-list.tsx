@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Loader2, MoreHorizontal, Trash2, Edit, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, MoreHorizontal, Trash2, Edit, UserPlus, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import UserForm from "./user-form";
 
@@ -29,6 +29,45 @@ export default function UserList() {
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  type SortKey = "name" | "username" | "email" | "role";
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  // Role rank for meaningful role sorting; ascending puts admin first.
+  const roleRank: Record<string, number> = { admin: 0, editor: 1, viewer: 2 };
+  const compareRole = (a: string, b: string) => {
+    const ar = roleRank[a] ?? 99;
+    const br = roleRank[b] ?? 99;
+    if (ar !== br) return ar - br;
+    return a.localeCompare(b);
+  };
+
+  const SortHeader = ({ k, children, className }: { k: SortKey; children: React.ReactNode; className?: string }) => {
+    const active = sortKey === k;
+    const Icon = !active ? ArrowUpDown : sortDir === "asc" ? ArrowUp : ArrowDown;
+    return (
+      <TableHead className={className}>
+        <button
+          type="button"
+          onClick={() => toggleSort(k)}
+          className="inline-flex items-center gap-1 font-medium hover:text-primary"
+          data-testid={`sort-${k}`}
+        >
+          {children}
+          <Icon className={`h-3.5 w-3.5 ${active ? "" : "opacity-50"}`} />
+        </button>
+      </TableHead>
+    );
+  };
   
   const { 
     data: users, 
@@ -59,9 +98,9 @@ export default function UserList() {
     },
   });
 
-  // Filter users by search term
+  // Filter users by search term, then sort
   const filteredUsers = useMemo(() => {
-    return users?.filter(user => {
+    const filtered = users?.filter(user => {
       if (searchTerm === "") return true;
       return (
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -69,13 +108,22 @@ export default function UserList() {
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     });
-  }, [users, searchTerm]);
+    if (!filtered) return filtered;
+    const sorted = [...filtered].sort((a, b) => {
+      const cmp =
+        sortKey === "role"
+          ? compareRole(a.role ?? "", b.role ?? "")
+          : String(a[sortKey] ?? "").localeCompare(String(b[sortKey] ?? ""), undefined, { sensitivity: "base" });
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [users, searchTerm, sortKey, sortDir]);
 
   const totalItems = filteredUsers?.length ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
-  // Reset to first page when search or page size changes
-  useEffect(() => { setPage(1); }, [searchTerm, pageSize]);
+  // Reset to first page when search, page size, or sort changes
+  useEffect(() => { setPage(1); }, [searchTerm, pageSize, sortKey, sortDir]);
   // Clamp page if data shrinks
   useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
 
@@ -151,10 +199,10 @@ export default function UserList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
+              <SortHeader k="name">Name</SortHeader>
+              <SortHeader k="username">Username</SortHeader>
+              <SortHeader k="email">Email</SortHeader>
+              <SortHeader k="role">Role</SortHeader>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
