@@ -60,6 +60,54 @@ import {
   isTranscriptionAvailable,
 } from "./transcription";
 import { collectDiagnostics } from "./diagnostics";
+import { spawn as spawnProcess } from "child_process";
+
+// In-flight crop jobs keyed by output path. Lets concurrent first-time
+// requests for the same thumbnail share a single ffmpeg invocation.
+const thumbnailCropJobs = new Map<string, Promise<boolean>>();
+
+/**
+ * Crop the top-left tile out of a sprite sheet using ffmpeg and write
+ * it to `outPath`. Resolves true on success, false otherwise. Kills
+ * the child process if it runs longer than 15s.
+ */
+function cropFirstTile(spritePath: string, outPath: string, w: number, h: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const args = [
+      '-y',
+      '-i', spritePath,
+      '-vf', `crop=${w}:${h}:0:0`,
+      '-frames:v', '1',
+      '-q:v', '3',
+      outPath,
+    ];
+    const ff = spawnProcess('ffmpeg', args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    let stderr = '';
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(ok);
+    };
+    const timer = setTimeout(() => {
+      try { ff.kill('SIGKILL'); } catch {}
+      console.error('[Thumbnail] ffmpeg crop timed out for', spritePath);
+      finish(false);
+    }, 15000);
+    ff.stderr?.on('data', (d) => { stderr += d.toString(); });
+    ff.on('close', (code) => {
+      if (code !== 0) {
+        console.error('[Thumbnail] ffmpeg crop failed', code, stderr.slice(-400));
+      }
+      finish(code === 0 && existsSync(outPath));
+    });
+    ff.on('error', (err) => {
+      console.error('[Thumbnail] ffmpeg spawn error', err);
+      finish(false);
+    });
+  });
+}
 
 /**
  * Resume any video processing rows that were stuck mid-encode by a previous
@@ -3190,11 +3238,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Serve individual thumbnail for cards (uses first frame of sprite)
+  // Serve a single-frame thumbnail (first tile cropped out of the
+  // sprite sheet). Cached to disk next to the sprite so we only run
+  // ffmpeg once per file. Falls back to the raw sprite sheet only if
+  // metadata is missing or cropping fails.
   app.get("/api/files/:id/thumbnail", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
-      
       if (isNaN(fileId)) {
         return res.status(400).json({ message: "Invalid file ID" });
       }
@@ -3204,13 +3254,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Thumbnail not available" });
       }
 
-      // For now, serve the sprite as thumbnail - in production you'd generate individual thumbnails
+      const spritePath = path.resolve(processing.thumbnailSpritePath);
+      const meta = processing.spriteMetadata as
+        | { thumbnailWidth?: number; thumbnailHeight?: number }
+        | null
+        | undefined;
+
       res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache
-      res.sendFile(path.resolve(processing.thumbnailSpritePath));
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+
+      const send = (p: string) => {
+        if (res.headersSent || (res as any).writableEnded) return;
+        res.sendFile(p);
+      };
+
+      const w = meta && Number(meta.thumbnailWidth);
+      const h = meta && Number(meta.thumbnailHeight);
+      if (!Number.isFinite(w) || !Number.isFinite(h) || (w as number) <= 0 || (h as number) <= 0) {
+        return send(spritePath);
+      }
+
+      const dir = path.dirname(spritePath);
+      const thumbPath = path.join(dir, 'thumbnail.jpg');
+
+      if (existsSync(thumbPath)) {
+        return send(thumbPath);
+      }
+
+      // Dedupe concurrent crops for the same file: first request spawns
+      // ffmpeg, the rest await the same promise.
+      const job = thumbnailCropJobs.get(thumbPath) ?? cropFirstTile(spritePath, thumbPath, Math.floor(w as number), Math.floor(h as number));
+      thumbnailCropJobs.set(thumbPath, job);
+
+      let aborted = false;
+      req.on('close', () => { aborted = true; });
+
+      try {
+        const ok = await job;
+        if (aborted) return;
+        send(ok && existsSync(thumbPath) ? thumbPath : spritePath);
+      } catch (err) {
+        console.error('[Thumbnail] crop job failed', err);
+        if (!aborted) send(spritePath);
+      } finally {
+        thumbnailCropJobs.delete(thumbPath);
+      }
     } catch (error) {
       console.error("[Video Processing API] Error serving thumbnail:", error);
-      res.status(500).json({ message: "Internal server error" });
+      if (!res.headersSent) res.status(500).json({ message: "Internal server error" });
     }
   });
 
