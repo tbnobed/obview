@@ -603,6 +603,29 @@ export default function MediaPlayer({
         return;
       }
 
+      // Cmd/Ctrl+Shift+Arrow = previous/next asset in project. Handle this
+      // here in the capture-phase listener regardless of where focus is,
+      // because macOS browsers map Cmd+Arrow to "history back/forward" by
+      // default — we have to preempt that before bubble-phase handlers
+      // get a chance.
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {
+        // Only navigate among the latest version of each filename — older
+        // versions live in the same `files` array and would otherwise
+        // produce no-op jumps that look like a broken hotkey.
+        const latest = files.filter((f) => (f as any).isLatestVersion !== false);
+        const list = latest.length > 0 ? latest : files;
+        const idx = list.findIndex((f) => f.id === file?.id);
+        if (idx >= 0) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          const nextIdx = e.code === 'ArrowRight' ? idx + 1 : idx - 1;
+          if (nextIdx >= 0 && nextIdx < list.length) {
+            onSelectFile(list[nextIdx].id);
+          }
+        }
+        return;
+      }
+
       // If the event came from inside the media container, handleMediaKeyPress handles it — skip
       if (mediaContainerRef.current && mediaContainerRef.current.contains(target)) return;
 
