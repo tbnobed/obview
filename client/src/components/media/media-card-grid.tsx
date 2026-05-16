@@ -17,6 +17,7 @@ import { uploadService } from "@/lib/upload-service";
 import MediaRow from "./media-row";
 import { useViewMode } from "@/hooks/use-view-mode";
 import ViewModeToggle from "@/components/ui/view-mode-toggle";
+import { MoveFileDialog } from "@/components/projects/project-folders";
 
 interface MediaCardGridProps {
   files: StorageFile[];
@@ -109,6 +110,13 @@ interface MediaCardProps {
   selectionActive?: boolean;
   selectedIds?: number[];
   onToggleSelect?: (fileId: number, event: React.MouseEvent) => void;
+  // When this card is part of an active multi-selection (>=2 cards
+  // selected, including this one), the per-card action menu collapses
+  // to only the actions that make sense across the whole selection.
+  bulkMode?: boolean;
+  onBulkDownload?: () => void;
+  onBulkMove?: () => void;
+  onBulkDelete?: () => void;
 }
 
 function MediaCard({
@@ -122,6 +130,10 @@ function MediaCard({
   selectionActive = false,
   selectedIds,
   onToggleSelect,
+  bulkMode = false,
+  onBulkDownload,
+  onBulkMove,
+  onBulkDelete,
 }: MediaCardProps) {
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
@@ -754,6 +766,35 @@ function MediaCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                {bulkMode ? (
+                  <>
+                    <DropdownMenuItem
+                      onClick={(e) => { e.stopPropagation(); onBulkDownload?.(); }}
+                      data-testid={`bulk-download-${file.id}`}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download {selectedIds?.length ?? 0}
+                    </DropdownMenuItem>
+                    {onMove && (
+                      <DropdownMenuItem
+                        onClick={(e) => { e.stopPropagation(); onBulkMove?.(); }}
+                        data-testid={`bulk-move-${file.id}`}
+                      >
+                        <FileVideo className="h-4 w-4 mr-2" />
+                        Move to folder…
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={(e) => { e.stopPropagation(); onBulkDelete?.(); }}
+                      className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                      data-testid={`bulk-delete-${file.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete {selectedIds?.length ?? 0}
+                    </DropdownMenuItem>
+                  </>
+                ) : (<>
                 <DropdownMenuItem onClick={handleViewDetails}>
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
@@ -891,6 +932,7 @@ function MediaCard({
                   <Trash2 className="h-4 w-4 mr-2" />
                   {deleteMutation.isPending ? "Deleting..." : "Delete"}
                 </DropdownMenuItem>
+                </>)}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -1111,6 +1153,70 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
     list.sort((a: StorageFile, b: StorageFile) => a.version - b.version);
   });
 
+  const { toast: gridToast } = useToast();
+  const gridQueryClient = useQueryClient();
+  const [bulkMoveFiles, setBulkMoveFiles] = useState<StorageFile[] | null>(null);
+  const filesById = new Map(files.map((f) => [f.id, f] as const));
+  const selectedFiles = selectedIdArray
+    .map((id) => filesById.get(id))
+    .filter((f): f is StorageFile => !!f);
+  const bulkActive = selectedIds.size > 1;
+
+  // Bulk download: anchor-based, same streaming pattern as per-file
+  // download. Never buffer bytes in memory — originals are multi-GB.
+  // Tiny stagger so the browser actually opens N separate downloads
+  // instead of collapsing them.
+  const onBulkDownload = () => {
+    selectedFiles.forEach((f, idx) => {
+      setTimeout(() => {
+        try {
+          const url = `/api/files/${f.id}/download?download=1&filename=${encodeURIComponent(f.filename)}`;
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          a.download = f.filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch {
+          gridToast({ title: "Download failed", description: f.filename, variant: "destructive" });
+        }
+      }, idx * 250);
+    });
+    gridToast({
+      title: "Downloads started",
+      description: `${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"}`,
+    });
+  };
+
+  const onBulkMove = () => {
+    setBulkMoveFiles(selectedFiles);
+  };
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      await Promise.all(ids.map((id) => apiRequest("DELETE", `/api/files/${id}`)));
+      return ids;
+    },
+    onSuccess: (ids) => {
+      gridQueryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "files"] });
+      gridQueryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
+      gridQueryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/folders`] });
+      clearSelection();
+      gridToast({ title: "Files deleted", description: `${ids.length} file${ids.length === 1 ? "" : "s"} moved to trash` });
+    },
+    onError: (err: any) => {
+      gridToast({ title: "Delete failed", description: err?.message || "Try again.", variant: "destructive" });
+    },
+  });
+
+  const onBulkDelete = () => {
+    const n = selectedFiles.length;
+    if (n === 0) return;
+    if (!window.confirm(`Delete ${n} file${n === 1 ? "" : "s"}? They'll move to trash.`)) return;
+    bulkDeleteMutation.mutate(selectedFiles.map((f) => f.id));
+  };
+
   const { data: fileApprovals } = useQuery<Record<number, "approved" | "changes_requested" | null>>({
     queryKey: ['/api/projects', projectId, 'file-approvals'],
     queryFn: ({ signal }) =>
@@ -1201,6 +1307,10 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
               selectionActive={selectionActive}
               selectedIds={selectedIdArray}
               onToggleSelect={onToggleSelect}
+              bulkMode={bulkActive && selectedIds.has(file.id)}
+              onBulkDownload={onBulkDownload}
+              onBulkMove={onBulkMove}
+              onBulkDelete={onBulkDelete}
             />
           ))}
         </div>
@@ -1219,10 +1329,23 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
               selectionActive={selectionActive}
               selectedIds={selectedIdArray}
               onToggleSelect={onToggleSelect}
+              bulkMode={bulkActive && selectedIds.has(file.id)}
+              onBulkDownload={onBulkDownload}
+              onBulkMove={onBulkMove}
+              onBulkDelete={onBulkDelete}
             />
           ))}
         </div>
       )}
+
+      <MoveFileDialog
+        projectId={projectId}
+        files={bulkMoveFiles ?? undefined}
+        onClose={() => {
+          setBulkMoveFiles(null);
+          clearSelection();
+        }}
+      />
     </div>
   );
 }

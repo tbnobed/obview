@@ -49,6 +49,10 @@ interface MediaRowProps {
   selectionActive?: boolean;
   selectedIds?: number[];
   onToggleSelect?: (fileId: number, event: React.MouseEvent) => void;
+  bulkMode?: boolean;
+  onBulkDownload?: () => void;
+  onBulkMove?: () => void;
+  onBulkDelete?: () => void;
 }
 
 const formatDuration = (seconds: number | null) => {
@@ -87,6 +91,10 @@ export default function MediaRow({
   selectionActive = false,
   selectedIds,
   onToggleSelect,
+  bulkMode = false,
+  onBulkDownload,
+  onBulkMove,
+  onBulkDelete,
 }: MediaRowProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -415,6 +423,35 @@ export default function MediaRow({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              {bulkMode ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); onBulkDownload?.(); }}
+                    data-testid={`bulk-download-row-${file.id}`}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download {selectedIds?.length ?? 0}
+                  </DropdownMenuItem>
+                  {onMove && (
+                    <DropdownMenuItem
+                      onClick={(e) => { e.stopPropagation(); onBulkMove?.(); }}
+                      data-testid={`bulk-move-row-${file.id}`}
+                    >
+                      <FileVideo className="h-4 w-4 mr-2" />
+                      Move to folder…
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); onBulkDelete?.(); }}
+                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                    data-testid={`bulk-delete-row-${file.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete {selectedIds?.length ?? 0}
+                  </DropdownMenuItem>
+                </>
+              ) : (<>
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
@@ -500,6 +537,7 @@ export default function MediaRow({
                 <Trash2 className="h-4 w-4 mr-2" />
                 {deleteMutation.isPending ? "Deleting..." : "Delete"}
               </DropdownMenuItem>
+              </>)}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

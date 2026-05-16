@@ -356,24 +356,66 @@ export function ProjectFoldersStrip({
 
 interface MoveFileDialogProps {
   projectId: number;
-  file: StorageFile | null;
+  // Single-file mode (existing single-card "Move to folder…" entry point).
+  file?: StorageFile | null;
+  // Bulk mode (multi-select). When provided and non-empty, the dialog
+  // moves every file in the list to the chosen folder. Takes precedence
+  // over `file` when both are set.
+  files?: StorageFile[] | null;
   onClose: () => void;
 }
 
-export function MoveFileDialog({ projectId, file, onClose }: MoveFileDialogProps) {
+export function MoveFileDialog({ projectId, file, files, onClose }: MoveFileDialogProps) {
   const { data: folders = [] } = useProjectFolders(projectId);
   const { toast } = useToast();
   const [target, setTarget] = useState<number | null>(null);
 
+  const bulkList = (files && files.length > 0) ? files : null;
+  const isOpen = !!bulkList || !!file;
+  const titleName = bulkList
+    ? `${bulkList.length} file${bulkList.length === 1 ? "" : "s"}`
+    : file?.filename ?? "";
+
+  // For a single bulk source folder, disable the matching target option.
+  // If files come from mixed folders, no single "current" folder exists,
+  // so the disable check falls back to never matching.
+  const sourceFolderId: number | null | undefined = bulkList
+    ? (() => {
+        const first = bulkList[0]?.folderId ?? null;
+        const allSame = bulkList.every((f) => (f.folderId ?? null) === first);
+        return allSame ? first : undefined;
+      })()
+    : (file?.folderId ?? null);
+
   const move = useMutation({
     mutationFn: async () => {
+      if (bulkList) {
+        const results = await Promise.allSettled(
+          bulkList.map((f) =>
+            apiRequest("PATCH", `/api/files/${f.id}/move`, { folderId: target }),
+          ),
+        );
+        const failed = results.filter((r) => r.status === "rejected").length;
+        return { total: bulkList.length, failed };
+      }
       if (!file) return;
-      return apiRequest("PATCH", `/api/files/${file.id}/move`, { folderId: target });
+      await apiRequest("PATCH", `/api/files/${file.id}/move`, { folderId: target });
+      return { total: 1, failed: 0 };
     },
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/files`] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "files"] });
-      toast({ title: "File moved" });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/folders`] });
+      const moved = (res?.total ?? 1) - (res?.failed ?? 0);
+      if ((res?.failed ?? 0) === 0) {
+        toast({ title: bulkList ? `Moved ${moved} file${moved === 1 ? "" : "s"}` : "File moved" });
+      } else {
+        toast({
+          title: `Moved ${moved} of ${res.total} files`,
+          description: `${res.failed} could not be moved.`,
+          variant: "destructive",
+        });
+      }
       onClose();
     },
     onError: (e: any) =>
@@ -396,12 +438,12 @@ export function MoveFileDialog({ projectId, file, onClose }: MoveFileDialogProps
   };
 
   return (
-    <Dialog open={!!file} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Move file</DialogTitle>
+          <DialogTitle>{bulkList ? "Move files" : "Move file"}</DialogTitle>
           <DialogDescription>
-            Choose a destination folder for <span className="font-semibold">{file?.filename}</span>.
+            Choose a destination folder for <span className="font-semibold">{titleName}</span>.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1 max-h-72 overflow-auto">
@@ -433,11 +475,11 @@ export function MoveFileDialog({ projectId, file, onClose }: MoveFileDialogProps
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
-            disabled={move.isPending || (file?.folderId ?? null) === target}
+            disabled={move.isPending || (sourceFolderId !== undefined && sourceFolderId === target)}
             onClick={() => move.mutate()}
             data-testid="move-confirm-button"
           >
-            {move.isPending ? "Moving…" : "Move"}
+            {move.isPending ? "Moving…" : (bulkList ? `Move ${bulkList.length}` : "Move")}
           </Button>
         </DialogFooter>
       </DialogContent>
