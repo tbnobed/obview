@@ -478,7 +478,7 @@ export default function MediaPlayer({
     if (!selectedVersionFile || !file || !projectId) return;
     
     // Use the original filename to ensure it's treated as a version
-    uploadService.uploadFile(selectedVersionFile, projectId, file.filename);
+    uploadService.uploadFile(selectedVersionFile, projectId, file.filename, (file as any).folderId ?? null);
     
     // Close dialog and reset state
     setIsVersionDialogOpen(false);

@@ -201,7 +201,7 @@ export default function MediaRow({
           });
           return;
         }
-        uploadService.uploadFile(files[0], f.projectId, f.filename);
+        uploadService.uploadFile(files[0], f.projectId, f.filename, (f as any).folderId ?? null);
         toastRef.current({
           title: "Uploading new version",
           description: `${files[0].name} → v${(versionCountRef.current ?? 1) + 1} of ${f.filename}`,

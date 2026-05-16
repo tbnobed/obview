@@ -145,7 +145,7 @@ class UploadService {
     );
   }
 
-  uploadFile(file: File, projectId: number, customFilename?: string): string {
+  uploadFile(file: File, projectId: number, customFilename?: string, folderId?: number | null): string {
     const uploadId = `upload_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
     const entry: UploadProgress = {
@@ -162,16 +162,16 @@ class UploadService {
     this.notify();
 
     if (file.size >= PARALLEL_THRESHOLD_BYTES) {
-      this.startMultipart(uploadId, file, projectId, customFilename);
+      this.startMultipart(uploadId, file, projectId, customFilename, folderId ?? null);
     } else {
-      this.startSingle(uploadId, file, projectId, customFilename);
+      this.startSingle(uploadId, file, projectId, customFilename, folderId ?? null);
     }
     return uploadId;
   }
 
   // -- Single-stream path -------------------------------------------------
 
-  private startSingle(uploadId: string, file: File, projectId: number, customFilename?: string): void {
+  private startSingle(uploadId: string, file: File, projectId: number, customFilename?: string, folderId?: number | null): void {
     const metadata: Record<string, string> = {
       filename: file.name,
       filetype: file.type || "application/octet-stream",
@@ -179,6 +179,9 @@ class UploadService {
     };
     if (customFilename && customFilename !== file.name) {
       metadata.customFilename = customFilename;
+    }
+    if (folderId != null) {
+      metadata.folderId = String(folderId);
     }
 
     const tus = new TusUpload(file, {
@@ -248,7 +251,7 @@ class UploadService {
 
   // -- Multipart (parallel) path -----------------------------------------
 
-  private startMultipart(uploadId: string, file: File, projectId: number, customFilename?: string): void {
+  private startMultipart(uploadId: string, file: File, projectId: number, customFilename?: string, folderId?: number | null): void {
     const partCount = Math.min(envParallelCount(), 8);
     const groupId = `g${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
 
@@ -284,6 +287,9 @@ class UploadService {
       };
       if (customFilename && customFilename !== file.name) {
         metadata.customFilename = customFilename;
+      }
+      if (folderId != null) {
+        metadata.folderId = String(folderId);
       }
 
       // tus-js-client doesn't fingerprint Blob inputs by default, so

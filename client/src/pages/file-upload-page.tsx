@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, useSearch } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,13 @@ export default function FileUploadPage() {
   const { id } = useParams<{ id: string }>();
   const projectId = parseInt(id);
   const [_, navigate] = useLocation();
+  const search = useSearch();
+  const folderId = (() => {
+    const v = new URLSearchParams(search).get("folderId");
+    if (!v) return null;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : null;
+  })();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -105,7 +112,7 @@ export default function FileUploadPage() {
     
     // Use our uploadService to handle the upload
     // This will continue even if the user navigates away from this page
-    uploadService.uploadFile(selectedFile, projectId, customFilename);
+    uploadService.uploadFile(selectedFile, projectId, customFilename, folderId);
     
     // Show success toast
     toast({

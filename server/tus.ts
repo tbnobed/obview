@@ -91,6 +91,28 @@ interface MultipartManifest {
   filename: string;
   customFilename?: string;
   filetype: string;
+  folderId?: number | null;
+}
+
+// Returns a valid sub-folder id for `projectId`, or null if none/invalid.
+// We never trust the client to place a file into an arbitrary folder —
+// the folder must exist, belong to this project, and not be deleted.
+async function resolveSubfolderId(
+  rawFolderId: string | number | null | undefined,
+  projectId: number,
+): Promise<number | null> {
+  if (rawFolderId == null || rawFolderId === "") return null;
+  const n = typeof rawFolderId === "number" ? rawFolderId : parseInt(String(rawFolderId), 10);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  try {
+    const folder = await storage.getFolder(n);
+    if (!folder) return null;
+    if ((folder as any).deletedAt) return null;
+    if ((folder as any).projectId !== projectId) return null;
+    return n;
+  } catch {
+    return null;
+  }
 }
 
 function readUserIdFromTusReq(req: any): number | null {
@@ -315,6 +337,7 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
           filename: meta.filename || `upload-${upload.id}`,
           customFilename: meta.customFilename ?? undefined,
           filetype: meta.filetype || "application/octet-stream",
+          folderId: await resolveSubfolderId(meta.folderId, projectId),
         };
 
         // Two parts of the same group MUST agree on every manifest field.
@@ -339,7 +362,8 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
             existingManifest.totalSize !== incomingManifest.totalSize ||
             existingManifest.filename !== incomingManifest.filename ||
             (existingManifest.customFilename ?? null) !== (incomingManifest.customFilename ?? null) ||
-            existingManifest.filetype !== incomingManifest.filetype
+            existingManifest.filetype !== incomingManifest.filetype ||
+            (existingManifest.folderId ?? null) !== (incomingManifest.folderId ?? null)
           ) {
             throw { status_code: 409, body: "Part metadata does not match upload group manifest" };
           }
@@ -361,7 +385,8 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
               raceManifest.totalSize !== incomingManifest.totalSize ||
               raceManifest.filename !== incomingManifest.filename ||
               (raceManifest.customFilename ?? null) !== (incomingManifest.customFilename ?? null) ||
-              raceManifest.filetype !== incomingManifest.filetype
+              raceManifest.filetype !== incomingManifest.filetype ||
+              (raceManifest.folderId ?? null) !== (incomingManifest.folderId ?? null)
             ) {
               throw { status_code: 409, body: "Part metadata does not match upload group manifest" };
             }
@@ -456,9 +481,15 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
       let similar: any[] = [];
       let priorRequesterId: number | null = null;
       let priorRequesterEmail: string | null = null;
+      // Resolve target folder up front so version-chain matching can
+      // scope to the same subfolder. Same filename in two different
+      // subfolders are independent file lineages.
+      const requestedFolderId = await resolveSubfolderId(meta.folderId, projectId);
       try {
         existing = await storage.getFilesByProject(projectId);
-        similar = existing.filter((f: any) => f.filename === filename);
+        similar = existing.filter((f: any) =>
+          f.filename === filename && (f.folderId ?? null) === requestedFolderId
+        );
         const version =
           similar.length > 0
             ? Math.max(...similar.map((f: any) => f.version)) + 1
@@ -475,6 +506,7 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
           priorRequesterEmail = priorLatest?.requestedChangesByEmail ?? null;
         }
 
+        const folderIdForRow: number | null = requestedFolderId;
         fileRow = await storage.createFile({
           filename,
           fileType,
@@ -484,6 +516,7 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
           uploadedById: currentUserId,
           version,
           isLatestVersion: true,
+          folderId: folderIdForRow ?? undefined,
         });
       } catch (err) {
         // DB insert failed — the moved file would otherwise be orphaned
@@ -691,9 +724,15 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
       let similar: any[] = [];
       let priorRequesterId: number | null = null;
       let priorRequesterEmail: string | null = null;
+      // Re-validate manifest folderId at finalize time. State may have
+      // changed since the first part landed (folder deleted/moved), so
+      // mirror the single-stream path's just-in-time check.
+      const requestedFolderId = await resolveSubfolderId(manifest.folderId ?? null, projectId);
       try {
         const existing = await storage.getFilesByProject(projectId);
-        similar = existing.filter((f: any) => f.filename === filename);
+        similar = existing.filter((f: any) =>
+          f.filename === filename && (f.folderId ?? null) === requestedFolderId
+        );
         const version =
           similar.length > 0
             ? Math.max(...similar.map((f: any) => f.version)) + 1
@@ -705,6 +744,7 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
           priorRequesterId = priorLatest?.requestedChangesById ?? null;
           priorRequesterEmail = priorLatest?.requestedChangesByEmail ?? null;
         }
+        const folderIdForRow: number | null = requestedFolderId;
         fileRow = await storage.createFile({
           filename,
           fileType,
@@ -714,6 +754,7 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
           uploadedById: args.currentUserId,
           version,
           isLatestVersion: true,
+          folderId: folderIdForRow ?? undefined,
         });
       } catch (err) {
         if (finalPath) await fs.promises.unlink(finalPath).catch(() => {});

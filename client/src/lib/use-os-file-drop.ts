@@ -18,9 +18,9 @@ import { useToast } from "@/hooks/use-toast";
 export function useOsFileDrop(
   ref: RefObject<HTMLElement | null>,
   projectId: number | null | undefined,
-  opts: { enabled?: boolean; label?: string } = {},
+  opts: { enabled?: boolean; label?: string; folderId?: number | null } = {},
 ) {
-  const { enabled = true, label = "project" } = opts;
+  const { enabled = true, label = "project", folderId = null } = opts;
   const [isDropTarget, setIsDropTarget] = useState(false);
   const { toast } = useToast();
 
@@ -32,6 +32,8 @@ export function useOsFileDrop(
   toastRef.current = toast;
   const labelRef = useRef(label);
   labelRef.current = label;
+  const folderIdRef = useRef(folderId);
+  folderIdRef.current = folderId;
 
   useEffect(() => {
     const dragDepth = { n: 0 };
@@ -91,7 +93,7 @@ export function useOsFileDrop(
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) return;
       for (const f of files) {
-        uploadService.uploadFile(f, pid);
+        uploadService.uploadFile(f, pid, undefined, folderIdRef.current);
       }
       toastRef.current({
         title: files.length === 1 ? "Uploading file" : `Uploading ${files.length} files`,

@@ -378,6 +378,7 @@ export default function ProjectPage() {
   const isProjectFileDrop = useOsFileDrop(projectDropRef, projectId, {
     enabled: isEditor,
     label: project?.name || `project ${projectId}`,
+    folderId: currentSubfolderId,
   });
 
   if (projectLoading) {
@@ -641,7 +642,7 @@ export default function ProjectPage() {
               <Button
                 size="sm"
                 className="h-9 px-3.5 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 shadow-sm"
-                onClick={() => navigate(`/projects/${projectId}/upload`)}
+                onClick={() => navigate(`/projects/${projectId}/upload${currentSubfolderId != null ? `?folderId=${currentSubfolderId}` : ""}`)}
                 title="Upload media"
               >
                 <Plus className="h-4 w-4" />
@@ -749,7 +750,7 @@ export default function ProjectPage() {
                   Upload your first media file to start the review process
                 </p>
                 {isEditor && (
-                  <Button onClick={() => navigate(`/projects/${projectId}/upload`)}>
+                  <Button onClick={() => navigate(`/projects/${projectId}/upload${currentSubfolderId != null ? `?folderId=${currentSubfolderId}` : ""}`)}>
                     Upload Media
                   </Button>
                 )}
