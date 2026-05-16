@@ -61,6 +61,8 @@ function SubfolderDropCard({ sf }: { sf: Folder }) {
     if (p.type === "folder") {
       if (p.id === sf.id) return false;
       if (p.sourceParentFolderId === sf.id) return false;
+      // Project subfolders never reparent into the global folder tree.
+      if (p.sourceProjectId != null) return false;
       return true;
     }
     return false;
@@ -183,6 +185,8 @@ export default function FolderPage() {
     if (p.type === "folder") {
       if (p.id === folder.id) return false;
       if (p.sourceParentFolderId === folder.id) return false;
+      // Project subfolders never reparent into the global folder tree.
+      if (p.sourceProjectId != null) return false;
       return true;
     }
     return false;

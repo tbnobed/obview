@@ -512,6 +512,9 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
       // can avoid the round-trip when the new parent is the same.
       if (p.id === folder.id) return false;
       if (p.sourceParentFolderId === folder.id) return false;
+      // Project subfolders belong inside a project — don't let them
+      // land in the global/private sidebar tree.
+      if (p.sourceProjectId != null) return false;
       return true;
     }
     if (p.type === "projects") return p.ids.length > 0 && p.sourceFolderId !== folder.id;

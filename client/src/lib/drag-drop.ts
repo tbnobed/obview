@@ -17,7 +17,13 @@ export type DragPayload =
   // the FIRST selected project came from — used only as a hint so the
   // target can short-circuit a no-op drop on the same folder.
   | { type: "projects"; ids: number[]; sourceFolderId: number | null }
-  | { type: "folder"; id: number; sourceParentFolderId: number | null; isGlobal: boolean }
+  // sourceProjectId is set when a project subfolder is dragged from
+  // inside a project view. Sidebar drop targets must ignore folder
+  // drags with sourceProjectId so a project subfolder can't end up
+  // reparented to a global/private sidebar folder. Conversely, the
+  // project-folders strip only accepts folder drags whose
+  // sourceProjectId matches the current project.
+  | { type: "folder"; id: number; sourceParentFolderId: number | null; isGlobal: boolean; sourceProjectId?: number }
   | { type: "file"; id: number; sourceProjectId: number }
   // Multi-file drag (project-scoped). Drop targets that already accept
   // "file" should also accept "files" and iterate `ids`.

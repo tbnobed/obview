@@ -1240,8 +1240,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (newParentId === folderId) {
           return res.status(400).json({ message: "A folder cannot be its own parent" });
         }
-        const check = await validateFolderParent(newParentId, req.user);
-        if (!check.ok) return res.status(check.status).json({ message: check.message });
+
+        // Project subfolders (folders with a projectId) live inside a
+        // single project and can only be reparented to another folder
+        // in the same project. validateFolderParent() is the wrong
+        // helper here — it rejects any parent that has a projectId
+        // (which is exactly what we WANT for this case) and applies
+        // the global/private audience rules that don't make sense
+        // inside a project.
+        if (existingFolder.projectId) {
+          const newParent: any = await storage.getFolder(newParentId);
+          if (!newParent || newParent.deletedAt) {
+            return res.status(400).json({ message: "Parent folder not found" });
+          }
+          if (newParent.projectId !== existingFolder.projectId) {
+            return res.status(400).json({ message: "Parent folder must be in the same project" });
+          }
+        } else {
+          const check = await validateFolderParent(newParentId, req.user);
+          if (!check.ok) return res.status(check.status).json({ message: check.message });
+          // Inherit isGlobal from the new parent if the parent is global.
+          if (check.forceGlobal) incoming.isGlobal = true;
+        }
+
         // Walk up: refuse if folderId appears anywhere above newParentId.
         let cursorId: number | null = newParentId;
         const seen = new Set<number>();
@@ -1254,8 +1275,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const cursor: any = await storage.getFolder(cursorId);
           cursorId = cursor?.parentFolderId ?? null;
         }
-        // Inherit isGlobal from the new parent if the parent is global.
-        if (check.forceGlobal) incoming.isGlobal = true;
         // Write the coerced number back so string inputs (e.g. "12")
         // pass `insertFolderSchema.partial()` which expects a number.
         incoming.parentFolderId = newParentId;

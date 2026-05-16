@@ -16,8 +16,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2, Share2 } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
-import { getDragPayload, peekDragPayload } from "@/lib/drag-drop";
-import { useMoveFileToFolder, useMoveFilesToFolder } from "@/hooks/use-drag-move";
+import {
+  getDragPayload,
+  peekDragPayload,
+  setDragPayload,
+  clearDragPayload,
+  type DragPayload,
+} from "@/lib/drag-drop";
+import {
+  useMoveFileToFolder,
+  useMoveFilesToFolder,
+  useMoveProjectFolderUnderParent,
+} from "@/hooks/use-drag-move";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,19 +78,44 @@ export function ProjectFoldersStrip({
   const [dragOver, setDragOver] = useState<number | "root" | null>(null);
   const moveFileToFolder = useMoveFileToFolder();
   const moveFilesToFolder = useMoveFilesToFolder();
+  const moveFolderUnderParent = useMoveProjectFolderUnderParent();
 
-  // Only accept our own file drags; ignore project/folder drags and OS files.
-  // Both single-file and multi-file (selection) drags are accepted as long
-  // as they originate from this same project.
-  const acceptsFileDrop = (e: React.DragEvent): boolean => {
+  // Walk the parent chain of `folderId` and return true if `maybeAncestorId`
+  // appears anywhere above it (including itself). Used to refuse drops that
+  // would create a cycle before round-tripping to the server.
+  const isAncestor = (maybeAncestorId: number, folderId: number): boolean => {
+    let cursor: Folder | undefined = folders.find((f) => f.id === folderId);
+    const seen = new Set<number>();
+    while (cursor) {
+      if (seen.has(cursor.id)) return false;
+      seen.add(cursor.id);
+      if (cursor.id === maybeAncestorId) return true;
+      const pid = cursor.parentFolderId;
+      cursor = pid == null ? undefined : folders.find((f) => f.id === pid);
+    }
+    return false;
+  };
+
+  // Accept drops of files (single or multi) AND of subfolders from this
+  // same project. `targetFolderId` is the prospective new parent (null =
+  // project root). The folder branch refuses self-drop, same-parent
+  // (no-op), and descendant drops so the UI never offers a drop that
+  // the server would reject.
+  const acceptsDrop = (e: React.DragEvent, targetFolderId: number | null): boolean => {
     if (!canEdit) return false;
     const p = peekDragPayload(e);
     if (!p) return false;
     if (p.type === "file" && p.sourceProjectId === projectId) return true;
     if (p.type === "files" && p.sourceProjectId === projectId && p.ids.length > 0) return true;
+    if (p.type === "folder" && p.sourceProjectId === projectId) {
+      if (targetFolderId != null && p.id === targetFolderId) return false;
+      if ((p.sourceParentFolderId ?? null) === targetFolderId) return false;
+      if (targetFolderId != null && isAncestor(p.id, targetFolderId)) return false;
+      return true;
+    }
     return false;
   };
-  const handleFileDrop = (e: React.DragEvent, targetFolderId: number | null) => {
+  const handleDrop = (e: React.DragEvent, targetFolderId: number | null) => {
     const p = getDragPayload(e);
     setDragOver(null);
     if (!p) return;
@@ -92,6 +127,19 @@ export function ProjectFoldersStrip({
     if (p.type === "files" && p.sourceProjectId === projectId && p.ids.length > 0) {
       e.preventDefault();
       moveFilesToFolder.mutate({ fileIds: p.ids, folderId: targetFolderId, projectId });
+      return;
+    }
+    if (p.type === "folder" && p.sourceProjectId === projectId) {
+      if (targetFolderId != null && p.id === targetFolderId) return;
+      if ((p.sourceParentFolderId ?? null) === targetFolderId) return;
+      if (targetFolderId != null && isAncestor(p.id, targetFolderId)) return;
+      e.preventDefault();
+      clearDragPayload();
+      moveFolderUnderParent.mutate({
+        folderId: p.id,
+        parentFolderId: targetFolderId,
+        projectId,
+      });
       return;
     }
   };
@@ -168,13 +216,13 @@ export function ProjectFoldersStrip({
             )}
             onClick={() => onSelectFolder(null)}
             onDragOver={(e) => {
-              if (!acceptsFileDrop(e)) return;
+              if (!acceptsDrop(e, null)) return;
               e.preventDefault();
               e.dataTransfer.dropEffect = "move";
               if (dragOver !== "root") setDragOver("root");
             }}
             onDragLeave={() => setDragOver((d) => (d === "root" ? null : d))}
-            onDrop={(e) => handleFileDrop(e, null)}
+            onDrop={(e) => handleDrop(e, null)}
             data-testid="project-folders-root"
           >
             <Home className="h-3.5 w-3.5" /> Project root
@@ -190,13 +238,13 @@ export function ProjectFoldersStrip({
                 )}
                 onClick={() => onSelectFolder(f.id)}
                 onDragOver={(e) => {
-                  if (!acceptsFileDrop(e)) return;
+                  if (!acceptsDrop(e, f.id)) return;
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
                   if (dragOver !== f.id) setDragOver(f.id);
                 }}
                 onDragLeave={() => setDragOver((d) => (d === f.id ? null : d))}
-                onDrop={(e) => handleFileDrop(e, f.id)}
+                onDrop={(e) => handleDrop(e, f.id)}
                 data-testid={`breadcrumb-folder-${f.id}`}
               >
                 {f.name}
@@ -224,15 +272,29 @@ export function ProjectFoldersStrip({
               className={cn(
                 "group relative flex items-center gap-2 pl-3 pr-1 py-2 rounded-md border border-border bg-card hover:border-foreground/30 text-sm text-card-foreground transition-colors",
                 dragOver === f.id && "ring-2 ring-primary border-transparent bg-primary/15",
+                canEdit && "cursor-grab active:cursor-grabbing",
               )}
+              draggable={canEdit}
+              onDragStart={(e) => {
+                if (!canEdit) return;
+                e.stopPropagation();
+                setDragPayload(e, {
+                  type: "folder",
+                  id: f.id,
+                  sourceParentFolderId: f.parentFolderId ?? null,
+                  isGlobal: !!f.isGlobal,
+                  sourceProjectId: projectId,
+                });
+              }}
+              onDragEnd={clearDragPayload}
               onDragOver={(e) => {
-                if (!acceptsFileDrop(e)) return;
+                if (!acceptsDrop(e, f.id)) return;
                 e.preventDefault();
                 e.dataTransfer.dropEffect = "move";
                 if (dragOver !== f.id) setDragOver(f.id);
               }}
               onDragLeave={() => setDragOver((d) => (d === f.id ? null : d))}
-              onDrop={(e) => handleFileDrop(e, f.id)}
+              onDrop={(e) => handleDrop(e, f.id)}
               data-testid={`subfolder-droptarget-${f.id}`}
             >
               <button

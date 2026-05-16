@@ -98,6 +98,38 @@ export function useMoveProjectsToFolder() {
   });
 }
 
+// Project-scoped variant of useMoveFolderUnderParent. Same PATCH endpoint
+// but invalidates the per-project folder query so the strip refreshes,
+// instead of the global /api/folders tree.
+export function useMoveProjectFolderUnderParent() {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({
+      folderId,
+      parentFolderId,
+    }: {
+      folderId: number;
+      parentFolderId: number | null;
+      projectId: number;
+    }) => {
+      return await apiRequest("PATCH", `/api/folders/${folderId}`, { parentFolderId });
+    },
+    onSuccess: (_data, vars) => {
+      const refetchType = "all" as const;
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.projectId}/folders`],
+        refetchType,
+      });
+      toast({
+        title: vars.parentFolderId == null ? "Folder moved to project root" : "Folder moved",
+      });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Couldn't move folder", description: err.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useMoveFolderUnderParent() {
   const { toast } = useToast();
   return useMutation({
