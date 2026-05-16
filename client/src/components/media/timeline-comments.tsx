@@ -18,6 +18,17 @@ import ReactionPicker from "@/components/comments/reaction-picker";
 import ReactionsDisplay from "@/components/comments/reactions-display";
 import { useToggleCommentResolution } from "@/hooks/use-comments";
 import { cn } from "@/lib/utils";
+
+// True if the event target is (or sits inside) an editable element —
+// input, textarea, select, or contenteditable. Used to keep the
+// comment-card click/key handlers from hijacking events that belong
+// to the inline edit textarea.
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return !!target.closest(
+    'input, textarea, select, [contenteditable=""], [contenteditable="true"]'
+  );
+}
 import type { Annotation } from "@/components/media/annotation-canvas";
 
 
@@ -428,7 +439,13 @@ export default function TimelineComments({
                 <div 
                   key={`${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
                   id={`comment-${(comment as any).isPublic ? 'public' : 'auth'}-${comment.id}`}
-                  onClick={() => {
+                  onClick={(e) => {
+                    // Ignore clicks that originated inside an editable
+                    // descendant (e.g. the inline edit textarea) — otherwise
+                    // typing/clicking inside the edit box re-fires the
+                    // "select comment" path and remounts the textarea,
+                    // wiping any manual resize.
+                    if (isEditableTarget(e.target)) return;
                     if (comment.timestamp !== null) {
                       onTimeClick(comment.timestamp);
                     }
@@ -437,6 +454,12 @@ export default function TimelineComments({
                     }
                   }}
                   onKeyDown={comment.timestamp !== null ? (e) => {
+                    // Don't hijack Space/Enter when the user is typing in
+                    // an input/textarea inside the card — otherwise the
+                    // spacebar seeks/plays the video instead of inserting
+                    // a space, and Enter jumps the playhead instead of
+                    // inserting a newline / submitting.
+                    if (isEditableTarget(e.target)) return;
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       onTimeClick(comment.timestamp);
