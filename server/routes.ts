@@ -1218,12 +1218,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Folder not found" });
       }
 
-      // Admins can edit any folder. Folder owners can edit (and toggle the
-      // isGlobal flag on) their own folders, whether private or global.
+      // Authorization depends on whether this folder lives inside a
+      // project (a project subfolder) or in the global/private sidebar
+      // tree (no projectId). For project subfolders, edit access must
+      // track CURRENT project membership — otherwise a former editor
+      // who originally created the folder could keep mutating it
+      // (renaming, reparenting, deleting) after being removed from
+      // the project. Top-level folders keep the existing
+      // admin-or-creator rule.
       const isAdmin = req.user.role === "admin";
-      const isOwner = existingFolder.createdById === req.user.id;
-      if (!isAdmin && !isOwner) {
-        return res.status(403).json({ message: "Forbidden" });
+      if (existingFolder.projectId != null) {
+        if (!isAdmin && !(await userHasProjectEditAccess(req.user, existingFolder.projectId))) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+      } else {
+        const isOwner = existingFolder.createdById === req.user.id;
+        if (!isAdmin && !isOwner) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
       }
 
       const incoming = { ...req.body };

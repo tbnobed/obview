@@ -75,6 +75,65 @@ function isUnlocked(req: Request, link: ShareLink): boolean {
   return true;
 }
 
+// Compute the set of folder IDs in `projectId` that are equal to
+// `rootFolderId` or descend from it. Used so that a folder-scope share
+// link on a project subfolder also covers files that have been moved
+// into NESTED subfolders below the shared folder — share links must
+// follow the media as users reorganise. Without this, dragging a file
+// into a nested folder would silently drop it out of an existing share.
+//
+// This is hot — `fileBelongsToScope` is called on every public range
+// request (HLS segments, MP4 byte-range scrubs, image qualities), and
+// each call would otherwise re-query every subfolder row for the
+// project. A small TTL cache keyed by `${projectId}:${rootFolderId}`
+// flattens the cost: folder reorganisation is rare, so up to 15s of
+// staleness is acceptable (the worst case is a freshly-moved file
+// remaining accessible for a few extra seconds after it was moved out
+// of scope, or unavailable for a few seconds after being moved in).
+const DESCENDANT_TTL_MS = 15_000;
+const descendantCache = new Map<string, { ids: Set<number>; expiresAt: number }>();
+
+async function getDescendantProjectFolderIds(
+  projectId: number,
+  rootFolderId: number,
+): Promise<Set<number>> {
+  const key = `${projectId}:${rootFolderId}`;
+  const now = Date.now();
+  const hit = descendantCache.get(key);
+  if (hit && hit.expiresAt > now) return hit.ids;
+
+  const all = await storage.getProjectFolders(projectId);
+  const childrenByParent = new Map<number | null, number[]>();
+  for (const f of all) {
+    const pid = (f as any).parentFolderId ?? null;
+    const arr = childrenByParent.get(pid) ?? [];
+    arr.push(f.id);
+    childrenByParent.set(pid, arr);
+  }
+  const ids = new Set<number>([rootFolderId]);
+  const queue: number[] = [rootFolderId];
+  while (queue.length > 0) {
+    const cur = queue.shift()!;
+    const kids = childrenByParent.get(cur) ?? [];
+    for (const kid of kids) {
+      if (!ids.has(kid)) {
+        ids.add(kid);
+        queue.push(kid);
+      }
+    }
+  }
+
+  // Opportunistically evict expired entries so the cache doesn't grow
+  // unbounded under high churn (long-lived process, many share links).
+  if (descendantCache.size > 256) {
+    descendantCache.forEach((v, k) => {
+      if (v.expiresAt <= now) descendantCache.delete(k);
+    });
+  }
+  descendantCache.set(key, { ids, expiresAt: now + DESCENDANT_TTL_MS });
+  return ids;
+}
+
 async function gatherScopeFiles(link: ShareLink): Promise<DbFile[]> {
   if (link.scopeType === "file") {
     const f = await storage.getFile(link.scopeId);
@@ -87,10 +146,15 @@ async function gatherScopeFiles(link: ShareLink): Promise<DbFile[]> {
   if (link.scopeType === "folder") {
     const folder = await storage.getFolder(link.scopeId);
     if (!folder) return [];
-    // Project subfolder: contains files directly via files.folderId.
+    // Project subfolder: contains files via files.folderId. Include
+    // files in the shared folder AND in any nested subfolder beneath
+    // it, so reorganising into nested folders doesn't break sharing.
     if (folder.projectId != null) {
+      const scopeIds = await getDescendantProjectFolderIds(folder.projectId, link.scopeId);
       const fs2 = await storage.getFilesByProject(folder.projectId);
-      return fs2.filter(f => f.folderId === link.scopeId && f.isLatestVersion !== false);
+      return fs2.filter(
+        f => f.folderId != null && scopeIds.has(f.folderId) && f.isLatestVersion !== false,
+      );
     }
     // Sidebar/top-level folder: contains projects; union their files.
     const projects = await storage.getProjectsByFolder(link.scopeId);
@@ -112,9 +176,13 @@ async function fileBelongsToScope(link: ShareLink, fileId: number): Promise<DbFi
   if (link.scopeType === "folder") {
     const folder = await storage.getFolder(link.scopeId);
     if (!folder) return undefined;
-    // Project subfolder: file must be directly in this subfolder.
+    // Project subfolder: file must live in this subfolder OR anywhere
+    // in its descendant subtree. Mirrors gatherScopeFiles().
     if (folder.projectId != null) {
-      return f.folderId === link.scopeId && f.projectId === folder.projectId ? f : undefined;
+      if (f.projectId !== folder.projectId) return undefined;
+      if (f.folderId == null) return undefined;
+      const scopeIds = await getDescendantProjectFolderIds(folder.projectId, link.scopeId);
+      return scopeIds.has(f.folderId) ? f : undefined;
     }
     // Sidebar folder: file's project must live in this folder.
     const proj = await storage.getProject(f.projectId);
