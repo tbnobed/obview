@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, X } from "lucide-react";
+import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, X, ArrowDownAZ, ArrowDownUp } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -982,9 +982,59 @@ function MediaCard({
   );
 }
 
+type FileSortKey = "name" | "date" | "size";
+type FileSortDir = "asc" | "desc";
+const FILE_SORT_STORAGE_KEY = "obviu:media-files:sort-v1";
+
+function readFileSort(): { key: FileSortKey; dir: FileSortDir } {
+  try {
+    const raw = localStorage.getItem(FILE_SORT_STORAGE_KEY);
+    if (!raw) return { key: "date", dir: "desc" };
+    const p = JSON.parse(raw);
+    const key = (["name", "date", "size"] as FileSortKey[]).includes(p.key) ? p.key : "date";
+    const dir = p.dir === "asc" ? "asc" : "desc";
+    return { key, dir };
+  } catch {
+    return { key: "date", dir: "desc" };
+  }
+}
+
 export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFile }: MediaCardGridProps) {
-  const latestFiles = files.filter((f) => f.isLatestVersion);
   const [viewMode, setViewMode] = useViewMode("media", "grid");
+  const [sortState, setSortState] = useState<{ key: FileSortKey; dir: FileSortDir }>(readFileSort);
+  useEffect(() => {
+    try { localStorage.setItem(FILE_SORT_STORAGE_KEY, JSON.stringify(sortState)); } catch {}
+  }, [sortState]);
+
+  const latestFiles = (() => {
+    const list = files.filter((f) => f.isLatestVersion);
+    const dir = sortState.dir === "asc" ? 1 : -1;
+    const get = (f: StorageFile): string | number => {
+      switch (sortState.key) {
+        case "name": return (f.filename || "").toLowerCase();
+        case "size": return f.fileSize ?? 0;
+        case "date": return new Date(f.createdAt as any).getTime();
+      }
+    };
+    return [...list].sort((a, b) => {
+      const av = get(a), bv = get(b);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+  })();
+
+  const sortLabel = (() => {
+    const base = sortState.key === "name" ? "Name" : sortState.key === "size" ? "Size" : "Date";
+    const arrow = sortState.dir === "asc" ? "↑" : "↓";
+    return `Sort: ${base} ${arrow}`;
+  })();
+  const pickSort = (key: FileSortKey) => setSortState((s) => ({
+    key,
+    // First click on a new key uses a sensible default direction;
+    // clicking the active key flips direction.
+    dir: s.key === key ? (s.dir === "asc" ? "desc" : "asc") : key === "name" ? "asc" : "desc",
+  }));
 
   // Multi-select state for drag-and-drop into subfolders. Selection is
   // local to this list; switching folders / projects re-mounts the parent
@@ -1098,9 +1148,41 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
             onChange={setViewMode}
             testIdPrefix="media-view"
           />
-          <Button variant="outline" size="sm" className="text-muted-foreground border-border hover:border-foreground/30">
-            Sort by Date
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-muted-foreground border-border hover:border-foreground/30"
+                data-testid="media-sort-trigger"
+              >
+                <ArrowDownUp className="h-3.5 w-3.5 mr-1.5" />
+                {sortLabel}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={() => pickSort("name")} data-testid="media-sort-name">
+                {sortState.key === "name" && <Check className="h-3.5 w-3.5 mr-1.5" />}
+                <span className={sortState.key === "name" ? "" : "ml-5"}>Name</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => pickSort("date")} data-testid="media-sort-date">
+                {sortState.key === "date" && <Check className="h-3.5 w-3.5 mr-1.5" />}
+                <span className={sortState.key === "date" ? "" : "ml-5"}>Date</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => pickSort("size")} data-testid="media-sort-size">
+                {sortState.key === "size" && <Check className="h-3.5 w-3.5 mr-1.5" />}
+                <span className={sortState.key === "size" ? "" : "ml-5"}>Size</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setSortState((s) => ({ ...s, dir: s.dir === "asc" ? "desc" : "asc" }))}
+                data-testid="media-sort-direction"
+              >
+                <ArrowDownAZ className="h-3.5 w-3.5 mr-1.5" />
+                {sortState.dir === "asc" ? "Ascending" : "Descending"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

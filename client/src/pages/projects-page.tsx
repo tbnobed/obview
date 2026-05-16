@@ -17,7 +17,8 @@ import ProjectCard from "@/components/projects/project-card";
 import ProjectRow from "@/components/projects/project-row";
 import OwnerChip from "@/components/projects/owner-chip";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Search, FileVideo, Loader2, ChevronRight, Globe, User as UserIcon, X } from "lucide-react";
+import { Plus, Search, FileVideo, Loader2, ChevronRight, Globe, User as UserIcon, X, ArrowDownUp, Check as CheckIcon } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useViewMode } from "@/hooks/use-view-mode";
@@ -69,6 +70,35 @@ export default function ProjectsPage() {
   // gap that contributed to the 04-30 accidental delete).
   const [ownerScope, setOwnerScope] = useState<"all" | "mine">("all");
   const [viewMode, setViewMode] = useViewMode("projects", "grid");
+
+  // Sort control. Persisted in localStorage so the user's choice
+  // survives reload. Applied below to filteredProjects + each group.
+  type ProjectSortKey = "name" | "updated" | "created";
+  type ProjectSortDir = "asc" | "desc";
+  const PROJECT_SORT_STORAGE_KEY = "obviu:projects:sort-v1";
+  const [sortState, setSortState] = useState<{ key: ProjectSortKey; dir: ProjectSortDir }>(() => {
+    try {
+      const raw = localStorage.getItem(PROJECT_SORT_STORAGE_KEY);
+      if (!raw) return { key: "updated", dir: "desc" };
+      const p = JSON.parse(raw);
+      const key = (["name", "updated", "created"] as ProjectSortKey[]).includes(p.key) ? p.key : "updated";
+      const dir = p.dir === "asc" ? "asc" : "desc";
+      return { key, dir };
+    } catch {
+      return { key: "updated", dir: "desc" };
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(PROJECT_SORT_STORAGE_KEY, JSON.stringify(sortState)); } catch {}
+  }, [sortState]);
+  const pickProjectSort = (key: ProjectSortKey) => setSortState((s) => ({
+    key,
+    dir: s.key === key ? (s.dir === "asc" ? "desc" : "asc") : key === "name" ? "asc" : "desc",
+  }));
+  const projectSortLabel = (() => {
+    const base = sortState.key === "name" ? "Name" : sortState.key === "created" ? "Created" : "Updated";
+    return `Sort: ${base} ${sortState.dir === "asc" ? "↑" : "↓"}`;
+  })();
   // Multi-select state for bulk drag-into-folder. Lives at the page
   // level so a Yours-group selection can be combined with a Global
   // selection in the same drag — and so the "N selected" bar always
@@ -111,17 +141,34 @@ export default function ProjectsPage() {
   }, []);
 
   // Filter projects by search term, status, and (admin-only) ownership scope.
-  const filteredProjects = projects?.filter(project => {
-    const matchesSearch = searchTerm === "" ||
-      project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (project.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredProjects = useMemo(() => {
+    const matched = projects?.filter(project => {
+      const matchesSearch = searchTerm === "" ||
+        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (project.description?.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesStatus = statusFilter === null || statusFor(project.id) === statusFilter;
+      const matchesStatus = statusFilter === null || statusFor(project.id) === statusFilter;
 
-    const matchesOwner = !isAdmin || ownerScope === "all" || project.createdById === user?.id;
+      const matchesOwner = !isAdmin || ownerScope === "all" || project.createdById === user?.id;
 
-    return matchesSearch && matchesStatus && matchesOwner;
-  });
+      return matchesSearch && matchesStatus && matchesOwner;
+    });
+    if (!matched) return matched;
+    const dir = sortState.dir === "asc" ? 1 : -1;
+    const get = (p: NonNullable<typeof matched>[number]) => {
+      switch (sortState.key) {
+        case "name": return (p.name || "").toLowerCase();
+        case "created": return new Date((p as any).createdAt ?? 0).getTime();
+        case "updated": return new Date(p.updatedAt ?? 0).getTime();
+      }
+    };
+    return [...matched].sort((a, b) => {
+      const av = get(a), bv = get(b);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+  }, [projects, searchTerm, statusFilter, ownerScope, isAdmin, user?.id, sortState, statusFor]);
 
   const isEditor = user?.role === "admin" || user?.role === "editor";
 
@@ -270,7 +317,36 @@ export default function ProjectsPage() {
               Approved
             </Button>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" data-testid="projects-sort-trigger">
+                  <ArrowDownUp className="h-3.5 w-3.5 mr-1.5" />
+                  {projectSortLabel}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => pickProjectSort("name")} data-testid="projects-sort-name">
+                  {sortState.key === "name" && <CheckIcon className="h-3.5 w-3.5 mr-1.5" />}
+                  <span className={sortState.key === "name" ? "" : "ml-5"}>Name</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => pickProjectSort("updated")} data-testid="projects-sort-updated">
+                  {sortState.key === "updated" && <CheckIcon className="h-3.5 w-3.5 mr-1.5" />}
+                  <span className={sortState.key === "updated" ? "" : "ml-5"}>Updated</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => pickProjectSort("created")} data-testid="projects-sort-created">
+                  {sortState.key === "created" && <CheckIcon className="h-3.5 w-3.5 mr-1.5" />}
+                  <span className={sortState.key === "created" ? "" : "ml-5"}>Created</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setSortState((s) => ({ ...s, dir: s.dir === "asc" ? "desc" : "asc" }))}
+                  data-testid="projects-sort-direction"
+                >
+                  {sortState.dir === "asc" ? "Ascending ↑" : "Descending ↓"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <ViewModeToggle
               value={viewMode}
               onChange={setViewMode}
