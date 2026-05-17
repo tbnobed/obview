@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,13 @@ import ProjectRow from "@/components/projects/project-row";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { useViewMode } from "@/hooks/use-view-mode";
 import ViewModeToggle from "@/components/ui/view-mode-toggle";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useFolder, useFolderProjects, useDeleteFolder, useFolders, useCreateFolder } from "@/hooks/use-folders";
 import { useAuth } from "@/hooks/use-auth";
 import { getFolderPath, getDirectSubfolders } from "@/lib/folder-tree";
@@ -149,6 +156,19 @@ export default function FolderPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [shareOpen, setShareOpen] = useState(false);
   const [viewMode, setViewMode] = useViewMode("projects", "grid");
+  // Sort preference for the main folder grid/list. Persisted per browser
+  // so the user's choice survives reloads and navigation between folders.
+  type SortKey = "name-asc" | "name-desc" | "updated-desc" | "created-desc";
+  const [sortKey, setSortKey] = useState<SortKey>(() => {
+    if (typeof window === "undefined") return "name-asc";
+    const v = window.localStorage.getItem("folder-page:sort");
+    return (v === "name-asc" || v === "name-desc" || v === "updated-desc" || v === "created-desc")
+      ? (v as SortKey)
+      : "name-asc";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem("folder-page:sort", sortKey);
+  }, [sortKey]);
 
   const { data: folder, isLoading: folderLoading, error: folderError } =
     useFolder(folderId) as { data: Folder | undefined; isLoading: boolean; error: Error | null };
@@ -245,14 +265,37 @@ export default function FolderPage() {
     }
   }, [folder?.name]);
 
-  const filtered: ProjectWithVideo[] = (projects ?? []).filter((p) => {
-    if (!searchTerm) return true;
+  const filtered: ProjectWithVideo[] = useMemo(() => {
     const term = searchTerm.toLowerCase();
-    return (
-      p.name?.toLowerCase().includes(term) ||
-      p.description?.toLowerCase().includes(term)
-    );
-  });
+    const matches = (projects ?? []).filter((p) => {
+      if (!searchTerm) return true;
+      return (
+        p.name?.toLowerCase().includes(term) ||
+        p.description?.toLowerCase().includes(term)
+      );
+    });
+    const ts = (v: unknown): number => {
+      if (!v) return 0;
+      const t = new Date(v as string | number | Date).getTime();
+      return Number.isFinite(t) ? t : 0;
+    };
+    const sorted = matches.slice();
+    switch (sortKey) {
+      case "name-asc":
+        sorted.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" }));
+        break;
+      case "name-desc":
+        sorted.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? "", undefined, { sensitivity: "base" }));
+        break;
+      case "updated-desc":
+        sorted.sort((a, b) => ts((b as any).updatedAt) - ts((a as any).updatedAt));
+        break;
+      case "created-desc":
+        sorted.sort((a, b) => ts((b as any).createdAt) - ts((a as any).createdAt));
+        break;
+    }
+    return sorted;
+  }, [projects, searchTerm, sortKey]);
 
   if (Number.isNaN(folderId)) {
     return (
@@ -439,6 +482,20 @@ export default function FolderPage() {
                   data-testid="input-folder-page-search"
                 />
               </div>
+              <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+                <SelectTrigger
+                  className="w-[180px] dark:bg-gray-800 dark:border-gray-700"
+                  data-testid="select-folder-page-sort"
+                >
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name-asc">Name (A–Z)</SelectItem>
+                  <SelectItem value="name-desc">Name (Z–A)</SelectItem>
+                  <SelectItem value="updated-desc">Recently updated</SelectItem>
+                  <SelectItem value="created-desc">Recently created</SelectItem>
+                </SelectContent>
+              </Select>
               <ViewModeToggle
                 value={viewMode}
                 onChange={setViewMode}

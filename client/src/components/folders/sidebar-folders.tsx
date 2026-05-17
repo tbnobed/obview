@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useOsFileDrop } from "@/lib/use-os-file-drop";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -474,6 +474,16 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
   const [location] = useLocation();
   const { data: projects, isLoading } = useFolderProjects(open ? folder.id : 0);
   const projectCount = projects?.length ?? 0;
+  // Sidebar always renders folder contents alphabetically (case-insensitive)
+  // so users get a stable, predictable order regardless of when a project
+  // was created or last edited. Matches the global folder list ordering.
+  const sortedProjects = useMemo(
+    () =>
+      (projects ?? []).slice().sort((a: any, b: any) =>
+        (a?.name ?? "").localeCompare(b?.name ?? "", undefined, { sensitivity: "base" }),
+      ),
+    [projects],
+  );
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const isOwner = !!user && folder.createdById === user.id;
@@ -751,7 +761,7 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
               <Loader2 className="h-3 w-3 animate-spin text-neutral-400" />
             </div>
           ) : projectCount > 0 ? (
-            projects!.map((project: any) => (
+            sortedProjects.map((project: any) => (
               <SidebarProjectRow key={project.id} project={project} location={location} />
             ))
           ) : !hasChildren ? (
