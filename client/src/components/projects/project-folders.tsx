@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2, Share2, FolderInput, Loader2 } from "lucide-react";
+import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2, Share2 } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
 import {
@@ -27,7 +27,6 @@ import {
   useMoveFileToFolder,
   useMoveFilesToFolder,
   useMoveProjectFolderUnderParent,
-  useMoveProjectFolderToProject,
 } from "@/hooks/use-drag-move";
 import {
   AlertDialog,
@@ -39,7 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { Folder, File as StorageFile, Project } from "@shared/schema";
+import type { Folder, File as StorageFile } from "@shared/schema";
 
 interface ProjectFoldersStripProps {
   projectId: number;
@@ -73,10 +72,6 @@ export function ProjectFoldersStrip({
   // scopeType="folder" so the link only grants access to files inside
   // this subfolder, not the whole project.
   const [folderToShare, setFolderToShare] = useState<Folder | null>(null);
-  // Folder targeted by the "Move to another project…" dialog. Lets users
-  // relocate a whole subfolder subtree out of this project and into a
-  // different one — server walks the descendants atomically.
-  const [folderToMove, setFolderToMove] = useState<Folder | null>(null);
   // Tracks which drop target is currently being hovered so we can paint
   // a ring without re-rendering siblings. 'root' = breadcrumb, number =
   // a child folder tile.
@@ -330,21 +325,6 @@ export function ProjectFoldersStrip({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setFolderToMove(f);
-                  }}
-                  className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                  aria-label={`Move folder ${f.name} to another project`}
-                  data-testid={`move-subfolder-${f.id}`}
-                  title="Move to another project"
-                >
-                  <FolderInput className="h-4 w-4" />
-                </button>
-              )}
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
                     setFolderToDelete(f);
                   }}
                   className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
@@ -365,12 +345,6 @@ export function ProjectFoldersStrip({
         scopeType="folder"
         scopeId={folderToShare?.id ?? 0}
         scopeName={folderToShare?.name}
-      />
-
-      <MoveFolderToProjectDialog
-        folder={folderToMove}
-        sourceProjectId={projectId}
-        onClose={() => setFolderToMove(null)}
       />
 
       <AlertDialog
@@ -575,102 +549,3 @@ export function MoveFileDialog({ projectId, file, files, onClose }: MoveFileDial
   );
 }
 
-interface MoveFolderToProjectDialogProps {
-  folder: Folder | null;
-  sourceProjectId: number;
-  onClose: () => void;
-}
-
-// Project picker used by the "Move folder to another project" action on
-// each subfolder tile. Lists every project the current user can see
-// (the server filters /api/projects to that set already) minus the
-// source project, since moving into itself is a no-op the server would
-// reject anyway. Final edit-access check happens server-side, so a user
-// who picks a project they can read but not write into still sees a
-// clean error toast.
-function MoveFolderToProjectDialog({ folder, sourceProjectId, onClose }: MoveFolderToProjectDialogProps) {
-  const isOpen = !!folder;
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
-    queryKey: ["/api/projects"],
-    enabled: isOpen,
-  });
-  const [targetId, setTargetId] = useState<number | null>(null);
-  const moveToProject = useMoveProjectFolderToProject();
-
-  const candidates = useMemo(
-    () =>
-      projects
-        .filter((p) => p.id !== sourceProjectId && !(p as any).deletedAt)
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
-    [projects, sourceProjectId],
-  );
-
-  const handleClose = () => {
-    setTargetId(null);
-    onClose();
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Move folder to another project</DialogTitle>
-          <DialogDescription>
-            {folder ? (
-              <>
-                Move <span className="font-semibold">{folder.name}</span> (and every subfolder
-                and file inside it) into a different project. The folder will land at the root
-                of the chosen project.
-              </>
-            ) : null}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-1 max-h-72 overflow-auto">
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : candidates.length === 0 ? (
-            <p className="text-sm text-muted-foreground px-1 py-4">
-              No other projects available.
-            </p>
-          ) : (
-            candidates.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setTargetId(p.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm border ${targetId === p.id ? "border-primary bg-primary/10" : "border-transparent hover:bg-muted"}`}
-                data-testid={`move-folder-target-${p.id}`}
-              >
-                <FolderIcon className="h-4 w-4 text-amber-500" /> {p.name}
-              </button>
-            ))
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={moveToProject.isPending}>
-            Cancel
-          </Button>
-          <Button
-            disabled={!folder || targetId == null || moveToProject.isPending}
-            onClick={() => {
-              if (!folder || targetId == null) return;
-              moveToProject.mutate(
-                {
-                  folderId: folder.id,
-                  targetProjectId: targetId,
-                  sourceProjectId,
-                },
-                { onSuccess: () => handleClose() },
-              );
-            }}
-            data-testid="move-folder-to-project-confirm"
-          >
-            {moveToProject.isPending ? "Moving…" : "Move"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
