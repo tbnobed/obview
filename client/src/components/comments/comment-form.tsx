@@ -107,15 +107,19 @@ export default function CommentForm({
         content: commentContent,
         fileId,
         parentId: parentId || null,
+        // Send the exact playhead position so the server stores
+        // frame-accurate timestamps (the columns are doublePrecision).
+        // Flooring here was the root cause of comments rounding to whole
+        // seconds across the app.
         timestamp: hasRange
-          ? Math.floor(inPoint as number)
+          ? (inPoint as number)
           : includeTimestamp && currentTime !== undefined
-          ? Math.floor(currentTime)
+          ? currentTime
           : null,
       };
       if (hasRange) {
-        commentData.inPoint = Math.floor(inPoint as number);
-        commentData.outPoint = Math.floor(outPoint as number);
+        commentData.inPoint = inPoint as number;
+        commentData.outPoint = outPoint as number;
       }
       if (pendingAnnotations && pendingAnnotations.length > 0) {
         commentData.annotations = JSON.stringify(pendingAnnotations);

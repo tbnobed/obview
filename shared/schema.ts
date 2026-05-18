@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, bigint, boolean, timestamp, json, uuid, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, bigint, boolean, timestamp, json, uuid, primaryKey, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -116,7 +116,9 @@ export const comments = pgTable("comments", {
   fileId: integer("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id),
   parentId: integer("parent_id"), // For comment replies (null if top-level)
-  timestamp: integer("timestamp"), // For timestamped video comments (seconds)
+  // Seconds into the media, stored as double precision so a comment lands
+  // on the exact frame the user paused on — not the rounded second.
+  timestamp: doublePrecision("timestamp"),
   isResolved: boolean("is_resolved").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -131,7 +133,9 @@ export const publicComments = pgTable("public_comments", {
   fileId: integer("file_id").notNull().references(() => files.id, { onDelete: "cascade" }),
   displayName: text("display_name").notNull(),
   parentId: integer("parent_id"), // For comment replies (null if top-level)
-  timestamp: integer("timestamp"), // For timestamped video comments (seconds)
+  // Seconds into the media; doublePrecision so frame-accurate timestamps
+  // survive the round-trip (was integer, which rounded to whole seconds).
+  timestamp: doublePrecision("timestamp"),
   creatorToken: text("creator_token"), // For tracking comment ownership (nullable for existing records)
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -157,13 +161,17 @@ export const commentsUnified = pgTable("comments_unified", {
   creatorToken: text("creator_token"), // For public comment deletion
   parentId: text("parent_id").references((): any => commentsUnified.id), // Self-reference with UUID
   content: text("content").notNull(),
-  timestamp: integer("timestamp"), // For timestamped video comments (seconds)
+  // Seconds into the media. doublePrecision so we preserve frame accuracy
+  // (e.g. 12.5417s on a 24fps clip) instead of rounding to whole seconds
+  // like the original integer column did.
+  timestamp: doublePrecision("timestamp"),
   // Optional in/out range (Frame.io / Premiere style). When both are set the
   // comment refers to a span (e.g. "this section drags") rather than a single
   // moment. `timestamp` is still populated (= inPoint) so existing code paths
-  // that key off a single time keep working.
-  inPoint: integer("in_point"),
-  outPoint: integer("out_point"),
+  // that key off a single time keep working. Stored doublePrecision for the
+  // same frame-accuracy reason as `timestamp`.
+  inPoint: doublePrecision("in_point"),
+  outPoint: doublePrecision("out_point"),
   annotations: text("annotations"), // JSON string of drawing annotations on frame
   isResolved: boolean("is_resolved").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),

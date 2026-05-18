@@ -1272,13 +1272,13 @@ function FileViewer({
   const post = useMutation({
     mutationFn: async () => {
       const el = mediaRef.current;
-      const playhead = el && (isVideo || isAudio) ? Math.floor(el.currentTime) : null;
+      const playhead = el && (isVideo || isAudio) ? el.currentTime : null;
       const hasRange =
         (isVideo || isAudio) &&
         inPoint !== null &&
         outPoint !== null &&
         outPoint > inPoint;
-      const ts = hasRange ? Math.floor(inPoint as number) : playhead;
+      const ts = hasRange ? (inPoint as number) : playhead;
       const r = await fetch(
         `/api/public/share/${token}/files/${file.id}/comments`,
         {
@@ -1289,8 +1289,8 @@ function FileViewer({
             content,
             displayName: name || "Anonymous",
             timestamp: ts,
-            inPoint: hasRange ? Math.floor(inPoint as number) : undefined,
-            outPoint: hasRange ? Math.floor(outPoint as number) : undefined,
+            inPoint: hasRange ? (inPoint as number) : undefined,
+            outPoint: hasRange ? (outPoint as number) : undefined,
             annotations:
               pendingAnnotations && pendingAnnotations.length
                 ? JSON.stringify(pendingAnnotations)
