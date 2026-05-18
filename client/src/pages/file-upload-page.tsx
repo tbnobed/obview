@@ -9,6 +9,7 @@ import { Loader2, Upload, FileVideo, File, Image as ImageIcon } from "lucide-rea
 import { Progress } from "@/components/ui/progress";
 import AppLayout from "@/components/layout/app-layout";
 import { useProject } from "@/hooks/use-projects";
+import { useFolder } from "@/hooks/use-folders";
 import { queryClient } from "@/lib/queryClient";
 import { uploadService } from "@/lib/upload-service";
 
@@ -32,6 +33,11 @@ export default function FileUploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { data: project, isLoading: projectLoading } = useProject(projectId);
+  // Resolve the target subfolder so the upload card can show the user
+  // exactly where the file is going (project + folder). Without this the
+  // dialog only mentions the project, which made users think we were
+  // ignoring their subfolder context and uploading to the root.
+  const { data: targetFolder } = useFolder(folderId ?? 0, { enabled: folderId != null });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -184,7 +190,15 @@ export default function FileUploadPage() {
           <CardHeader>
             <CardTitle>Upload Media File</CardTitle>
             <CardDescription>
-              Upload a media file to project: {project.name}
+              {folderId != null ? (
+                <>
+                  Uploading to <span className="font-medium">{project.name}</span>
+                  {" / "}
+                  <span className="font-medium">{targetFolder?.name ?? `folder #${folderId}`}</span>
+                </>
+              ) : (
+                <>Uploading to <span className="font-medium">{project.name}</span> (project root)</>
+              )}
             </CardDescription>
           </CardHeader>
           
