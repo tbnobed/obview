@@ -63,6 +63,7 @@ import {
   useMoveProjectsToFolder,
   useMoveFolderUnderParent,
   useMoveFileToProject,
+  useMoveProjectFolderToProject,
 } from "@/hooks/use-drag-move";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -411,6 +412,7 @@ function OwnerGroup({ owner }: { owner: { ownerId: number; ownerName: string; ro
 function SidebarProjectRow({ project, location }: { project: any; location: string }) {
   const active = location === `/project/${project.id}`;
   const moveFile = useMoveFileToProject();
+  const moveFolderToProject = useMoveProjectFolderToProject();
   const [isDragOver, setIsDragOver] = useState(false);
   const rowRef = useRef<HTMLDivElement | null>(null);
   const isFileDropTarget = useOsFileDrop(rowRef, project.id, { label: project.name });
@@ -423,8 +425,18 @@ function SidebarProjectRow({ project, location }: { project: any; location: stri
       sourceFolderId: project.folderId ?? null,
     });
   };
-  const accepts = (p: DragPayload | null) =>
-    !!p && p.type === "file" && p.sourceProjectId !== project.id;
+  // Sidebar project rows accept two cross-project drag flavors:
+  //   * a media file dragged out of another project (existing behaviour)
+  //   * a project subfolder dragged out of another project — the whole
+  //     subtree (folders + files inside) moves into THIS project. Same-
+  //     project subfolder drags are rejected here so they don't collide
+  //     with the in-project breadcrumb/tile drop targets.
+  const accepts = (p: DragPayload | null) => {
+    if (!p) return false;
+    if (p.type === "file" && p.sourceProjectId !== project.id) return true;
+    if (p.type === "folder" && p.sourceProjectId != null && p.sourceProjectId !== project.id) return true;
+    return false;
+  };
   const onDragOver = (e: React.DragEvent) => {
     if (!accepts(peekDragPayload(e))) return;
     e.preventDefault();
@@ -433,12 +445,20 @@ function SidebarProjectRow({ project, location }: { project: any; location: stri
   };
   const onDrop = (e: React.DragEvent) => {
     const p = getDragPayload(e);
-    if (!accepts(p) || p?.type !== "file") return;
+    if (!accepts(p)) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
     clearDragPayload();
-    moveFile.mutate({ fileId: p.id, projectId: project.id });
+    if (p!.type === "file") {
+      moveFile.mutate({ fileId: p!.id, projectId: project.id });
+    } else if (p!.type === "folder" && p!.sourceProjectId != null) {
+      moveFolderToProject.mutate({
+        folderId: p!.id,
+        sourceProjectId: p!.sourceProjectId,
+        targetProjectId: project.id,
+      });
+    }
   };
 
   return (
