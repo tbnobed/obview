@@ -44,6 +44,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
+import UploadDialog from "@/components/uploads/upload-dialog";
 import { Link as LinkIcon } from "lucide-react";
 
 
@@ -128,6 +129,7 @@ export default function ProjectPage() {
     return Number.isFinite(n) ? n : null;
   });
   const [movingFile, setMovingFile] = useState<StorageFile | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
   
 
   
@@ -642,7 +644,7 @@ export default function ProjectPage() {
               <Button
                 size="sm"
                 className="h-9 px-3.5 bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 shadow-sm"
-                onClick={() => navigate(`/projects/${projectId}/upload${currentSubfolderId != null ? `?folderId=${currentSubfolderId}` : ""}`)}
+                onClick={() => setUploadOpen(true)}
                 title="Upload media"
               >
                 <Plus className="h-4 w-4" />
@@ -750,7 +752,7 @@ export default function ProjectPage() {
                   Upload your first media file to start the review process
                 </p>
                 {isEditor && (
-                  <Button onClick={() => navigate(`/projects/${projectId}/upload${currentSubfolderId != null ? `?folderId=${currentSubfolderId}` : ""}`)}>
+                  <Button onClick={() => setUploadOpen(true)}>
                     Upload Media
                   </Button>
                 )}
@@ -765,6 +767,16 @@ export default function ProjectPage() {
         file={movingFile}
         onClose={() => setMovingFile(null)}
       />
+
+      {project && (
+        <UploadDialog
+          open={uploadOpen}
+          onOpenChange={setUploadOpen}
+          projectId={projectId}
+          projectName={project.name}
+          folderId={currentSubfolderId}
+        />
+      )}
 
       {/* Activity Sheet */}
       <Sheet open={activitySheetOpen} onOpenChange={setActivitySheetOpen}>
