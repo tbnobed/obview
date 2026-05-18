@@ -413,7 +413,10 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
     el.addEventListener("pause", onPause);
     el.addEventListener("seeked", stop);
     el.addEventListener("ended", onPause);
-    el.addEventListener("timeupdate", stop);
+    // NOTE: do NOT bind `timeupdate` to stop() — the native timeupdate event
+    // fires ~4Hz, which would cancel our 60Hz rAF mid-playback and make the
+    // SMPTE frames digit stutter. The rAF loop itself keeps currentTime
+    // synced while playing; `seeked`/`pause` handle the non-playing cases.
     el.addEventListener("loadedmetadata", onMeta);
     el.addEventListener("durationchange", onMeta);
     el.addEventListener("volumechange", onVolume);
@@ -428,7 +431,6 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
       el.removeEventListener("pause", onPause);
       el.removeEventListener("seeked", stop);
       el.removeEventListener("ended", onPause);
-      el.removeEventListener("timeupdate", stop);
       el.removeEventListener("loadedmetadata", onMeta);
       el.removeEventListener("durationchange", onMeta);
       el.removeEventListener("volumechange", onVolume);
