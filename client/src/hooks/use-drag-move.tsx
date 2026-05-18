@@ -240,6 +240,65 @@ export function useMoveFilesToFolder() {
   });
 }
 
+// Cross-project move for a project subfolder. Sister of
+// useMoveProjectFolderUnderParent (same-project re-parenting); this one
+// rewrites projectId on the entire subtree on the server. We invalidate
+// both source and target project folder lists so the strip refreshes on
+// either side without a manual reload.
+export function useMoveProjectFolderToProject() {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({
+      folderId,
+      targetProjectId,
+      parentFolderId,
+    }: {
+      folderId: number;
+      targetProjectId: number;
+      sourceProjectId: number;
+      parentFolderId?: number | null;
+    }) => {
+      return await apiRequest("POST", `/api/folders/${folderId}/move-to-project`, {
+        projectId: targetProjectId,
+        parentFolderId: parentFolderId ?? null,
+      });
+    },
+    onSuccess: (_data, vars) => {
+      const refetchType = "all" as const;
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.sourceProjectId}/folders`],
+        refetchType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.targetProjectId}/folders`],
+        refetchType,
+      });
+      // Files inside the moved subtree changed projectId, so file lists
+      // on both sides must refresh too.
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.sourceProjectId}/files`],
+        refetchType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/projects/${vars.targetProjectId}/files`],
+        refetchType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/projects", vars.sourceProjectId, "files"],
+        refetchType,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/projects", vars.targetProjectId, "files"],
+        refetchType,
+      });
+      toast({ title: "Folder moved to project" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Couldn't move folder", description: err.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useMoveFileToProject() {
   const { toast } = useToast();
   return useMutation({

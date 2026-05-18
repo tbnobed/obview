@@ -1381,6 +1381,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Move a project subfolder (and every descendant subfolder + file
+  // beneath it) into a different project. Same-project re-parenting still
+  // goes through PATCH /api/folders/:folderId — this endpoint is the
+  // cross-project counterpart, because that path has to rewrite
+  // `folders.projectId` and `files.projectId` for the entire subtree
+  // atomically. Doing it in a transaction prevents partial moves where,
+  // say, the root folder lands in project B but nested children still
+  // point at project A (which would orphan them from both UIs).
+  app.post("/api/folders/:folderId/move-to-project", isAuthenticated, async (req, res, next) => {
+    try {
+      const folderId = parseInt(req.params.folderId);
+      if (isNaN(folderId)) return res.status(400).json({ message: "Invalid folder ID" });
+
+      const schema = z.object({
+        projectId: z.number().int().positive(),
+        parentFolderId: z.number().int().positive().nullable().optional(),
+      });
+      const body = schema.parse(req.body);
+
+      const existing = await storage.getFolder(folderId);
+      if (!existing || (existing as any).deletedAt) {
+        return res.status(404).json({ message: "Folder not found" });
+      }
+      if (existing.projectId == null) {
+        return res.status(400).json({ message: "Only project subfolders can be moved between projects" });
+      }
+      if (body.projectId === existing.projectId) {
+        return res.status(400).json({ message: "Folder is already in that project. Use PATCH to re-parent within a project." });
+      }
+
+      const isAdmin = req.user.role === "admin";
+      if (!isAdmin && !(await userHasProjectEditAccess(req.user, existing.projectId))) {
+        return res.status(403).json({ message: "You don't have edit access to the source project" });
+      }
+      const targetProject = await storage.getProject(body.projectId);
+      if (!targetProject || (targetProject as any).deletedAt) {
+        return res.status(400).json({ message: "Target project not found" });
+      }
+      if (!isAdmin && !(await userHasProjectEditAccess(req.user, body.projectId))) {
+        return res.status(403).json({ message: "You don't have edit access to the target project" });
+      }
+
+      // Collect every descendant folder ID inside the source project so
+      // we can rewrite the whole subtree in one shot.
+      const sourceFolders = await storage.getProjectFolders(existing.projectId);
+      const childrenByParent = new Map<number | null, number[]>();
+      for (const f of sourceFolders) {
+        const pid = (f as any).parentFolderId ?? null;
+        const arr = childrenByParent.get(pid) ?? [];
+        arr.push(f.id);
+        childrenByParent.set(pid, arr);
+      }
+      const subtreeIds = new Set<number>([existing.id]);
+      const queue: number[] = [existing.id];
+      while (queue.length > 0) {
+        const cur = queue.shift()!;
+        for (const kid of childrenByParent.get(cur) ?? []) {
+          if (!subtreeIds.has(kid)) {
+            subtreeIds.add(kid);
+            queue.push(kid);
+          }
+        }
+      }
+
+      // If a target parent folder was specified, validate it lives in the
+      // target project. It cannot be one of the folders being moved (that
+      // would be a cycle once the move completes — the moved subtree no
+      // longer exists in the source project anyway).
+      let newParentFolderId: number | null = body.parentFolderId ?? null;
+      if (newParentFolderId != null) {
+        const newParent = await storage.getFolder(newParentFolderId);
+        if (!newParent || (newParent as any).deletedAt) {
+          return res.status(400).json({ message: "Target parent folder not found" });
+        }
+        if (newParent.projectId !== body.projectId) {
+          return res.status(400).json({ message: "Target parent folder must belong to the target project" });
+        }
+        if (subtreeIds.has(newParentFolderId)) {
+          return res.status(400).json({ message: "Cannot move a folder into one of its own descendants" });
+        }
+      }
+
+      const idList = Array.from(subtreeIds);
+      await db.transaction(async (tx: any) => {
+        // Rewrite projectId for every folder in the subtree.
+        await tx.update(foldersTable)
+          .set({ projectId: body.projectId, updatedAt: new Date() })
+          .where(inArray(foldersTable.id, idList));
+        // Detach the root folder from its old parent (or attach to the
+        // requested target parent). Descendants keep their existing
+        // parentFolderId values — those parents are also in the subtree,
+        // so the tree shape is preserved.
+        await tx.update(foldersTable)
+          .set({ parentFolderId: newParentFolderId, updatedAt: new Date() })
+          .where(eq(foldersTable.id, existing.id));
+        // Rewrite projectId for every file whose folderId is in the
+        // subtree, so files stay co-located with the folders that
+        // contain them.
+        await tx.update(filesTable)
+          .set({ projectId: body.projectId })
+          .where(inArray(filesTable.folderId, idList));
+      });
+
+      await storage.logActivity({
+        action: "move",
+        entityType: "folder",
+        entityId: existing.id,
+        userId: req.user.id,
+        metadata: {
+          fromProjectId: existing.projectId,
+          toProjectId: body.projectId,
+          parentFolderId: newParentFolderId,
+          subtreeFolderCount: idList.length,
+        },
+      });
+
+      const updated = await storage.getFolder(existing.id);
+      res.json(updated);
+    } catch (error: any) {
+      if (error?.name === "ZodError") {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      next(error);
+    }
+  });
+
   // Delete a folder
   app.delete("/api/folders/:folderId", isAuthenticated, async (req, res, next) => {
     try {
