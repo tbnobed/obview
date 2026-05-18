@@ -93,6 +93,18 @@ function isUnlocked(req: Request, link: ShareLink): boolean {
 const DESCENDANT_TTL_MS = 15_000;
 const descendantCache = new Map<string, { ids: Set<number>; expiresAt: number }>();
 
+// Bust every cached descendant set for the given project. Callers that
+// mutate folder/parentFolderId/projectId for any folder in a project
+// should invoke this so folder-scope share links don't serve stale
+// descendant lists during the 15s TTL window. Cheap — only iterates
+// keys we've actually built up.
+export function invalidateShareLinkDescendantCache(projectId: number): void {
+  const prefix = `${projectId}:`;
+  for (const key of Array.from(descendantCache.keys())) {
+    if (key.startsWith(prefix)) descendantCache.delete(key);
+  }
+}
+
 async function getDescendantProjectFolderIds(
   projectId: number,
   rootFolderId: number,

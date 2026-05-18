@@ -13,7 +13,7 @@ import * as fsPromises from 'fs/promises';
 import { existsSync } from 'fs';
 import * as crypto from 'crypto';
 import { generateFCPXML, generateEDL, generateCSV } from './utils/marker-export';
-import { registerShareLinkRoutes } from "./share-links";
+import { registerShareLinkRoutes, invalidateShareLinkDescendantCache } from "./share-links";
 
 // Extended Request type to handle file uploads
 // Using declaration merging with Express namespace
@@ -1483,6 +1483,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .set({ projectId: body.projectId })
           .where(inArray(filesTable.folderId, idList));
       });
+
+      // Bust cached descendant sets for BOTH projects so folder-scope
+      // share links stop seeing stale folder lists immediately instead
+      // of after the 15s TTL. Without this, an ancestor folder-scope
+      // link in the source project would briefly still claim the moved
+      // subtree IDs as descendants (file project-id filter masks the
+      // leak today, but defence-in-depth), and a folder-scope link on
+      // the moved folder itself would have no cached entry under the
+      // new projectId — invalidating is cheap either way.
+      invalidateShareLinkDescendantCache(existing.projectId);
+      invalidateShareLinkDescendantCache(body.projectId);
 
       await storage.logActivity({
         action: "move",
