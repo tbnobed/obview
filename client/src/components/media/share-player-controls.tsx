@@ -182,15 +182,49 @@ export default function SharePlayerControls({
     if (el) el.currentTime = t;
   };
   const toggleFullscreen = () => {
-    const target =
+    const media = mediaRef.current as any;
+    const container = containerRef.current as any;
+
+    // Standard Fullscreen API (desktop + Android Chrome/Firefox).
+    const doc = document as any;
+    const fsEl = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if (fsEl) {
+      (doc.exitFullscreen?.() || doc.webkitExitFullscreen?.())?.catch?.(() => {});
+      return;
+    }
+
+    // Preferred target: the container (so React UI / watermark / overlays
+    // stay on top). For audio there is no <video> anyway.
+    const containerTarget =
       watermarkOn || fileType === "audio"
-        ? (containerRef.current as HTMLElement | null)
-        : (mediaRef.current as HTMLElement | null) ?? (containerRef.current as HTMLElement | null);
-    if (!target) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    } else {
-      target.requestFullscreen?.().catch(() => {});
+        ? container
+        : media ?? container;
+
+    const reqFs =
+      containerTarget?.requestFullscreen?.bind(containerTarget) ||
+      containerTarget?.webkitRequestFullscreen?.bind(containerTarget);
+
+    if (reqFs) {
+      const p = reqFs();
+      // iOS Safari rejects requestFullscreen on a <div>. Fall back to the
+      // video element's webkitEnterFullscreen, which is the only fullscreen
+      // path the iPhone honors. (We lose the React overlay/watermark there
+      // — iOS can't render HTML over the native player — but the button
+      // works, which is what the user actually asked for.)
+      if (p?.catch) {
+        p.catch(() => {
+          if (media?.webkitEnterFullscreen) {
+            try { media.webkitEnterFullscreen(); } catch {}
+          }
+        });
+      }
+      return;
+    }
+
+    // No standard API at all (older iOS Safari): go straight to the video
+    // element's iOS-only fullscreen entry point.
+    if (media?.webkitEnterFullscreen) {
+      try { media.webkitEnterFullscreen(); } catch {}
     }
   };
 
