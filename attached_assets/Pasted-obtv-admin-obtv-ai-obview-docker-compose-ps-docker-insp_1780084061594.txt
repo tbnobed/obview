@@ -1,0 +1,68 @@
+obtv-admin@obtv-ai:~/obview$ docker compose ps
+docker inspect obview_app --format '{{.RestartCount}} restarts; last exit {{.State.ExitCode}}; status {{.State.Status}}'
+NAME         IMAGE                COMMAND                  SERVICE   CREATED       STATUS                 PORTS
+obview_app   obview-app           "/app/scripts/docker…"   app       3 hours ago   Up 3 hours (healthy)   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+obview_db    postgres:16-alpine   "docker-entrypoint.s…"   db        3 hours ago   Up 3 hours (healthy)   5432/tcp
+0 restarts; last exit 0; status running
+obtv-admin@obtv-ai:~/obview$ docker compose logs db --since 24h 2>&1 | grep -i "no space" | head
+obview_db  | 2026-05-29 16:59:12.145 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obview_db  | 2026-05-29 16:59:12.632 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obview_db  | 2026-05-29 16:59:13.191 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obview_db  | 2026-05-29 16:59:13.933 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obview_db  | 2026-05-29 16:59:15.096 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obview_db  | 2026-05-29 16:59:17.073 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obview_db  | 2026-05-29 16:59:20.780 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obview_db  | 2026-05-29 16:59:27.549 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obview_db  | 2026-05-29 16:59:40.719 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obview_db  | 2026-05-29 17:00:06.677 UTC [1] FATAL:  could not write lock file "postmaster.pid": No space left on device
+obtv-admin@obtv-ai:~/obview$ sudo dmesg -T | grep -iE "oom|killed process|out of memory|hung_task|blocked for more than" | tail -30
+[sudo] password for obtv-admin:
+[Tue May  5 22:36:37 2026] systemd[1]: Listening on systemd-oomd.socket - Userspace Out-Of-Memory (OOM) Killer Socket.
+obtv-admin@obtv-ai:~/obview$ free -h
+swapon --show
+               total        used        free      shared  buff/cache   available
+Mem:           661Gi        15Gi        94Gi        36Mi       556Gi       646Gi
+Swap:          8.0Gi       1.5Mi       8.0Gi
+NAME      TYPE SIZE USED PRIO
+/swap.img file   8G 1.5M   -2
+obtv-admin@obtv-ai:~/obview$ docker compose logs app --since 40m 2>&1 | grep -iE "summar|transcrib|whisper|llama|encode|nvenc|transcode|sprite|job|chapter" | tail -60
+obview_app  | [Transcription] File 700 accepted as spark job 86b1d78f346d406dba8f0c246edcea09
+obview_app  | [VideoProcessor] Generating 720p via NVENC...
+obview_app  | [VideoProcessor] Generating scrub version via NVENC...
+obview_app  | [VideoProcessor] Sprite generation: 30.03s video, 0.50s intervals, 61 thumbnails (8x8 grid), cell 480x270
+obview_app  | [VideoProcessor] Generating thumbnail sprite (parallel)...
+obview_app  | [Transcription] Spark returned for file 700 in 5030ms (model=large-v3-turbo, device=cuda, computeType=whisper.cpp/ggml)
+obview_app  | [Summarization] Enqueuing job for file 700
+obview_app  | [Chapters] Enqueuing job for file 700
+obview_app  | [Summarization] Generating summary for file 700...
+obview_app  | [Chapters] Generating key moments for file 700 (prompt 1594 chars, remote)...
+obview_app  | [Chapters] File 700 attempt 1 completed in 5.4s
+obview_app  | [Chapters] File 700: 3 key moments parsed (range 0:00 → 0:27)
+obview_app  | [Summarization] File 700 summary generated in 5.6s
+obview_app  | [VideoProcessor] Sprite metadata saved to: /app/uploads/processed/700/thumbnails/KLOVE 2026 Encore Promo B_sprite.json
+obtv-admin@obtv-ai:~/obview$ uptime           # load average — if >> CPU core count, everything queues
+top -bn1 | head -20
+ 14:47:14 up 23 days, 16:10,  2 users,  load average: 0.54, 0.24, 0.13
+top - 14:47:14 up 23 days, 16:10,  2 users,  load average: 0.54, 0.24, 0.13
+Tasks: 1229 total,   2 running, 1227 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  0.3 us,  0.4 sy,  0.0 ni, 99.3 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem : 677119.9 total,  96097.7 free,  15586.4 used, 570557.2 buff/cache
+MiB Swap:   8192.0 total,   8190.5 free,      1.5 used. 661533.5 avail Mem
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+2282718 root      20   0   11.3g 161520  42184 R 118.8   0.0   9:05.96 node
+2535511 obtv-ad+  20   0   16364   6392   3704 R  18.8   0.0   0:00.08 top
+      1 root      20   0   24048  12788   8308 S   0.0   0.0   3:02.06 systemd
+      2 root      20   0       0      0      0 S   0.0   0.0   0:02.77 kthreadd
+      3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_wo+
+      4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      5 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      6 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      7 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+      8 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     11 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     13 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker+
+     14 root      20   0       0      0      0 I   0.0   0.0   0:00.00 rcu_tas+
+obtv-admin@obtv-ai:~/obview$ docker compose exec app sh -c 'echo "LLAMA_API_URL=$LLAMA_API_URL"; echo "SUMMARIZATION_ENABLED=$SUMMARIZATION_ENABLED"'
+LLAMA_API_URL=http://192.168.100.1:8080
+SUMMARIZATION_ENABLED=true
