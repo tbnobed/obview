@@ -1,3 +1,4 @@
 - [Production entry point divergence](prod-entry-point.md) — prod runs server/production.ts (dist/production.js), NOT index.ts; background loops added only to index.ts silently never run in prod.
 - [Uploads mount data loss](uploads-mount-data-loss.md) — brand-new upload vanishes (bytes gone, dangling row) when data disk isn't mounted at container start; sentinel guard via UPLOADS_VOLUME_ID prevents it.
 - [File version stacks & folder-scoped deletes](file-version-stacks.md) — storage.deleteFile cascades by (projectId,filename) ignoring folderId; folder-scoped deletes must batch exact row IDs or they trash same-named files in other folders.
+- [Export routes & media metadata schema](export-and-media-schema.md) — frameRate/duration/spriteMetadata live on videoProcessing not files; share-link exports are ungated by allowDownloads, so any media-derived export format (frame thumbnails) must gate on it.

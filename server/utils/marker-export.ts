@@ -9,7 +9,7 @@ function pad(n: number, len = 2): string {
   return String(n).padStart(len, '0');
 }
 
-function secondsToTimecode(totalSeconds: number, fps = 30): string {
+export function secondsToTimecode(totalSeconds: number, fps = 30): string {
   const totalFrames = Math.round(Math.max(0, totalSeconds) * fps);
   const f = totalFrames % fps;
   const totalSecs = Math.floor(totalFrames / fps);

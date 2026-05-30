@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { FileDown, FileVideo, FileText, Table } from "lucide-react";
+import { FileDown, FileVideo, FileText, Table, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ExportMarkersButtonProps {
@@ -37,7 +37,7 @@ export function ExportMarkersButton({
   const { toast } = useToast();
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleExport = async (format: "xml" | "edl" | "csv") => {
+  const handleExport = async (format: "xml" | "edl" | "csv" | "pdf") => {
     setIsDownloading(true);
     try {
       const url = shareToken
@@ -52,11 +52,11 @@ export function ExportMarkersButton({
 
       const blob = await response.blob();
       const baseName = filename.replace(/\.[^.]+$/, "");
-      const ext = format === "xml" ? "xml" : format === "edl" ? "edl" : "csv";
+      const downloadName = format === "pdf" ? `${baseName}_comments.pdf` : `${baseName}_markers.${format}`;
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = `${baseName}_markers.${ext}`;
+      a.download = downloadName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -66,8 +66,9 @@ export function ExportMarkersButton({
         xml: "FCP XML (Premiere / Resolve)",
         edl: "EDL (CMX 3600)",
         csv: "CSV Spreadsheet",
+        pdf: "Comments PDF",
       };
-      toast({ title: "Markers exported", description: labels[format] });
+      toast({ title: format === "pdf" ? "Comments exported" : "Markers exported", description: labels[format] });
     } catch (err: any) {
       toast({ title: "Export failed", description: err.message, variant: "destructive" });
     } finally {
@@ -90,8 +91,17 @@ export function ExportMarkersButton({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Export Markers</DropdownMenuLabel>
+        <DropdownMenuLabel>Export Comments</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => handleExport("pdf")}>
+          <Printer className="h-4 w-4 mr-2" />
+          <div>
+            <div className="font-medium">PDF</div>
+            <div className="text-xs text-muted-foreground">Printable comments with thumbnails</div>
+          </div>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Export Markers</DropdownMenuLabel>
         <DropdownMenuItem onClick={() => handleExport("xml")}>
           <FileVideo className="h-4 w-4 mr-2" />
           <div>

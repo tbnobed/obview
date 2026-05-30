@@ -13,6 +13,7 @@ import * as fsPromises from 'fs/promises';
 import { existsSync } from 'fs';
 import * as crypto from 'crypto';
 import { generateFCPXML, generateEDL, generateCSV } from './utils/marker-export';
+import { generateCommentPDF } from './utils/comment-pdf';
 import { registerShareLinkRoutes, invalidateShareLinkDescendantCache } from "./share-links";
 
 // Extended Request type to handle file uploads
@@ -65,6 +66,15 @@ import { spawn as spawnProcess } from "child_process";
 // In-flight crop jobs keyed by output path. Lets concurrent first-time
 // requests for the same thumbnail share a single ffmpeg invocation.
 const thumbnailCropJobs = new Map<string, Promise<boolean>>();
+
+// Resolve a stored file path to an absolute on-disk path. `filePath` may be
+// absolute or relative to UPLOAD_DIR (falls back to <cwd>/uploads).
+function resolveUploadPath(stored: string): string {
+  const uploadsRoot = process.env.UPLOAD_DIR
+    ? path.resolve(process.env.UPLOAD_DIR)
+    : path.join(process.cwd(), "uploads");
+  return path.isAbsolute(stored) ? stored : path.join(uploadsRoot, stored);
+}
 
 /**
  * Crop the top-left tile out of a sprite sheet using ffmpeg and write
@@ -4546,8 +4556,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
       const format = req.params.format;
 
-      if (!['xml', 'edl', 'csv'].includes(format)) {
-        return res.status(400).json({ message: "Unsupported format. Use xml, edl, or csv." });
+      if (!['xml', 'edl', 'csv', 'pdf'].includes(format)) {
+        return res.status(400).json({ message: "Unsupported format. Use xml, edl, csv, or pdf." });
       }
 
       const file = await storage.getFile(fileId);
@@ -4571,7 +4581,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fps = isNaN(rawFps) || rawFps < 1 || rawFps > 120 ? 30 : rawFps;
       const baseName = file.filename.replace(/\.[^.]+$/, '');
 
-      if (format === 'xml') {
+      if (format === 'pdf') {
+        const pdf = await generateCommentPDF({
+          filename: file.filename,
+          comments,
+          fps,
+          sourcePath: resolveUploadPath(file.filePath),
+          fileType: file.fileType,
+        });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${baseName}_comments.pdf"`);
+        return res.send(pdf);
+      } else if (format === 'xml') {
         const xml = generateFCPXML(file.filename, duration, topLevel, fps);
         res.setHeader('Content-Type', 'application/xml');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}_markers.xml"`);

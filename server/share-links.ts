@@ -9,6 +9,7 @@ import * as fileSystem from "./utils/filesystem";
 import { hashPassword, comparePasswords } from "./auth";
 import { insertShareLinkSchema, updateShareLinkSchema, insertCommentsUnifiedSchema } from "@shared/schema";
 import { generateFCPXML, generateEDL, generateCSV } from "./utils/marker-export";
+import { generateCommentPDF } from "./utils/comment-pdf";
 import type { ShareLink, File as DbFile } from "@shared/schema";
 import { segmentsToVtt, segmentsToSrt } from "./transcription";
 
@@ -739,8 +740,8 @@ export function registerShareLinkRoutes(
     try {
       const gated = await loadGatedLink(req, res); if (!gated) return;
       const format = req.params.format;
-      if (!["xml", "edl", "csv"].includes(format)) {
-        return res.status(400).json({ message: "Unsupported format. Use xml, edl, or csv." });
+      if (!["xml", "edl", "csv", "pdf"].includes(format)) {
+        return res.status(400).json({ message: "Unsupported format. Use xml, edl, csv, or pdf." });
       }
       const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
       if (!file) return res.status(404).json({ message: "File not found" });
@@ -761,7 +762,27 @@ export function registerShareLinkRoutes(
       const fps = isNaN(rawFps) || rawFps < 1 || rawFps > 120 ? 30 : rawFps;
       const baseName = file.filename.replace(/\.[^.]+$/, "");
 
-      if (format === "xml") {
+      if (format === "pdf") {
+        const uploadsRoot = process.env.UPLOAD_DIR
+          ? path.resolve(process.env.UPLOAD_DIR)
+          : path.join(process.cwd(), "uploads");
+        const sourcePath = path.isAbsolute(file.filePath)
+          ? file.filePath
+          : path.join(uploadsRoot, file.filePath);
+        const pdf = await generateCommentPDF({
+          filename: file.filename,
+          comments,
+          fps,
+          // Frame thumbnails are media-derived; only include them when the
+          // share link permits downloads (text-only PDF otherwise, matching
+          // the always-available XML/EDL/CSV exports).
+          sourcePath: gated.link.allowDownloads ? sourcePath : null,
+          fileType: file.fileType,
+        });
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${baseName}_comments.pdf"`);
+        return res.send(pdf);
+      } else if (format === "xml") {
         const xml = generateFCPXML(file.filename, duration, topLevel, fps);
         res.setHeader("Content-Type", "application/xml");
         res.setHeader("Content-Disposition", `attachment; filename="${baseName}_markers.xml"`);
