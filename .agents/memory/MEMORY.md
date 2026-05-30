@@ -1,0 +1,1 @@
+- [Production entry point divergence](prod-entry-point.md) — prod runs server/production.ts (dist/production.js), NOT index.ts; background loops added only to index.ts silently never run in prod.
