@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatTimeAgo } from "@/lib/utils/formatters";
-import { Trash2, PlayCircle } from "lucide-react";
+import { Trash2, PlayCircle, Film } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDeleteProject } from "@/hooks/use-projects";
@@ -392,11 +392,19 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
           )}
           
           <div className="flex justify-between items-center text-xs text-neutral-500">
-            <div>
-              <svg className="inline-block h-3.5 w-3.5 mr-1 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              {formatTimeAgo(new Date(project.updatedAt))}
+            <div className="flex items-center gap-3">
+              <span className="flex items-center">
+                <svg className="inline-block h-3.5 w-3.5 mr-1 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                {formatTimeAgo(new Date(project.updatedAt))}
+              </span>
+              {typeof project.fileCount === "number" && (
+                <span className="flex items-center" data-testid={`project-file-count-${project.id}`}>
+                  <Film className="inline-block h-3.5 w-3.5 mr-1 text-neutral-400" />
+                  {project.fileCount} {project.fileCount === 1 ? "file" : "files"}
+                </span>
+              )}
             </div>
             {canDelete && (
               <Button
