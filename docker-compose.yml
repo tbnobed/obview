@@ -82,8 +82,13 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
     volumes:
-      - uploads:/app/uploads
-      - db_backups:/app/db-backups
+      # Bind-mount the dedicated data disks (/srv/obviu/*) instead of using
+      # named Docker volumes. Named volumes live under /var/lib/docker on the
+      # root disk (/dev/sda2) — that is how 698GB of uploads filled root to
+      # 100% and took Postgres (and all 50 users) down. The two big disks
+      # were provisioned for exactly this and were sitting empty.
+      - /srv/obviu/uploads:/app/uploads
+      - /srv/obviu/db-backups:/app/db-backups
       - whisper_models:/app/models
       - llama_models:/app/models/llama
     networks:
@@ -135,8 +140,6 @@ services:
 
 volumes:
   postgres_data:
-  uploads:
-  db_backups:
   whisper_models:
   llama_models:
 
