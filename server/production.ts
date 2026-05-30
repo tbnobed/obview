@@ -1,7 +1,6 @@
 import express, { type Request, type Response, type NextFunction } from "express";
 import path from "path";
 import fs from "fs";
-import { setupAuth } from "./auth.js";
 import { registerRoutes, resumeStuckVideoProcessing } from "./routes.js";
 import { resumePendingSummarizations } from "./summarization.js";
 import { resumePendingChapters } from "./chapters.js";
@@ -24,8 +23,11 @@ app.use((_req, res, next) => {
   next();
 });
 
-// Setup authentication
-setupAuth(app);
+// NOTE: do NOT call setupAuth(app) here. registerRoutes() already calls it
+// (server/routes.ts), and dev (server/index.ts) relies on that single call.
+// Calling it here too stacked TWO express-session + passport middlewares on
+// every request in prod, which broke the login cookie and forced users to
+// sign in twice. Auth is set up inside registerRoutes() below.
 
 // Serve static files from the built frontend
 const staticPath = path.resolve(import.meta.dirname, "public");

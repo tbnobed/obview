@@ -28,3 +28,21 @@ hook, add it to BOTH `server/index.ts` and `server/production.ts` (inside
 is actually live in prod, grep the running bundle for it: `docker compose exec app sh -c
 "grep -c 'YOUR_MARKER' dist/production.js"` — grepping `dist/index.js` is misleading
 because that file is built but never executed.
+
+## Divergence cuts both ways — DON'T duplicate what `registerRoutes` already does
+
+`registerRoutes(app)` (server/routes.ts) itself calls `setupAuth(app)`, which registers
+`express-session` + `passport.initialize()` + `passport.session()`. `index.ts` relies on
+that single call. `production.ts` had ALSO called `setupAuth(app)` directly, so prod
+stacked the session/passport middleware **twice** on every request.
+
+**Symptom this caused:** users had to sign in twice (prod-only). Two session middlewares
+both patch `res.end` and write `Set-Cookie`; on login the second middleware owns
+`req.session` (where `regenerate`/`login`/`save` happen) but the first writes a cookie for
+the old empty session, so the first login "doesn't take." Fix was to remove the redundant
+`setupAuth` call from `production.ts` and let `registerRoutes` be the single source.
+
+**Why:** parity bugs between the two entry files go both directions — prod can be missing
+something index.ts has (the trash sweep, upload timeouts) OR can double-apply something
+registerRoutes already does. **How to apply:** before adding middleware/auth/session setup
+to either entry file, check whether `registerRoutes` already does it.
