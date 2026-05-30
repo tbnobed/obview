@@ -1,0 +1,44 @@
+obtv-admin@obtv-ai:~/obview$ df -h
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs            67G  5.0M   67G   1% /run
+/dev/sda2       915G  724G  144G  84% /
+tmpfs           331G     0  331G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+efivarfs        304K  129K  171K  43% /sys/firmware/efi/efivars
+/dev/sda1       1.1G  6.2M  1.1G   1% /boot/efi
+/dev/sdc1       3.3T  396G  2.8T  13% /srv/obviu/uploads
+/dev/sdb1       3.6T  9.2M  3.6T   1% /srv/obviu/db-backups
+tmpfs            67G  100K   67G   1% /run/user/120
+tmpfs            67G   84K   67G   1% /run/user/1000
+obtv-admin@obtv-ai:~/obview$ # 1. Is the uploads/backup disk full again?
+df -h /srv/obviu/uploads /srv/obviu/db-backups /
+
+# 2. Is the mount actually populated (not an empty/remounted dir)?
+ls -la /srv/obviu/uploads | head; du -sh /srv/obviu/uploads 2>/dev/null
+
+# 3. What is the app saying when it tries to serve files?
+docker compose logs app --since 6h 2>&1 | grep -iE "ENOENT|ENOSPC|no space|not on disk|missing|File not" | tail -40
+
+# 4. The exact test file: its row + whether its bytes exist
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT id, filename, file_path, deleted_at, created_at FROM files WHERE filename LIKE '"'"'MicrosoftTeams-video (6)%'"'"' ORDER BY id DESC LIMIT 5;"'
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdc1       3.3T  396G  2.8T  13% /srv/obviu/uploads
+/dev/sdb1       3.6T  9.2M  3.6T   1% /srv/obviu/db-backups
+/dev/sda2       915G  724G  144G  84% /
+total 335136044
+drwxr-xr-x   6 root root      36864 May 30 14:48 .
+drwxr-xr-x   5 root root       4096 May  2 01:26 ..
+-rwxr-xr-x   1 root root   50543647 Apr 24 15:09 1777061370115-525641550.mp4
+-rwxr-xr-x   1 root root 1356955249 Apr 29 16:38 1777498681670-596112811.mp4
+-rwxr-xr-x   1 root root  143128171 May  1 13:11 1777659076310-737431460.mp4
+-rwxr-xr-x   1 root root  144109000 May  1 13:22 1777659753022-235822209.mp4
+-rwxr-xr-x   1 root root 7992496540 May  5 15:11 1778011919250-844892771.mp4
+-rwxr-xr-x   1 root root  359858102 May  6 14:28 1778095694118-483886268.MP4
+-rwxr-xr-x   1 root root  798698575 May  6 16:25 1778102713333-532942419.mp4
+396G    /srv/obviu/uploads
+ id  |           filename           |                file_path                 | deleted_at |         created_at
+-----+------------------------------+------------------------------------------+------------+----------------------------
+ 713 | MicrosoftTeams-video (6).mp4 | /app/uploads/1780154128218-416735470.mp4 |            | 2026-05-30 15:15:28.221434
+(1 row)
+
+obtv-admin@obtv-ai:~/obview$
