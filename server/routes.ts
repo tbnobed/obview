@@ -1541,9 +1541,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       //      project inside.
       //   2. Project subfolders (projectId != null). Anyone with edit
       //      access on the parent project may delete (matches who can
-      //      create them). Files inside descendant subfolders are moved
-      //      back to the project root rather than trashed, so no media
-      //      is lost. Descendant subfolders are soft-deleted too.
+      //      create them). Files inside the folder and its descendant
+      //      subfolders are soft-deleted (trashed) along with it, NOT
+      //      moved to the project root. They remain recoverable from
+      //      /api/admin/trash until the retention sweep purges them.
+      //      Descendant subfolders are soft-deleted too.
       if (existingFolder.projectId != null) {
         // Subfolder path. Honors global-folder editor grant.
         if (!(await userHasProjectEditAccess(req.user, existingFolder.projectId))) {
@@ -1569,16 +1571,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           frontier = next;
         }
 
-        // Move any files in those folders back to the project root.
+        // Soft-delete (trash) the files that live in this folder subtree,
+        // instead of moving them back to the project root. They land in
+        // /api/admin/trash and are purged by the retention sweep.
+        //
+        // We trash the EXACT file rows whose folderId is in the subtree —
+        // NOT via storage.deleteFile(), which cascades by (projectId,
+        // filename) across the whole version stack. Same filename in two
+        // different subfolders is an independent file lineage (see
+        // tus.ts), so a group-wide cascade would also trash a same-named
+        // file sitting in a folder we are NOT deleting. Scoping by id
+        // keeps a deleted version stack folder-cohesive: every version of
+        // a stack lives in the same folder, so all its rows are in the
+        // subtree and get trashed together.
         const projectFiles = await storage.getFilesByProject(
           existingFolder.projectId,
         );
-        let movedFiles = 0;
-        for (const file of projectFiles) {
-          if (file.folderId != null && toDelete.has(file.folderId)) {
-            await storage.updateFile(file.id, { folderId: null } as any);
-            movedFiles += 1;
-          }
+        const fileIdsToDelete = projectFiles
+          .filter((file) => file.folderId != null && toDelete.has(file.folderId))
+          .map((file) => file.id);
+        let deletedFiles = 0;
+        if (fileIdsToDelete.length > 0) {
+          const trashed = await db
+            .update(filesTable)
+            .set({ deletedAt: new Date() })
+            .where(and(
+              inArray(filesTable.id, fileIdsToDelete),
+              isNull(filesTable.deletedAt),
+            ))
+            .returning({ id: filesTable.id });
+          deletedFiles = trashed.length;
         }
 
         // Soft-delete deepest first so partial failures don't orphan
@@ -1599,14 +1621,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             folderName: existingFolder.name,
             projectId: existingFolder.projectId,
             deletedSubfolders: deletedFolders,
-            movedFilesToRoot: movedFiles,
+            deletedFiles: deletedFiles,
           },
         });
 
         return res.status(200).json({
           success: true,
           deletedSubfolders: deletedFolders,
-          movedFilesToRoot: movedFiles,
+          deletedFiles: deletedFiles,
         });
       }
 

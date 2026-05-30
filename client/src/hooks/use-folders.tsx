@@ -123,6 +123,20 @@ export const useDeleteFolder = () => {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      // Deleting a project subfolder now trashes the files inside it, so the
+      // per-project file lists (keyed `/api/projects/:id/files`) must refetch
+      // to drop the deleted files. That key form isn't prefix-matched by the
+      // ["/api/projects"] invalidation above, so match it explicitly.
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey?.[0];
+          return (
+            typeof k === "string" &&
+            k.startsWith("/api/projects/") &&
+            k.endsWith("/files")
+          );
+        },
+      });
     },
     onError: (error: Error) => {
       toast({
