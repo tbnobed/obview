@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import path from "path";
 import fs from "fs";
 import { setupAuth } from "./auth.js";
@@ -14,6 +14,15 @@ const app = express();
 // Middleware
 app.use(express.json({ limit: '51200mb' }));
 app.use(express.urlencoded({ extended: true, limit: '51200mb' }));
+
+// Increase the per-request timeout for very large (multi-GB) file uploads.
+// Mirrors server/index.ts — without this Node's default request timeout
+// silently aborts long uploads. Server-level timeouts are tuned below in
+// the listen() callback.
+app.use((_req, res, next) => {
+  res.setTimeout(3600000); // 1 hour
+  next();
+});
 
 // Setup authentication
 setupAuth(app);
@@ -50,8 +59,26 @@ app.get('/api/health', (_req, res) => {
 
 // Register all routes and start the server
 registerRoutes(app).then(server => {
+  // Global error handler (mirrors server/index.ts). Registered after routes
+  // so it catches errors thrown from any route handler.
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    res.status(status).json({ message });
+    console.error("[error]", err);
+  });
+
   // Start listening on the configured port
   server.listen(config.port, '0.0.0.0', () => {
+    // Tune HTTP server timeouts for very large uploads (multi-GB media files).
+    // Node 18+ defaults requestTimeout to 5 min and headersTimeout to 60s,
+    // both of which silently abort long uploads regardless of any reverse-proxy
+    // (Nginx) timeouts in front. keepAliveTimeout must exceed the proxy's
+    // keep-alive (Nginx default 75s) to avoid 502 races. Mirrors index.ts.
+    server.requestTimeout = 0;          // disable hard request cap; rely on per-request res.setTimeout + Nginx
+    server.headersTimeout = 3600_000;   // 1h ceiling for receiving headers
+    server.keepAliveTimeout = 120_000;  // > Nginx 75s keepalive
+    server.timeout = 3600_000;          // 1h socket inactivity cap
     console.log(`🚀 Production server running on port ${config.port}`);
     console.log(`📁 Static files served from: ${staticPath}`);
     logLLMBackend();
