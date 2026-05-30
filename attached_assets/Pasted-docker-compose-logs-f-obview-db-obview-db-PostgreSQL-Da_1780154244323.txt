@@ -1,0 +1,3995 @@
+docker compose logs -f
+obview_db  |
+obview_db  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+obview_db  |
+obview_db  | 2026-05-30 15:07:06.022 UTC [1] LOG:  starting PostgreSQL 16.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+obview_db  | 2026-05-30 15:07:06.023 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+obview_db  | 2026-05-30 15:07:06.023 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+obview_db  | 2026-05-30 15:07:06.024 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+obview_db  | 2026-05-30 15:07:06.029 UTC [29] LOG:  database system was shut down at 2026-05-30 15:06:36 UTC
+obview_db  | 2026-05-30 15:07:06.039 UTC [1] LOG:  database system is ready to accept connections
+obview_db  | 2026-05-30 15:12:06.128 UTC [27] LOG:  checkpoint starting: time
+obview_db  | 2026-05-30 15:12:12.049 UTC [27] LOG:  checkpoint complete: wrote 61 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=5.919 s, sync=0.001 s, total=5.922 s; sync files=32, longest=0.001 s, average=0.001 s; distance=330 kB, estimate=330 kB; lsn=0/22409448, redo lsn=0/22406120
+obview_app  | Waiting for database to be ready...
+obview_app  | Attempting to connect to PostgreSQL at db:5432 as postgres...
+obview_app  | Database name: obview
+obview_app  | PostgreSQL is available at db:5432 - connection successful
+obview_app  | Ensuring unified comment system table exists...
+obview_app  | NOTICE:  relation "comments_unified" already exists, skipping
+obview_app  | NOTICE:  column "annotations" of relation "comments_unified" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | ALTER TABLE
+obview_app  | NOTICE:  relation "idx_comments_unified_file_id" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comments_unified_user_id" already exists, skipping
+obview_app  | DO
+obview_app  | NOTICE:  relation "idx_comments_unified_parent_id" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | NOTICE:  relation "idx_comments_unified_file_timestamp" already exists, skipping
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | Ensuring comment reactions table exists...
+obview_app  | NOTICE:  relation "comment_reactions" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comment_reactions_comment_id" already exists, skipping
+obview_app  | NOTICE:  relation "idx_comment_reactions_comment_reaction" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | DO
+obview_app  | CREATE INDEX
+obview_app  | CREATE INDEX
+obview_app  | DO
+obview_app  | Ensuring session store table exists...
+obview_app  | NOTICE:  relation "session" already exists, skipping
+obview_app  | NOTICE:  relation "IDX_session_expire" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | CREATE INDEX
+obview_app  | Taking pre-migration database backup to /app/db-backups/pre-migration-20260530-150712.sql ...
+obview_app  | ⚠️  Warning: pg_dump failed (continuing). Error:
+obview_app  | pg_dump: error: aborting because of server version mismatch
+obview_app  | pg_dump: detail: server version: 16.13; pg_dump version: 15.18 (Debian 15.18-0+deb12u1)
+obview_app  | Ensuring migration tracking table exists...
+obview_app  | NOTICE:  relation "schema_migrations" already exists, skipping
+obview_app  | CREATE TABLE
+obview_app  | Running database migrations...
+obview_app  | Found db-migrate.cjs, running migrations...
+obview_app  | Initializing database migration...
+obview_app  | Environment: production
+obview_app  | Docker mode: true
+obview_app  | Database connection established
+obview_app  | Skipping drizzle migrations in Docker mode - SQL migrations will handle schema setup
+obview_app  | Database connection verified successfully
+obview_app  | Migration script completed successfully
+obview_app  | Scanning SQL migrations directory...
+obview_app  | ⏭  Skipping 0000_smooth_whistler.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0001_add_password_resets.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0002_add_theme_preference.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0003_add_file_availability.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0004_update_file_size_type.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0005_docker_schema_consolidation.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0006_add_video_processing.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0007_add_folders_support.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0008_add_creator_token_to_public_comments.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0009_add_parent_id_to_public_comments.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0010_fix_public_comments_constraint.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0011_create_comments_unified.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0012_create_comment_reactions.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0013_add_annotations_column.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0014_add_transcripts.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0015_add_summary.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0016_add_media_info.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0017_add_folder_is_global.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0018_add_share_links.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0019_add_share_link_watermark.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0020_soft_delete_and_subfolders.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0021_add_spark_job_id.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0022_add_chapters.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0023_recent_projects.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0024_add_files_deleted_at.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0025_add_share_links_allow_uploads.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0026_add_files_review_status.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0027_activity_logs_user_id_nullable.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0028_add_files_requested_changes_by_email.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0029_add_projects_custom_thumbnail.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0030_add_comments_in_out_points.sql (already applied with matching checksum).
+obview_app  | ⏭  Skipping 0031_comments_timestamps_double_precision.sql (already applied with matching checksum).
+obview_app  | Database migration process completed.
+obview_app  | Verifying critical foreign keys are present...
+obview_app  | ✅ All required foreign keys are in place.
+obview_app  | Verifying schema matches shared/schema.ts...
+obview_app  | [verify-schema] OK — 171 columns across 17 tables.
+obview_app  | npm notice
+obview_app  | npm notice New major version of npm available! 10.8.2 -> 11.16.0
+obview_app  | npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.16.0
+obview_app  | npm notice To update run: npm install -g npm@11.16.0
+obview_app  | npm notice
+obview_app  | Setting up admin user if needed...
+obview_app  | Connecting to database...
+obview_app  | Admin user exists (id=1, username=admin); syncing password from ADMIN_PASSWORD env.
+obview_app  | Admin user synced successfully.
+obview_app  | Setup completed successfully
+obview_app  | Verifying filesystem utilities for admin cleanup operations...
+obview_app  | ✅ Upload directory write permissions verified
+obview_app  | Starting crond for daily database backups...
+obview_app  | crond: applet not found
+obview_app  | ⚠️  Warning: crond failed to start; daily backups will not run.
+obview_app  | Found built server entry point: /app/dist/index.js
+obview_app  | Starting the application...
+obview_app  | Database connection mode: PostgreSQL (Docker/Production)
+obview_app  | [Video] NVENC: forced ON via VIDEO_USE_NVENC=true — using h264_nvenc
+obview_app  | Using PostgreSQL session store with connection string
+obview_app  | ✅ Serving static files from: /app/dist/public
+obview_app  | Using PostgreSQL session store with connection string
+obview_app  | 🚀 Production server running on port 5000
+obview_app  | 📁 Static files served from: /app/dist/public
+obview_app  | [LLM] Using remote API: http://192.168.100.1:8080
+obview_app  | Database connection initialized successfully
+obview_app  | [LLM] Using remote API: http://192.168.100.1:8080
+obview_app  | [LLM] Using remote API: http://192.168.100.1:8080
+obview_app  | [Video Processing] Startup recovery scanning for stuck jobs...
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Getting team members for project 88
+obview_app  | [DEBUG] Getting files for project ID: 88
+obview_app  | Project users: [
+obview_app  |   {
+obview_app  |     id: 94,
+obview_app  |     projectId: 88,
+obview_app  |     userId: 13,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-29T14:55:24.256Z
+obview_app  |   }
+obview_app  | ]
+obview_app  | [DEBUG] Found 2 files for project ID 88
+obview_app  | Project user ID: 13 User: {
+obview_app  |   id: 13,
+obview_app  |   username: 'Jtolliver',
+obview_app  |   password: 'ccaf78ea5710267772ed421de758df3385633e1fc92ceeffc0d497fafb9769177141f80d862414dbeb649132392ed3c82962858153a3a457fb0805468b60b7bb.ca39204f1d44b8ddb70a25140c4e326a',
+obview_app  |   email: 'jtolliver@tbn.tv',
+obview_app  |   name: 'Jaden Tolliver',
+obview_app  |   role: 'editor',
+obview_app  |   themePreference: 'system',
+obview_app  |   createdAt: 2025-10-27T19:35:46.875Z
+obview_app  | }
+obview_app  | Valid team members: [
+obview_app  |   {
+obview_app  |     id: 94,
+obview_app  |     projectId: 88,
+obview_app  |     userId: 13,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-29T14:55:24.256Z,
+obview_app  |     user: {
+obview_app  |       id: 13,
+obview_app  |       username: 'Jtolliver',
+obview_app  |       email: 'jtolliver@tbn.tv',
+obview_app  |       name: 'Jaden Tolliver',
+obview_app  |       role: 'editor',
+obview_app  |       themePreference: 'system',
+obview_app  |       createdAt: 2025-10-27T19:35:46.875Z
+obview_app  |     }
+obview_app  |   }
+obview_app  | ]
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 709
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/709/scrub/HD-P260604_V1_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 369
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/369/scrub/Test SPL_20260515_CarsonInterview_01_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 576
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 421
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 691
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/576/scrub/HD-KCTP-MO-260608_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/691/scrub/Trusting God in the Waiting_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/421/scrub/Coca-Cola Consolidated - 10 Year Celebration_1M_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 646
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 618
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/618/scrub/HD-KCT0177_QC_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/646/scrub/PRS_Gary Zamora Social Clip_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | [DEBUG] Getting files for project ID: 82
+obview_app  | [DEBUG] Found 1 files for project ID 82
+obview_app  | Getting team members for project 82
+obview_app  | Project users: [
+obview_app  |   {
+obview_app  |     id: 87,
+obview_app  |     projectId: 82,
+obview_app  |     userId: 17,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-20T18:47:33.717Z
+obview_app  |   }
+obview_app  | ]
+obview_app  | Project user ID: 17 User: {
+obview_app  |   id: 17,
+obview_app  |   username: 'rboles',
+obview_app  |   password: 'd0c985d5084406621c5e8523d137e345ffce94cfdaa60bfb668324b81631c10d9b0220ecfe16041443951dd6590cb4385fe0c7e276a83a3abb070098721a5367.8a78d3b81a050dda5261a133404eb16b',
+obview_app  |   email: 'RBoles@tbn.tv',
+obview_app  |   name: 'Ryan Boles',
+obview_app  |   role: 'editor',
+obview_app  |   themePreference: 'system',
+obview_app  |   createdAt: 2026-04-23T16:15:49.471Z
+obview_app  | }
+obview_app  | Valid team members: [
+obview_app  |   {
+obview_app  |     id: 87,
+obview_app  |     projectId: 82,
+obview_app  |     userId: 17,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-20T18:47:33.717Z,
+obview_app  |     user: {
+obview_app  |       id: 17,
+obview_app  |       username: 'rboles',
+obview_app  |       email: 'RBoles@tbn.tv',
+obview_app  |       name: 'Ryan Boles',
+obview_app  |       role: 'editor',
+obview_app  |       themePreference: 'system',
+obview_app  |       createdAt: 2026-04-23T16:15:49.471Z
+obview_app  |     }
+obview_app  |   }
+obview_app  | ]
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 333
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 626
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/626/scrub/BT26-1542-CW-REVIEW_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/333/scrub/Active Peptides_Standalone 120_Edited_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 712
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 617
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/712/scrub/PRS_Michael Youseff_V3_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/617/scrub/SPL_20260524_KLOVE_CAM07.mov Render.mov Render_JL_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 269
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 293
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/269/scrub/HD-BTP26-447_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/293/scrub/QC1_HD-PFRHN0002_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 711
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/711/scrub/This Month on TBN - June 2026_60_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 710
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/710/scrub/HOG Outline 052626 Jeriah_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 690
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/690/scrub/Erick Sermon A BLOCK_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 702
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 426
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/702/scrub/PART 5 roll out_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 655
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/426/scrub/R250_EVENT_CLEAN_20260517_Web_004_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/655/scrub/PG L3 4_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Getting team members for project 36
+obview_app  | [DEBUG] Getting files for project ID: 36
+obview_app  | Project users: [
+obview_app  |   {
+obview_app  |     id: 39,
+obview_app  |     projectId: 36,
+obview_app  |     userId: 7,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-01T20:03:27.503Z
+obview_app  |   }
+obview_app  | ]
+obview_app  | Project user ID: 7 User: {
+obview_app  |   id: 7,
+obview_app  |   username: 'bpena',
+obview_app  |   password: '0a15844b0f83d1240d9265661242f1bafc90129c5a24c938995ba6abd550aa302936088f63849e5e36952c018c845b32cc0b8651ef8d55fd3d0c042a9247e512.f1bcb52e7afb67d4719b6b5909b2c5e9',
+obview_app  |   email: 'bpena@tbn.tv',
+obview_app  |   name: 'Brenda Pena',
+obview_app  |   role: 'admin',
+obview_app  |   themePreference: 'dark',
+obview_app  |   createdAt: 2025-09-29T18:19:36.548Z
+obview_app  | }
+obview_app  | Valid team members: [
+obview_app  |   {
+obview_app  |     id: 39,
+obview_app  |     projectId: 36,
+obview_app  |     userId: 7,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-01T20:03:27.503Z,
+obview_app  |     user: {
+obview_app  |       id: 7,
+obview_app  |       username: 'bpena',
+obview_app  |       email: 'bpena@tbn.tv',
+obview_app  |       name: 'Brenda Pena',
+obview_app  |       role: 'admin',
+obview_app  |       themePreference: 'dark',
+obview_app  |       createdAt: 2025-09-29T18:19:36.548Z
+obview_app  |     }
+obview_app  |   }
+obview_app  | ]
+obview_app  | [DEBUG] Found 7 files for project ID 36
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 258
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 259
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/258/scrub/Active Peptides_Standalone 120_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/259/scrub/Active Peptides_Standalone 60_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | [DEBUG] Getting files for project ID: 81
+obview_app  | [DEBUG] Found 3 files for project ID 81
+obview_app  | Getting team members for project 81
+obview_app  | Project users: [
+obview_app  |   {
+obview_app  |     id: 86,
+obview_app  |     projectId: 81,
+obview_app  |     userId: 18,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-20T16:34:56.094Z
+obview_app  |   }
+obview_app  | ]
+obview_app  | Project user ID: 18 User: {
+obview_app  |   id: 18,
+obview_app  |   username: 'mtermale',
+obview_app  |   password: 'dadbfebe37bf7f547c68d10dd72716eec5154d9a5010bbacfb45fc0ffba5d4fc165ce69c649b744c46784413340c667ffc8a727bf3c39cfbd32e9819d5eced02.573f8ee9f89353b076e1a87e4cb4bbea',
+obview_app  |   email: 'MTermale@tbn.tv',
+obview_app  |   name: 'Michael Termale',
+obview_app  |   role: 'editor',
+obview_app  |   themePreference: 'system',
+obview_app  |   createdAt: 2026-04-23T16:38:20.099Z
+obview_app  | }
+obview_app  | Valid team members: [
+obview_app  |   {
+obview_app  |     id: 86,
+obview_app  |     projectId: 81,
+obview_app  |     userId: 18,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-20T16:34:56.094Z,
+obview_app  |     user: {
+obview_app  |       id: 18,
+obview_app  |       username: 'mtermale',
+obview_app  |       email: 'MTermale@tbn.tv',
+obview_app  |       name: 'Michael Termale',
+obview_app  |       role: 'editor',
+obview_app  |       themePreference: 'system',
+obview_app  |       createdAt: 2026-04-23T16:38:20.099Z
+obview_app  |     }
+obview_app  |   }
+obview_app  | ]
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 421
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/421/scrub/Coca-Cola Consolidated - 10 Year Celebration_1M_scrub.mp4'
+obview_app  | }
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 356
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/356/scrub/HD-MCP22-009R_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 357
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/357/scrub/AncientNutrition-Pilates+Take10 Combo_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | [DEBUG] Getting files for project ID: 58
+obview_app  | [DEBUG] Found 0 files for project ID 58
+obview_app  | Getting team members for project 58
+obview_app  | Project users: [
+obview_app  |   {
+obview_app  |     id: 61,
+obview_app  |     projectId: 58,
+obview_app  |     userId: 7,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-04T15:14:41.779Z
+obview_app  |   }
+obview_app  | ]
+obview_app  | Project user ID: 7 User: {
+obview_app  |   id: 7,
+obview_app  |   username: 'bpena',
+obview_app  |   password: '0a15844b0f83d1240d9265661242f1bafc90129c5a24c938995ba6abd550aa302936088f63849e5e36952c018c845b32cc0b8651ef8d55fd3d0c042a9247e512.f1bcb52e7afb67d4719b6b5909b2c5e9',
+obview_app  |   email: 'bpena@tbn.tv',
+obview_app  |   name: 'Brenda Pena',
+obview_app  |   role: 'admin',
+obview_app  |   themePreference: 'dark',
+obview_app  |   createdAt: 2025-09-29T18:19:36.548Z
+obview_app  | }
+obview_app  | Valid team members: [
+obview_app  |   {
+obview_app  |     id: 61,
+obview_app  |     projectId: 58,
+obview_app  |     userId: 7,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-04T15:14:41.779Z,
+obview_app  |     user: {
+obview_app  |       id: 7,
+obview_app  |       username: 'bpena',
+obview_app  |       email: 'bpena@tbn.tv',
+obview_app  |       name: 'Brenda Pena',
+obview_app  |       role: 'admin',
+obview_app  |       themePreference: 'dark',
+obview_app  |       createdAt: 2025-09-29T18:19:36.548Z
+obview_app  |     }
+obview_app  |   }
+obview_app  | ]
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | [FILESYSTEM] Complete removal for file 70
+obview_app  | [FILESYSTEM] Removing original file: /app/uploads/1776962685388-922995572.mp4
+obview_app  | [FILESYSTEM] Removing processed directory: /app/uploads/processed/70
+obview_app  | [FILESYSTEM] Target already removed or doesn't exist: /app/uploads/1776962685388-922995572.mp4
+obview_app  | [FILESYSTEM] Target already removed or doesn't exist: /app/uploads/processed/70
+obview_app  | [FILESYSTEM] Cleanup summary: 1 successful, 0 failed
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | POST /api/projects received {
+obview_app  |   body: {
+obview_app  |     name: 'Test New upload',
+obview_app  |     description: null,
+obview_app  |     folderId: null,
+obview_app  |     status: 'in_progress'
+obview_app  |   },
+obview_app  |   user: 1,
+obview_app  |   authenticated: true
+obview_app  | }
+obview_app  | Project validation passed, creating project
+obview_app  | Project created: {
+obview_app  |   id: 89,
+obview_app  |   name: 'Test New upload',
+obview_app  |   description: null,
+obview_app  |   status: 'in_progress',
+obview_app  |   folderId: null,
+obview_app  |   createdById: 1,
+obview_app  |   customThumbnailPath: null,
+obview_app  |   createdAt: 2026-05-30T15:15:13.656Z,
+obview_app  |   updatedAt: 2026-05-30T15:15:13.656Z,
+obview_app  |   deletedAt: null
+obview_app  | }
+obview_app  | User added to project
+obview_app  | Activity logged, sending response
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [DEBUG] Getting files for project ID: 89
+obview_app  | Getting team members for project 89
+obview_app  | [DEBUG] Found 0 files for project ID 89
+obview_app  | Project users: [
+obview_app  |   {
+obview_app  |     id: 95,
+obview_app  |     projectId: 89,
+obview_app  |     userId: 1,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-30T15:15:13.666Z
+obview_app  |   }
+obview_app  | ]
+obview_app  | Project user ID: 1 User: {
+obview_app  |   id: 1,
+obview_app  |   username: 'admin',
+obview_app  |   password: '89258f9108b4b2eafa40a85d6da74a042484ab8d1bb4c062d25f6ef79ff13ae63715cf3006c0664461e8dacce02b845b4a925f9b675aba22614be3f596d5db19.47cff3807a0c1a494bb5af67e9eb4a1e',
+obview_app  |   email: 'obed@obedtv.com',
+obview_app  |   name: 'Administrator',
+obview_app  |   role: 'admin',
+obview_app  |   themePreference: 'dark',
+obview_app  |   createdAt: 2025-09-23T07:43:56.896Z
+obview_app  | }
+obview_app  | Valid team members: [
+obview_app  |   {
+obview_app  |     id: 95,
+obview_app  |     projectId: 89,
+obview_app  |     userId: 1,
+obview_app  |     role: 'editor',
+obview_app  |     createdAt: 2026-05-30T15:15:13.666Z,
+obview_app  |     user: {
+obview_app  |       id: 1,
+obview_app  |       username: 'admin',
+obview_app  |       email: 'obed@obedtv.com',
+obview_app  |       name: 'Administrator',
+obview_app  |       role: 'admin',
+obview_app  |       themePreference: 'dark',
+obview_app  |       createdAt: 2025-09-23T07:43:56.896Z
+obview_app  |     }
+obview_app  |   }
+obview_app  | ]
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [tus] PATCH 7f9bccfd MicrosoftTeams-video (6).mp4 offset=0 size=5398146 (0.0%) user=1
+obview_app  | [Video Processing] Starting processing for file: MicrosoftTeams-video (6).mp4
+obview_app  | [VideoProcessor] Starting processing for: MicrosoftTeams-video (6)
+obview_app  | [DEBUG] Getting files for project ID: 89
+obview_app  | [DEBUG] Found 1 files for project ID 89
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 713
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'processing',
+obview_app  |   hasQualities: false,
+obview_app  |   hasScrubVersion: false,
+obview_app  |   qualitiesCount: 0,
+obview_app  |   scrubPath: null
+obview_app  | }
+obview_app  | [Transcription] Submitting file 713 to spark (1780154128218-416735470.mp4)
+obview_app  | [Transcription] File 713 accepted as spark job 551688f89105449991ea6f2dad4fc866
+obview_app  | [VideoProcessor] Video metadata: {
+obview_app  |   duration: 28.749093,
+obview_app  |   frameRate: 120,
+obview_app  |   width: 720,
+obview_app  |   height: 1280,
+obview_app  |   bitrate: 1502140
+obview_app  | }
+obview_app  | [VideoProcessor] Generating 720p via NVENC...
+obview_app  | [VideoProcessor] Generating scrub version via NVENC...
+obview_app  | [VideoProcessor] Sprite generation: 28.749093s video, 0.50s intervals, 58 thumbnails (8x8 grid), cell 270x480
+obview_app  | [VideoProcessor] Generating thumbnail sprite (parallel)...
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 713
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'processing',
+obview_app  |   hasQualities: false,
+obview_app  |   hasScrubVersion: false,
+obview_app  |   qualitiesCount: 0,
+obview_app  |   scrubPath: null
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | [VideoProcessor] Sprite: 5/58 frame extractions failed (continuing). First: FFmpeg failed with code 234: [mjpeg @ 0x79c4486181c0] Non full-range YUV is non-standard, set strict_std_compliance to at most unofficial to use it.
+obview_app  | [mjpeg @ 0x57fa0f81e700] ff_frame_thread_encoder_in
+obview_app  | [VideoProcessor] Sprite metadata saved to: /app/uploads/processed/713/thumbnails/MicrosoftTeams-video (6)_sprite.json
+obview_app  | [VideoProcessor] Processing completed for: MicrosoftTeams-video (6)
+obview_app  | [Video Processing] Completed processing for file: MicrosoftTeams-video (6).mp4
+obview_app  | [Transcription] Spark returned for file 713 in 5058ms (model=large-v3-turbo, device=cuda, computeType=whisper.cpp/ggml)
+obview_app  | [Transcription] Completed file 713: 15 segments, 356 chars
+obview_app  | [Transcription] File 713: speech-quality gate failed — Transcript appears to be a hallucination — the same phrase repeats in 80% of segments. Likely no real speech in the audio. (words=84, avgNoSpeech=null, avgLogprob=null, repetition=0.80)
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🎬 [PROCESSING STATUS] Request for file ID: 713
+obview_app  | 🎬 [PROCESSING STATUS] Found processing data: {
+obview_app  |   status: 'completed',
+obview_app  |   hasQualities: true,
+obview_app  |   hasScrubVersion: true,
+obview_app  |   qualitiesCount: 1,
+obview_app  |   scrubPath: '/app/uploads/processed/713/scrub/MicrosoftTeams-video (6)_scrub.mp4'
+obview_app  | }
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | [DEBUG] Getting files for project ID: 89
+obview_app  | [DEBUG] Found 1 files for project ID 89
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-05-05T06:36:26.836Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 1 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 1, username: 'admin', role: 'admin' }
+obview_app  | User is authenticated, proceeding
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_db   | 2026-05-30 15:17:06.150 UTC [27] LOG:  checkpoint starting: time
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_db   | 2026-05-30 15:17:11.772 UTC [27] LOG:  checkpoint complete: wrote 57 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=5.620 s, sync=0.001 s, total=5.623 s; sync files=48, longest=0.001 s, average=0.001 s; distance=269 kB, estimate=324 kB; lsn=0/2244D048, redo lsn=0/22449860
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
+obview_app  | Auth check - session: Session {
+obview_app  |   cookie: {
+obview_app  |     path: '/',
+obview_app  |     _expires: 2026-06-18T13:56:13.196Z,
+obview_app  |     originalMaxAge: 2592000000,
+obview_app  |     httpOnly: true,
+obview_app  |     secure: true,
+obview_app  |     domain: '.obviu.io',
+obview_app  |     sameSite: 'lax'
+obview_app  |   },
+obview_app  |   passport: { user: 53 }
+obview_app  | }
+obview_app  | Auth check - user: { id: 53, username: 'kkramer', role: 'editor' }
+obview_app  | User is authenticated, proceeding
+obview_app  | 🔍 [COMMENT API] GET /api/files/691/comments requested by user 53
+obview_app  | 🔍 [COMMENT API] User 53 authorized for file 691, fetching comments...
+obview_app  | 🔍 [COMMENT API] Returning 0 comments for file 691
+obview_app  | Auth check - isAuthenticated: true
