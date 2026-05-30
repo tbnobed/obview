@@ -283,18 +283,44 @@ export async function generateCommentPDF(opts: {
     doc.restore();
   };
 
+  // Compact Frame.io-style thumbnail sits on the right of each comment row.
+  const THUMB_W = 116;
+  const THUMB_GAP = 16;
+
   let number = 0;
   for (const c of topLevel) {
     number++;
-    ensureSpace(60);
-    const blockTop = doc.y;
+    const frame = frameByComment.get(c.id);
+    const thumbH = frame ? THUMB_W * (frame.height / frame.width) : 0;
+
     const avatarD = 26;
     const textX = left + avatarD + 12;
-    const textW = contentWidth - avatarD - 12;
+    // Narrow the text column so it never runs under the right-aligned thumbnail.
+    const thumbX = right - THUMB_W;
+    const textW = (frame ? thumbX - THUMB_GAP : right) - textX;
+
+    // Pre-measure the text column height so the entire row is kept on one page.
+    // The thumbnail is anchored to the row's start Y; if a long comment were
+    // allowed to auto-paginate mid-row, the thumbnail would strand on the wrong
+    // page. Forcing the whole row to fit first keeps text + thumbnail together.
+    const tc = timecodeLabel(c, fps);
+    doc.font("Helvetica-Bold").fontSize(10.5);
+    const authorLineH = doc.currentLineHeight();
+    let metaLineH = 0;
+    if (tc || c.isResolved) {
+      doc.font("Helvetica-Bold").fontSize(9.5);
+      metaLineH = doc.currentLineHeight() + 2;
+    }
+    doc.font("Helvetica").fontSize(10.5);
+    const contentH = doc.heightOfString(c.content || "", { width: textW });
+    const textH = authorLineH + metaLineH + contentH + 6;
+    const rowH = Math.max(textH, thumbH);
+    ensureSpace(rowH);
+    const blockTop = doc.y;
 
     drawAvatar(c.authorName, left, blockTop, avatarD);
 
-    // Author + date (left), number (right)
+    // Author + date (left), number (right of the text column)
     doc.font("Helvetica-Bold").fontSize(10.5).fillColor("#111827");
     doc.text(c.authorName, textX, blockTop, { continued: true, width: textW });
     doc.font("Helvetica").fontSize(9).fillColor("#9ca3af");
@@ -304,7 +330,6 @@ export async function generateCommentPDF(opts: {
     doc.text(`#${number}`, textX, blockTop, { width: textW, align: "right" });
 
     // Timecode + resolved pill
-    const tc = timecodeLabel(c, fps);
     let lineY = doc.y + 2;
     if (tc) {
       doc.font("Helvetica-Bold").fontSize(9.5).fillColor("#2563eb");
@@ -318,26 +343,25 @@ export async function generateCommentPDF(opts: {
     // Content
     doc.font("Helvetica").fontSize(10.5).fillColor("#1f2937");
     doc.text(c.content, textX, doc.y + 2, { width: textW });
+    const textBottom = doc.y;
 
-    // Frame thumbnail with annotation overlay
-    const frame = frameByComment.get(c.id);
+    // Compact frame thumbnail (right column) with annotation overlay
     if (frame) {
-      const dispW = Math.min(300, textW);
-      const dispH = dispW * (frame.height / frame.width);
-      ensureSpace(dispH + 10);
-      const imgX = textX;
-      const imgY = doc.y + 6;
+      const imgX = thumbX;
+      const imgY = blockTop;
       try {
-        doc.image(frame.buf, imgX, imgY, { width: dispW, height: dispH });
+        doc.image(frame.buf, imgX, imgY, { width: THUMB_W, height: thumbH });
         doc.save();
-        doc.lineWidth(0.5).strokeColor("#d1d5db").rect(imgX, imgY, dispW, dispH).stroke();
+        doc.lineWidth(0.5).strokeColor("#d1d5db").rect(imgX, imgY, THUMB_W, thumbH).stroke();
         doc.restore();
-        drawAnnotations(doc, frame.anns, imgX, imgY, dispW, dispH);
-        doc.y = imgY + dispH;
+        drawAnnotations(doc, frame.anns, imgX, imgY, THUMB_W, thumbH);
       } catch {
         /* skip image on failure */
       }
     }
+
+    // Advance past whichever column is taller (text vs thumbnail).
+    doc.y = Math.max(textBottom, blockTop + thumbH);
 
     // Replies
     const childReplies = replies.get(c.id) || [];
