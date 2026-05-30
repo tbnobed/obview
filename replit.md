@@ -27,6 +27,20 @@ npm run typecheck-server
 npx drizzle-kit generate
 ```
 
+### Database backups
+
+Daily DB backups run from a **host** cron (NOT the in-container crond), because:
+- The app image ships `pg_dump` 15 while the server is Postgres 16 — any in-container dump fails with "server version mismatch" (this also breaks the entrypoint's pre-migration backup).
+- Debian's busybox has no `crond` applet, so the in-image scheduler logs `crond: applet not found` and never runs.
+
+The host script `scripts/db-backup-host.sh` dumps **through the `db` container** (native v16 `pg_dump`), gzips to `/srv/obviu/db-backups/daily-*.sql.gz`, integrity-checks, and prunes after 30 days. Install in the host crontab:
+
+```
+0 3 * * * /home/obtv-admin/obview/scripts/db-backup-host.sh >> /srv/obviu/db-backups/backup.log 2>&1
+```
+
+Manual one-off dump: `docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner' | gzip > /srv/obviu/db-backups/manual-$(date -u +%Y%m%d-%H%M%S).sql.gz`
+
 ## Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Radix UI, Tailwind CSS, TanStack Query
