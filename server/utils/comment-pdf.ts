@@ -224,8 +224,12 @@ export async function generateCommentPDF(opts: {
     for (const c of topLevel) {
       if (idx >= MAX_THUMBNAILS) break;
       const anns = parseAnnotations(c.annotations);
-      if (anns.length === 0) continue;
-      const ts = c.timestamp ?? 0;
+      // Extract a frame for every comment anchored to the media: any timestamped
+      // (or ranged) comment on a video, and all comments on an image. Drawing
+      // annotations, when present, are overlaid on top.
+      const hasTime = c.timestamp != null || c.inPoint != null;
+      if (!isImage && !hasTime) continue;
+      const ts = c.timestamp ?? c.inPoint ?? 0;
       const outPath = path.join(tmpDir, `frame-${idx++}.jpg`);
       const ok = await extractFrame(sourcePath!, ts, outPath, isImage);
       if (!ok) continue;
