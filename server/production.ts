@@ -8,6 +8,44 @@ import { logBackend as logLLMBackend } from "./llm-client.js";
 import { config } from "./utils/config.js";
 import { dbReady } from "./db.js";
 
+// Guard against the "bind-mount over an unmounted data disk" footgun.
+// If the persistent uploads disk is NOT mounted at the host uploads path when
+// the container starts, Docker bind-mounts the empty fallback directory on the
+// root disk. Uploads then land in ephemeral storage that is silently wiped on
+// the next `docker compose up -d` recreate (this is how a freshly uploaded file
+// was lost with only a dangling DB row left behind, and how root once filled to
+// 698GB). When UPLOADS_VOLUME_ID is set we refuse to start unless a matching
+// sentinel file is present in the uploads dir — the root-disk fallback never has
+// it, so a wrong/absent mount crash-loops loudly instead of eating data.
+// One-time setup on the host (with the real disk mounted):
+//   echo "<id>" > /srv/obviu/uploads/.obviu-uploads-volume
+// then set UPLOADS_VOLUME_ID=<id> in the app environment.
+function assertUploadsVolumeMounted() {
+  const expected = (process.env.UPLOADS_VOLUME_ID || "").trim();
+  if (!expected) return; // opt-in: unset = legacy behavior, no check
+  const uploadsDir = process.env.UPLOAD_DIR || "/app/uploads";
+  const sentinel = path.join(uploadsDir, ".obviu-uploads-volume");
+  let actual = "";
+  try {
+    actual = fs.readFileSync(sentinel, "utf8").trim();
+  } catch {
+    /* sentinel missing → treated as mismatch below */
+  }
+  if (actual !== expected) {
+    console.error(
+      `❌ FATAL: uploads volume sentinel mismatch at ${sentinel} ` +
+        `(expected "${expected}", got "${actual || "<missing>"}"). ` +
+        `The persistent uploads disk is not mounted — refusing to start to ` +
+        `prevent silent data loss. Verify the data disk is mounted at the host ` +
+        `uploads path and that ${sentinel} contains "${expected}".`,
+    );
+    process.exit(1);
+  }
+  console.log(`✅ Uploads volume verified via sentinel ("${expected}").`);
+}
+
+assertUploadsVolumeMounted();
+
 const app = express();
 
 // Middleware

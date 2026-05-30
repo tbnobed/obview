@@ -1,1 +1,2 @@
 - [Production entry point divergence](prod-entry-point.md) — prod runs server/production.ts (dist/production.js), NOT index.ts; background loops added only to index.ts silently never run in prod.
+- [Uploads mount data loss](uploads-mount-data-loss.md) — brand-new upload vanishes (bytes gone, dangling row) when data disk isn't mounted at container start; sentinel guard via UPLOADS_VOLUME_ID prevents it.
