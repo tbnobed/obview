@@ -166,7 +166,7 @@ export function ProjectFoldersStrip({
       })();
       if (isAncestorOfCurrent) onSelectFolder(null);
       setFolderToDelete(null);
-      toast({ title: "Folder deleted", description: "Files were moved to the project root." });
+      toast({ title: "Folder deleted", description: "Files inside it were moved to the trash. Admins can restore them." });
     },
     onError: (e: any) =>
       toast({ title: "Could not delete folder", description: e?.message ?? "", variant: "destructive" }),
@@ -358,8 +358,8 @@ export function ProjectFoldersStrip({
               {folderToDelete ? (
                 <>
                   <span className="font-semibold">{folderToDelete.name}</span> and all of its
-                  subfolders will be removed. Any files inside will be moved back to the project
-                  root — nothing is permanently deleted.
+                  subfolders will be removed. Any files inside will be moved to the trash —
+                  nothing is permanently deleted. Admins can restore them.
                 </>
               ) : null}
             </AlertDialogDescription>
