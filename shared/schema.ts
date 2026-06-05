@@ -11,11 +11,16 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   role: text("role").notNull().default("viewer"), // "admin", "editor", "viewer"
   themePreference: text("theme_preference").default("system"), // "light", "dark", "system"
+  // Soft account disable: NULL = active, NOT NULL = deactivated. A deactivated
+  // user keeps all their content but cannot log in (blocked in the passport
+  // local strategy) and has any existing session invalidated on next request
+  // (deserializeUser). Reversible by an admin clearing this back to NULL.
+  deactivatedAt: timestamp("deactivated_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users)
-  .omit({ id: true, createdAt: true });
+  .omit({ id: true, createdAt: true, deactivatedAt: true });
 
 // FOLDER SCHEMA
 export const folders = pgTable("folders", {

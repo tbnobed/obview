@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Loader2, MoreHorizontal, Trash2, Edit, UserPlus, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Loader2, MoreHorizontal, Edit, UserPlus, UserX, UserCheck, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import UserForm from "./user-form";
 
@@ -77,21 +77,42 @@ export default function UserList() {
     queryKey: ["/api/users"],
   });
 
-  // Delete user mutation
-  const deleteUserMutation = useMutation({
+  // Deactivate user mutation (blocks login, keeps content; reversible)
+  const deactivateUserMutation = useMutation({
     mutationFn: async (userId: number) => {
       await apiRequest("DELETE", `/api/users/${userId}`);
     },
     onSuccess: () => {
       toast({
-        title: "User deleted",
-        description: "The user has been deleted successfully",
+        title: "User deactivated",
+        description: "The user can no longer sign in. Their content is kept and you can reactivate them anytime.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to delete user",
+        title: "Failed to deactivate user",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reactivate user mutation
+  const reactivateUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      await apiRequest("POST", `/api/users/${userId}/reactivate`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "User reactivated",
+        description: "The user can sign in again.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to reactivate user",
         description: error.message,
         variant: "destructive",
       });
@@ -209,8 +230,17 @@ export default function UserList() {
           <TableBody>
             {paginatedUsers?.length ? (
               paginatedUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
+                <TableRow key={user.id} className={user.deactivatedAt ? "opacity-60" : undefined}>
+                  <TableCell className="font-medium">
+                    <span className="inline-flex items-center gap-2">
+                      {user.name}
+                      {user.deactivatedAt && (
+                        <Badge variant="outline" className="text-neutral-500 border-neutral-400">
+                          Deactivated
+                        </Badge>
+                      )}
+                    </span>
+                  </TableCell>
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{getRoleBadge(user.role)}</TableCell>
@@ -237,39 +267,51 @@ export default function UserList() {
                           Edit User
                         </DropdownMenuItem>
                         
-                        {/* Don't allow deleting your own account */}
+                        {/* Don't allow deactivating your own account */}
                         {user.id !== currentUser?.id && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem
-                                className="cursor-pointer text-red-600"
-                                onSelect={(e) => e.preventDefault()}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete User
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete User</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this user? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-red-600 hover:bg-red-700"
-                                  onClick={() => deleteUserMutation.mutate(user.id)}
+                          user.deactivatedAt ? (
+                            <DropdownMenuItem
+                              className="cursor-pointer text-green-700"
+                              onClick={() => reactivateUserMutation.mutate(user.id)}
+                            >
+                              <UserCheck className="mr-2 h-4 w-4" />
+                              Reactivate User
+                            </DropdownMenuItem>
+                          ) : (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem
+                                  className="cursor-pointer text-red-600"
+                                  onSelect={(e) => e.preventDefault()}
                                 >
-                                  {deleteUserMutation.isPending ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  ) : null}
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <UserX className="mr-2 h-4 w-4" />
+                                  Deactivate User
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This blocks {user.name} from signing in and ends any active session.
+                                    All their files, comments, and approvals stay intact. You can reactivate
+                                    them at any time.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-red-600 hover:bg-red-700"
+                                    onClick={() => deactivateUserMutation.mutate(user.id)}
+                                  >
+                                    {deactivateUserMutation.isPending ? (
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : null}
+                                    Deactivate
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>

@@ -67,6 +67,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
+  setUserDeactivated(id: number, deactivated: boolean): Promise<User | undefined>;
 
   // Folder management (top-level folders that group projects)
   getFolder(id: number): Promise<Folder | undefined>;
@@ -306,6 +307,9 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id,
+      role: insertUser.role ?? "viewer",
+      themePreference: insertUser.themePreference ?? "system",
+      deactivatedAt: null,
       createdAt: now
     };
     this.users.set(id, user);
@@ -323,6 +327,14 @@ export class MemStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     return this.users.delete(id);
+  }
+
+  async setUserDeactivated(id: number, deactivated: boolean): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    const updatedUser: User = { ...user, deactivatedAt: deactivated ? new Date() : null };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 
   // Folder methods
@@ -1489,6 +1501,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning({ deletedId: users.id });
     return result.length > 0;
+  }
+
+  async setUserDeactivated(id: number, deactivated: boolean): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ deactivatedAt: deactivated ? new Date() : null })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
   }
 
   // Folder methods

@@ -917,7 +917,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { password, ...restData } = req.body;
         updateData = restData;
       }
-      
+
+      // deactivated_at is managed only via the dedicated deactivate/reactivate
+      // routes (which enforce the self-deactivation guard). Strip it here so it
+      // cannot be set through a generic profile PATCH (mass-assignment).
+      delete (updateData as any).deactivatedAt;
+
       const updatedUser = await storage.updateUser(userId, updateData);
 
       if (!updatedUser) {
@@ -1031,23 +1036,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete user (admin only)
+  // Deactivate a user (admin only). We don't hard-delete because the account is referenced
+  // across many tables (uploaded files, comments, approvals, share links,
+  // etc.); deactivation blocks their login and invalidates their session while
+  // keeping all their content intact. Reversible via the reactivate route.
   app.delete("/api/users/:userId", isAdmin, async (req, res, next) => {
     try {
       const userId = parseInt(req.params.userId);
-      
-      // Don't allow deleting yourself
+
+      // Don't allow deactivating yourself
       if (userId === req.user.id) {
-        return res.status(400).json({ message: "You cannot delete your own account" });
+        return res.status(400).json({ message: "You cannot deactivate your own account" });
       }
-      
-      const success = await storage.deleteUser(userId);
-      
-      if (!success) {
+
+      const user = await storage.setUserDeactivated(userId, true);
+
+      if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
-      res.status(204).end();
+
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reactivate a previously deactivated user.
+  app.post("/api/users/:userId/reactivate", isAdmin, async (req, res, next) => {
+    try {
+      const userId = parseInt(req.params.userId);
+
+      const user = await storage.setUserDeactivated(userId, false);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
     } catch (error) {
       next(error);
     }

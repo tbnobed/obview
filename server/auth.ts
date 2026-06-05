@@ -93,7 +93,12 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid username or password" });
         }
-        
+
+        // Deactivated accounts keep all their content but cannot sign in.
+        if (user.deactivatedAt) {
+          return done(null, false, { message: "This account has been deactivated. Contact an administrator." });
+        }
+
         return done(null, user);
       } catch (err) {
         return done(err);
@@ -106,8 +111,10 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      // Remove password from user object for security
-      if (user) {
+      // Remove password from user object for security. A user deactivated
+      // mid-session is treated as logged out so the block takes effect on
+      // their next request, not just at next login.
+      if (user && !user.deactivatedAt) {
         const { password, ...userWithoutPassword } = user;
         done(null, userWithoutPassword as any);
       } else {
