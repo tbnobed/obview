@@ -1,0 +1,54 @@
+obtv-admin@spark-174a:~$ sudo systemctl daemon-reload
+sudo mount -v /mnt/obview-uploads; echo "exit=$?"
+sudo systemctl status /mnt/obview-uploads --no-pager -l
+journalctl -xe -u "$(systemd-escape -p --suffix=mount /mnt/obview-uploads)" --no-pager | tail -30
+mount.nfs4: timeout set for Tue Jun  9 08:19:23 2026
+mount.nfs4: trying text-based options 'vers=4.2,proto=rdma,port=20049,rsize=1048576,wsize=1048576,hard,timeo=600,addr=192.168.100.2,clientaddr=192.168.100.1'
+mount.nfs4: mount(2): No such file or directory
+mount.nfs4: mounting 192.168.100.2:/var/lib/docker/volumes/obview_uploads/_data failed, reason given by server: No such file or directory
+exit=32
+× mnt-obview\x2duploads.mount - /mnt/obview-uploads
+     Loaded: loaded (/etc/fstab; generated)
+     Active: failed (Result: exit-code) since Tue 2026-06-09 08:15:51 PDT; 1min 31s ago
+   Duration: 1month 4d 23min 26.396s
+      Where: /mnt/obview-uploads
+       What: 192.168.100.2:/var/lib/docker/volumes/obview_uploads/_data
+       Docs: man:fstab(5)
+             man:systemd-fstab-generator(8)
+        CPU: 3ms
+
+Jun 09 08:15:51 spark-174a systemd[1]: Mounting mnt-obview\x2duploads.mount - /mnt/obview-uploads...
+Jun 09 08:15:51 spark-174a mount[87509]: mount.nfs4: mounting 192.168.100.2:/var/lib/docker/volumes/obview_uploads/_data failed, reason given by server: No such file or directory
+Jun 09 08:15:51 spark-174a systemd[1]: mnt-obview\x2duploads.mount: Mount process exited, code=exited, status=32/n/a
+Jun 09 08:15:51 spark-174a systemd[1]: mnt-obview\x2duploads.mount: Failed with result 'exit-code'.
+Jun 09 08:15:51 spark-174a systemd[1]: Failed to mount mnt-obview\x2duploads.mount - /mnt/obview-uploads.
+░░ Subject: A start job for unit mnt-obview\x2duploads.mount has begun execution
+░░ Defined-By: systemd
+░░ Support: http://www.ubuntu.com/support
+░░
+░░ A start job for unit mnt-obview\x2duploads.mount has begun execution.
+░░
+░░ The job identifier is 845392.
+Jun 09 08:15:51 spark-174a mount[87509]: mount.nfs4: mounting 192.168.100.2:/var/lib/docker/volumes/obview_uploads/_data failed, reason given by server: No such file or directory
+Jun 09 08:15:51 spark-174a systemd[1]: mnt-obview\x2duploads.mount: Mount process exited, code=exited, status=32/n/a
+░░ Subject: Unit process exited
+░░ Defined-By: systemd
+░░ Support: http://www.ubuntu.com/support
+░░
+░░ An n/a= process belonging to unit mnt-obview\x2duploads.mount has exited.
+░░
+░░ The process' exit code is 'exited' and its exit status is 32.
+Jun 09 08:15:51 spark-174a systemd[1]: mnt-obview\x2duploads.mount: Failed with result 'exit-code'.
+░░ Subject: Unit failed
+░░ Defined-By: systemd
+░░ Support: http://www.ubuntu.com/support
+░░
+░░ The unit mnt-obview\x2duploads.mount has entered the 'failed' state with result 'exit-code'.
+Jun 09 08:15:51 spark-174a systemd[1]: Failed to mount mnt-obview\x2duploads.mount - /mnt/obview-uploads.
+░░ Subject: A start job for unit mnt-obview\x2duploads.mount has failed
+░░ Defined-By: systemd
+░░ Support: http://www.ubuntu.com/support
+░░
+░░ A start job for unit mnt-obview\x2duploads.mount has finished with a failure.
+░░
+░░ The job identifier is 845392 and the job result is failed.
