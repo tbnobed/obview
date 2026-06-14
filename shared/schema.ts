@@ -77,6 +77,14 @@ export const insertProjectSchema = createInsertSchema(projects)
 export const files = pgTable("files", {
   id: serial("id").primaryKey(),
   filename: text("filename").notNull(),
+  // SHARED stack key: every version of a file carries the SAME `filename`,
+  // which is how versions are grouped into a stack. Because it never differs
+  // across versions, it can't tell you which version you're looking at.
+  // `originalFilename` captures the ACTUAL name of the file uploaded for THIS
+  // specific version (e.g. "Rough V4.mp4"), so the UI can show the right name
+  // per selected version. Nullable: rows created before this column existed
+  // (and any path that doesn't capture it) fall back to `filename`.
+  originalFilename: text("original_filename"),
   fileType: text("file_type").notNull(), // "video", "audio", "image"
   fileSize: bigint("file_size", { mode: "number" }).notNull(),
   filePath: text("file_path").notNull(),

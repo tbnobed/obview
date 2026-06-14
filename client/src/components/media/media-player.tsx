@@ -1528,7 +1528,7 @@ export default function MediaPlayer({
               <File className="h-12 w-12 mx-auto mb-4 text-red-400" />
               <h3 className="text-xl font-medium text-red-400">File Not Available</h3>
               <p className="text-neutral-300 mt-2">{errorMessage || "This file is no longer available. It may have been deleted from the server."}</p>
-              <p className="text-neutral-400 mt-4 text-sm">{file.filename}</p>
+              <p className="text-neutral-400 mt-4 text-sm">{(file as any).originalFilename || file.filename}</p>
               <p className="text-neutral-500 mt-2 text-sm">The comments and feedback for this file are still available.</p>
             </div>
           </div>
@@ -1736,7 +1736,7 @@ export default function MediaPlayer({
             <div className="bg-neutral-800 p-10 rounded-lg mb-8">
               <File className="h-24 w-24 mx-auto text-primary dark:text-[#026d55]" />
             </div>
-            <h3 className="text-lg font-medium">{file.filename}</h3>
+            <h3 className="text-lg font-medium">{(file as any).originalFilename || file.filename}</h3>
             <p className="text-sm text-neutral-400 mt-1">Audio file</p>
           </div>
           <audio
@@ -1773,7 +1773,7 @@ export default function MediaPlayer({
         <div className="flex items-center justify-center h-full bg-neutral-900 text-white">
           <div className="text-center p-8">
             <File className="h-12 w-12 mx-auto mb-4 text-neutral-400" />
-            <h3 className="text-xl font-medium">{file.filename}</h3>
+            <h3 className="text-xl font-medium">{(file as any).originalFilename || file.filename}</h3>
             <p className="text-neutral-400 mt-2">This file type cannot be previewed</p>
             <div className="mt-4">
               <DownloadButton
@@ -2685,12 +2685,17 @@ export default function MediaPlayer({
                                 : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               {v.fileType === 'video' ? <FileVideo className="h-3.5 w-3.5 shrink-0" /> : <ImageIcon className="h-3.5 w-3.5 shrink-0" />}
-                              <span>Version {v.version}</span>
-                              {v.isLatestVersion && <Badge variant="secondary" className="text-[10px] h-4 px-1.5">Latest</Badge>}
+                              <div className="flex flex-col min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span>Version {v.version}</span>
+                                  {v.isLatestVersion && <Badge variant="secondary" className="text-[10px] h-4 px-1.5">Latest</Badge>}
+                                </div>
+                                <span className="text-[10px] text-gray-500 truncate" title={(v as any).originalFilename || v.filename}>{(v as any).originalFilename || v.filename}</span>
+                              </div>
                             </div>
-                            <span className="text-[10px] text-gray-500">{new Date(v.createdAt).toLocaleDateString()}</span>
+                            <span className="text-[10px] text-gray-500 shrink-0">{new Date(v.createdAt).toLocaleDateString()}</span>
                           </button>
                         ))}
                       </div>

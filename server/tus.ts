@@ -509,6 +509,10 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
         const folderIdForRow: number | null = requestedFolderId;
         fileRow = await storage.createFile({
           filename,
+          // Real uploaded name for THIS version. `filename` may have been
+          // overridden by customFilename (the stack key); meta.filename is
+          // always the actual dragged file's name.
+          originalFilename: meta.filename ?? undefined,
           fileType,
           fileSize: upload.size ?? 0,
           filePath: finalPath,
@@ -747,6 +751,8 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
         const folderIdForRow: number | null = requestedFolderId;
         fileRow = await storage.createFile({
           filename,
+          // Real uploaded name for THIS version (see single-stream path).
+          originalFilename: manifest.filename ?? undefined,
           fileType,
           fileSize: manifest.totalSize,
           filePath: finalPath,

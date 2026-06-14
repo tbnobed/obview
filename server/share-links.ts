@@ -959,6 +959,8 @@ export function registerShareLinkRoutes(
 
           const created = await storage.createFile({
             filename,
+            // Real uploaded name for THIS version (filename may be a stack key).
+            originalFilename: file.originalname,
             fileType,
             fileSize: file.size,
             filePath: file.path,

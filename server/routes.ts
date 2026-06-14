@@ -2489,6 +2489,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // — the schema defaults handle this; we don't pass them in.
       const file = await storage.createFile({
         filename: filename, // Use custom filename or original filename
+        // Real uploaded name for THIS version. `filename` may be the stack
+        // key (customFilename); originalname is always the true dragged name.
+        originalFilename: req.file.originalname,
         fileType,
         fileSize: req.file.size,
         filePath: req.file.path,

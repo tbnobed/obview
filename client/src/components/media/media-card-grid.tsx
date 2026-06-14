@@ -941,8 +941,8 @@ function MediaCard({
         {/* Card Footer */}
         <div className="p-4">
           {/* Filename */}
-          <h3 className="font-medium text-card-foreground text-sm mb-1 truncate" title={file.filename}>
-            {file.filename}
+          <h3 className="font-medium text-card-foreground text-sm mb-1 truncate" title={(file as any).originalFilename || file.filename}>
+            {(file as any).originalFilename || file.filename}
           </h3>
           
           {/* Metadata */}

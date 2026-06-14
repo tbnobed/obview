@@ -361,9 +361,9 @@ export default function MediaRow({
           <div className="flex items-center gap-2 min-w-0">
             <span
               className="truncate text-sm font-medium text-card-foreground"
-              title={file.filename}
+              title={(file as any).originalFilename || file.filename}
             >
-              {file.filename}
+              {(file as any).originalFilename || file.filename}
             </span>
             {versionCount > 1 && (
               <span className="inline-flex items-center gap-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0">

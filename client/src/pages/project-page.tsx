@@ -471,10 +471,10 @@ export default function ProjectPage() {
                   <div className="flex flex-col min-w-0">
                     <h1
                       className="text-sm font-semibold text-neutral-900 dark:text-white truncate lg:text-base"
-                      title={selectedFile.filename}
+                      title={(selectedFile as any).originalFilename || selectedFile.filename}
                       data-testid="player-file-title"
                     >
-                      {selectedFile.filename}
+                      {(selectedFile as any).originalFilename || selectedFile.filename}
                     </h1>
                     <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-gray-500 truncate">
                       <span className="truncate" title={project.name}>{project.name}</span>
@@ -582,7 +582,7 @@ export default function ProjectPage() {
                         >
                           <div className="flex items-center">
                             <FileVideo className="h-5 w-5 mr-2 text-primary" />
-                            <div className="text-sm">{file.filename}</div>
+                            <div className="text-sm">{(file as any).originalFilename || file.filename}</div>
                           </div>
                           <Button 
                             size="sm" 
