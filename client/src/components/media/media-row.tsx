@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +33,7 @@ import { setDragPayload, clearDragPayload, peekDragPayload, getDragPayload } fro
 import { uploadService } from "@/lib/upload-service";
 import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 import MediaInfoDialog from "./media-info-dialog";
+import { VersionDownloadSubmenu } from "./version-download-submenu";
 
 interface MediaRowProps {
   file: StorageFile;
@@ -281,8 +282,7 @@ export default function MediaRow({
     }
   };
 
-  const downloadVersion = (fileId: number, name: string) => {
-    const url = `/api/files/${fileId}/download`;
+  const downloadUrl = (url: string, name: string) => {
     const sep = url.includes("?") ? "&" : "?";
     const a = document.createElement("a");
     a.style.display = "none";
@@ -296,7 +296,7 @@ export default function MediaRow({
 
   const handleDownloadOriginal = (e: React.MouseEvent) => {
     e.stopPropagation();
-    downloadVersion(file.id, file.filename);
+    downloadUrl(`/api/files/${file.id}/download`, (file as any).originalFilename || file.filename);
   };
 
   const openShareDialog = (e: React.MouseEvent) => {
@@ -467,20 +467,12 @@ export default function MediaRow({
                     <Download className="h-4 w-4 mr-2" />
                     Download
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-48">
-                    {[...versions].sort((a, b) => b.version - a.version).map((v) => (
-                      <DropdownMenuItem
-                        key={v.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          downloadVersion(v.id, file.filename);
-                        }}
-                      >
-                        <span className="flex-1">v{v.version}{v.id === file.id ? " (latest)" : ""}</span>
-                        <span className="ml-2 text-xs text-neutral-500">
-                          {formatFileSize(v.fileSize)}
-                        </span>
-                      </DropdownMenuItem>
+                  <DropdownMenuSubContent className="w-56">
+                    {[...versions].sort((a, b) => b.version - a.version).map((v, i) => (
+                      <Fragment key={v.id}>
+                        {i > 0 && <DropdownMenuSeparator />}
+                        <VersionDownloadSubmenu version={v} onDownload={downloadUrl} subContentClassName="w-56" />
+                      </Fragment>
                     ))}
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, X, ArrowDownAZ, ArrowDownUp } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import MediaRow from "./media-row";
 import { useViewMode } from "@/hooks/use-view-mode";
 import ViewModeToggle from "@/components/ui/view-mode-toggle";
 import { MoveFileDialog } from "@/components/projects/project-folders";
+import { VersionDownloadSubmenu } from "./version-download-submenu";
 
 interface MediaCardGridProps {
   files: StorageFile[];
@@ -379,13 +380,13 @@ function MediaCard({
     // Use /download (forces Content-Disposition: attachment) instead of
     // /content (inline media stream). For multi-GB originals the browser
     // must stream to disk, never buffer in memory.
-    downloadUrlAs(`/api/files/${file.id}/download`, file.filename);
+    downloadUrlAs(`/api/files/${file.id}/download`, (file as any).originalFilename || file.filename);
   };
 
   // Build a download filename like "myclip_720p.mp4" preserving the original
   // base name and the quality's container extension when possible.
   const buildQualityFilename = (resolution: string, sourcePath?: string) => {
-    const base = file.filename.replace(/\.[^.]+$/, "");
+    const base = ((file as any).originalFilename || file.filename).replace(/\.[^.]+$/, "");
     const ext = sourcePath?.match(/\.[a-z0-9]+$/i)?.[0] ?? ".mp4";
     return `${base}_${resolution}${ext}`;
   };
@@ -856,31 +857,12 @@ function MediaCard({
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="w-56">
                         {allVersions ? (
-                          <>
-                            <DropdownMenuSub>
-                              <DropdownMenuSubTrigger>
-                                <span className="flex-1">v{file.version} (latest)</span>
-                              </DropdownMenuSubTrigger>
-                              <DropdownMenuSubContent className="w-56">
-                                {latestQualities}
-                              </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                            <DropdownMenuSeparator />
-                            {allVersions.filter(v => v.id !== file.id).map((v) => (
-                              <DropdownMenuItem
-                                key={v.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  downloadUrlAs(`/api/files/${v.id}/download`, file.filename);
-                                }}
-                              >
-                                <span className="flex-1">v{v.version}</span>
-                                <span className="ml-2 text-xs text-neutral-500">
-                                  {formatFileSize(v.fileSize)}
-                                </span>
-                              </DropdownMenuItem>
-                            ))}
-                          </>
+                          allVersions.map((v, i) => (
+                            <Fragment key={v.id}>
+                              {i > 0 && <DropdownMenuSeparator />}
+                              <VersionDownloadSubmenu version={v} onDownload={downloadUrlAs} />
+                            </Fragment>
+                          ))
                         ) : (
                           latestQualities
                         )}
