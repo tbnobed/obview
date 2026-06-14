@@ -26,7 +26,7 @@ import {
 import MediaPlayer from "@/components/media/media-player";
 import MediaCardGrid from "@/components/media/media-card-grid";
 import { ProjectFoldersStrip, MoveFileDialog } from "@/components/projects/project-folders";
-import type { File as StorageFile } from "@shared/schema";
+import type { File as StorageFile, Folder } from "@shared/schema";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
@@ -128,6 +128,16 @@ export default function ProjectPage() {
     const n = f ? parseInt(f, 10) : NaN;
     return Number.isFinite(n) ? n : null;
   });
+  // Folders for the current project — used to resolve the name of the
+  // subfolder we're browsing so the Share dialog can scope to it.
+  const { data: projectFolders = [] } = useQuery<Folder[]>({
+    queryKey: [`/api/projects/${projectId}/folders`],
+    enabled: !!projectId,
+  });
+  const currentFolder =
+    currentSubfolderId != null
+      ? projectFolders.find((f) => f.id === currentSubfolderId) ?? null
+      : null;
   const [movingFile, setMovingFile] = useState<StorageFile | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   
@@ -525,7 +535,7 @@ export default function ProjectPage() {
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onSelect={() => setReviewerLinksOpen(true)} data-testid="menu-reviewer-links">
                     <Share2 className="mr-2 h-4 w-4" />
-                    Share project
+                    {currentSubfolderId != null ? "Share folder" : "Share project"}
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => setDownloadDialogOpen(true)} data-testid="menu-download">
                     <Download className="mr-2 h-4 w-4" />
@@ -554,9 +564,9 @@ export default function ProjectPage() {
               <ShareLinksDialog
                 open={reviewerLinksOpen}
                 onOpenChange={setReviewerLinksOpen}
-                scopeType="project"
-                scopeId={projectId}
-                scopeName={project?.name}
+                scopeType={currentSubfolderId != null ? "folder" : "project"}
+                scopeId={currentSubfolderId != null ? currentSubfolderId : projectId}
+                scopeName={currentSubfolderId != null ? (currentFolder?.name ?? "Folder") : project?.name}
               />
 
             {/* Download Dialog */}
