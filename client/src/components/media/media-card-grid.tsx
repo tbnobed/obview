@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, Fragment } from "react";
-import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, X, ArrowDownAZ, ArrowDownUp } from "lucide-react";
+import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, CheckSquare, X, ArrowDownAZ, ArrowDownUp } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -1111,8 +1111,13 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
     setSelectedIds(new Set());
     setLastSelectedId(null);
   };
+  const selectAll = () => {
+    setSelectedIds(new Set(orderedIds));
+    setLastSelectedId(null);
+  };
   const selectionActive = selectedIds.size > 0;
   const selectedIdArray = Array.from(selectedIds);
+  const allSelected = latestFiles.length > 0 && selectedIds.size === latestFiles.length;
 
   // Esc clears the selection — same affordance Finder/Drive use.
   useEffect(() => {
@@ -1221,7 +1226,17 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
         </div>
 
         <div className="flex items-center gap-2">
-          {selectionActive && (
+          {latestFiles.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={allSelected ? clearSelection : selectAll}
+              data-testid="select-all-button"
+            >
+              <CheckSquare className="h-4 w-4 mr-1" /> {allSelected ? "Deselect all" : "Select all"}
+            </Button>
+          )}
+          {selectionActive && !allSelected && (
             <Button
               variant="ghost"
               size="sm"
