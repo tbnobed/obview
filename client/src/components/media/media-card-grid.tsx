@@ -1218,24 +1218,26 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-1">Media Files</h2>
-          <p className="text-muted-foreground text-sm">
-            {selectionActive
-              ? `${selectedIds.size} selected — drag onto a folder to move`
-              : `${latestFiles.length} file${latestFiles.length !== 1 ? "s" : ""}`}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-muted-foreground text-sm">
+              {selectionActive
+                ? `${selectedIds.size} selected — drag onto a folder to move`
+                : `${latestFiles.length} file${latestFiles.length !== 1 ? "s" : ""}`}
+            </p>
+            {latestFiles.length > 0 && (
+              <button
+                type="button"
+                onClick={allSelected ? clearSelection : selectAll}
+                data-testid="select-all-button"
+                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+              >
+                <CheckSquare className="h-3.5 w-3.5" /> {allSelected ? "Deselect all" : "Select all"}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {latestFiles.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={allSelected ? clearSelection : selectAll}
-              data-testid="select-all-button"
-            >
-              <CheckSquare className="h-4 w-4 mr-1" /> {allSelected ? "Deselect all" : "Select all"}
-            </Button>
-          )}
           {selectionActive && !allSelected && (
             <Button
               variant="ghost"
