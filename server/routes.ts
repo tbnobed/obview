@@ -2870,8 +2870,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
 
-      // Check if it's a video file
-      if (!file.mimeType.startsWith('video/')) {
+      // Check if it's a video file. Use the reliable notNull `fileType`
+      // column — `mimeType` can be undefined on some rows and throws.
+      if (file.fileType !== "video") {
         return res.status(400).json({ message: "File is not a video" });
       }
 
