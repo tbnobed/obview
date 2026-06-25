@@ -24,6 +24,7 @@ import {
   Image as ImageIcon,
   Layers,
   MoreHorizontal,
+  RotateCw,
   Share2,
   Trash2,
 } from "lucide-react";
@@ -282,6 +283,30 @@ export default function MediaRow({
     }
   };
 
+  const reprocessMutation = useMutation({
+    mutationFn: (fileId: number) => apiRequest("POST", `/api/files/${fileId}/reprocess`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/files", file.id, "processing"] });
+      toast({
+        title: "Reprocessing started",
+        description: "The video is being re-encoded. This may take a few minutes.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Reprocess failed",
+        description: error.message || "Could not start reprocessing.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleReprocess = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (reprocessMutation.isPending) return;
+    reprocessMutation.mutate(file.id);
+  };
+
   const downloadUrl = (url: string, name: string) => {
     const sep = url.includes("?") ? "&" : "?";
     const a = document.createElement("a");
@@ -518,6 +543,16 @@ export default function MediaRow({
                 >
                   <FileVideo className="h-4 w-4 mr-2" />
                   Move to folder…
+                </DropdownMenuItem>
+              )}
+              {file.fileType === "video" && (
+                <DropdownMenuItem
+                  onClick={handleReprocess}
+                  disabled={reprocessMutation.isPending}
+                  data-testid={`reprocess-file-row-${file.id}`}
+                >
+                  <RotateCw className="h-4 w-4 mr-2" />
+                  {reprocessMutation.isPending ? "Starting..." : "Reprocess"}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />

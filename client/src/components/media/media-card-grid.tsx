@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, Fragment } from "react";
-import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, CheckSquare, X, ArrowDownAZ, ArrowDownUp } from "lucide-react";
+import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, CheckSquare, X, ArrowDownAZ, ArrowDownUp, RotateCw } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -334,6 +334,30 @@ function MediaCard({
     if (confirm(`Are you sure you want to delete "${file.filename}"? This action cannot be undone.`)) {
       deleteMutation.mutate(file.id);
     }
+  };
+
+  const reprocessMutation = useMutation({
+    mutationFn: (fileId: number) => apiRequest('POST', `/api/files/${fileId}/reprocess`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/files', file.id, 'processing'] });
+      toast({
+        title: "Reprocessing started",
+        description: "The video is being re-encoded. This may take a few minutes.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Reprocess failed",
+        description: error.message || "Could not start reprocessing. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleReprocess = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (reprocessMutation.isPending) return;
+    reprocessMutation.mutate(file.id);
   };
 
   const [mediaInfoOpen, setMediaInfoOpen] = useState(false);
@@ -903,6 +927,16 @@ function MediaCard({
                   >
                     <FileVideo className="h-4 w-4 mr-2" />
                     Move to folder…
+                  </DropdownMenuItem>
+                )}
+                {file.fileType === "video" && (
+                  <DropdownMenuItem
+                    onClick={handleReprocess}
+                    disabled={reprocessMutation.isPending}
+                    data-testid={`reprocess-file-${file.id}`}
+                  >
+                    <RotateCw className="h-4 w-4 mr-2" />
+                    {reprocessMutation.isPending ? "Starting..." : "Reprocess"}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
