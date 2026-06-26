@@ -1226,9 +1226,18 @@ const handleShareCrawler: RequestHandler = async (req, res, next) => {
 // Mount the crawler OG-injection routes. Must be registered BEFORE the SPA
 // catch-all in whichever entrypoint calls it (dev: registerRoutes; prod:
 // server/production.ts ahead of its app.get('*') fallback).
+//
+// The shareable URL is a BARE token at the root (e.g. https://host/B_jSYF-L),
+// resolved client-side by ShareResolverPage on the wouter "/:token" route — so
+// that bare path is what crawlers actually fetch when a link is pasted into
+// Slack/iMessage/etc. We must match it here, plus the canonical /s/ and /share/
+// paths. The handler no-ops (next()) for non-crawler UAs and for tokens that
+// don't resolve to a live share link, so registering "/:token" at the root does
+// NOT shadow real routes or marketing pages.
 export function mountShareCrawlerRoutes(app: Express) {
   app.get("/s/:token", handleShareCrawler);
   app.get("/share/:token", handleShareCrawler);
+  app.get("/:token", handleShareCrawler);
 }
 
 function sanitizeLink(link: ShareLink) {

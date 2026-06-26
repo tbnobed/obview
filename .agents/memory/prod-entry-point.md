@@ -61,3 +61,11 @@ function and call it from BOTH places — in `production.ts` explicitly before i
 and in dev's `registerRoutes` path (guarded with `NODE_ENV !== 'production'` to avoid a no-op
 double registration in prod). The handler must `next()` for non-crawler/normal browsers so they
 still fall through to the SPA shell.
+
+**The share URL itself is a BARE token at the root** (`https://host/<token>`), resolved purely
+client-side by `ShareResolverPage` on the wouter `/:token` route — there is NO server route for
+it. `/s/:token` and `/share/:token` are internal/canonical paths the client uses, NOT what gets
+pasted into Slack. So a crawler OG handler that only matches `/s/` and `/share/` never fires on
+real shared links; it must also match `/:token` at the root. Registering `/:token` server-side is
+safe **only because** the handler `next()`s for non-crawler UAs and for tokens that don't resolve
+to a live share — otherwise it would shadow every single-segment route and marketing page.

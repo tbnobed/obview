@@ -71,7 +71,8 @@ app.use((_req, res, next) => {
 // Serve static files from the built frontend
 const staticPath = path.resolve(import.meta.dirname, "public");
 
-// Social-preview (Open Graph) injection for /s/:token and /share/:token MUST be
+// Social-preview (Open Graph) injection for share URLs (the bare-token root
+// "/:token", plus the canonical "/s/:token" and "/share/:token") MUST be
 // registered before the SPA catch-all below, otherwise the catch-all serves the
 // generic static index.html to crawlers. This handler only intercepts crawler
 // user-agents; real browsers fall through (next()) to the SPA fallback.
