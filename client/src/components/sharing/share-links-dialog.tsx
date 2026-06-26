@@ -1,17 +1,20 @@
-import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { useState, useRef } from "react";
 import {
   Copy, Trash2, Plus, Link as LinkIcon, ExternalLink,
   Lock, Calendar, Download, MessageSquare, Mail, Shield,
-  ChevronDown, ChevronUp, X, Upload,
+  ChevronDown, ChevronUp, X, Upload, Image as ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useShareLinks, useCreateShareLink, useRevokeShareLink, useUpdateShareLink, type ShareLinkDTO } from "@/hooks/use-share-links";
+import {
+  useShareLinks, useCreateShareLink, useRevokeShareLink, useUpdateShareLink,
+  useSetShareLinkThumbnail, useClearShareLinkThumbnail, type ShareLinkDTO,
+} from "@/hooks/use-share-links";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -36,6 +39,8 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
   const createMut = useCreateShareLink(arg);
   const revokeMut = useRevokeShareLink(arg);
   const updateMut = useUpdateShareLink(arg);
+  const setThumbMut = useSetShareLinkThumbnail(arg);
+  const clearThumbMut = useClearShareLinkThumbnail(arg);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
@@ -118,6 +123,9 @@ export default function ShareLinksDialog({ open, onOpenChange, scopeType, scopeI
                 onClearPassword={() => updateMut.mutate({ id: link.id, clearPassword: true })}
                 onSetPassword={(pw) => updateMut.mutate({ id: link.id, password: pw })}
                 onSetExpires={(iso) => updateMut.mutate({ id: link.id, expiresAt: iso })}
+                onSetThumbnail={(file) => setThumbMut.mutate({ id: link.id, file })}
+                onClearThumbnail={() => clearThumbMut.mutate(link.id)}
+                thumbnailBusy={setThumbMut.isPending || clearThumbMut.isPending}
               />
             ))}
           </ul>
@@ -253,6 +261,7 @@ function SwitchRow({
 
 function LinkRow({
   link, onCopy, onOpen, onRevoke, onToggle, onClearPassword, onSetPassword, onSetExpires,
+  onSetThumbnail, onClearThumbnail, thumbnailBusy,
 }: {
   link: ShareLinkDTO;
   onCopy: () => void;
@@ -262,10 +271,14 @@ function LinkRow({
   onClearPassword: () => void;
   onSetPassword: (pw: string) => void;
   onSetExpires: (iso: string | null) => void;
+  onSetThumbnail: (file: File) => void;
+  onClearThumbnail: () => void;
+  thumbnailBusy: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [pwInput, setPwInput] = useState("");
   const [expInput, setExpInput] = useState(link.expiresAt ? new Date(link.expiresAt).toISOString().slice(0, 16) : "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const expired = !!link.expiresAt && new Date(link.expiresAt).getTime() < Date.now();
 
@@ -404,6 +417,51 @@ function LinkRow({
                   Remove
                 </Button>
               )}
+            </div>
+
+            {/* Social-preview image row — the picture shown when this link is
+                pasted into Slack/iMessage/etc. */}
+            <div className="flex items-start gap-2">
+              <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0 mt-1.5" />
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="flex items-center gap-3">
+                  {link.hasCustomThumbnail ? (
+                    <img
+                      src={`/api/public/share/${link.token}/og-image?v=${encodeURIComponent(link.token)}`}
+                      alt="Link preview"
+                      className="h-12 w-20 rounded object-cover border border-neutral-200 dark:border-gray-700"
+                    />
+                  ) : (
+                    <div className="h-12 w-20 rounded border border-dashed border-neutral-300 dark:border-gray-700 flex items-center justify-center text-muted-foreground">
+                      <ImageIcon className="h-4 w-4" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) onSetThumbnail(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button size="sm" variant="outline" disabled={thumbnailBusy} onClick={() => fileInputRef.current?.click()}>
+                      {link.hasCustomThumbnail ? "Replace" : "Upload"}
+                    </Button>
+                    {link.hasCustomThumbnail && (
+                      <Button size="sm" variant="ghost" disabled={thumbnailBusy} onClick={onClearThumbnail} className="text-muted-foreground">
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="text-[11px] text-muted-foreground/70">
+                  Custom preview image shown when this link is shared. PNG, JPEG, WebP, or GIF up to 10MB.
+                </div>
+              </div>
             </div>
           </div>
         </div>

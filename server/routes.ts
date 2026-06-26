@@ -543,9 +543,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // Set up authentication
   setupAuth(app);
+
+  // Per-link social-preview (Open Graph) thumbnail uploads. Small images only.
+  const shareThumbDir = path.join(uploadsDir, "share-thumbs");
+  try { if (!fs.existsSync(shareThumbDir)) fs.mkdirSync(shareThumbDir, { recursive: true }); } catch {}
+  const shareThumbUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, shareThumbDir),
+      filename: (req, file, cb) => {
+        const ext = (path.extname(file.originalname) || ".jpg").toLowerCase();
+        cb(null, `${req.params.id}-${Date.now()}${ext}`);
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB cap, plenty for a preview image
+    fileFilter: (_req, file, cb) => {
+      if (/^image\/(png|jpe?g|webp|gif)$/i.test(file.mimetype)) cb(null, true);
+      else cb(new Error("Only PNG, JPEG, WebP, or GIF images are allowed"));
+    },
+  });
+
   registerShareLinkRoutes(app, isAuthenticated, {
     uploadSingle: upload.single('file'),
     handleMulterErrors,
+    cropFirstTile,
+    thumbnailUpload: shareThumbUpload.single("thumbnail"),
+    shareThumbDir,
     processUploadedFile: async (file) => {
       if (file.fileType === "video") {
         const processing = await storage.createVideoProcessing({ fileId: file.id, status: "pending" });

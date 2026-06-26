@@ -207,7 +207,7 @@ export interface IStorage {
   getShareLink(id: string): Promise<ShareLink | undefined>;
   getShareLinkByToken(token: string): Promise<ShareLink | undefined>;
   listShareLinksForScope(scopeType: string, scopeId: number): Promise<ShareLink[]>;
-  updateShareLink(id: string, data: Partial<{ name: string | null; passwordHash: string | null; expiresAt: Date | null; allowDownloads: boolean; allowComments: boolean; allowUploads: boolean; requireEmail: boolean; watermarkEnabled: boolean; watermarkText: string | null; revokedAt: Date | null }>): Promise<ShareLink | undefined>;
+  updateShareLink(id: string, data: Partial<{ name: string | null; customThumbnailPath: string | null; passwordHash: string | null; expiresAt: Date | null; allowDownloads: boolean; allowComments: boolean; allowUploads: boolean; requireEmail: boolean; watermarkEnabled: boolean; watermarkText: string | null; revokedAt: Date | null }>): Promise<ShareLink | undefined>;
   revokeShareLink(id: string): Promise<boolean>;
 
   // Session store
@@ -1417,7 +1417,8 @@ export class MemStorage implements IStorage {
   async createShareLink(data: any): Promise<ShareLink> {
     const link: ShareLink = {
       id: data.id, token: data.token, scopeType: data.scopeType, scopeId: data.scopeId,
-      name: data.name ?? null, passwordHash: data.passwordHash ?? null,
+      name: data.name ?? null, customThumbnailPath: data.customThumbnailPath ?? null,
+      passwordHash: data.passwordHash ?? null,
       expiresAt: data.expiresAt ?? null, allowDownloads: !!data.allowDownloads,
       allowComments: data.allowComments !== false, allowUploads: !!data.allowUploads,
       requireEmail: !!data.requireEmail,

@@ -9,6 +9,7 @@ export type ShareLinkDTO = {
   scopeId: number;
   name: string | null;
   hasPassword: boolean;
+  hasCustomThumbnail: boolean;
   expiresAt: string | null;
   allowDownloads: boolean;
   allowComments: boolean;
@@ -84,6 +85,47 @@ export function useUpdateShareLink(arg: ScopeArg) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: listKey(arg) }),
     onError: (e: Error) =>
       toast({ title: "Could not update link", description: e.message, variant: "destructive" }),
+  });
+}
+
+export function useSetShareLinkThumbnail(arg: ScopeArg) {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) => {
+      const fd = new FormData();
+      fd.append("thumbnail", file);
+      const r = await fetch(`/api/share-links/${id}/thumbnail`, {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+      if (!r.ok) {
+        const msg = await r.json().catch(() => ({}));
+        throw new Error(msg.message || "Failed to upload image");
+      }
+      return (await r.json()) as ShareLinkDTO;
+    },
+    onSuccess: () => {
+      toast({ title: "Preview image updated" });
+      queryClient.invalidateQueries({ queryKey: listKey(arg) });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not upload image", description: e.message, variant: "destructive" }),
+  });
+}
+
+export function useClearShareLinkThumbnail(arg: ScopeArg) {
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/share-links/${id}/thumbnail`);
+    },
+    onSuccess: () => {
+      toast({ title: "Preview image removed" });
+      queryClient.invalidateQueries({ queryKey: listKey(arg) });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Could not remove image", description: e.message, variant: "destructive" }),
   });
 }
 

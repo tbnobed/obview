@@ -363,6 +363,10 @@ export const shareLinks = pgTable("share_links", {
   scopeType: text("scope_type").notNull(), // "project" | "folder" | "file"
   scopeId: integer("scope_id").notNull(),
   name: text("name"),
+  // Optional per-link social-preview image (Open Graph). When set, the share
+  // link's link-preview card uses this image instead of the auto-derived
+  // file/project thumbnail. Uploaded via the dedicated thumbnail endpoint.
+  customThumbnailPath: text("custom_thumbnail_path"),
   passwordHash: text("password_hash"),
   expiresAt: timestamp("expires_at"),
   allowDownloads: boolean("allow_downloads").notNull().default(false),

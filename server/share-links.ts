@@ -354,6 +354,13 @@ export type ShareLinkRouteDeps = {
   uploadSingle: RequestHandler;
   handleMulterErrors: ErrorRequestHandler;
   processUploadedFile: (file: DbFile, opts: { reviewerEmail?: string | null; reviewerIp?: string | null; linkId: string }) => Promise<void> | void;
+  // Crop the first tile out of a sprite sheet into a standalone JPEG, used to
+  // derive an Open Graph preview image when a link has no custom thumbnail.
+  cropFirstTile: (spritePath: string, outPath: string, w: number, h: number) => Promise<boolean>;
+  // Image upload (single field "thumbnail") for per-link social-preview images.
+  thumbnailUpload: RequestHandler;
+  // Directory where per-link custom thumbnails are written.
+  shareThumbDir: string;
 };
 
 export function registerShareLinkRoutes(
@@ -500,7 +507,90 @@ export function registerShareLinkRoutes(
     } catch (e) { next(e); }
   });
 
+  // Upload a custom social-preview (Open Graph) image for a link. Authz is
+  // checked BEFORE multer runs so an unauthorized request never writes a file
+  // to disk. The previous image (if any) is unlinked after the DB row updates.
+  app.post(
+    "/api/share-links/:id/thumbnail",
+    isAuthenticated,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const link = await storage.getShareLink(req.params.id);
+        if (!link) return res.status(404).json({ message: "Not found" });
+        if (!(await canManageLinkNow(req, link))) return res.status(403).json({ message: "Forbidden" });
+        (req as any)._shareLink = link;
+        next();
+      } catch (e) { next(e); }
+    },
+    deps!.thumbnailUpload,
+    deps!.handleMulterErrors,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const link = (req as any)._shareLink as ShareLink;
+        const f = (req as any).file as { path: string } | undefined;
+        if (!f) return res.status(400).json({ message: "No image uploaded" });
+        const prev = link.customThumbnailPath;
+        const updated = await storage.updateShareLink(link.id, { customThumbnailPath: f.path });
+        if (prev && prev !== f.path) fsPromises.unlink(prev).catch(() => {});
+        res.json(updated ? sanitizeLink(updated) : null);
+      } catch (e) { next(e); }
+    },
+  );
+
+  app.delete("/api/share-links/:id/thumbnail", isAuthenticated, async (req, res, next) => {
+    try {
+      const link = await storage.getShareLink(req.params.id);
+      if (!link) return res.status(404).json({ message: "Not found" });
+      if (!(await canManageLinkNow(req, link))) return res.status(403).json({ message: "Forbidden" });
+      const prev = link.customThumbnailPath;
+      const updated = await storage.updateShareLink(link.id, { customThumbnailPath: null });
+      if (prev) fsPromises.unlink(prev).catch(() => {});
+      res.json(updated ? sanitizeLink(updated) : null);
+    } catch (e) { next(e); }
+  });
+
   // ===== public endpoints =====
+
+  // Open Graph preview image for a share link. Unauthenticated so social
+  // crawlers (which send no cookies) can fetch it. Resolution order:
+  //   1. The link's custom thumbnail, if the user uploaded one.
+  //   2. Otherwise, for UNPROTECTED links only, an auto-derived image from the
+  //      first video file's sprite sheet (first tile cropped to a poster).
+  // Password/email-gated links never auto-leak content: without an explicit
+  // custom thumbnail they return 404 so the preview falls back to generic.
+  app.get("/api/public/share/:token/og-image", async (req, res, next) => {
+    try {
+      const link = await storage.getShareLinkByToken(req.params.token);
+      if (!link || link.revokedAt || isExpired(link)) return res.status(404).send("Not found");
+
+      if (link.customThumbnailPath && existsSync(link.customThumbnailPath)) {
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        return res.sendFile(path.resolve(link.customThumbnailPath));
+      }
+
+      // Privacy: don't auto-derive a preview for gated links.
+      if (link.passwordHash || link.requireEmail) return res.status(404).send("Not found");
+
+      const files = await gatherScopeFiles(link);
+      const video = files.find((f) => f.fileType === "video" && f.isAvailable !== false);
+      if (!video) return res.status(404).send("No preview available");
+      const processing = await storage.getVideoProcessing(video.id);
+      if (!processing?.thumbnailSpritePath || !existsSync(processing.thumbnailSpritePath)) {
+        return res.status(404).send("No preview available");
+      }
+
+      const meta: any = processing.spriteMetadata ?? {};
+      const tileW = Math.floor(meta.tileWidth ?? meta.frameWidth ?? 320);
+      const tileH = Math.floor(meta.tileHeight ?? meta.frameHeight ?? 180);
+      const outPath = path.join(deps!.shareThumbDir, `og-${link.id}.jpg`);
+      const ok = existsSync(outPath)
+        ? true
+        : await deps!.cropFirstTile(processing.thumbnailSpritePath, outPath, tileW, tileH);
+      if (!ok || !existsSync(outPath)) return res.status(404).send("No preview available");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      return res.sendFile(path.resolve(outPath));
+    } catch (e) { next(e); }
+  });
 
   app.get("/api/public/share/:token/info", async (req, res, next) => {
     try {
@@ -1039,9 +1129,111 @@ export function registerShareLinkRoutes(
       res.status(201).json({ ...comment, creatorToken });
     } catch (e) { next(e); }
   });
+
+  // ===== social-preview (Open Graph) injection for share page routes =====
+  //
+  // The app is a pure SPA, so its static index.html only carries generic Obviu
+  // meta tags — link previews in Slack/iMessage/Twitter/etc. all look the same.
+  // The crawler handler (mountShareCrawlerRoutes) rewrites the <head> for those
+  // routes so the preview shows the shared file/scope name and its thumbnail.
+  //
+  // Registration must happen BEFORE the SPA catch-all. In dev the catch-all
+  // lives in vite (registered after registerRoutes), so mounting here works. In
+  // PROD the catch-all is registered before registerRoutes (server/production.ts),
+  // so production.ts mounts the crawler routes itself, ahead of its catch-all —
+  // hence we skip mounting here in production to avoid a no-op double registration.
+  if ((process.env.NODE_ENV || "").toLowerCase() !== "production") {
+    mountShareCrawlerRoutes(app);
+  }
+}
+
+// ===== social-preview (Open Graph) injection for share page routes =====
+//
+// The app is a pure SPA, so its static index.html only carries generic Obviu
+// meta tags. This handler rewrites the <head> for /s/:token and /share/:token
+// so link unfurls show the shared file/scope name and its own thumbnail. It
+// only kicks in for social crawlers (UA match); real browsers fall through
+// (next()) to the normal SPA serving path, so the client app is never affected.
+const SHARE_CRAWLER_UA = /(facebookexternalhit|Facebot|Twitterbot|Slackbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot|Pinterest|redditbot|Googlebot|bingbot|Embedly|vkShare|W3C_Validator|SkypeUriPreview|iframely|Applebot|Google-PageRenderer|nuzzel|Bitrix|qwantify)/i;
+
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+let cachedShareIndexHtml: string | null = null;
+function readShareIndexHtml(): string | null {
+  if (cachedShareIndexHtml) return cachedShareIndexHtml;
+  const candidates = [
+    path.resolve(process.cwd(), "dist", "public", "index.html"),
+    path.resolve(process.cwd(), "client", "index.html"),
+  ];
+  for (const p of candidates) {
+    try { if (existsSync(p)) { cachedShareIndexHtml = fs.readFileSync(p, "utf8"); return cachedShareIndexHtml; } } catch {}
+  }
+  return null;
+}
+
+const handleShareCrawler: RequestHandler = async (req, res, next) => {
+  try {
+    const ua = req.get("user-agent") || "";
+    if (!SHARE_CRAWLER_UA.test(ua)) return next();
+
+    const html = readShareIndexHtml();
+    if (!html) return next();
+
+    const link = await storage.getShareLinkByToken(req.params.token);
+    if (!link || link.revokedAt || isExpired(link)) return next();
+
+    let scopeName = "";
+    if (link.scopeType === "project") scopeName = (await storage.getProject(link.scopeId))?.name ?? "";
+    else if (link.scopeType === "folder") scopeName = (await storage.getFolder(link.scopeId))?.name ?? "";
+    else if (link.scopeType === "file") scopeName = (await storage.getFile(link.scopeId))?.filename ?? "";
+
+    const title = escapeHtml(link.name || scopeName || "Shared on Obviu");
+    const kindWord = link.scopeType === "file" ? "file" : link.scopeType;
+    const description = escapeHtml(
+      scopeName ? `View this ${kindWord} on Obviu.io` : "View this shared media on Obviu.io",
+    );
+
+    const proto = (req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim();
+    const host = req.get("host") || "";
+    const base = `${proto}://${host}`;
+    const pageUrl = escapeHtml(`${base}${req.originalUrl}`);
+    const imageUrl = escapeHtml(`${base}/api/public/share/${encodeURIComponent(req.params.token)}/og-image`);
+
+    const tags = [
+      `<title>${title}</title>`,
+      `<meta name="description" content="${description}" />`,
+      `<meta property="og:type" content="website" />`,
+      `<meta property="og:site_name" content="Obviu" />`,
+      `<meta property="og:title" content="${title}" />`,
+      `<meta property="og:description" content="${description}" />`,
+      `<meta property="og:url" content="${pageUrl}" />`,
+      `<meta property="og:image" content="${imageUrl}" />`,
+      `<meta name="twitter:card" content="summary_large_image" />`,
+      `<meta name="twitter:title" content="${title}" />`,
+      `<meta name="twitter:description" content="${description}" />`,
+      `<meta name="twitter:image" content="${imageUrl}" />`,
+    ].join("\n    ");
+
+    // Drop the static <title> so ours wins, then inject before </head>.
+    const out = html.replace(/<title>[\s\S]*?<\/title>/i, "").replace(/<\/head>/i, `    ${tags}\n  </head>`);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=300");
+    return res.send(out);
+  } catch (e) { next(e); }
+};
+
+// Mount the crawler OG-injection routes. Must be registered BEFORE the SPA
+// catch-all in whichever entrypoint calls it (dev: registerRoutes; prod:
+// server/production.ts ahead of its app.get('*') fallback).
+export function mountShareCrawlerRoutes(app: Express) {
+  app.get("/s/:token", handleShareCrawler);
+  app.get("/share/:token", handleShareCrawler);
 }
 
 function sanitizeLink(link: ShareLink) {
-  const { passwordHash, ...rest } = link;
-  return { ...rest, hasPassword: !!passwordHash };
+  // Strip the raw server-side disk path; expose only a boolean so the UI can
+  // show/clear the custom preview image without leaking the filesystem layout.
+  const { passwordHash, customThumbnailPath, ...rest } = link;
+  return { ...rest, hasPassword: !!passwordHash, hasCustomThumbnail: !!customThumbnailPath };
 }

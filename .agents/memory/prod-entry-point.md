@@ -46,3 +46,18 @@ the old empty session, so the first login "doesn't take." Fix was to remove the 
 something index.ts has (the trash sweep, upload timeouts) OR can double-apply something
 registerRoutes already does. **How to apply:** before adding middleware/auth/session setup
 to either entry file, check whether `registerRoutes` already does it.
+
+## SPA catch-all ordering differs: prod registers it BEFORE registerRoutes
+
+In `production.ts` the SPA fallback `app.get('*')` is registered **before**
+`registerRoutes(app)` runs, and it only skips `/api/` and `/public/`. In `index.ts`/dev the
+SPA fallback is vite's, registered **after** `registerRoutes`. So any route that must win
+over the SPA fallback (e.g. a crawler/Open-Graph `<head>` injector on user-facing paths like
+`/s/:token`, `/share/:token`) will work in dev but be silently swallowed by the static
+`index.html` in prod if it's only registered inside `registerRoutes`.
+
+**How to apply:** mount such "must-run-before-SPA-fallback" routes as a standalone exported
+function and call it from BOTH places — in `production.ts` explicitly before its `app.get('*')`,
+and in dev's `registerRoutes` path (guarded with `NODE_ENV !== 'production'` to avoid a no-op
+double registration in prod). The handler must `next()` for non-crawler/normal browsers so they
+still fall through to the SPA shell.

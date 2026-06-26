@@ -2,6 +2,7 @@ import express, { type Request, type Response, type NextFunction } from "express
 import path from "path";
 import fs from "fs";
 import { registerRoutes, resumeStuckVideoProcessing } from "./routes.js";
+import { mountShareCrawlerRoutes } from "./share-links.js";
 import { resumePendingSummarizations } from "./summarization.js";
 import { resumePendingChapters } from "./chapters.js";
 import { logBackend as logLLMBackend } from "./llm-client.js";
@@ -69,6 +70,12 @@ app.use((_req, res, next) => {
 
 // Serve static files from the built frontend
 const staticPath = path.resolve(import.meta.dirname, "public");
+
+// Social-preview (Open Graph) injection for /s/:token and /share/:token MUST be
+// registered before the SPA catch-all below, otherwise the catch-all serves the
+// generic static index.html to crawlers. This handler only intercepts crawler
+// user-agents; real browsers fall through (next()) to the SPA fallback.
+mountShareCrawlerRoutes(app);
 
 if (fs.existsSync(staticPath)) {
   console.log("✅ Serving static files from:", staticPath);
