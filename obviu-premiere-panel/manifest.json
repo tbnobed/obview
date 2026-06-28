@@ -29,7 +29,7 @@
     "localFileSystem": "request",
     "webview": {
       "allow": "yes",
-      "domains": ["*"]
+      "domains": "all"
     }
   }
 }

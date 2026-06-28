@@ -1,6 +1,7 @@
 - [Production entry point divergence](prod-entry-point.md) — prod runs server/production.ts (dist/production.js), NOT index.ts; background loops added only to index.ts silently never run in prod.
 - [Uploads mount data loss](uploads-mount-data-loss.md) — brand-new upload vanishes (bytes gone, dangling row) when data disk isn't mounted at container start; sentinel guard via UPLOADS_VOLUME_ID prevents it.
 - [File version stacks & folder-scoped deletes](file-version-stacks.md) — storage.deleteFile cascades by (projectId,filename) ignoring folderId; folder-scoped deletes must batch exact row IDs or they trash same-named files in other folders.
+- [UXP webview domain permission](uxp-webview-domains.md) — blank <webview> = manifest domains issue; `["*"]` is invalid (no TLD wildcard), use the string `"all"`.
 - [Export routes & media metadata schema](export-and-media-schema.md) — frameRate/duration/spriteMetadata live on videoProcessing not files; share-link exports are ungated by allowDownloads, so any media-derived export format (frame thumbnails) must gate on it.
 - [API bearer auth & panel sessions](api-bearer-sessions.md) — /api/v1 bearer resolves session-token then legacy personal token; per-login sessions isolate shared workstations; login intentionally has no rate limit (matches /api/login).
 - [Open read-access model](access-control-model.md) — authenticated reads are intentionally ungated by project membership (hasProjectAccess = auth + exists); only writes are gated. "IDOR" flags on read routes are false positives here.

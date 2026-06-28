@@ -553,6 +553,15 @@ async function previewMedia() {
   $("fileStatus").textContent = "";
   const view = $("mediaView");
   if (!view) return;
+  if (!view._obviuWired) {
+    view._obviuWired = true;
+    view.addEventListener("load", () => console.log("[obviu] preview webview loaded"));
+    view.addEventListener("error", (e) => {
+      const detail = (e && (e.message || (e.detail && e.detail.message))) || "unknown error";
+      console.error("[obviu] preview webview error:", detail, e);
+      $("fileStatus").textContent = "Preview failed to load: " + detail;
+    });
+  }
   $("btnPreview").disabled = true;
   try {
     // Reuse an existing share link when there is one so repeated previews
