@@ -286,6 +286,7 @@ async function goFile(file) {
   $("fileStatus").textContent = "";
   $("seqStatus").textContent = "";
   $("commentInput").value = "";
+  resetPreview();
   const destLabel = $("destVersionLabel");
   if (destLabel) {
     destLabel.textContent = "New version of " + (file.filename || file.name || "this file");
@@ -540,6 +541,66 @@ async function copyShareLink() {
   } catch (e) {
     $("fileStatus").textContent = "Share failed: " + e.message;
   }
+}
+
+// ---------- media preview ----------
+// UXP's native <video> is a limited re-implementation; a <webview> embeds a
+// real browser engine (WebView2 / WKWebView) with full HTML5 playback. We
+// point it at the file's public share page so the editor gets the same player,
+// scrubbing and comment timeline they'd see on the web — no media bytes pass
+// through the panel itself.
+async function previewMedia() {
+  $("fileStatus").textContent = "";
+  const view = $("mediaView");
+  if (!view) return;
+  $("btnPreview").disabled = true;
+  try {
+    // Reuse an existing share link when there is one so repeated previews
+    // don't pile up new public links — but only one that will actually play
+    // straight away: not revoked, not expired, and not gated behind a password
+    // or email (the panel can't drive the unlock flow). Otherwise mint one
+    // (comments enabled to match the web review experience).
+    let token = null;
+    try {
+      const existing = await api("/api/v1/files/" + state.selectedVersionId + "/share-links");
+      if (Array.isArray(existing)) {
+        const now = Date.now();
+        const usable = existing.find(
+          (l) =>
+            l &&
+            l.token &&
+            !l.revokedAt &&
+            !l.hasPassword &&
+            !l.requireEmail &&
+            (!l.expiresAt || new Date(l.expiresAt).getTime() > now)
+        );
+        if (usable) token = usable.token;
+      }
+    } catch (_) {}
+    if (!token) {
+      const link = await api("/api/v1/files/" + state.selectedVersionId + "/share-links", {
+        method: "POST",
+        body: { allowComments: true },
+      });
+      token = link.token;
+    }
+    view.src = state.baseUrl + "/s/" + token;
+    view.classList.remove("hidden");
+    $("btnPreview").textContent = "Reload player";
+  } catch (e) {
+    $("fileStatus").textContent = "Preview failed: " + e.message;
+  } finally {
+    $("btnPreview").disabled = false;
+  }
+}
+
+function resetPreview() {
+  const view = $("mediaView");
+  if (view) {
+    view.src = "";
+    view.classList.add("hidden");
+  }
+  if ($("btnPreview")) $("btnPreview").textContent = "Load player";
 }
 
 // ---------- polling ----------
@@ -895,6 +956,7 @@ function init() {
   $("btnImport").onclick = importToPremiere;
   $("btnPullMarkers").onclick = pullMarkers;
   $("btnShare").onclick = copyShareLink;
+  $("btnPreview").onclick = previewMedia;
   $("btnApprove").onclick = () => review("approved");
   $("btnRequest").onclick = () => review("requested_changes");
   $("btnPostComment").onclick = postComment;

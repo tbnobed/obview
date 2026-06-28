@@ -34,6 +34,11 @@ back to Obviu as a new version** — without leaving Premiere.
   uploaded yourself).
 - **Copy share link** mints a file share link and copies its `…/s/<token>` URL to
   the clipboard.
+- **Preview** the selected media in-panel without importing. A UXP `<webview>`
+  (real browser engine — WebView2 on Windows, WKWebView on macOS) loads the
+  file's share page, giving the full web player: playback, scrubbing and the
+  comment timeline. It reuses an existing share link when one is present and
+  only mints a new one if needed, so previews don't pile up public links.
 - **Pull comments to markers** on the active sequence. Marker color encodes status:
   - open → red
   - resolved → green

@@ -26,6 +26,10 @@
     },
     "localStorage": true,
     "clipboard": "readAndWrite",
-    "localFileSystem": "request"
+    "localFileSystem": "request",
+    "webview": {
+      "allow": "yes",
+      "domains": ["*"]
+    }
   }
 }
