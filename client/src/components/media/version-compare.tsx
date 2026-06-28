@@ -34,6 +34,8 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   const rightPickerRef = useRef<HTMLDivElement>(null);
   const savedTimeRef = useRef(0);
   const savedPlayingRef = useRef(false);
+  const leftErrRetryRef = useRef(0);
+  const rightErrRetryRef = useRef(0);
 
   const leftVersion = versions.find(v => v.id === leftVersionId);
   const rightVersion = versions.find(v => v.id === rightVersionId);
@@ -181,6 +183,8 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   }, []);
 
   useEffect(() => {
+    leftErrRetryRef.current = 0;
+    rightErrRetryRef.current = 0;
     const leftVideo = leftVideoRef.current;
     const rightVideo = rightVideoRef.current;
     if (!leftVideo || !rightVideo) return;
@@ -483,6 +487,36 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
     if (!version) return <div className="w-full h-full bg-gray-900 flex items-center justify-center text-gray-500">No version selected</div>;
     const status = side === 'left' ? leftStatus : rightStatus;
     const setStatus = side === 'left' ? setLeftStatus : setRightStatus;
+    const retryRef = side === 'left' ? leftErrRetryRef : rightErrRetryRef;
+
+    // A media `error` event during scrubbing/seeking (e.g. an aborted range
+    // request when dragging the scrub bar to the start) used to latch the
+    // overlay permanently. Instead, try to recover by reloading the element a
+    // couple of times — restoring the playhead — and only show the persistent
+    // error if recovery keeps failing.
+    const handleMediaError = () => {
+      const v = ref.current;
+      if (v && retryRef.current < 2) {
+        retryRef.current += 1;
+        const resume = v.currentTime || 0;
+        // load() interrupts playback, so remember whether we were playing and
+        // resume once the reloaded element has metadata + the playhead restored.
+        const wasPlaying = !v.paused;
+        const restore = () => {
+          try { if (resume > 0) v.currentTime = resume; } catch {}
+          if (wasPlaying) v.play().catch(() => {});
+        };
+        v.addEventListener('loadedmetadata', restore, { once: true });
+        setStatus('loading');
+        v.load();
+      } else {
+        setStatus('error');
+      }
+    };
+    const handleMediaReady = () => {
+      retryRef.current = 0;
+      setStatus('ready');
+    };
 
     const overlay = (
       <>
@@ -530,9 +564,11 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
           preload="metadata"
           playsInline
           muted={side === 'left' ? audioSide !== 'A' : audioSide !== 'B'}
-          onLoadedData={() => setStatus('ready')}
-          onCanPlay={() => setStatus('ready')}
-          onError={() => setStatus('error')}
+          onLoadedData={handleMediaReady}
+          onCanPlay={handleMediaReady}
+          onSeeked={handleMediaReady}
+          onPlaying={handleMediaReady}
+          onError={handleMediaError}
         >
           <source src={mediaUrl(fileId)} type="video/mp4" />
         </video>
