@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { File as StorageFile } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Columns2, GripVertical, Play, Pause, RotateCcw, ChevronDown } from "lucide-react";
+import { Columns2, GripVertical, Play, Pause, RotateCcw, ChevronDown, Loader2, AlertTriangle } from "lucide-react";
 
 type CompareMode = "side-by-side" | "wipe";
+type MediaStatus = "loading" | "ready" | "error";
 
 interface VersionCompareProps {
   versions: StorageFile[];
@@ -37,11 +40,56 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
 
   const isVideo = leftVersion?.fileType === 'video' || rightVersion?.fileType === 'video';
 
+  const [leftStatus, setLeftStatus] = useState<MediaStatus>('loading');
+  const [rightStatus, setRightStatus] = useState<MediaStatus>('loading');
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Real frame rate per version (stored on videoProcessing). The compare UI
+  // previously hardcoded 30fps, making the timecode readout and frame-stepping
+  // wrong for 24/25/60fps clips. A (left) is the master, so its fps drives the
+  // controls; we also surface a mismatch warning when B differs.
+  const leftProcessing = useQuery<any>({
+    queryKey: ['/api/files', leftVersionId, 'processing'],
+    queryFn: () => apiRequest('GET', `/api/files/${leftVersionId}/processing`),
+    enabled: leftVersion?.fileType === 'video',
+    staleTime: 60_000,
+    retry: false,
+  });
+  const rightProcessing = useQuery<any>({
+    queryKey: ['/api/files', rightVersionId, 'processing'],
+    queryFn: () => apiRequest('GET', `/api/files/${rightVersionId}/processing`),
+    enabled: rightVersion?.fileType === 'video',
+    staleTime: 60_000,
+    retry: false,
+  });
+  const toFps = (d: any) => { const n = Number(d?.frameRate); return n > 0 ? n : 30; };
+  const fps = toFps(leftProcessing.data);
+  const rightFps = toFps(rightProcessing.data);
+  const fpsMismatch = isVideo && Math.round(fps) !== Math.round(rightFps);
+
   useEffect(() => {
     const ids = versions.map(v => v.id);
     if (!ids.includes(leftVersionId)) setLeftVersionId(versions[0]?.id ?? leftVersionId);
     if (!ids.includes(rightVersionId)) setRightVersionId(versions[versions.length - 1]?.id ?? rightVersionId);
   }, [versions]);
+
+  // Reset the per-pane load state whenever the selected version changes so the
+  // spinner shows again while the newly-keyed <video> fetches its source.
+  useEffect(() => { setLeftStatus('loading'); }, [leftVersionId]);
+  useEffect(() => { setRightStatus('loading'); }, [rightVersionId]);
+
+  // Track the real container width (ResizeObserver) instead of reading
+  // containerRef.offsetWidth during render — the latter is stale on first paint
+  // and after resize, which made the wipe overlay misalign with the background.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setContainerWidth(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mode]);
 
   const handleSelectLeft = (id: number) => {
     if (id === rightVersionId) return;
@@ -84,11 +132,22 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // A (left) is the master clock. Rather than hard-snapping B's currentTime on
+  // every tiny drift (which caused visible stutter), nudge B's playbackRate to
+  // converge smoothly and only hard-seek on a large gap (after a seek or stall).
+  // B is muted, so rate changes are inaudible.
   const syncVideos = useCallback(() => {
-    if (!leftVideoRef.current || !rightVideoRef.current) return;
-    const leftTime = leftVideoRef.current.currentTime;
-    if (Math.abs(rightVideoRef.current.currentTime - leftTime) > 0.1) {
-      rightVideoRef.current.currentTime = leftTime;
+    const lv = leftVideoRef.current;
+    const rv = rightVideoRef.current;
+    if (!lv || !rv) return;
+    const drift = rv.currentTime - lv.currentTime;
+    if (Math.abs(drift) > 0.3) {
+      rv.currentTime = lv.currentTime;
+      rv.playbackRate = lv.playbackRate;
+    } else if (!lv.paused && Math.abs(drift) > 0.04) {
+      rv.playbackRate = lv.playbackRate * (drift > 0 ? 0.96 : 1.04);
+    } else {
+      rv.playbackRate = lv.playbackRate;
     }
   }, []);
 
@@ -123,6 +182,8 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
 
     const handlePlay = () => {
       setIsPlaying(true);
+      rightVideo.currentTime = leftVideo.currentTime;
+      rightVideo.playbackRate = leftVideo.playbackRate;
       rightVideo.play().catch(() => {});
       startRaf();
     };
@@ -130,6 +191,7 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
     const handlePause = () => {
       setIsPlaying(false);
       rightVideo.pause();
+      rightVideo.playbackRate = leftVideo.playbackRate;
       stopRaf();
     };
 
@@ -227,7 +289,7 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   }, [isDragging, handleWipeMove]);
 
   useEffect(() => {
-    const FPS = 30;
+    const FPS = fps;
     const seekBoth = (t: number) => {
       const lv = leftVideoRef.current;
       const rv = rightVideoRef.current;
@@ -315,11 +377,10 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, duration]);
+  }, [mode, duration, fps]);
 
   const formatTime = (time: number) => {
     if (time == null || isNaN(time)) return "00:00:00:00";
-    const fps = 30;
     const hours = Math.floor(time / 3600);
     const minutes = Math.floor((time % 3600) / 60);
     const seconds = Math.floor(time % 60);
@@ -382,22 +443,63 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
 
   const renderMedia = (fileId: number, ref: React.RefObject<HTMLVideoElement>, version: StorageFile | undefined, side: 'left' | 'right') => {
     if (!version) return <div className="w-full h-full bg-gray-900 flex items-center justify-center text-gray-500">No version selected</div>;
+    const status = side === 'left' ? leftStatus : rightStatus;
+    const setStatus = side === 'left' ? setLeftStatus : setRightStatus;
+
+    const overlay = (
+      <>
+        {status === 'loading' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none">
+            <Loader2 className="h-6 w-6 text-white/80 animate-spin" />
+          </div>
+        )}
+        {status === 'error' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 text-gray-300 px-4 text-center pointer-events-none">
+            <AlertTriangle className="h-6 w-6 text-amber-400" />
+            <span className="text-xs">Couldn't load v{version.version}. It may still be processing.</span>
+          </div>
+        )}
+      </>
+    );
+
     if (version.fileType === 'image') {
-      return <img src={mediaUrl(fileId)} alt={version.filename} className="w-full h-full object-contain" />;
+      return (
+        <div className="w-full h-full relative">
+          <img
+            key={fileId}
+            src={mediaUrl(fileId)}
+            alt={version.filename}
+            className="w-full h-full object-contain"
+            onLoad={() => setStatus('ready')}
+            onError={() => setStatus('error')}
+          />
+          {overlay}
+        </div>
+      );
     }
-    // Only A (left) plays audio. Without this, both tracks decode and
+    // key={fileId} forces a full remount when the selected version changes —
+    // browsers won't reload a <video> just because a child <source>'s src
+    // changes, which is why switching A/B previously showed a stale/blank pane.
+    // Only A (left) plays audio. Without muting B, both tracks decode and
     // the user hears them echoing each other (offset by sync drift +
     // any encoding latency difference between versions).
     return (
-      <video
-        ref={ref}
-        className="w-full h-full object-contain"
-        preload="metadata"
-        playsInline
-        muted={side === 'right'}
-      >
-        <source src={mediaUrl(fileId)} type="video/mp4" />
-      </video>
+      <div className="w-full h-full relative">
+        <video
+          key={fileId}
+          ref={ref}
+          className="w-full h-full object-contain"
+          preload="metadata"
+          playsInline
+          muted={side === 'right'}
+          onLoadedData={() => setStatus('ready')}
+          onCanPlay={() => setStatus('ready')}
+          onError={() => setStatus('error')}
+        >
+          <source src={mediaUrl(fileId)} type="video/mp4" />
+        </video>
+        {overlay}
+      </div>
     );
   };
 
@@ -462,7 +564,7 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
               className="absolute inset-0 overflow-hidden"
               style={{ width: `${wipePosition}%` }}
             >
-              <div style={{ width: containerRef.current?.offsetWidth || '100%', height: '100%' }}>
+              <div style={{ width: containerWidth || '100%', height: '100%' }}>
                 {renderMedia(leftVersionId, leftVideoRef, leftVersion, 'left')}
               </div>
             </div>
@@ -504,6 +606,14 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
           <span className="text-xs font-mono text-gray-400 min-w-[45px]">{formatTime(currentTime)}</span>
+          {fpsMismatch && (
+            <span
+              className="flex items-center gap-1 text-[10px] text-amber-400 whitespace-nowrap"
+              title={`A is ${Math.round(fps)}fps, B is ${Math.round(rightFps)}fps — frame-stepping and timecode use A`}
+            >
+              <AlertTriangle className="h-3 w-3" /> {Math.round(fps)}/{Math.round(rightFps)}fps
+            </span>
+          )}
           <input
             type="range" min={0} max={duration || 0} step={0.01} value={currentTime}
             onChange={handleSeek}
