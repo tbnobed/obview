@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { File as StorageFile } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Columns2, GripVertical, Play, Pause, RotateCcw, ChevronDown, Loader2, AlertTriangle, ArrowLeftRight, MessageSquare } from "lucide-react";
+import { Columns2, GripVertical, Play, Pause, RotateCcw, ChevronDown, Loader2, AlertTriangle, ArrowLeftRight, MessageSquare, Volume2 } from "lucide-react";
 
 type CompareMode = "side-by-side" | "wipe";
 type MediaStatus = "loading" | "ready" | "error";
@@ -45,6 +45,7 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   const [containerWidth, setContainerWidth] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const [audioSide, setAudioSide] = useState<'A' | 'B'>('A');
 
   // Real frame rate per version (stored on videoProcessing). The compare UI
   // previously hardcoded 30fps, making the timecode readout and frame-stepping
@@ -162,7 +163,8 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   // A (left) is the master clock. Rather than hard-snapping B's currentTime on
   // every tiny drift (which caused visible stutter), nudge B's playbackRate to
   // converge smoothly and only hard-seek on a large gap (after a seek or stall).
-  // B is muted, so rate changes are inaudible.
+  // When A is the audible side these nudges are inaudible; if B is selected for
+  // audio (audioSide === 'B') its small rate nudges can be faintly audible.
   const syncVideos = useCallback(() => {
     const lv = leftVideoRef.current;
     const rv = rightVideoRef.current;
@@ -382,8 +384,7 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
           break;
         case 'KeyM': {
           e.preventDefault();
-          const lv = leftVideoRef.current;
-          if (lv) lv.muted = !lv.muted;
+          setAudioSide(s => (s === 'A' ? 'B' : 'A'));
           break;
         }
         case 'Home':
@@ -517,9 +518,9 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
     // key={fileId} forces a full remount when the selected version changes —
     // browsers won't reload a <video> just because a child <source>'s src
     // changes, which is why switching A/B previously showed a stale/blank pane.
-    // Only A (left) plays audio. Without muting B, both tracks decode and
-    // the user hears them echoing each other (offset by sync drift +
-    // any encoding latency difference between versions).
+    // Exactly one pane is audible at a time (audioSide); the other is muted so
+    // both tracks don't echo each other (offset by sync drift + any encoding
+    // latency difference between versions).
     return (
       <div className="w-full h-full relative">
         <video
@@ -528,7 +529,7 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
           className="w-full h-full object-contain"
           preload="metadata"
           playsInline
-          muted={side === 'right'}
+          muted={side === 'left' ? audioSide !== 'A' : audioSide !== 'B'}
           onLoadedData={() => setStatus('ready')}
           onCanPlay={() => setStatus('ready')}
           onError={() => setStatus('error')}
@@ -678,6 +679,15 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:bg-gray-700 hover:text-white" onClick={restartBoth}>
             <RotateCcw className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost" size="sm"
+            className="h-7 px-2 text-xs text-gray-300 hover:bg-gray-700 hover:text-white"
+            onClick={() => setAudioSide(s => (s === 'A' ? 'B' : 'A'))}
+            title="Switch which version plays audio (M)"
+          >
+            <Volume2 className="h-3.5 w-3.5 mr-1" />
+            <span className={`font-bold ${audioSide === 'A' ? 'text-blue-400' : 'text-emerald-400'}`}>{audioSide}</span>
           </Button>
           <span className="text-xs font-mono text-gray-400 min-w-[45px]">{formatTime(currentTime)}</span>
           {fpsMismatch && (
