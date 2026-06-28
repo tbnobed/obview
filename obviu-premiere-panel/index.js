@@ -595,11 +595,13 @@ async function previewMedia() {
       });
       token = link.token;
     }
-    // The /s/<token> page is a file-list landing. ?file=<id> opens straight
-    // into the player for the selected version (matches the file id the share
-    // manifest exposes); &embed=1 strips the share page chrome (header + comment
-    // sidebar) so only the video + scrubber show — comments live in the panel's
-    // own list below.
+    // Load the share player in player-only mode: /s/<token>?file=<id> opens
+    // straight into the player for the selected version, and &embed=1 strips the
+    // chrome (header + comments sidebar + filter tabs) while KEEPING the scrubber
+    // and its coloured comment markers. That marker rail only exists on this
+    // player — the raw browser video player has none — so we use the share page,
+    // not the raw /content bytes. Comments themselves live in the panel's own
+    // list below; only the timeline markers show in the player.
     view.src =
       state.baseUrl + "/s/" + token + "?file=" + state.selectedVersionId + "&embed=1";
   } catch (e) {
