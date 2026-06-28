@@ -595,15 +595,14 @@ async function previewMedia() {
       });
       token = link.token;
     }
-    // Load the share player in player-only mode: /s/<token>?file=<id> opens
-    // straight into the player for the selected version, and &embed=1 strips the
-    // chrome (header + comments sidebar + filter tabs) while KEEPING the scrubber
-    // and its coloured comment markers. That marker rail only exists on this
-    // player — the raw browser video player has none — so we use the share page,
-    // not the raw /content bytes. Comments themselves live in the panel's own
-    // list below; only the timeline markers show in the player.
+    // Load the dedicated, chrome-free panel player: /panel-player/<token>?file=<id>.
+    // This route renders ONLY the video + scrubber with coloured comment markers —
+    // no header, no comments sidebar, no filter tabs. It's a purpose-built page
+    // (not the public review page), so there's nothing to strip and nothing that
+    // can reappear. Comments themselves live in the panel's own list below; only
+    // the timeline markers show in the player.
     view.src =
-      state.baseUrl + "/s/" + token + "?file=" + state.selectedVersionId + "&embed=1";
+      state.baseUrl + "/panel-player/" + token + "?file=" + state.selectedVersionId;
   } catch (e) {
     $("fileStatus").textContent = "Preview failed: " + e.message;
   }

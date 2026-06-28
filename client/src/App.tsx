@@ -30,6 +30,7 @@ import TermsPage from "@/pages/terms-page";
 import ContactPage from "@/pages/contact-page";
 import PublicSharePage from "@/pages/public-share-page";
 import MultiSharePage from "@/pages/multi-share-page";
+import PanelPlayerPage from "@/pages/panel-player-page";
 import ShareResolverPage from "@/pages/share-resolver-page";
 
 function Router() {
@@ -51,6 +52,7 @@ function Router() {
       <Route path="/reset-password/:token/:userId" component={ResetPasswordPage} />
       <Route path="/share/:token" component={PublicSharePage} />
       <Route path="/s/:token" component={MultiSharePage} />
+      <Route path="/panel-player/:token" component={PanelPlayerPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
