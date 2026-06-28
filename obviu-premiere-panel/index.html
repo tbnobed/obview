@@ -63,6 +63,25 @@
       </div>
       <div id="fileStatus" class="muted small"></div>
 
+      <h3>Send your cut</h3>
+      <p class="muted small">Export the active Premiere sequence and upload it to Obviu.</p>
+      <div class="row wrap">
+        <button id="btnPickPreset" class="secondary">Choose preset…</button>
+        <span id="presetLabel" class="muted small">No preset selected</span>
+      </div>
+      <label>Export name</label>
+      <input id="exportName" type="text" placeholder="My Cut.mp4" />
+      <label class="checkrow">
+        <input id="destVersion" type="radio" name="dest" checked />
+        <span id="destVersionLabel">New version of this file</span>
+      </label>
+      <label class="checkrow">
+        <input id="destNew" type="radio" name="dest" />
+        Upload as a new file (this folder)
+      </label>
+      <button id="btnExportUpload">Export &amp; upload</button>
+      <div id="seqStatus" class="muted small"></div>
+
       <h3>Add comment</h3>
       <textarea id="commentInput" rows="2" placeholder="Write a comment…"></textarea>
       <label class="checkrow">

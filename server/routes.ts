@@ -2902,9 +2902,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     return (tusServer as any).handle(req, res);
   };
+  // CORS preflight must bypass apiAuth. A browser/UXP preflight is an
+  // OPTIONS request that carries NO Authorization header, so apiAuth would
+  // 401 it before @tus/server could answer. @tus/server's OptionsHandler
+  // emits the CORS headers the Premiere panel's webview needs (reflected
+  // Access-Control-Allow-Origin, Authorization in Allow-Headers, and the tus
+  // headers in Expose-Headers) and requires no auth, so routing OPTIONS
+  // straight to the tus handler ahead of apiAuth is safe. Registered first so
+  // it wins over the app.all() catch-all below for the OPTIONS method.
+  app.options("/api/uploads/tus", tusHandler);
+  app.options("/api/uploads/tus/*", tusHandler);
   // apiAuth (not isAuthenticated) so the Premiere panel can upload new
-  // versions via bearer token in Phase 2 while existing cookie uploads keep
-  // working unchanged (apiAuth accepts the session first, then bearer).
+  // versions via bearer token while existing cookie uploads keep working
+  // unchanged (apiAuth accepts the session first, then bearer). The actual
+  // upload requests (POST/HEAD/PATCH/DELETE) all carry the bearer token.
   app.all("/api/uploads/tus", apiAuth, tusHandler);
   app.all("/api/uploads/tus/*", apiAuth, tusHandler);
 

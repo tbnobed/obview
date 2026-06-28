@@ -25,6 +25,7 @@
       "domains": "all"
     },
     "localStorage": true,
-    "clipboard": "readAndWrite"
+    "clipboard": "readAndWrite",
+    "localFileSystem": "request"
   }
 }

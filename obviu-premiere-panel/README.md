@@ -2,8 +2,9 @@
 
 A UXP panel for Adobe Premiere Pro that connects to an Obviu workspace so editors
 can browse projects, folders, files and versions, import media into Premiere, read
-and write review comments, approve / request changes, copy share links, and pull
-comments onto the timeline as markers — without leaving Premiere.
+and write review comments, approve / request changes, copy share links, pull
+comments onto the timeline as markers, and **export the active sequence straight
+back to Obviu as a new version** — without leaving Premiere.
 
 > This folder is **not** part of the Obviu web-app build. It is a standalone UXP
 > plugin that runs inside Premiere. The only meaningful way to test it is to load
@@ -39,9 +40,16 @@ comments onto the timeline as markers — without leaving Premiere.
   - changes requested → orange
   - Range comments (with an out point) become marker spans.
 - **Jump to comment** sets the sequence playhead (CTI) to the comment timestamp.
+- **Send your cut** exports the active Premiere sequence with your chosen export
+  preset (`.epr`) and uploads it back to Obviu through the resumable upload path.
+  By default it lands as a **new version of the open file** (auto-versioned and the
+  prior version demoted server-side); you can instead upload it as a **new file**
+  in the current folder. After upload the panel reopens the new version so you can
+  **Copy share link** to send it out.
 - **Auto-refresh** comments every 30 seconds.
 
-It talks only to the API under `/api/v1/*` using `Authorization: Bearer <token>`.
+It talks to the API under `/api/v1/*` for reads/reviews and to `/api/uploads/tus`
+for sending a cut back, all using `Authorization: Bearer <token>`.
 
 ## Server endpoints used
 
@@ -61,13 +69,20 @@ It talks only to the API under `/api/v1/*` using `Authorization: Bearer <token>`
 | POST   | `/api/v1/files/:id/share-links`            | create a file share link        |
 | GET    | `/api/v1/files/:id/share-links`            | list file share links           |
 | GET    | `/api/v1/files/:id/transcript`             | transcript (reserved for later) |
+| POST/HEAD/PATCH | `/api/uploads/tus[/*]`           | resumable upload of an exported sequence (new version / new file) |
 
 ### CORS
 
-The panel's webview sends an `Origin` header. The server reflects/allows origins
-listed in the `PANEL_CORS_ORIGINS` env var (comma-separated). During first run the
-server logs the panel's `Origin` when it is not yet listed — add that value to
-`PANEL_CORS_ORIGINS` and restart.
+The panel's webview sends an `Origin` header. For `/api/v1/*` the server
+reflects/allows origins listed in the `PANEL_CORS_ORIGINS` env var
+(comma-separated). During first run the server logs the panel's `Origin` when it
+is not yet listed — add that value to `PANEL_CORS_ORIGINS` and restart.
+
+The upload route (`/api/uploads/tus`) handles its own CORS via `@tus/server`,
+which reflects the request origin and allows the `Authorization` header — so it
+needs no `PANEL_CORS_ORIGINS` entry. The only adjustment on the server is that the
+preflight `OPTIONS` for that route bypasses bearer auth (a preflight carries no
+`Authorization` header), so the tus server can answer it.
 
 ## Load it in Premiere (development)
 
@@ -103,9 +118,20 @@ Use **⋯ → Watch** in UDT to auto-reload on file changes while developing.
   `Project.importFiles([path], suppressUI, rootBin, false)`. The `rootBin` accessor
   (`getRootItem()` vs `rootItem`) and the `importFiles` signature have shifted across
   builds; the call is wrapped so a mismatch shows in the status line.
-- **Send for review** → AME export → tus upload as a new version is still out of
-  scope here (tracked separately). The server already mirrors bearer auth onto the
-  tus upload route so that work can build on this foundation.
+- **Send your cut** uses the Premiere encode surface
+  (`EncoderManager.getManager()` → `exportSequence(sequence, exportType, outPath,
+  presetPath)`). That signature has shifted across builds and AME must be
+  installed; a mismatch surfaces in the status line. You must pick an export preset
+  (`.epr`) once — the chosen path is remembered per machine. The export name's
+  extension determines the container (defaults to `.mp4`).
+- **Send your cut** reads the whole rendered file into memory before uploading and
+  the upload itself is resumable in 16 MB chunks (it resyncs the offset from the
+  server on a transient failure). For very large renders the in-memory read is the
+  practical ceiling for now.
+- **Versioning** is entirely server-side: the upload metadata sets the stack key
+  (`customFilename` = the open file's name) and folder so the existing tus pipeline
+  auto-assigns the next version, demotes the prior latest, and kicks off the usual
+  processing/transcription/notification.
 
 ## Files
 

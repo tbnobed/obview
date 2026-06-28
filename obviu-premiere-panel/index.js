@@ -45,7 +45,13 @@ const state = {
   selectedVersionId: null,
   comments: [],
   pollTimer: null,
+  presetPath: "",
+  presetName: "",
 };
+
+// 16 MB chunks for the resumable upload, matching the web client so the
+// server sees identical traffic shapes on either path.
+const TUS_CHUNK = 16 * 1024 * 1024;
 
 // ---------- storage ----------
 function loadCreds() {
@@ -278,7 +284,13 @@ async function goFile(file) {
   show("view-file");
   $("fileTitle").textContent = file.filename || file.name || "File";
   $("fileStatus").textContent = "";
+  $("seqStatus").textContent = "";
   $("commentInput").value = "";
+  const destLabel = $("destVersionLabel");
+  if (destLabel) {
+    destLabel.textContent = "New version of " + (file.filename || file.name || "this file");
+  }
+  if ($("destVersion")) $("destVersion").checked = true;
   try {
     const detail = await api("/api/v1/files/" + file.id);
     state.file = detail;
@@ -664,6 +676,206 @@ async function pullMarkers() {
   }
 }
 
+// ---------- sequence export & upload (send your cut) ----------
+
+// UTF-8 safe base64 for tus Upload-Metadata values.
+function b64(str) {
+  return btoa(unescape(encodeURIComponent(String(str))));
+}
+
+// tus Upload-Metadata is "key b64val,key2 b64val2". Skip empty values.
+function buildUploadMetadata(meta) {
+  return Object.keys(meta)
+    .filter((k) => meta[k] != null && meta[k] !== "")
+    .map((k) => k + " " + b64(meta[k]))
+    .join(",");
+}
+
+function guessMime(name) {
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  const map = {
+    mp4: "video/mp4", mov: "video/quicktime", m4v: "video/x-m4v",
+    mxf: "application/mxf", webm: "video/webm", mkv: "video/x-matroska",
+    avi: "video/x-msvideo", wav: "audio/wav", mp3: "audio/mpeg",
+    aac: "audio/aac", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
+  };
+  return map[ext] || "video/mp4";
+}
+
+// Let the editor pick an Adobe export preset (.epr). AME needs a preset to
+// know the container/codec; we remember the chosen one per machine. We store
+// the native path string (re-usable directly by the encoder) rather than a
+// persistent token to keep the encoder call simple.
+async function pickPreset() {
+  $("seqStatus").textContent = "";
+  if (!uxp) {
+    $("seqStatus").textContent = "UXP file API unavailable.";
+    return;
+  }
+  try {
+    const f = await uxp.storage.localFileSystem.getFileForOpening({ types: ["epr"] });
+    if (!f) return;
+    state.presetPath = f.nativePath;
+    state.presetName = f.name;
+    localStorage.setItem("obviu.presetPath", state.presetPath);
+    localStorage.setItem("obviu.presetName", state.presetName);
+    $("presetLabel").textContent = state.presetName;
+  } catch (e) {
+    $("seqStatus").textContent = "Preset pick failed: " + e.message;
+  }
+}
+
+// Export the active sequence to outPath using the chosen preset. The Premiere
+// UXP encode surface has shifted across builds, so we target the 25.6+ shape
+// and surface a readable error on mismatch (see README).
+async function exportSequence(project, seq, outPath, presetPath) {
+  const EM = ppro.EncoderManager;
+  if (!EM || typeof EM.getManager !== "function") {
+    throw new Error("Encoder API unavailable on this Premiere build.");
+  }
+  const mgr = await EM.getManager();
+  const exportType =
+    ppro.Constants && ppro.Constants.ExportType && ppro.Constants.ExportType.IMMEDIATELY != null
+      ? ppro.Constants.ExportType.IMMEDIATELY
+      : 1;
+  // exportSequence(sequence, exportType, outputPath, presetPath)
+  return mgr.exportSequence(seq, exportType, outPath, presetPath);
+}
+
+// Minimal resumable tus client: creation POST -> chunked PATCH, resyncing the
+// offset from the server (HEAD) on transient failure. The completing PATCH
+// returns 200 with the created file row (the server's onUploadFinish body).
+async function tusUpload(arrayBuffer, metadata, onPct) {
+  const total = arrayBuffer.byteLength;
+  const endpoint = state.baseUrl + "/api/uploads/tus";
+
+  const createRes = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + state.token,
+      "Tus-Resumable": "1.0.0",
+      "Upload-Length": String(total),
+      "Upload-Metadata": buildUploadMetadata(metadata),
+    },
+  });
+  if (createRes.status !== 201) {
+    throw new Error("Upload create failed: " + createRes.status);
+  }
+  const location = createRes.headers.get("Location");
+  if (!location) throw new Error("Upload create returned no Location.");
+  const uploadUrl = /^https?:\/\//i.test(location)
+    ? location
+    : state.baseUrl + (location.startsWith("/") ? location : "/" + location);
+
+  let offset = 0;
+  let attempt = 0;
+  let fileRow = null;
+  while (offset < total) {
+    const end = Math.min(offset + TUS_CHUNK, total);
+    const chunk = arrayBuffer.slice(offset, end);
+    try {
+      const patchRes = await fetch(uploadUrl, {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer " + state.token,
+          "Tus-Resumable": "1.0.0",
+          "Upload-Offset": String(offset),
+          "Content-Type": "application/offset+octet-stream",
+        },
+        body: chunk,
+      });
+      if (patchRes.status !== 204 && patchRes.status !== 200) {
+        throw new Error("chunk HTTP " + patchRes.status);
+      }
+      const advertised = Number(patchRes.headers.get("Upload-Offset"));
+      offset = Number.isFinite(advertised) ? advertised : end;
+      attempt = 0;
+      if (onPct) onPct(total > 0 ? Math.floor((offset / total) * 100) : 0);
+      // The PATCH that completes the upload returns the file row as JSON.
+      if (patchRes.status === 200) {
+        try { fileRow = await patchRes.json(); } catch (_) {}
+      }
+    } catch (e) {
+      attempt++;
+      if (attempt > 5) throw new Error("Upload stalled: " + e.message);
+      try {
+        const head = await fetch(uploadUrl, {
+          method: "HEAD",
+          headers: { Authorization: "Bearer " + state.token, "Tus-Resumable": "1.0.0" },
+        });
+        const ho = Number(head.headers.get("Upload-Offset"));
+        if (Number.isFinite(ho)) offset = ho;
+      } catch (_) {}
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
+  }
+  return fileRow;
+}
+
+async function exportAndUpload() {
+  $("seqStatus").textContent = "";
+  const btn = $("btnExportUpload");
+  const asNew = $("destNew").checked;
+  btn.disabled = true;
+  try {
+    requirePremiere();
+    if (!uxp) throw new Error("UXP file API unavailable.");
+    if (!state.presetPath) throw new Error("Choose an export preset (.epr) first.");
+    const { project, seq } = await getActiveSequence();
+
+    let seqName = "sequence";
+    try {
+      seqName = seq.name || (typeof seq.getName === "function" ? await seq.getName() : null) || "sequence";
+    } catch (_) {}
+    let baseName = $("exportName").value.trim() || seqName;
+    if (!/\.[a-z0-9]{2,4}$/i.test(baseName)) baseName += ".mp4";
+
+    // 1) Export to a temp file via the encoder / AME.
+    $("seqStatus").textContent = "Exporting sequence…";
+    const tmp = await uxp.storage.localFileSystem.getTemporaryFolder();
+    const outFile = await tmp.createFile(baseName, { overwrite: true });
+    await exportSequence(project, seq, outFile.nativePath, state.presetPath);
+
+    // 2) Read the rendered bytes back for upload.
+    $("seqStatus").textContent = "Reading render…";
+    const rendered = await tmp.getEntry(baseName);
+    const buf = await rendered.read({ format: uxp.storage.formats.binary });
+
+    // 3) Build upload metadata. To stack a new version onto the selected
+    // file, customFilename must equal that file's stack key (its filename)
+    // and folderId must match its folder; the server then auto-versions and
+    // demotes the prior latest. For a new file we omit customFilename so the
+    // export name becomes its own stack key in the current folder.
+    const meta = {
+      filename: baseName,
+      filetype: guessMime(baseName),
+      projectId: String(state.project.id),
+    };
+    if (state.currentFolderId != null) meta.folderId = String(state.currentFolderId);
+    if (!asNew && state.file) meta.customFilename = state.file.filename;
+
+    // 4) Upload through the resumable path with the bearer token.
+    $("seqStatus").textContent = "Uploading… 0%";
+    const fileRow = await tusUpload(buf, meta, (pct) => {
+      $("seqStatus").textContent = "Uploading… " + pct + "%";
+    });
+
+    // 5) Refresh the view and offer a share link for the new version.
+    if (fileRow && fileRow.id) {
+      $("seqStatus").textContent =
+        "Uploaded v" + (fileRow.version || "?") + ". Use Copy share link to share it.";
+      await goFile({ id: fileRow.id, filename: fileRow.filename });
+    } else {
+      $("seqStatus").textContent = "Upload finished.";
+      await goFiles(state.project, state.currentFolderId);
+    }
+  } catch (e) {
+    $("seqStatus").textContent = "Failed: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // ---------- wire up ----------
 function init() {
   loadCreds();
@@ -678,6 +890,13 @@ function init() {
   $("btnApprove").onclick = () => review("approved");
   $("btnRequest").onclick = () => review("requested_changes");
   $("btnPostComment").onclick = postComment;
+  $("btnPickPreset").onclick = pickPreset;
+  $("btnExportUpload").onclick = exportAndUpload;
+
+  // Restore the remembered export preset, if any.
+  state.presetPath = localStorage.getItem("obviu.presetPath") || "";
+  state.presetName = localStorage.getItem("obviu.presetName") || "";
+  if (state.presetName) $("presetLabel").textContent = state.presetName;
 
   if (state.baseUrl) $("baseUrl").value = state.baseUrl;
   if (state.token) {
