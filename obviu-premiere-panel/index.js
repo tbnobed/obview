@@ -595,10 +595,13 @@ async function previewMedia() {
       });
       token = link.token;
     }
-    // The /s/<token> page is a file-list landing; pass ?file=<id> so it opens
-    // straight into the player for the selected version (matches the file id the
-    // share manifest exposes).
-    view.src = state.baseUrl + "/s/" + token + "?file=" + state.selectedVersionId;
+    // The /s/<token> page is a file-list landing. ?file=<id> opens straight
+    // into the player for the selected version (matches the file id the share
+    // manifest exposes); &embed=1 strips the share page chrome (header + comment
+    // sidebar) so only the video + scrubber show — comments live in the panel's
+    // own list below.
+    view.src =
+      state.baseUrl + "/s/" + token + "?file=" + state.selectedVersionId + "&embed=1";
   } catch (e) {
     $("fileStatus").textContent = "Preview failed: " + e.message;
   }

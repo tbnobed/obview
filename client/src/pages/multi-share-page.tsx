@@ -354,9 +354,13 @@ export default function MultiSharePage() {
 
   // Full-screen Frame.io-style layout when viewing a file
   if (activeFile) {
+    const embed =
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("embed") === "1";
     return (
       <div className="w-screen flex flex-col bg-black text-gray-100 overflow-hidden" style={{ height: '100dvh' }}>
-        {/* Slim top bar */}
+        {/* Slim top bar — hidden in embed/player-only mode (e.g. Premiere panel) */}
+        {!embed && (
         <header className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0 landscape:hidden lg:landscape:flex">
           <div className="flex items-center gap-2 min-w-0">
             <Button
@@ -403,6 +407,7 @@ export default function MultiSharePage() {
             <ThemeToggle />
           </div>
         </header>
+        )}
 
         {/* Body: player + side panel fill the rest */}
         <FileViewer
@@ -412,6 +417,7 @@ export default function MultiSharePage() {
           allowDownloads={info.allowDownloads}
           watermarkLabel={info.watermarkEnabled ? info.watermarkLabel : null}
           fullScreen
+          playerOnly={embed}
         />
       </div>
     );
@@ -866,6 +872,7 @@ function FileViewer({
   allowDownloads,
   watermarkLabel,
   fullScreen = false,
+  playerOnly = false,
 }: {
   token: string;
   file: ManifestFile;
@@ -873,6 +880,7 @@ function FileViewer({
   allowDownloads: boolean;
   watermarkLabel?: string | null;
   fullScreen?: boolean;
+  playerOnly?: boolean;
 }) {
   const kind = fileKind(file.fileType);
   const isVideo = kind === "video";
@@ -1414,7 +1422,9 @@ function FileViewer({
   return (
     <div
       className={cn(
-        fullScreen
+        playerOnly
+          ? "flex-1 min-h-0 flex flex-col overflow-hidden bg-black"
+          : fullScreen
           ? "flex-1 min-h-0 flex flex-col landscape:flex-row lg:flex-row overflow-hidden bg-black"
           : "grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(70vh+88px)] lg:min-h-[520px]",
       )}
@@ -1422,7 +1432,9 @@ function FileViewer({
       {/* Player column */}
       <div
         className={cn(
-          fullScreen
+          playerOnly
+            ? "flex-1 min-w-0 min-h-0 flex flex-col bg-black justify-center"
+            : fullScreen
             ? "shrink-0 min-w-0 flex flex-col bg-black max-h-[60dvh] landscape:max-h-none lg:max-h-none landscape:flex-1 landscape:min-h-0 landscape:justify-center landscape:shrink lg:flex-1 lg:min-h-0 lg:justify-center lg:shrink"
             : "lg:col-span-2 flex flex-col gap-4 min-h-0",
         )}
@@ -1681,6 +1693,7 @@ function FileViewer({
       {/* Right side panel: Comments / Transcript / Synopsis */}
       <aside
         className={cn(
+          playerOnly && "hidden",
           fullScreen
             ? "w-full landscape:w-[44%] landscape:max-w-[360px] lg:w-[360px] flex-1 landscape:flex-none landscape:shrink-0 lg:flex-none lg:shrink-0 bg-white dark:bg-[#0f1218] border-t landscape:border-t-0 landscape:border-l lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col min-h-0 landscape:h-auto lg:h-auto"
             : "rounded-lg bg-white dark:bg-[#0f1218] border border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]",
