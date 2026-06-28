@@ -618,7 +618,12 @@ async function importToPremiere() {
     const buf = await res.arrayBuffer();
 
     const tmp = await uxp.storage.localFileSystem.getTemporaryFolder();
-    const outFile = await tmp.createFile(name, { overwrite: true });
+    // Stage each import in a fresh subfolder. Reusing a fixed temp filename
+    // fails with "resource busy or locked" once Premiere has imported (and so
+    // locked) that exact path — a new folder per import sidesteps the lock and
+    // keeps the clip's name clean (= the original filename).
+    const sub = await tmp.createFolder("obviu-imp-" + state.selectedVersionId + "-" + Date.now());
+    const outFile = await sub.createFile(name, { overwrite: true });
     await outFile.write(buf, { format: uxp.storage.formats.binary });
     const nativePath = outFile.nativePath;
 
@@ -833,12 +838,15 @@ async function exportAndUpload() {
     // 1) Export to a temp file via the encoder / AME.
     $("seqStatus").textContent = "Exporting sequence…";
     const tmp = await uxp.storage.localFileSystem.getTemporaryFolder();
-    const outFile = await tmp.createFile(baseName, { overwrite: true });
+    // Export into a fresh subfolder so a prior render Premiere/AME still holds
+    // open can't cause a "resource busy or locked" overwrite failure.
+    const sub = await tmp.createFolder("obviu-exp-" + state.selectedVersionId + "-" + Date.now());
+    const outFile = await sub.createFile(baseName, { overwrite: true });
     await exportSequence(project, seq, outFile.nativePath, state.presetPath);
 
     // 2) Read the rendered bytes back for upload.
     $("seqStatus").textContent = "Reading render…";
-    const rendered = await tmp.getEntry(baseName);
+    const rendered = await sub.getEntry(baseName);
     const buf = await rendered.read({ format: uxp.storage.formats.binary });
 
     // 3) Build upload metadata. To stack a new version onto the selected
