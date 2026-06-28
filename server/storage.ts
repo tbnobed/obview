@@ -1,5 +1,6 @@
 import {
   users,
+  apiSessions,
   projects,
   folders,
   files,
@@ -18,6 +19,7 @@ import {
   shareLinks,
   type User,
   type InsertUser,
+  type ApiSession,
   type Folder,
   type InsertFolder,
   type Project,
@@ -72,6 +74,9 @@ export interface IStorage {
   // Stores/looks up the SHA-256 hash of the plaintext token, never the plaintext.
   getUserByApiTokenHash(tokenHash: string): Promise<User | undefined>;
   setUserApiToken(id: number, tokenHash: string | null): Promise<User | undefined>;
+  createApiSession(userId: number, tokenHash: string): Promise<ApiSession>;
+  getUserByApiSessionToken(tokenHash: string): Promise<User | undefined>;
+  deleteApiSessionByToken(tokenHash: string): Promise<void>;
 
   // Folder management (top-level folders that group projects)
   getFolder(id: number): Promise<Folder | undefined>;
@@ -220,6 +225,8 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
+  private apiSessions: Map<number, ApiSession>;
+  private currentApiSessionId: number;
   private folders: Map<number, Folder>;
   private projects: Map<number, Project>;
   private files: Map<number, File>;
@@ -251,6 +258,8 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.users = new Map();
+    this.apiSessions = new Map();
+    this.currentApiSessionId = 1;
     this.folders = new Map();
     this.projects = new Map();
     this.files = new Map();
@@ -347,6 +356,30 @@ export class MemStorage implements IStorage {
     const updatedUser: User = { ...user, apiToken: tokenHash };
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+
+  async createApiSession(userId: number, tokenHash: string): Promise<ApiSession> {
+    const id = this.currentApiSessionId++;
+    const session: ApiSession = { id, userId, tokenHash, createdAt: new Date() };
+    this.apiSessions.set(id, session);
+    return session;
+  }
+
+  async getUserByApiSessionToken(tokenHash: string): Promise<User | undefined> {
+    if (!tokenHash) return undefined;
+    const session = Array.from(this.apiSessions.values()).find(
+      (s) => s.tokenHash === tokenHash,
+    );
+    if (!session) return undefined;
+    return this.users.get(session.userId);
+  }
+
+  async deleteApiSessionByToken(tokenHash: string): Promise<void> {
+    if (!tokenHash) return;
+    const entry = Array.from(this.apiSessions.entries()).find(
+      ([, s]) => s.tokenHash === tokenHash,
+    );
+    if (entry) this.apiSessions.delete(entry[0]);
   }
 
   async setUserDeactivated(id: number, deactivated: boolean): Promise<User | undefined> {
@@ -1552,6 +1585,29 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
+  }
+
+  async createApiSession(userId: number, tokenHash: string): Promise<ApiSession> {
+    const [session] = await db
+      .insert(apiSessions)
+      .values({ userId, tokenHash })
+      .returning();
+    return session;
+  }
+
+  async getUserByApiSessionToken(tokenHash: string): Promise<User | undefined> {
+    if (!tokenHash) return undefined;
+    const [row] = await db
+      .select({ user: users })
+      .from(apiSessions)
+      .innerJoin(users, eq(apiSessions.userId, users.id))
+      .where(eq(apiSessions.tokenHash, tokenHash));
+    return row?.user;
+  }
+
+  async deleteApiSessionByToken(tokenHash: string): Promise<void> {
+    if (!tokenHash) return;
+    await db.delete(apiSessions).where(eq(apiSessions.tokenHash, tokenHash));
   }
 
   // Folder methods

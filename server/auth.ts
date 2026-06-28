@@ -64,7 +64,13 @@ export async function apiAuth(req: any, res: any, next: any) {
     if (header && header.startsWith("Bearer ")) {
       const token = header.slice("Bearer ".length).trim();
       if (token) {
-        const user = await storage.getUserByApiTokenHash(hashApiToken(token));
+        const tokenHash = hashApiToken(token);
+        // Two bearer sources: a per-login api_session (the panel's sign-in) or a
+        // user's single personal token (Settings → API Access). Check sessions
+        // first since that's the primary path.
+        const user =
+          (await storage.getUserByApiSessionToken(tokenHash)) ||
+          (await storage.getUserByApiTokenHash(tokenHash));
         if (user && !user.deactivatedAt) {
           const { password, ...userWithoutPassword } = user;
           req.user = userWithoutPassword as SelectUser;

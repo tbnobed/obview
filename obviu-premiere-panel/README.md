@@ -12,13 +12,16 @@ markers, and jump the playhead to a comment — without leaving Premiere.
 
 - Premiere Pro **25.6 or newer** (UXP for Premiere went GA in 25.6, Dec 2025).
 - [UXP Developer Tool (UDT)](https://developer.adobe.com/photoshop/uxp/2022/guides/devtool/) for loading during development.
-- An Obviu **API token**: in Obviu go to **Settings → API Access → Generate token**.
-  Copy it immediately — it is shown only once.
+- A normal **Obviu account** (the same username/email + password you use on the web).
 
 ## What it does (Phase 1)
 
-- **Sign in** with your Obviu server URL (e.g. `https://app.obviu.io`) + API token.
-  Credentials are stored in the panel's `localStorage`.
+- **Sign in** with your Obviu server URL (e.g. `https://app.obviu.io`) and your
+  normal account credentials. No token copy-paste — the panel signs in for you and
+  stores its own per-machine session token. Because each sign-in mints an
+  independent session, **shared workstations work**: people can sign in and out all
+  day and one station signing in never logs another out. Use **Sign out** when you
+  leave the workstation.
 - **Browse** projects → files → versions (defaults to the latest version).
 - **Pull comments to markers** on the active sequence. Marker color encodes status:
   - open → red
@@ -34,6 +37,8 @@ It talks only to the read-only API under `/api/v1/*` using `Authorization: Beare
 
 | Method | Path                                   | Purpose                         |
 |--------|----------------------------------------|---------------------------------|
+| POST   | `/api/v1/login`                        | sign in (username/email + password) → returns a session token |
+| POST   | `/api/v1/logout`                       | revoke the current session token |
 | GET    | `/api/v1/projects`                     | list projects (also validates the token) |
 | GET    | `/api/v1/projects/:projectId/files`    | files in a project              |
 | GET    | `/api/v1/files/:id`                     | file detail incl. `versions[]`  |

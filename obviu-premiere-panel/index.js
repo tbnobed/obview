@@ -80,27 +80,67 @@ function $(id) {
 }
 
 // ---------- auth ----------
-async function connect() {
+// Editors sign in with their normal Obviu account. The server mints an
+// independent per-login token (api_session) and returns it once; we store it
+// for this machine and use it as the bearer for all subsequent calls.
+async function signIn() {
   const baseUrl = $("baseUrl").value.trim();
-  const token = $("apiToken").value.trim();
+  const username = $("username").value.trim();
+  const password = $("password").value;
   $("authError").textContent = "";
-  if (!baseUrl || !token) {
-    $("authError").textContent = "Enter both a server URL and a token.";
+  if (!baseUrl || !username || !password) {
+    $("authError").textContent = "Enter the server URL, your username/email and password.";
     return;
   }
-  saveCreds(baseUrl, token);
+  state.baseUrl = baseUrl.replace(/\/+$/, "");
   try {
-    // /api/v1/projects doubles as a token validity check.
-    const projects = await api("/api/v1/projects");
+    const res = await fetch(state.baseUrl + "/api/v1/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) {
+      let msg = "Sign in failed.";
+      try {
+        const j = await res.json();
+        if (j && j.message) msg = j.message;
+      } catch (_) {}
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    saveCreds(state.baseUrl, data.token);
+    state.user = data.user || null;
+    $("password").value = "";
     state.project = null;
-    await goProjects(projects);
+    await goProjects();
   } catch (e) {
     $("authError").textContent = e.message;
   }
 }
 
-function signOut() {
+// Validate a stored token on launch. If it's stale (signed out elsewhere or
+// revoked), fall back to the sign-in screen.
+async function reconnect() {
+  try {
+    const projects = await api("/api/v1/projects");
+    state.project = null;
+    await goProjects(projects);
+  } catch (e) {
+    clearCreds();
+    show("view-auth");
+  }
+}
+
+async function signOut() {
   stopPoll();
+  try {
+    if (state.token) {
+      await fetch(state.baseUrl + "/api/v1/logout", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + state.token },
+      });
+    }
+  } catch (_) {}
   clearCreds();
   show("view-auth");
 }
@@ -109,7 +149,9 @@ function signOut() {
 async function goProjects(preloaded) {
   stopPoll();
   show("view-projects");
-  $("meLabel").textContent = state.baseUrl.replace(/^https?:\/\//, "");
+  $("meLabel").textContent = state.user
+    ? state.user.name + " · " + state.baseUrl.replace(/^https?:\/\//, "")
+    : state.baseUrl.replace(/^https?:\/\//, "");
   const list = $("projectsList");
   list.innerHTML = '<div class="empty">Loading…</div>';
   try {
@@ -354,7 +396,7 @@ async function pullMarkers() {
 // ---------- wire up ----------
 function init() {
   loadCreds();
-  $("btnConnect").onclick = connect;
+  $("btnConnect").onclick = signIn;
   $("btnSignOut").onclick = signOut;
   $("btnBackProjects").onclick = () => goProjects();
   $("btnBackFiles").onclick = () => goFiles(state.project);
@@ -363,8 +405,7 @@ function init() {
 
   if (state.baseUrl) $("baseUrl").value = state.baseUrl;
   if (state.token) {
-    $("apiToken").value = state.token;
-    connect();
+    reconnect();
   } else {
     show("view-auth");
   }

@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, generateToken, hashPassword, generateApiToken, hashApiToken, apiAuth } from "./auth";
+import { setupAuth, generateToken, hashPassword, generateApiToken, hashApiToken, apiAuth, comparePasswords } from "./auth";
 import multer from "multer";
 import type { Multer } from "multer"; // Import multer types
 import path from "path";
@@ -573,6 +573,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.sendStatus(204);
     }
     next();
+  });
+
+  // --- Panel sign-in (/api/v1/login, /api/v1/logout) ---
+  // Editors work on SHARED workstations, so they sign in to the panel with their
+  // normal Obviu username/email + password instead of pasting a personal token.
+  // Each successful login mints an independent bearer token (api_session row),
+  // so multiple stations / people can be signed in at once and signing out on
+  // one never breaks another. The plaintext token is returned ONCE here.
+  app.post("/api/v1/login", async (req, res, next) => {
+    try {
+      const { username, password } = req.body ?? {};
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      const user =
+        (await storage.getUserByUsername(username)) ||
+        (await storage.getUserByEmail(username));
+      if (!user || !(await comparePasswords(password, user.password))) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      if (user.deactivatedAt) {
+        return res.status(403).json({ message: "This account has been deactivated. Contact an administrator." });
+      }
+
+      const token = generateApiToken();
+      await storage.createApiSession(user.id, hashApiToken(token));
+      await storage.logActivity({
+        action: "login",
+        entityType: "user",
+        entityId: user.id,
+        userId: user.id,
+        metadata: { reason: "panel_login" },
+      });
+      res.json({
+        token,
+        user: { id: user.id, name: user.name, username: user.username, role: user.role },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Revoke the api_session for the presented bearer token (panel "Sign out").
+  // Session-cookie callers have nothing to revoke here, so it's a no-op for them.
+  app.post("/api/v1/logout", apiAuth, async (req, res, next) => {
+    try {
+      const header = req.headers.authorization;
+      if (header && header.startsWith("Bearer ")) {
+        const token = header.slice("Bearer ".length).trim();
+        if (token) await storage.deleteApiSessionByToken(hashApiToken(token));
+      }
+      res.sendStatus(204);
+    } catch (error) {
+      next(error);
+    }
   });
 
   // --- Stable external read API (/api/v1) for the Premiere panel ---

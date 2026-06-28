@@ -26,6 +26,23 @@ export const users = pgTable("users", {
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, deactivatedAt: true, apiToken: true });
 
+// API SESSION SCHEMA
+// Bearer tokens minted when a user signs in from an external client (the
+// Premiere panel). Unlike users.apiToken (a single personal token), this is a
+// table so the SAME user can have many independent, concurrently-valid sessions
+// — essential for shared editing workstations where people sign in/out all day
+// and one machine signing in must not invalidate another. Only the SHA-256 hash
+// of the token is stored; the plaintext lives only in the client.
+export const apiSessions = pgTable("api_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertApiSessionSchema = createInsertSchema(apiSessions)
+  .omit({ id: true, createdAt: true });
+
 // FOLDER SCHEMA
 export const folders = pgTable("folders", {
   id: serial("id").primaryKey(),
@@ -415,6 +432,9 @@ export const updateShareLinkSchema = z.object({
 // Type definitions
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type ApiSession = typeof apiSessions.$inferSelect;
+export type InsertApiSession = z.infer<typeof insertApiSessionSchema>;
 
 export type Folder = typeof folders.$inferSelect;
 export type InsertFolder = z.infer<typeof insertFolderSchema>;
