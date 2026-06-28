@@ -7,17 +7,27 @@
   <body>
     <!-- Sign-in view -->
     <div id="view-auth" class="view">
-      <h1>Obviu Review</h1>
-      <p class="muted">Connect Premiere to your Obviu workspace.</p>
-      <label>Server URL</label>
-      <input id="baseUrl" type="text" placeholder="https://app.obviu.io" />
-      <label>Email or username</label>
-      <input id="username" type="text" placeholder="you@studio.com" />
-      <label>Password</label>
-      <input id="password" type="password" placeholder="••••••••" />
-      <p class="muted small">Sign in with your normal Obviu account.</p>
-      <button id="btnConnect">Sign in</button>
-      <div id="authError" class="error"></div>
+      <div>
+        <h1>Obviu Review</h1>
+        <p class="muted small">Connect Premiere to your Obviu workspace.</p>
+      </div>
+      <div class="card auth-card">
+        <div class="field">
+          <label>Server URL</label>
+          <input id="baseUrl" type="text" placeholder="https://app.obviu.io" />
+        </div>
+        <div class="field">
+          <label>Email or username</label>
+          <input id="username" type="text" placeholder="you@studio.com" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="password" type="password" placeholder="••••••••" />
+        </div>
+        <button id="btnConnect" class="full">Sign in</button>
+        <p class="muted small">Sign in with your normal Obviu account.</p>
+        <div id="authError" class="error"></div>
+      </div>
     </div>
 
     <!-- Projects view -->
@@ -47,53 +57,63 @@
         <button id="btnBackFiles" class="link">&larr; Files</button>
         <button id="btnRefresh" class="link">Refresh</button>
       </div>
-      <h2 id="fileTitle">File</h2>
+      <h2 id="fileTitle" class="file-title">File</h2>
 
-      <label>Version</label>
-      <select id="versionSelect"></select>
+      <div class="field">
+        <label>Version</label>
+        <select id="versionSelect"></select>
+      </div>
 
       <webview id="mediaView" class="media-view" width="100%" height="320" src=""></webview>
 
-      <div class="row wrap">
+      <div class="actions">
         <button id="btnImport">Import to Premiere</button>
         <button id="btnPullMarkers" class="secondary">Pull comments to markers</button>
         <button id="btnShare" class="secondary">Copy share link</button>
       </div>
-      <div class="row wrap">
+      <div class="actions">
         <button id="btnApprove" class="ok">Approve</button>
         <button id="btnRequest" class="warn">Request changes</button>
       </div>
-      <div id="fileStatus" class="muted small"></div>
+      <div id="fileStatus" class="status"></div>
 
-      <h3>Send your cut</h3>
-      <p class="muted small">Export the active Premiere sequence and upload it to Obviu.</p>
-      <div class="row wrap">
-        <button id="btnPickPreset" class="secondary">Choose preset…</button>
-        <span id="presetLabel" class="muted small">No preset selected</span>
-      </div>
-      <label>Export name</label>
-      <input id="exportName" type="text" placeholder="My Cut.mp4" />
-      <label class="checkrow">
-        <input id="destVersion" type="radio" name="dest" checked />
-        <span id="destVersionLabel">New version of this file</span>
-      </label>
-      <label class="checkrow">
-        <input id="destNew" type="radio" name="dest" />
-        Upload as a new file (this folder)
-      </label>
-      <button id="btnExportUpload">Export &amp; upload</button>
-      <div id="seqStatus" class="muted small"></div>
+      <section class="card">
+        <h3>Send your cut</h3>
+        <p class="muted small">Export the active Premiere sequence and upload it to Obviu.</p>
+        <div class="row wrap preset-row">
+          <button id="btnPickPreset" class="secondary">Choose preset…</button>
+          <span id="presetLabel" class="muted small">No preset selected</span>
+        </div>
+        <div class="field">
+          <label>Export name</label>
+          <input id="exportName" type="text" placeholder="My Cut.mp4" />
+        </div>
+        <label class="checkrow">
+          <input id="destVersion" type="radio" name="dest" checked />
+          <span id="destVersionLabel">New version of this file</span>
+        </label>
+        <label class="checkrow">
+          <input id="destNew" type="radio" name="dest" />
+          Upload as a new file (this folder)
+        </label>
+        <button id="btnExportUpload" class="full">Export &amp; upload</button>
+        <div id="seqStatus" class="status"></div>
+      </section>
 
-      <h3>Add comment</h3>
-      <textarea id="commentInput" rows="2" placeholder="Write a comment…"></textarea>
-      <label class="checkrow">
-        <input id="commentAtTime" type="checkbox" />
-        Attach current playhead time
-      </label>
-      <button id="btnPostComment">Post comment</button>
+      <section class="card">
+        <h3>Add comment</h3>
+        <textarea id="commentInput" rows="2" placeholder="Write a comment…"></textarea>
+        <label class="checkrow">
+          <input id="commentAtTime" type="checkbox" />
+          Attach current playhead time
+        </label>
+        <button id="btnPostComment" class="full">Post comment</button>
+      </section>
 
-      <h3>Comments</h3>
-      <div id="commentsList" class="list"></div>
+      <section class="card">
+        <h3>Comments</h3>
+        <div id="commentsList" class="list"></div>
+      </section>
     </div>
 
     <script src="index.js"></script>
