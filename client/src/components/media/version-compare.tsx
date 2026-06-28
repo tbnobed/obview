@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { File as StorageFile } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Columns2, GripVertical, Play, Pause, RotateCcw, ChevronDown, Loader2, AlertTriangle } from "lucide-react";
+import { Columns2, GripVertical, Play, Pause, RotateCcw, ChevronDown, Loader2, AlertTriangle, ArrowLeftRight } from "lucide-react";
 
 type CompareMode = "side-by-side" | "wipe";
 type MediaStatus = "loading" | "ready" | "error";
@@ -98,6 +98,10 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   const handleSelectRight = (id: number) => {
     if (id === leftVersionId) return;
     setRightVersionId(id);
+  };
+  const swapVersions = () => {
+    setLeftVersionId(rightVersionId);
+    setRightVersionId(leftVersionId);
   };
 
   useEffect(() => {
@@ -514,7 +518,14 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
         <div className="flex items-center gap-2">
           <VersionPicker selectedId={leftVersionId} onSelect={handleSelectLeft} otherSelectedId={rightVersionId} label="A" side="left"
             show={showLeftPicker} setShow={setShowLeftPicker} pickerRef={leftPickerRef as React.RefObject<HTMLDivElement>} />
-          <span className="text-gray-500 text-xs">vs</span>
+          <Button
+            variant="ghost" size="icon"
+            className="h-6 w-6 text-gray-400 hover:bg-gray-700 hover:text-white"
+            onClick={swapVersions}
+            title="Swap A and B"
+          >
+            <ArrowLeftRight className="h-3.5 w-3.5" />
+          </Button>
           <VersionPicker selectedId={rightVersionId} onSelect={handleSelectRight} otherSelectedId={leftVersionId} label="B" side="right"
             show={showRightPicker} setShow={setShowRightPicker} pickerRef={rightPickerRef as React.RefObject<HTMLDivElement>} />
         </div>

@@ -2714,7 +2714,7 @@ export default function MediaPlayer({
           .sort((a, b) => a.version - b.version);
         return fileVersions.length >= 2 ? (
           <Dialog open={isComparing} onOpenChange={setIsComparing}>
-            <DialogContent className="max-w-[95vw] w-[95vw] h-[85vh] p-0 gap-0 overflow-hidden dark:bg-[hsl(210,20%,10%)] dark:border-[hsl(210,15%,18%)]">
+            <DialogContent className="max-w-[95vw] w-[95vw] h-[85vh] p-0 gap-0 overflow-hidden dark:bg-[hsl(210,20%,10%)] dark:border-[hsl(210,15%,18%)] [&>button.absolute]:hidden">
               <VersionCompare
                 versions={fileVersions}
                 onClose={() => setIsComparing(false)}
