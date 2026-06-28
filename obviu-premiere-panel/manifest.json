@@ -1,0 +1,30 @@
+{
+  "id": "io.obviu.premiere.panel",
+  "name": "Obviu Review",
+  "version": "1.0.0",
+  "main": "index.html",
+  "manifestVersion": 5,
+  "host": [
+    {
+      "app": "premierepro",
+      "minVersion": "25.6.0"
+    }
+  ],
+  "entrypoints": [
+    {
+      "type": "panel",
+      "id": "obviuPanel",
+      "label": { "default": "Obviu Review" },
+      "minimumSize": { "width": 230, "height": 320 },
+      "preferredDockedSize": { "width": 340, "height": 640 },
+      "preferredFloatingSize": { "width": 380, "height": 680 }
+    }
+  ],
+  "requiredPermissions": {
+    "network": {
+      "domains": "all"
+    },
+    "localStorage": true,
+    "clipboard": "readAndWrite"
+  }
+}

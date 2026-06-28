@@ -68,6 +68,10 @@ export interface IStorage {
   updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
   setUserDeactivated(id: number, deactivated: boolean): Promise<User | undefined>;
+  // API token (bearer auth for external integrations like the Premiere panel).
+  // Stores/looks up the SHA-256 hash of the plaintext token, never the plaintext.
+  getUserByApiTokenHash(tokenHash: string): Promise<User | undefined>;
+  setUserApiToken(id: number, tokenHash: string | null): Promise<User | undefined>;
 
   // Folder management (top-level folders that group projects)
   getFolder(id: number): Promise<Folder | undefined>;
@@ -310,6 +314,7 @@ export class MemStorage implements IStorage {
       role: insertUser.role ?? "viewer",
       themePreference: insertUser.themePreference ?? "system",
       deactivatedAt: null,
+      apiToken: null,
       createdAt: now
     };
     this.users.set(id, user);
@@ -327,6 +332,21 @@ export class MemStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     return this.users.delete(id);
+  }
+
+  async getUserByApiTokenHash(tokenHash: string): Promise<User | undefined> {
+    if (!tokenHash) return undefined;
+    return Array.from(this.users.values()).find(
+      (user) => user.apiToken === tokenHash,
+    );
+  }
+
+  async setUserApiToken(id: number, tokenHash: string | null): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    const updatedUser: User = { ...user, apiToken: tokenHash };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 
   async setUserDeactivated(id: number, deactivated: boolean): Promise<User | undefined> {
@@ -1514,6 +1534,21 @@ export class DatabaseStorage implements IStorage {
     const [updatedUser] = await db
       .update(users)
       .set({ deactivatedAt: deactivated ? new Date() : null })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async getUserByApiTokenHash(tokenHash: string): Promise<User | undefined> {
+    if (!tokenHash) return undefined;
+    const [user] = await db.select().from(users).where(eq(users.apiToken, tokenHash));
+    return user;
+  }
+
+  async setUserApiToken(id: number, tokenHash: string | null): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ apiToken: tokenHash })
       .where(eq(users.id, id))
       .returning();
     return updatedUser;

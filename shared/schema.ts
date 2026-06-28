@@ -16,11 +16,15 @@ export const users = pgTable("users", {
   // local strategy) and has any existing session invalidated on next request
   // (deserializeUser). Reversible by an admin clearing this back to NULL.
   deactivatedAt: timestamp("deactivated_at"),
+  // SHA-256 hash (hex) of a personal API token used by external integrations
+  // (e.g. the Premiere panel) for bearer auth. NULL = no token issued. The
+  // plaintext is shown to the user once at generation and never stored.
+  apiToken: text("api_token"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users)
-  .omit({ id: true, createdAt: true, deactivatedAt: true });
+  .omit({ id: true, createdAt: true, deactivatedAt: true, apiToken: true });
 
 // FOLDER SCHEMA
 export const folders = pgTable("folders", {

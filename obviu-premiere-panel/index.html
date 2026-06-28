@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Sign-in view -->
+    <div id="view-auth" class="view">
+      <h1>Obviu Review</h1>
+      <p class="muted">Connect Premiere to your Obviu workspace.</p>
+      <label>Server URL</label>
+      <input id="baseUrl" type="text" placeholder="https://app.obviu.io" />
+      <label>API token</label>
+      <input id="apiToken" type="password" placeholder="obv_..." />
+      <p class="muted small">Generate a token in Obviu → Settings → API Access.</p>
+      <button id="btnConnect">Connect</button>
+      <div id="authError" class="error"></div>
+    </div>
+
+    <!-- Projects view -->
+    <div id="view-projects" class="view hidden">
+      <div class="toolbar">
+        <span id="meLabel" class="muted small"></span>
+        <button id="btnSignOut" class="link">Sign out</button>
+      </div>
+      <h2>Projects</h2>
+      <div id="projectsList" class="list"></div>
+    </div>
+
+    <!-- Files view -->
+    <div id="view-files" class="view hidden">
+      <div class="toolbar">
+        <button id="btnBackProjects" class="link">&larr; Projects</button>
+      </div>
+      <h2 id="filesTitle">Files</h2>
+      <div id="filesList" class="list"></div>
+    </div>
+
+    <!-- File detail view -->
+    <div id="view-file" class="view hidden">
+      <div class="toolbar">
+        <button id="btnBackFiles" class="link">&larr; Files</button>
+        <button id="btnRefresh" class="link">Refresh</button>
+      </div>
+      <h2 id="fileTitle">File</h2>
+
+      <label>Version</label>
+      <select id="versionSelect"></select>
+
+      <div class="row">
+        <button id="btnPullMarkers">Pull comments to markers</button>
+      </div>
+      <div id="fileStatus" class="muted small"></div>
+
+      <h3>Comments</h3>
+      <div id="commentsList" class="list"></div>
+    </div>
+
+    <script src="index.js"></script>
+  </body>
+</html>

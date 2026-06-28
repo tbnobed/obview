@@ -38,6 +38,47 @@ export function generateToken(length = 32): string {
   return crypto.randomBytes(length).toString('hex');
 }
 
+// Personal API token for external integrations (e.g. the Premiere panel).
+// Format: `obv_` + 40 hex chars. The plaintext is shown to the user once at
+// generation; only its SHA-256 hash is persisted (users.apiToken).
+export function generateApiToken(): string {
+  return `obv_${crypto.randomBytes(20).toString('hex')}`;
+}
+
+export function hashApiToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+// Bearer/session auth for API routes consumed by external clients. Accepts
+// either an existing Passport session (cookie) OR an `Authorization: Bearer
+// <token>` header. On success sets req.user (password stripped) and calls
+// next(); otherwise responds 401. Deactivated accounts are rejected.
+export async function apiAuth(req: any, res: any, next: any) {
+  try {
+    // Session path: passport.session() already populated req.user.
+    if (req.isAuthenticated?.() && req.user) {
+      return next();
+    }
+
+    const header: string | undefined = req.headers?.authorization;
+    if (header && header.startsWith("Bearer ")) {
+      const token = header.slice("Bearer ".length).trim();
+      if (token) {
+        const user = await storage.getUserByApiTokenHash(hashApiToken(token));
+        if (user && !user.deactivatedAt) {
+          const { password, ...userWithoutPassword } = user;
+          req.user = userWithoutPassword as SelectUser;
+          return next();
+        }
+      }
+    }
+
+    return res.status(401).json({ message: "Authentication required" });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 export function setupAuth(app: Express) {
   // Create session store - create dedicated pool for sessions
   let sessionStore;

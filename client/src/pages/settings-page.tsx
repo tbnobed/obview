@@ -10,8 +10,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
-import { queryClient } from "@/lib/queryClient";
+import { Loader2, Copy, Check, KeyRound } from "lucide-react";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 export default function SettingsPage() {
   const { user, isLoading } = useAuth();
@@ -75,6 +76,57 @@ export default function SettingsPage() {
   });
 
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // --- API token (for the Premiere panel / external integrations) ---
+  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const tokenUrl = user?.id ? `/api/users/${user.id}/api-token` : "";
+
+  const tokenStatusQuery = useQuery<{ hasToken: boolean }>({
+    queryKey: [tokenUrl],
+    enabled: !!user?.id,
+  });
+
+  const generateTokenMutation = useMutation({
+    mutationFn: async () => {
+      return (await apiRequest("POST", tokenUrl)) as { token: string };
+    },
+    onSuccess: (data) => {
+      setGeneratedToken(data.token);
+      setCopied(false);
+      queryClient.invalidateQueries({ queryKey: [tokenUrl] });
+      toast({ title: "Token generated", description: "Copy it now — it won't be shown again." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to generate token", variant: "destructive" });
+    },
+  });
+
+  const revokeTokenMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", tokenUrl);
+    },
+    onSuccess: () => {
+      setGeneratedToken(null);
+      queryClient.invalidateQueries({ queryKey: [tokenUrl] });
+      toast({ title: "Token revoked", description: "The previous token can no longer be used." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to revoke token", variant: "destructive" });
+    },
+  });
+
+  async function copyToken() {
+    if (!generatedToken) return;
+    try {
+      await navigator.clipboard.writeText(generatedToken);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: "Copy failed", description: "Select and copy the token manually.", variant: "destructive" });
+    }
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) return;
@@ -198,9 +250,10 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="account" value={activeTab} onValueChange={setActiveTab} className="w-full max-w-3xl">
-          <TabsList className="grid w-full grid-cols-2 mb-8 dark:bg-gray-800/50">
+          <TabsList className="grid w-full grid-cols-3 mb-8 dark:bg-gray-800/50">
             <TabsTrigger value="account" className="dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Account</TabsTrigger>
             <TabsTrigger value="password" className="dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Password</TabsTrigger>
+            <TabsTrigger value="api" className="dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">API Access</TabsTrigger>
           </TabsList>
           
           <TabsContent value="account">
@@ -336,6 +389,86 @@ export default function SettingsPage() {
                     </Button>
                   </form>
                 </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="api">
+            <Card>
+              <CardHeader className="border-b dark:border-gray-800">
+                <CardTitle className="text-primary-600 dark:text-primary-400">API Access</CardTitle>
+                <CardDescription className="dark:text-gray-400">
+                  Generate a personal token to connect external tools like the Premiere panel. Use it as a Bearer token in the Authorization header.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-6">
+                {generatedToken ? (
+                  <div className="space-y-2">
+                    <FormLabel className="dark:text-white">Your new token</FormLabel>
+                    <div className="flex gap-2">
+                      <Input
+                        readOnly
+                        value={generatedToken}
+                        className="font-mono text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                        onFocus={(e) => e.currentTarget.select()}
+                        data-testid="input-api-token"
+                      />
+                      <Button type="button" variant="outline" onClick={copyToken} data-testid="button-copy-token">
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-amber-600 dark:text-amber-400">
+                      Copy this token now — for security it will not be shown again. If you lose it, generate a new one.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground dark:text-gray-300">
+                    <KeyRound className="h-5 w-5" />
+                    {tokenStatusQuery.isLoading
+                      ? "Checking token status…"
+                      : tokenStatusQuery.data?.hasToken
+                        ? "An API token is currently active. Generate a new one to replace it, or revoke it below."
+                        : "No API token yet. Generate one to connect an external tool."}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    onClick={() => generateTokenMutation.mutate()}
+                    disabled={generateTokenMutation.isPending}
+                    data-testid="button-generate-token"
+                  >
+                    {generateTokenMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating…
+                      </>
+                    ) : tokenStatusQuery.data?.hasToken ? (
+                      "Regenerate token"
+                    ) : (
+                      "Generate token"
+                    )}
+                  </Button>
+                  {tokenStatusQuery.data?.hasToken && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => revokeTokenMutation.mutate()}
+                      disabled={revokeTokenMutation.isPending}
+                      data-testid="button-revoke-token"
+                    >
+                      {revokeTokenMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Revoking…
+                        </>
+                      ) : (
+                        "Revoke token"
+                      )}
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

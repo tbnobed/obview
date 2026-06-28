@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, generateToken, hashPassword } from "./auth";
+import { setupAuth, generateToken, hashPassword, generateApiToken, hashApiToken, apiAuth } from "./auth";
 import multer from "multer";
 import type { Multer } from "multer"; // Import multer types
 import path from "path";
@@ -544,6 +544,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
 
+  // --- CORS for the external API (/api/v1) consumed by the Premiere panel ---
+  // The panel runs inside an Adobe UXP webview with its own origin. Bearer
+  // tokens (not cookies) authenticate it, so we do NOT enable credentials.
+  // PANEL_CORS_ORIGINS is a comma-separated allowlist; when set, only those
+  // origins are reflected. When unset (dev), we reflect+log the Origin so the
+  // real UXP origin can be discovered on first run, then pinned via the env.
+  const panelCorsOrigins = (process.env.PANEL_CORS_ORIGINS || "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+  app.use("/api/v1", (req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin) {
+      const allowed = panelCorsOrigins.length === 0 || panelCorsOrigins.includes(origin);
+      if (panelCorsOrigins.length === 0) {
+        console.log(`[panel-cors] /api/v1 request from origin: ${origin}`);
+      }
+      if (allowed) {
+        res.header("Access-Control-Allow-Origin", origin);
+        res.header("Vary", "Origin");
+        res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+        res.header("Access-Control-Allow-Headers", "Authorization, Content-Type");
+        res.header("Access-Control-Max-Age", "600");
+      }
+    }
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+    next();
+  });
+
+  // --- Stable external read API (/api/v1) for the Premiere panel ---
+  // Authenticated via session cookie OR Authorization: Bearer <api token>.
+  // Read access mirrors the app: any authenticated user can read; the panel is
+  // read-only in Phase 1. Shapes are intentionally narrow/stable.
+
+  app.get("/api/v1/projects", apiAuth, async (req, res, next) => {
+    try {
+      const projects =
+        req.user.role === "admin"
+          ? await storage.getAllProjectsWithLatestVideo()
+          : await storage.getProjectsByUserWithLatestVideo(req.user.id);
+      res.json(
+        projects.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description ?? null,
+          fileCount: (p as any).fileCount ?? null,
+        })),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/projects/:projectId/files", apiAuth, async (req, res, next) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) return res.status(400).json({ message: "Invalid project ID" });
+      const project = await storage.getProject(projectId);
+      if (!project) return res.status(404).json({ message: "Project not found" });
+
+      const files = await storage.getFilesByProject(projectId);
+      // Collapse version stacks to one entry per filename (latest version),
+      // mirroring how the app's project view shows one card per stack.
+      const latest = files.filter((f) => f.isLatestVersion !== false);
+      res.json(
+        latest.map((f) => ({
+          id: f.id,
+          filename: f.filename,
+          fileType: f.fileType,
+          version: f.version ?? null,
+          reviewStatus: (f as any).reviewStatus ?? null,
+        })),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/files/:id", apiAuth, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+
+      // Build the version stack: all files in the project sharing this filename.
+      const siblings = await storage.getFilesByProject(file.projectId);
+      const versions = siblings
+        .filter((f) => f.filename === file.filename)
+        .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))
+        .map((f) => ({
+          id: f.id,
+          version: f.version ?? null,
+          isLatestVersion: f.isLatestVersion !== false,
+          reviewStatus: (f as any).reviewStatus ?? null,
+        }));
+
+      res.json({
+        id: file.id,
+        projectId: file.projectId,
+        filename: file.filename,
+        fileType: file.fileType,
+        version: file.version ?? null,
+        isLatestVersion: file.isLatestVersion !== false,
+        reviewStatus: (file as any).reviewStatus ?? null,
+        versions,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/files/:id/comments", apiAuth, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+
+      const comments = await storage.getUnifiedCommentsByFileV2(fileId);
+      res.json(
+        comments.map((c) => ({
+          id: c.id,
+          parentId: c.parentId ?? null,
+          content: c.content,
+          timestamp: c.timestamp ?? null,
+          inPoint: c.inPoint ?? null,
+          outPoint: c.outPoint ?? null,
+          resolved: c.isResolved ?? false,
+          authorName: c.authorName ?? null,
+          createdAt: c.createdAt ?? null,
+        })),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/v1/files/:id/transcript", apiAuth, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+      const transcript = await storage.getTranscript(fileId);
+      if (!transcript) return res.status(404).json({ message: "No transcript yet" });
+      res.json(transcript);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Per-link social-preview (Open Graph) thumbnail uploads. Small images only.
   const shareThumbDir = path.join(uploadsDir, "share-thumbs");
   try { if (!fs.existsSync(shareThumbDir)) fs.mkdirSync(shareThumbDir, { recursive: true }); } catch {}
@@ -973,6 +1127,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: pwd, ...userWithoutPassword } = updatedUser;
 
       res.json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // --- Personal API tokens (bearer auth for external integrations) ---
+  // A user may manage only their own token; an admin may manage anyone's.
+  const canManageToken = (req: any, targetId: number) =>
+    targetId === req.user.id || req.user.role === "admin";
+
+  // Status: does this user currently have a token? (never returns the token)
+  app.get("/api/users/:userId/api-token", isAuthenticated, async (req, res, next) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) return res.status(400).json({ message: "Invalid user ID" });
+      if (!canManageToken(req, userId)) return res.status(403).json({ message: "Forbidden" });
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      res.json({ hasToken: !!user.apiToken });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Generate (or regenerate) a token. The plaintext is returned ONCE here and
+  // never stored — only its hash is persisted. Regenerating invalidates the old.
+  app.post("/api/users/:userId/api-token", isAuthenticated, async (req, res, next) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) return res.status(400).json({ message: "Invalid user ID" });
+      if (!canManageToken(req, userId)) return res.status(403).json({ message: "Forbidden" });
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const token = generateApiToken();
+      await storage.setUserApiToken(userId, hashApiToken(token));
+      await storage.logActivity({
+        action: "update",
+        entityType: "user",
+        entityId: userId,
+        userId: req.user.id,
+        metadata: { username: user.username, reason: "api_token_generated" },
+      });
+      res.json({ token });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Revoke the token.
+  app.delete("/api/users/:userId/api-token", isAuthenticated, async (req, res, next) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) return res.status(400).json({ message: "Invalid user ID" });
+      if (!canManageToken(req, userId)) return res.status(403).json({ message: "Forbidden" });
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      await storage.setUserApiToken(userId, null);
+      await storage.logActivity({
+        action: "update",
+        entityType: "user",
+        entityId: userId,
+        userId: req.user.id,
+        metadata: { username: user.username, reason: "api_token_revoked" },
+      });
+      res.json({ hasToken: false });
     } catch (error) {
       next(error);
     }
@@ -2415,8 +2636,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     return (tusServer as any).handle(req, res);
   };
-  app.all("/api/uploads/tus", isAuthenticated, tusHandler);
-  app.all("/api/uploads/tus/*", isAuthenticated, tusHandler);
+  // apiAuth (not isAuthenticated) so the Premiere panel can upload new
+  // versions via bearer token in Phase 2 while existing cookie uploads keep
+  // working unchanged (apiAuth accepts the session first, then bearer).
+  app.all("/api/uploads/tus", apiAuth, tusHandler);
+  app.all("/api/uploads/tus/*", apiAuth, tusHandler);
 
   // Multipart (parallel) upload control plane. The bytes themselves still
   // travel through the tus endpoint above — these two endpoints only

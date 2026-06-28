@@ -1,0 +1,68 @@
+body {
+  margin: 0;
+  padding: 12px;
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 13px;
+  color: #e6e6e6;
+  background: #1e1e1e;
+}
+h1 { font-size: 16px; margin: 0 0 4px; }
+h2 { font-size: 14px; margin: 8px 0; }
+h3 { font-size: 13px; margin: 12px 0 6px; color: #bdbdbd; }
+.view { display: flex; flex-direction: column; gap: 6px; }
+.hidden { display: none; }
+.muted { color: #9a9a9a; }
+.small { font-size: 11px; }
+label { font-size: 11px; color: #bdbdbd; margin-top: 6px; }
+input, select {
+  background: #2b2b2b;
+  border: 1px solid #3a3a3a;
+  color: #e6e6e6;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+button {
+  background: #2d6cdf;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+button:hover { background: #3a78ea; }
+button.link {
+  background: transparent;
+  color: #6ea8fe;
+  padding: 2px 4px;
+  margin: 0;
+}
+button.link:hover { background: transparent; text-decoration: underline; }
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.row { display: flex; gap: 6px; }
+.list { display: flex; flex-direction: column; gap: 4px; }
+.item {
+  background: #262626;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+}
+.item:hover { background: #2f2f2f; }
+.item .title { font-weight: 600; }
+.item .meta { color: #9a9a9a; font-size: 11px; margin-top: 2px; }
+.comment { cursor: default; }
+.comment .top { display: flex; justify-content: space-between; align-items: center; }
+.comment .jump { color: #6ea8fe; cursor: pointer; font-size: 11px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.dot.open { background: #e5484d; }
+.dot.resolved { background: #46a758; }
+.dot.changes { background: #f5a524; }
+.error { color: #e5484d; font-size: 12px; margin-top: 6px; }
+.empty { color: #9a9a9a; font-style: italic; padding: 8px; }
