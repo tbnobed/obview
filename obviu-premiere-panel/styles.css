@@ -90,4 +90,4 @@ button.link:hover { background: transparent; text-decoration: underline; }
 .dot.changes { background: #f5a524; }
 .error { color: #e5484d; font-size: 12px; margin-top: 6px; }
 .empty { color: #9a9a9a; font-style: italic; padding: 8px; }
-.media-view { width: 100%; height: 220px; border: 1px solid #333; border-radius: 4px; background: #000; }
+.media-view { width: 100%; height: 320px; border: 1px solid #333; border-radius: 4px; background: #000; }

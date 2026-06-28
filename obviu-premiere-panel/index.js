@@ -203,6 +203,7 @@ async function goProjects(preloaded) {
 // ---------- files & folders ----------
 async function goFiles(project, folderId) {
   stopPoll();
+  resetPreview();
   state.project = project;
   state.currentFolderId = folderId == null ? null : folderId;
   show("view-files");
@@ -302,6 +303,7 @@ async function goFile(file) {
       state.versions[state.versions.length - 1];
     state.selectedVersionId = latest ? latest.id : file.id;
     renderVersionSelect();
+    previewMedia();
     await loadComments();
     startPoll();
   } catch (e) {
@@ -332,6 +334,7 @@ function renderVersionSelect() {
   sel.onchange = () => {
     state.selectedVersionId = Number(sel.value);
     loadComments();
+    previewMedia();
   };
 }
 
@@ -562,7 +565,6 @@ async function previewMedia() {
       $("fileStatus").textContent = "Preview failed to load: " + detail;
     });
   }
-  $("btnPreview").disabled = true;
   try {
     // Reuse an existing share link when there is one so repeated previews
     // don't pile up new public links — but only one that will actually play
@@ -597,22 +599,14 @@ async function previewMedia() {
     // straight into the player for the selected version (matches the file id the
     // share manifest exposes).
     view.src = state.baseUrl + "/s/" + token + "?file=" + state.selectedVersionId;
-    view.classList.remove("hidden");
-    $("btnPreview").textContent = "Reload player";
   } catch (e) {
     $("fileStatus").textContent = "Preview failed: " + e.message;
-  } finally {
-    $("btnPreview").disabled = false;
   }
 }
 
 function resetPreview() {
   const view = $("mediaView");
-  if (view) {
-    view.src = "";
-    view.classList.add("hidden");
-  }
-  if ($("btnPreview")) $("btnPreview").textContent = "Load player";
+  if (view) view.src = "";
 }
 
 // ---------- polling ----------
@@ -968,7 +962,6 @@ function init() {
   $("btnImport").onclick = importToPremiere;
   $("btnPullMarkers").onclick = pullMarkers;
   $("btnShare").onclick = copyShareLink;
-  $("btnPreview").onclick = previewMedia;
   $("btnApprove").onclick = () => review("approved");
   $("btnRequest").onclick = () => review("requested_changes");
   $("btnPostComment").onclick = postComment;
