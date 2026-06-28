@@ -36,6 +36,8 @@
         <button id="btnBackProjects" class="link">&larr; Projects</button>
       </div>
       <h2 id="filesTitle">Files</h2>
+      <div id="breadcrumb" class="muted small"></div>
+      <div id="foldersList" class="list"></div>
       <div id="filesList" class="list"></div>
     </div>
 
@@ -50,10 +52,24 @@
       <label>Version</label>
       <select id="versionSelect"></select>
 
-      <div class="row">
-        <button id="btnPullMarkers">Pull comments to markers</button>
+      <div class="row wrap">
+        <button id="btnImport">Import to Premiere</button>
+        <button id="btnPullMarkers" class="secondary">Pull comments to markers</button>
+        <button id="btnShare" class="secondary">Copy share link</button>
+      </div>
+      <div class="row wrap">
+        <button id="btnApprove" class="ok">Approve</button>
+        <button id="btnRequest" class="warn">Request changes</button>
       </div>
       <div id="fileStatus" class="muted small"></div>
+
+      <h3>Add comment</h3>
+      <textarea id="commentInput" rows="2" placeholder="Write a comment…"></textarea>
+      <label class="checkrow">
+        <input id="commentAtTime" type="checkbox" />
+        Attach current playhead time
+      </label>
+      <button id="btnPostComment">Post comment</button>
 
       <h3>Comments</h3>
       <div id="commentsList" class="list"></div>

@@ -33,6 +33,30 @@ button {
   margin-top: 6px;
 }
 button:hover { background: #3a78ea; }
+button.secondary { background: #3a3a3a; }
+button.secondary:hover { background: #474747; }
+button.ok { background: #2f8f46; }
+button.ok:hover { background: #36a350; }
+button.warn { background: #c4831f; }
+button.warn:hover { background: #d8932a; }
+textarea {
+  background: #2b2b2b;
+  border: 1px solid #3a3a3a;
+  color: #e6e6e6;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+.row.wrap { flex-wrap: wrap; }
+.checkrow { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #bdbdbd; margin-top: 4px; }
+.checkrow input { width: auto; }
+.folder .title::before { content: "📁 "; }
+.comment .actions { display: flex; gap: 8px; margin-top: 4px; }
+.comment .actions .link { font-size: 11px; }
+.comment .reply-box { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.comment.child { margin-left: 16px; border-left: 2px solid #3a3a3a; }
 button.link {
   background: transparent;
   color: #6ea8fe;

@@ -361,6 +361,9 @@ export type ShareLinkRouteDeps = {
   thumbnailUpload: RequestHandler;
   // Directory where per-link custom thumbnails are written.
   shareThumbDir: string;
+  // Bearer-or-cookie auth for the external /api/v1 share-link routes used by
+  // the Premiere panel. Optional so existing callers keep compiling.
+  apiAuth?: (req: Request, res: Response, next: NextFunction) => void;
 };
 
 export function registerShareLinkRoutes(
@@ -470,6 +473,32 @@ export function registerShareLinkRoutes(
       res.json(links.map(sanitizeLink));
     } catch (e) { next(e); }
   });
+
+  // ===== external API (/api/v1) share-link routes for the Premiere panel =====
+  // Bearer-authed mirror of the file-scoped create/list routes above. Same
+  // permission check (canManageFileShares) so the panel can only mint links
+  // for files the signed-in editor may manage.
+  if (deps?.apiAuth) {
+    const apiAuth = deps.apiAuth;
+    app.post("/api/v1/files/:fileId/share-links", apiAuth, async (req, res, next) => {
+      try {
+        const fileId = parseInt(req.params.fileId);
+        if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+        if (!(await canManageFileShares(req, fileId))) return res.status(403).json({ message: "Forbidden" });
+        await createForScope(req, res, "file", fileId);
+      } catch (e) { next(e); }
+    });
+
+    app.get("/api/v1/files/:fileId/share-links", apiAuth, async (req, res, next) => {
+      try {
+        const fileId = parseInt(req.params.fileId);
+        if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+        if (!(await canManageFileShares(req, fileId))) return res.status(403).json({ message: "Forbidden" });
+        const links = await storage.listShareLinksForScope("file", fileId);
+        res.json(links.map(sanitizeLink));
+      } catch (e) { next(e); }
+    });
+  }
 
   app.patch("/api/share-links/:id", isAuthenticated, async (req, res, next) => {
     try {

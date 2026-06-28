@@ -664,12 +664,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const files = await storage.getFilesByProject(projectId);
       // Collapse version stacks to one entry per filename (latest version),
       // mirroring how the app's project view shows one card per stack.
-      const latest = files.filter((f) => f.isLatestVersion !== false);
+      let latest = files.filter((f) => f.isLatestVersion !== false);
+      // Optional folder scoping: ?folderId=<n> for a subfolder, or
+      // ?folderId=root for files not in any subfolder. Omit for all files.
+      const folderParam = req.query.folderId;
+      if (typeof folderParam === "string" && folderParam.length > 0) {
+        if (folderParam === "root") {
+          latest = latest.filter((f) => f.folderId == null);
+        } else {
+          const fid = parseInt(folderParam);
+          if (!isNaN(fid)) latest = latest.filter((f) => f.folderId === fid);
+        }
+      }
       res.json(
         latest.map((f) => ({
           id: f.id,
           filename: f.filename,
           fileType: f.fileType,
+          folderId: f.folderId ?? null,
           version: f.version ?? null,
           reviewStatus: (f as any).reviewStatus ?? null,
         })),
@@ -753,6 +765,204 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Folder tree for a project (live subfolders only). The panel uses this to
+  // browse files by folder. Top-level "project container" folders (projectId
+  // null) are not project subfolders and are excluded.
+  app.get("/api/v1/projects/:projectId/folders", apiAuth, async (req, res, next) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) return res.status(400).json({ message: "Invalid project ID" });
+      const project = await storage.getProject(projectId);
+      if (!project) return res.status(404).json({ message: "Project not found" });
+      const folders = await storage.getProjectFolders(projectId);
+      res.json(
+        folders
+          .filter((f) => f.deletedAt == null)
+          .map((f) => ({
+            id: f.id,
+            name: f.name,
+            parentFolderId: f.parentFolderId ?? null,
+            color: f.color ?? null,
+          })),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Bearer-authed media download. The existing /api/files/:id/download is
+  // session-cookie only; the panel needs the same bytes via bearer to import
+  // media into Premiere. Honors the same availability/on-disk checks.
+  app.get("/api/v1/files/:id/download", apiAuth, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+      if (file.isAvailable === false) {
+        return res.status(404).json({ message: "File not available", code: "FILE_UNAVAILABLE" });
+      }
+      const fileExists = await fileSystem.fileExists(file.filePath);
+      if (!fileExists) {
+        return res.status(404).json({ message: "File not available", code: "FILE_UNAVAILABLE" });
+      }
+      const overrideName = typeof req.query.filename === "string" ? req.query.filename : "";
+      const candidate = overrideName || file.filename || `file-${fileId}`;
+      const safeName = candidate.replace(/[\\/"\r\n]/g, "").slice(0, 255) || `file-${fileId}`;
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}"`);
+      res.setHeader("Cache-Control", "private, no-store");
+      res.sendFile(file.filePath, { root: "/" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Create a comment (or reply via parentId) on a file/version. Mirrors the
+  // web POST /api/files/:fileId/comments: any authenticated user may comment.
+  app.post("/api/v1/files/:id/comments", apiAuth, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+
+      const validationResult = insertCommentsUnifiedSchema.safeParse({
+        ...req.body,
+        fileId,
+        userId: req.user.id,
+        isPublic: false,
+        authorName: req.user.name || req.user.username,
+        authorEmail: req.user.email,
+      });
+      if (!validationResult.success) {
+        return res.status(400).json({ message: "Invalid comment data", errors: validationResult.error.errors });
+      }
+
+      const comment = await storage.createUnifiedComment(validationResult.data);
+      await storage.logActivity({
+        action: "comment",
+        entityType: "file",
+        entityId: fileId,
+        userId: req.user.id,
+        metadata: { projectId: file.projectId, commentId: comment.id, isReply: !!validationResult.data.parentId },
+      });
+      res.status(201).json({
+        id: comment.id,
+        parentId: comment.parentId ?? null,
+        content: comment.content,
+        timestamp: comment.timestamp ?? null,
+        inPoint: comment.inPoint ?? null,
+        outPoint: comment.outPoint ?? null,
+        resolved: comment.isResolved ?? false,
+        authorName: comment.authorName ?? null,
+        createdAt: comment.createdAt ?? null,
+      });
+    } catch (error) {
+      if (error.message?.includes("Parent comment does not exist") ||
+          error.message?.includes("Parent comment must belong to the same file") ||
+          error.message?.includes("cycle in the comment thread")) {
+        return res.status(400).json({ message: "Invalid comment data", details: error.message });
+      }
+      next(error);
+    }
+  });
+
+  // Resolve / unresolve a comment. Mirrors PATCH /api/comments/:commentId:
+  // the author, a project editor, or an admin may resolve.
+  app.patch("/api/v1/comments/:commentId", apiAuth, async (req, res, next) => {
+    try {
+      const commentId = req.params.commentId;
+      const comment = await storage.getUnifiedComment(commentId);
+      if (!comment) return res.status(404).json({ message: "Comment not found" });
+      if (comment.isPublic) return res.status(400).json({ message: "Public comments cannot be edited." });
+
+      const file = await storage.getFile(comment.fileId);
+      if (!file) return res.status(404).json({ message: "Associated file not found" });
+
+      let hasPermission = false;
+      if (req.user.role === "admin") hasPermission = true;
+      else if (comment.userId === req.user.id) hasPermission = true;
+      else hasPermission = await userHasProjectEditAccess(req.user, file.projectId);
+      if (!hasPermission) return res.status(403).json({ message: "You don't have permission to update this comment" });
+
+      if (typeof req.body.isResolved !== "boolean") {
+        return res.status(400).json({ message: "isResolved (boolean) is required" });
+      }
+      const updated = await storage.updateUnifiedComment(commentId, { isResolved: req.body.isResolved });
+      if (!updated) return res.status(404).json({ message: "Comment not found" });
+
+      await storage.logActivity({
+        action: updated.isResolved ? "resolve_comment" : "unresolve_comment",
+        entityType: "comment",
+        entityId: comment.fileId,
+        userId: req.user.id,
+        metadata: { commentId, fileId: comment.fileId, projectId: file.projectId },
+      });
+      res.json({ id: updated.id, resolved: updated.isResolved ?? false });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Approve / request changes on a file. Mirrors POST /api/files/:fileId/approve:
+  // any authenticated user except the file's uploader.
+  app.post("/api/v1/files/:id/approve", apiAuth, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+      if (file.uploadedById === req.user.id) {
+        return res.status(403).json({ message: "You can't approve or request changes on a file you uploaded." });
+      }
+
+      const approvalData = {
+        fileId,
+        userId: req.user.id,
+        status: req.body.status,
+        feedback: req.body.feedback || null,
+      };
+      const validationResult = insertApprovalSchema.safeParse(approvalData);
+      if (!validationResult.success) {
+        return res.status(400).json({ message: "Invalid approval data", errors: validationResult.error.errors });
+      }
+
+      const existingApproval = await storage.getApprovalByUserAndFile(req.user.id, fileId);
+      const approval = existingApproval
+        ? await storage.updateApproval(existingApproval.id, validationResult.data)
+        : await storage.createApproval(validationResult.data);
+
+      try {
+        if (validationResult.data.status === "changes_requested" || validationResult.data.status === "requested_changes") {
+          await storage.updateFile(fileId, {
+            reviewStatus: "changes_requested",
+            requestedChangesById: req.user.id,
+            requestedChangesByEmail: null,
+          } as any);
+        } else if (validationResult.data.status === "approved") {
+          await storage.updateFile(fileId, {
+            reviewStatus: "approved",
+            requestedChangesById: null,
+            requestedChangesByEmail: null,
+          } as any);
+        }
+      } catch (e) {
+        console.error("[Review] Failed to update file review state:", e);
+      }
+
+      await storage.logActivity({
+        action: validationResult.data.status === "approved" ? "approve" : "request_changes",
+        entityType: "file",
+        entityId: fileId,
+        userId: req.user.id,
+        metadata: { projectId: file.projectId, status: validationResult.data.status },
+      });
+      res.status(201).json({ id: approval?.id ?? null, status: validationResult.data.status });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Per-link social-preview (Open Graph) thumbnail uploads. Small images only.
   const shareThumbDir = path.join(uploadsDir, "share-thumbs");
   try { if (!fs.existsSync(shareThumbDir)) fs.mkdirSync(shareThumbDir, { recursive: true }); } catch {}
@@ -777,6 +987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cropFirstTile,
     thumbnailUpload: shareThumbUpload.single("thumbnail"),
     shareThumbDir,
+    apiAuth,
     processUploadedFile: async (file) => {
       if (file.fileType === "video") {
         const processing = await storage.createVideoProcessing({ fileId: file.id, status: "pending" });
