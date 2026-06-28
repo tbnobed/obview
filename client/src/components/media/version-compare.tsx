@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { File as StorageFile } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Columns2, GripVertical, Play, Pause, RotateCcw, ChevronDown, Loader2, AlertTriangle, ArrowLeftRight } from "lucide-react";
+import { Columns2, GripVertical, Play, Pause, RotateCcw, ChevronDown, Loader2, AlertTriangle, ArrowLeftRight, MessageSquare } from "lucide-react";
 
 type CompareMode = "side-by-side" | "wipe";
 type MediaStatus = "loading" | "ready" | "error";
@@ -43,6 +43,8 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   const [leftStatus, setLeftStatus] = useState<MediaStatus>('loading');
   const [rightStatus, setRightStatus] = useState<MediaStatus>('loading');
   const [containerWidth, setContainerWidth] = useState(0);
+  const [showComments, setShowComments] = useState(false);
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
 
   // Real frame rate per version (stored on videoProcessing). The compare UI
   // previously hardcoded 30fps, making the timecode readout and frame-stepping
@@ -66,6 +68,27 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
   const fps = toFps(leftProcessing.data);
   const rightFps = toFps(rightProcessing.data);
   const fpsMismatch = isVideo && Math.round(fps) !== Math.round(rightFps);
+
+  // Read-only comments for both versions, shown as scrub-bar markers + a side
+  // panel. A and B are color-coded (blue / emerald) to match the version labels.
+  const leftComments = useQuery<any[]>({
+    queryKey: ['/api/files', leftVersionId, 'comments'],
+    queryFn: () => apiRequest('GET', `/api/files/${leftVersionId}/comments`),
+    enabled: isVideo,
+    staleTime: 30_000,
+  });
+  const rightComments = useQuery<any[]>({
+    queryKey: ['/api/files', rightVersionId, 'comments'],
+    queryFn: () => apiRequest('GET', `/api/files/${rightVersionId}/comments`),
+    enabled: isVideo,
+    staleTime: 30_000,
+  });
+  const toMarkers = (arr: any[] | undefined, side: 'A' | 'B') =>
+    (arr || []).filter(c => c.timestamp != null).map(c => ({ ...c, side }));
+  const allComments = [
+    ...toMarkers(leftComments.data, 'A'),
+    ...toMarkers(rightComments.data, 'B'),
+  ].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
   useEffect(() => {
     const ids = versions.map(v => v.id);
@@ -245,6 +268,16 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
     leftVideo.currentTime = 0;
     rightVideo.currentTime = 0;
     setCurrentTime(0);
+  };
+
+  const seekTo = (t: number) => {
+    const lv = leftVideoRef.current;
+    const rv = rightVideoRef.current;
+    const dur = Math.max(lv?.duration || 0, rv?.duration || 0, duration);
+    const clamped = Math.max(0, Math.min(dur || t, t));
+    if (lv) lv.currentTime = clamped;
+    if (rv) rv.currentTime = clamped;
+    setCurrentTime(clamped);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -550,6 +583,7 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
         </div>
       </div>
 
+      <div className="flex-1 min-h-0 flex">
       <div className="flex-1 min-h-0 bg-black relative" ref={containerRef}>
         {mode === 'side-by-side' ? (
           <div className="flex w-full h-full">
@@ -607,6 +641,35 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
           </div>
         )}
       </div>
+        {showComments && isVideo && (
+          <aside className="w-72 shrink-0 border-l overflow-y-auto" style={{ borderColor: 'hsl(210, 15%, 18%)', backgroundColor: 'hsl(210, 20%, 10%)' }}>
+            <div className="px-3 py-2 text-xs font-semibold text-gray-300 border-b sticky top-0 z-10" style={{ borderColor: 'hsl(210, 15%, 18%)', backgroundColor: 'hsl(210, 20%, 10%)' }}>
+              Comments ({allComments.length})
+            </div>
+            {allComments.length === 0 ? (
+              <div className="p-4 text-xs text-gray-500">No timestamped comments on either version.</div>
+            ) : (
+              <ul className="divide-y" style={{ borderColor: 'hsl(210, 15%, 18%)' }}>
+                {allComments.map(c => (
+                  <li key={`${c.side}-${c.id}`}>
+                    <button
+                      onClick={() => { setActiveCommentId(c.id); seekTo(c.timestamp || 0); }}
+                      className={`w-full text-left px-3 py-2 hover:bg-white/5 transition-colors ${activeCommentId === c.id ? 'bg-white/10' : ''}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${c.side === 'A' ? 'bg-blue-600/80 text-white' : 'bg-emerald-600/80 text-white'}`}>{c.side}</span>
+                        <span className="text-[11px] text-gray-300 truncate">{c.authorName || c.user?.name || 'Anonymous'}</span>
+                        <span className="ml-auto text-[10px] font-mono text-gray-500 shrink-0">{formatTime(c.timestamp || 0)}</span>
+                      </div>
+                      <div className="text-xs text-gray-400 line-clamp-2">{c.content}</div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </aside>
+        )}
+      </div>
 
       {isVideo && (
         <div className="flex items-center gap-3 px-3 py-2 bg-black/90 border-t shrink-0" style={{ borderColor: 'hsl(210, 15%, 18%)' }}>
@@ -625,12 +688,34 @@ export default function VersionCompare({ versions, onClose, projectId }: Version
               <AlertTriangle className="h-3 w-3" /> {Math.round(fps)}/{Math.round(rightFps)}fps
             </span>
           )}
-          <input
-            type="range" min={0} max={duration || 0} step={0.01} value={currentTime}
-            onChange={handleSeek}
-            className="flex-1 h-1 accent-white cursor-pointer"
-          />
+          <div className="flex-1 relative flex items-center">
+            <input
+              type="range" min={0} max={duration || 0} step={0.01} value={currentTime}
+              onChange={handleSeek}
+              className="w-full h-1 accent-white cursor-pointer relative z-10"
+            />
+            {duration > 0 && allComments.map(c => {
+              const pct = Math.max(0, Math.min(100, ((c.timestamp || 0) / duration) * 100));
+              return (
+                <button
+                  key={`m-${c.side}-${c.id}`}
+                  onClick={() => { setActiveCommentId(c.id); seekTo(c.timestamp || 0); }}
+                  title={`${c.side} · ${formatTime(c.timestamp || 0)} · ${c.content}`}
+                  className={`absolute -top-1 w-2 h-2 rounded-full border border-white/70 -translate-x-1/2 z-20 ${c.side === 'A' ? 'bg-blue-500' : 'bg-emerald-500'} ${activeCommentId === c.id ? 'ring-2 ring-white' : ''}`}
+                  style={{ left: `${pct}%` }}
+                />
+              );
+            })}
+          </div>
           <span className="text-xs font-mono text-gray-400 min-w-[45px]">{formatTime(duration)}</span>
+          <Button
+            variant="ghost" size="sm"
+            className={`h-7 px-2 text-xs ${showComments ? 'bg-gray-700 text-white' : 'text-gray-400'}`}
+            onClick={() => setShowComments(s => !s)}
+            title="Toggle comments"
+          >
+            <MessageSquare className="h-3.5 w-3.5 mr-1" /> {allComments.length}
+          </Button>
         </div>
       )}
     </div>
