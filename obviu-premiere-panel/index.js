@@ -593,7 +593,10 @@ async function previewMedia() {
       });
       token = link.token;
     }
-    view.src = state.baseUrl + "/s/" + token;
+    // The /s/<token> page is a file-list landing; pass ?file=<id> so it opens
+    // straight into the player for the selected version (matches the file id the
+    // share manifest exposes).
+    view.src = state.baseUrl + "/s/" + token + "?file=" + state.selectedVersionId;
     view.classList.remove("hidden");
     $("btnPreview").textContent = "Reload player";
   } catch (e) {
