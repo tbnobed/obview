@@ -780,7 +780,7 @@ async function postComment() {
       body,
     });
     $("commentInput").value = "";
-    $("commentAtTime").checked = false;
+    $("commentAtTime").checked = true;
     await loadComments();
   } catch (e) {
     $("fileStatus").textContent = "Post failed: " + e.message;
