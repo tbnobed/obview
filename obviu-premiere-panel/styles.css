@@ -40,8 +40,12 @@ p { margin: 0; }
 
 /* ---- Layout ---- */
 .view { display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; }
-#view-projects { overflow: hidden; }
+/* Each view keeps its header/toolbar fixed and lets a single inner region
+   scroll. Without overflow:hidden on the view + a flex:1 min-height:0 scroll
+   child, long lists overflow off the bottom of the panel instead of scrolling. */
+#view-projects, #view-files, #view-file { overflow: hidden; }
 #projectsList { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
 .hidden { display: none; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 label { font-size: 11px; font-weight: 500; color: #9a9a9a; }
