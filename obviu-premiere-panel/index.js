@@ -378,6 +378,9 @@ async function goFile(file) {
   $("fileStatus").textContent = "";
   $("seqStatus").textContent = "";
   $("commentInput").value = "";
+  state.commentFilter = "all";
+  if ($("commentFilter")) $("commentFilter").value = "all";
+  showTab("comments");
   resetPreview();
   const destLabel = $("destVersionLabel");
   if (destLabel) {
@@ -447,6 +450,48 @@ function fmtTime(sec) {
   return m + ":" + String(r).padStart(2, "0");
 }
 
+// Initials for an avatar bubble: first + last word, else first two letters.
+function initials(name) {
+  const n = (name || "Reviewer").trim();
+  const parts = n.split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+const AVATAR_COLORS = [
+  "#2680eb", "#9256d9", "#e5484d", "#33915b",
+  "#c4831f", "#0f9b9b", "#d23f87", "#5a7bd8",
+];
+// Stable per-name colour so the same reviewer keeps the same bubble.
+function avatarColor(name) {
+  const s = name || "?";
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+// Frame.io-style compact relative time ("now", "5m", "3h", "2d", "4w").
+function relTime(iso) {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return "";
+  let s = Math.floor((Date.now() - t) / 1000);
+  if (s < 0) s = 0;
+  if (s < 45) return "now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + "m";
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + "h";
+  const d = Math.floor(h / 24);
+  if (d < 7) return d + "d";
+  const w = Math.floor(d / 7);
+  if (w < 5) return w + "w";
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return mo + "mo";
+  return Math.floor(d / 365) + "y";
+}
+
 async function loadComments() {
   const list = $("commentsList");
   list.innerHTML = '<div class="empty">Loading…</div>';
@@ -464,67 +509,184 @@ async function loadComments() {
 
 function renderComments() {
   const list = $("commentsList");
-  if (!state.comments.length) {
-    list.innerHTML = '<div class="empty">No comments.</div>';
+
+  // Stable #N numbering follows the full top-level order, independent of the
+  // active status filter, so a comment keeps its number when filtered.
+  const allTop = state.comments.filter((c) => !c.parentId);
+  const idxOf = {};
+  allTop.forEach((c, i) => {
+    idxOf[c.id] = i + 1;
+  });
+
+  const filter = state.commentFilter || "all";
+  let top = allTop;
+  if (filter === "open") top = allTop.filter((c) => !c.resolved);
+  else if (filter === "resolved") top = allTop.filter((c) => c.resolved);
+
+  const cnt = $("commentCount");
+  if (cnt) {
+    cnt.textContent = top.length + (top.length === 1 ? " comment" : " comments");
+  }
+
+  if (!top.length) {
+    list.innerHTML =
+      '<div class="empty">' +
+      (state.comments.length ? "No comments match this filter." : "No comments.") +
+      "</div>";
     return;
   }
+
   // Group replies under their parent so threads read top-down.
-  const top = state.comments.filter((c) => !c.parentId);
   const repliesByParent = {};
   state.comments
     .filter((c) => c.parentId)
     .forEach((c) => {
       (repliesByParent[c.parentId] = repliesByParent[c.parentId] || []).push(c);
     });
+
   list.innerHTML = "";
-  const ordered = [];
   top.forEach((c) => {
-    ordered.push({ c, child: false });
-    (repliesByParent[c.id] || []).forEach((r) => ordered.push({ c: r, child: true }));
+    list.appendChild(commentEl(c, false, idxOf[c.id]));
+    (repliesByParent[c.id] || []).forEach((r) =>
+      list.appendChild(commentEl(r, true, null)),
+    );
   });
-  ordered.forEach(({ c, child }) => list.appendChild(commentEl(c, child)));
 }
 
-function commentEl(c, child) {
-  const st = statusOf(c);
+function commentEl(c, child, idx) {
   const el = document.createElement("div");
-  el.className = "item comment" + (child ? " child" : "");
-  const hasTime = c.timestamp != null;
-  el.innerHTML =
-    '<div class="top"><span><span class="dot ' +
-    st +
-    '"></span><b class="who"></b></span>' +
-    (hasTime ? '<span class="jump"></span>' : "") +
-    '</div><div class="body"></div><div class="actions"></div>';
-  el.querySelector(".who").textContent = c.authorName || "Reviewer";
-  el.querySelector(".body").textContent = c.content || "";
-  if (hasTime) {
-    const j = el.querySelector(".jump");
-    const range =
-      c.outPoint != null && c.outPoint !== c.inPoint
-        ? fmtTime(c.inPoint != null ? c.inPoint : c.timestamp) +
-          "–" +
-          fmtTime(c.outPoint)
-        : fmtTime(c.timestamp);
-    j.textContent = "▶ " + range;
-    j.onclick = () => jumpTo(c.inPoint != null ? c.inPoint : c.timestamp);
-  }
+  el.className = "comment" + (child ? " child" : "");
+  const name = c.authorName || "Reviewer";
 
-  const actions = el.querySelector(".actions");
+  const hdr = document.createElement("div");
+  hdr.className = "hdr";
+
+  const av = document.createElement("div");
+  av.className = "avatar";
+  av.textContent = initials(name);
+  av.style.background = avatarColor(name);
+  hdr.appendChild(av);
+
+  const col = document.createElement("div");
+  col.className = "meta-col";
+
+  // Author + relative time, with a resolved check pinned to the right.
+  const nameRow = document.createElement("div");
+  nameRow.className = "name-row";
+  const who = document.createElement("span");
+  who.className = "who";
+  who.textContent = name;
+  nameRow.appendChild(who);
+  const ago = relTime(c.createdAt);
+  if (ago) {
+    const t = document.createElement("span");
+    t.className = "ago";
+    t.textContent = ago;
+    nameRow.appendChild(t);
+  }
+  const grow = document.createElement("span");
+  grow.className = "grow";
+  nameRow.appendChild(grow);
+  if (c.resolved) {
+    const ck = document.createElement("span");
+    ck.className = "check";
+    ck.textContent = "✓";
+    ck.title = "Resolved";
+    nameRow.appendChild(ck);
+  }
+  col.appendChild(nameRow);
+
+  // Body: optional clickable timecode chip inline before the text.
+  const body = document.createElement("div");
+  body.className = "body";
+  const hasTime = c.timestamp != null || c.inPoint != null;
+  if (hasTime) {
+    const start = c.inPoint != null ? c.inPoint : c.timestamp;
+    const chip = document.createElement("span");
+    chip.className = "tc-chip";
+    chip.textContent =
+      c.outPoint != null && c.outPoint !== c.inPoint
+        ? fmtTime(start) + "–" + fmtTime(c.outPoint)
+        : fmtTime(start);
+    chip.onclick = () => jumpTo(start);
+    body.appendChild(chip);
+  }
+  const txt = document.createElement("span");
+  txt.className = "txt";
+  txt.textContent = c.content || "";
+  body.appendChild(txt);
+  col.appendChild(body);
+
+  // Footer: Reply / Resolve on the left, #N on the right.
+  const foot = document.createElement("div");
+  foot.className = "foot";
   if (!child) {
     const reply = document.createElement("span");
     reply.className = "link";
     reply.textContent = "Reply";
     reply.onclick = () => toggleReply(el, c);
-    actions.appendChild(reply);
+    foot.appendChild(reply);
   }
   const resolve = document.createElement("span");
   resolve.className = "link";
   resolve.textContent = c.resolved ? "Unresolve" : "Resolve";
   resolve.onclick = () => setResolved(c, !c.resolved);
-  actions.appendChild(resolve);
+  foot.appendChild(resolve);
+  const grow2 = document.createElement("span");
+  grow2.className = "grow";
+  foot.appendChild(grow2);
+  if (idx != null) {
+    const ix = document.createElement("span");
+    ix.className = "idx";
+    ix.textContent = "#" + idx;
+    foot.appendChild(ix);
+  }
+  col.appendChild(foot);
 
+  hdr.appendChild(col);
+  el.appendChild(hdr);
   return el;
+}
+
+// Toggle between the Comments and Fields tabs of the file view.
+function showTab(which) {
+  const isComments = which !== "fields";
+  $("tabComments").classList.toggle("active", isComments);
+  $("tabFields").classList.toggle("active", !isComments);
+  $("tabBodyComments").classList.toggle("hidden", !isComments);
+  $("tabBodyFields").classList.toggle("hidden", isComments);
+  if (!isComments) renderFields();
+}
+
+// Fields tab shows real, derived metadata for the selected version — no
+// fabricated custom fields, since the data model has none.
+function renderFields() {
+  const box = $("fieldsList");
+  if (!box) return;
+  const f = selectedFile() || state.file || {};
+  const resolved = state.comments.filter((c) => c.resolved).length;
+  const open = state.comments.length - resolved;
+  const rows = [
+    ["Name", (state.file && state.file.filename) || "—"],
+    ["Version", "v" + (f.version || 1) + (f.isLatestVersion ? " (latest)" : "")],
+    ["Comments", String(state.comments.length)],
+    ["Open", String(open)],
+    ["Resolved", String(resolved)],
+  ];
+  box.innerHTML = "";
+  rows.forEach(([k, v]) => {
+    const row = document.createElement("div");
+    row.className = "field-row";
+    const kk = document.createElement("span");
+    kk.className = "field-key";
+    kk.textContent = k;
+    const vv = document.createElement("span");
+    vv.className = "field-val";
+    vv.textContent = v;
+    row.appendChild(kk);
+    row.appendChild(vv);
+    box.appendChild(row);
+  });
 }
 
 function toggleReply(parentEl, parent) {
@@ -1200,6 +1362,12 @@ function init() {
   $("btnApprove").onclick = () => review("approved");
   $("btnRequest").onclick = () => review("requested_changes");
   $("btnPostComment").onclick = postComment;
+  $("tabComments").onclick = () => showTab("comments");
+  $("tabFields").onclick = () => showTab("fields");
+  $("commentFilter").onchange = (e) => {
+    state.commentFilter = e.target.value;
+    renderComments();
+  };
   $("btnPickPreset").onclick = pickPreset;
   $("btnExportUpload").onclick = exportAndUpload;
   $("btnCloseExport").onclick = () => {

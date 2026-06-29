@@ -43,7 +43,9 @@ p { margin: 0; }
 .file-title { font-size: 15px; font-weight: 600; word-break: break-word; margin: 2px 0; }
 
 /* ---- Layout ---- */
-.view { display: flex; flex-direction: column; gap: 12px; flex: 1 1 auto; min-height: 0; }
+.view { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+/* UXP ignores flex `gap`; space each view's stacked sections with margins. */
+.view > * + * { margin-top: 12px; }
 /* Each view keeps its header/toolbar fixed and lets a single inner region
    scroll. Without overflow:hidden on the view + a flex:1 min-height:0 scroll
    child, long lists overflow off the bottom of the panel instead of scrolling. */
@@ -243,25 +245,97 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
 /* ---- Preset row ---- */
 .preset-row { align-items: center; }
 
+/* ---- File head (title + version badge) ---- */
+.file-head { display: flex; align-items: center; }
+.file-head .file-title { flex: 1 1 auto; min-width: 0; margin-right: 10px; }
+.version-badge {
+  flex: 0 0 auto;
+  height: 26px; line-height: 24px;
+  padding: 0 8px;
+  background: #2b2b2b; color: #ececec;
+  border: 1px solid #383838; border-radius: 6px;
+  font-size: 12px;
+}
+
+/* ---- Tabs (Comments / Fields) ---- */
+.tabs { display: flex; border-bottom: 1px solid #383838; }
+.tab {
+  padding: 7px 2px; margin-right: 20px;
+  color: #9a9a9a; font-size: 12px; font-weight: 600;
+  cursor: pointer; text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.tab:hover { color: #cfcfcf; }
+.tab.active { color: #ececec; border-bottom-color: #2680eb; }
+
+/* A tab body fills the remaining height; its scroll area flexes while the
+   filter row and composer stay pinned. UXP needs explicit min-height:0. */
+.tab-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.tab-body.hidden { display: none; }
+
+.filter-row { display: flex; align-items: center; margin-bottom: 10px; }
+.filter-select {
+  flex: 0 0 auto;
+  height: 28px; line-height: 26px; padding: 0 8px;
+  background: #2b2b2b; color: #ececec;
+  border: 1px solid #383838; border-radius: 6px; font-size: 12px;
+}
+.filter-row .muted { margin-left: auto; }
+
+/* ---- Composer (pinned to the bottom of the comments tab) ---- */
+.composer { border-top: 1px solid #383838; padding-top: 10px; margin-top: 4px; }
+.composer textarea { width: 100%; }
+.composer-foot { display: flex; align-items: center; margin-top: 8px; }
+.composer-foot .btn { margin-left: auto; }
+
+/* ---- Fields tab ---- */
+.fields .field-row { display: flex; align-items: center; padding: 9px 2px; border-bottom: 1px solid #2b2b2b; }
+.fields .field-key { flex: 0 0 90px; color: #9a9a9a; font-size: 12px; }
+.fields .field-val { flex: 1 1 auto; color: #ececec; font-size: 12px; word-break: break-word; }
+
 /* ---- Comments ---- */
 .comment {
   cursor: default;
   background: #2b2b2b;
   border: 1px solid #383838;
-  border-radius: 5px;
-  padding: 9px 11px;
+  border-radius: 8px;
+  padding: 10px 11px;
+  flex: 0 0 auto;
 }
-.comment .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.comment .jump { color: #2680eb; cursor: pointer; font-size: 11px; }
-.comment .jump:hover { color: #3b8ef0; }
+.comment .hdr { display: flex; align-items: flex-start; }
+.avatar {
+  flex: 0 0 28px; width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 11px; font-weight: 700;
+  margin-right: 8px;
+}
+.comment .meta-col { flex: 1 1 auto; min-width: 0; }
+.comment .name-row { display: flex; align-items: center; }
+.comment .who { color: #ececec; font-size: 12px; font-weight: 600; }
+.comment .ago { color: #8a8a8a; font-size: 11px; margin-left: 6px; }
+.comment .grow { flex: 1 1 auto; }
+.comment .check { color: #33915b; font-size: 13px; font-weight: 700; }
+.comment .body { color: #d6d6d6; font-size: 12px; line-height: 1.5; margin-top: 4px; }
+.tc-chip {
+  display: inline-block;
+  background: #3a3320; color: #e3b341;
+  border: 1px solid #5a4d24; border-radius: 4px;
+  padding: 1px 6px; margin-right: 6px;
+  font-size: 11px; font-weight: 600;
+  cursor: pointer;
+}
+.tc-chip:hover { background: #453c22; }
 /* UXP ignores flex `gap`, so the Reply/Resolve links rendered as "ReplyResolve".
    Space them (and the reply-box children) with margins instead. */
-.comment .actions { display: flex; margin-top: 6px; }
-.comment .actions .link { cursor: pointer; }
-.comment .actions .link + .link { margin-left: 14px; }
+.comment .foot { display: flex; align-items: center; margin-top: 8px; }
+.comment .foot .link { cursor: pointer; color: #9a9a9a; font-size: 11px; }
+.comment .foot .link:hover { color: #ececec; }
+.comment .foot .link + .link { margin-left: 14px; }
+.comment .idx { color: #6f6f6f; font-size: 11px; }
 .comment .reply-box { display: flex; flex-direction: column; margin-top: 8px; }
 .comment .reply-box > * + * { margin-top: 6px; }
-.comment.child { margin-left: 14px; border-left: 2px solid #2680eb; }
+.comment.child { margin-left: 18px; border-left: 2px solid #383838; }
 
 /* ---- Status dots ---- */
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }

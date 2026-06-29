@@ -61,11 +61,10 @@
         <a id="btnBackFiles" class="btn link">&larr; Files</a>
         <a id="btnRefresh" class="btn link">Refresh</a>
       </div>
-      <h2 id="fileTitle" class="file-title">File</h2>
 
-      <div class="field">
-        <label>Version</label>
-        <select id="versionSelect"></select>
+      <div class="file-head">
+        <h2 id="fileTitle" class="file-title">File</h2>
+        <select id="versionSelect" class="version-badge"></select>
       </div>
 
       <webview id="mediaView" class="media-view" width="100%" height="320" src=""></webview>
@@ -79,16 +78,38 @@
       </div>
       <div id="fileStatus" class="status"></div>
 
-      <div class="scroll">
-      <section class="card">
-        <h3>Comments</h3>
-        <textarea id="commentInput" rows="2" placeholder="Write a comment…"></textarea>
-        <div class="row between">
-          <sp-checkbox id="commentAtTime" size="s">Attach playhead time</sp-checkbox>
-          <a id="btnPostComment" class="btn">Post</a>
+      <div class="tabs">
+        <a id="tabComments" class="tab active">Comments</a>
+        <a id="tabFields" class="tab">Fields</a>
+      </div>
+
+      <!-- Comments tab -->
+      <div id="tabBodyComments" class="tab-body">
+        <div class="filter-row">
+          <select id="commentFilter" class="filter-select">
+            <option value="all">All comments</option>
+            <option value="open">Open</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <span id="commentCount" class="muted small"></span>
         </div>
-        <div id="commentsList" class="list"></div>
-      </section>
+        <div class="scroll">
+          <div id="commentsList" class="list"></div>
+        </div>
+        <div class="composer">
+          <textarea id="commentInput" rows="2" placeholder="Leave a comment…"></textarea>
+          <div class="composer-foot">
+            <sp-checkbox id="commentAtTime" size="s">Attach playhead time</sp-checkbox>
+            <a id="btnPostComment" class="btn">Comment</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fields tab -->
+      <div id="tabBodyFields" class="tab-body hidden">
+        <div class="scroll">
+          <div id="fieldsList" class="fields"></div>
+        </div>
       </div>
     </div>
 
