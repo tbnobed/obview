@@ -13,6 +13,8 @@ description: How the /api/v1 bearer auth, multi-session model, and the deliberat
 
 **Why:** personal-token paste meant a shared machine leaked one user's long-lived token to everyone; per-login sessions isolate machines.
 
+**Reconnect quirk:** on a persisted-token relaunch the panel does NOT re-run login, so `state.user` is null unless `reconnect()` fetches `/api/v1/me` first. Anything that needs the current user id (e.g. grouping projects as "You") must restore the user there, not rely on login having run.
+
 **How to apply:** any new "log everyone out" / token-rotation feature must operate per-session row, not on a single column. Don't reintroduce a one-token-per-user assumption.
 
 ## No rate limiting on credential login — deliberate

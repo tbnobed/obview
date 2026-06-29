@@ -219,6 +219,49 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
 .item .meta { color: #9a9a9a; font-size: 11px; margin-top: 2px; }
 .folder .title::before { content: "📁  "; }
 .empty { color: #6f6f6f; font-style: italic; padding: 10px 2px; }
+
+/* Owner group header (root projects grouped "by user"). UXP ignores flex gap,
+   so children are spaced with margins; the avatar is a literal-colored circle
+   (background set inline per owner). */
+.owner-head {
+  display: flex;
+  align-items: center;
+  padding: 10px 2px 4px;
+  cursor: pointer;
+}
+.owner-caret {
+  width: 12px;
+  margin-right: 4px;
+  color: #9a9a9a;
+  font-size: 10px;
+}
+.owner-avatar {
+  display: inline-block;
+  width: 18px; height: 18px; line-height: 18px;
+  border-radius: 9px;
+  margin-right: 8px;
+  color: #ffffff;
+  font-size: 9px; font-weight: 700;
+  text-align: center;
+}
+.owner-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #d0d0d0;
+  font-size: 12px; font-weight: 600;
+}
+.owner-count {
+  margin-left: 6px;
+  padding: 0 7px;
+  background: #2b2b2b;
+  border: 1px solid #383838;
+  border-radius: 9px;
+  color: #9a9a9a;
+  font-size: 10px; line-height: 16px;
+}
+/* Projects nested under an owner header are indented from the avatar. */
+.item.in-group { margin-left: 18px; }
 #breadcrumb { color: #9a9a9a; }
 
 /* ---- Player ---- */

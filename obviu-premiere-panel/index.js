@@ -155,6 +155,13 @@ async function signIn() {
 // revoked), fall back to the sign-in screen.
 async function reconnect() {
   try {
+    // Restore the signed-in user first so projects group/order "You" correctly
+    // on a persisted-token relaunch (login isn't re-run in this flow).
+    try {
+      state.user = await api("/api/v1/me");
+    } catch (_) {
+      state.user = null;
+    }
     const projects = await api("/api/v1/projects");
     state.project = null;
     await goProjects(projects);
@@ -178,6 +185,51 @@ async function signOut() {
   show("view-auth");
 }
 
+// ---------- owner color / initials (mirrors web lib/owner-color.ts) ----------
+// Same palette + hashing so a teammate looks identical in the panel and web.
+const OWNER_PALETTE = [
+  "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899",
+  "#14b8a6", "#f97316", "#84cc16", "#6366f1", "#06b6d4", "#a855f7",
+];
+function ownerColor(id) {
+  if (id == null) return "#737373";
+  return OWNER_PALETTE[Math.abs(id | 0) % OWNER_PALETTE.length];
+}
+function ownerInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+// Group root projects by owner: the signed-in user's own ("You") first, then
+// every other owner sorted by name — same ordering as the web Projects page.
+function groupProjectsByOwner(projs) {
+  const meId = state.user && state.user.id != null ? state.user.id : null;
+  const yours = { key: "you", ownerId: meId, ownerName: "You", isYou: true, items: [] };
+  const map = new Map();
+  projs.forEach((p) => {
+    const oid = p.ownerId ?? null;
+    if (meId != null && oid === meId) {
+      yours.items.push(p);
+      return;
+    }
+    const key = oid == null ? "none" : String(oid);
+    let g = map.get(key);
+    if (!g) {
+      g = { key, ownerId: oid, ownerName: p.ownerName || ("user #" + (oid ?? "?")), isYou: false, items: [] };
+      map.set(key, g);
+    }
+    g.items.push(p);
+  });
+  const others = Array.from(map.values()).sort((a, b) =>
+    (a.ownerName || "").localeCompare(b.ownerName || "", undefined, { sensitivity: "base" })
+  );
+  const out = [];
+  if (yours.items.length) out.push(yours);
+  return out.concat(others);
+}
+
 // ---------- projects & folder browser ----------
 async function goProjects(preloaded) {
   stopPoll();
@@ -191,6 +243,8 @@ async function goProjects(preloaded) {
   list.innerHTML = '<div class="empty">Loading…</div>';
   state.browseFolderId = null;
   state.folderProjects = [];
+  // Re-init owner-group collapse defaults on a fresh load (first group open).
+  state.collapsedOwners = null;
   try {
     const projects = preloaded || (await api("/api/v1/projects"));
     state.projects = projects;
@@ -266,6 +320,15 @@ function renderProjects(query) {
     ? allProjects.filter((p) => (p.name || "").toLowerCase().includes(q))
     : allProjects;
 
+  const makeProjectEl = (p) => {
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = '<div class="title"></div>';
+    el.querySelector(".title").textContent = p.name || "Untitled";
+    el.onclick = () => goFiles(p, null);
+    return el;
+  };
+
   list.innerHTML = "";
   shownFolders.forEach((f) => {
     const el = document.createElement("div");
@@ -275,14 +338,53 @@ function renderProjects(query) {
     el.onclick = () => browseFolder(f.id);
     list.appendChild(el);
   });
-  shownProjects.forEach((p) => {
-    const el = document.createElement("div");
-    el.className = "item";
-    el.innerHTML = '<div class="title"></div>';
-    el.querySelector(".title").textContent = p.name || "Untitled";
-    el.onclick = () => goFiles(p, null);
-    list.appendChild(el);
-  });
+
+  // At the root level, group the loose projects by owner (color-coded,
+  // collapsible) like the web Projects page. Inside a folder, list flat.
+  if (state.browseFolderId == null) {
+    const groups = groupProjectsByOwner(shownProjects);
+    if (state.collapsedOwners == null) {
+      // Default: first group expanded, the rest collapsed.
+      state.collapsedOwners = new Set(groups.slice(1).map((g) => g.key));
+    }
+    groups.forEach((g) => {
+      const expanded = !!q || !state.collapsedOwners.has(g.key);
+      const head = document.createElement("div");
+      head.className = "owner-head";
+      const caret = document.createElement("span");
+      caret.className = "owner-caret";
+      caret.textContent = expanded ? "▾" : "▸";
+      head.appendChild(caret);
+      const av = document.createElement("span");
+      av.className = "owner-avatar";
+      av.style.backgroundColor = ownerColor(g.ownerId);
+      av.textContent = g.isYou ? "Y" : ownerInitials(g.ownerName);
+      head.appendChild(av);
+      const nm = document.createElement("span");
+      nm.className = "owner-name";
+      nm.textContent = g.isYou ? "You" : g.ownerName;
+      head.appendChild(nm);
+      const cnt = document.createElement("span");
+      cnt.className = "owner-count";
+      cnt.textContent = String(g.items.length);
+      head.appendChild(cnt);
+      head.onclick = () => {
+        if (state.collapsedOwners.has(g.key)) state.collapsedOwners.delete(g.key);
+        else state.collapsedOwners.add(g.key);
+        renderProjects(query);
+      };
+      list.appendChild(head);
+      if (expanded) {
+        g.items.forEach((p) => {
+          const el = makeProjectEl(p);
+          el.classList.add("in-group");
+          list.appendChild(el);
+        });
+      }
+    });
+  } else {
+    shownProjects.forEach((p) => list.appendChild(makeProjectEl(p)));
+  }
 
   if (!shownFolders.length && !shownProjects.length) {
     list.innerHTML = q

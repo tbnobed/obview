@@ -615,6 +615,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Current user for the presented bearer token / session. The panel calls this
+  // on a persisted-token relaunch (reconnect) so it can label & order the
+  // signed-in user's own projects as "You" without a fresh login round-trip.
+  app.get("/api/v1/me", apiAuth, async (req, res, next) => {
+    try {
+      const u = req.user!;
+      res.json({ id: u.id, name: u.name, username: u.username, role: u.role });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Revoke the api_session for the presented bearer token (panel "Sign out").
   // Session-cookie callers have nothing to revoke here, so it's a no-op for them.
   app.post("/api/v1/logout", apiAuth, async (req, res, next) => {
@@ -658,6 +670,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: p.name,
           description: p.description ?? null,
           fileCount: (p as any).fileCount ?? null,
+          // Owner identity so the panel can group the root list "by user"
+          // (and color-code) exactly like the web Projects page.
+          ownerId: p.createdById ?? null,
+          ownerName:
+            (p as any).creatorName ??
+            (p as any).creatorUsername ??
+            (p.createdById != null ? `user #${p.createdById}` : null),
         })),
       );
     } catch (error) {
