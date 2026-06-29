@@ -817,14 +817,14 @@ async function pullMarkers() {
   try {
     const { project, seq } = await getActiveSequence();
     const markers = await ppro.Markers.getMarkers(seq);
-    // createAddMarkerAction signature is (tickTime, name, type, comments) where
-    // `type` is a marker-type value and `comments` MUST be a string. The old
-    // code passed the comment text as `type` and a COLOR NUMBER as `comments`,
-    // which threw "Illegal Parameter type" on the numeric arg. Resolve the
-    // proper type constant if exposed, else fall back to the "Comment" literal.
+    // The verified Adobe UXP signature is:
+    //   createAddMarkerAction(name, markerType, startTime, duration, comments)
+    // i.e. NAME (string) comes FIRST and the TickTime is the 3rd arg. Earlier
+    // builds passed the TickTime into the name slot, which throws "Illegal
+    // Parameter type". markerType must be the ppro.Marker.MARKER_TYPE_* constant
+    // (a raw "Comment" string also throws); startTime/duration must be TickTime.
     const markerType =
-      (ppro.Constants && ppro.Constants.MarkerType && ppro.Constants.MarkerType.COMMENT) ||
-      "Comment";
+      (ppro.Marker && ppro.Marker.MARKER_TYPE_COMMENT) || "Comment";
     let added = 0;
     for (const c of state.comments) {
       // Timestamps come back from the JSON API as numbers OR numeric strings;
@@ -835,22 +835,22 @@ async function pullMarkers() {
       if (rawStart == null || !Number.isFinite(start)) continue;
       const outPoint = c.outPoint != null ? Number(c.outPoint) : null;
       const name = (c.authorName || "Reviewer") + ": " + (c.content || "").slice(0, 60);
+      const startTime = ppro.TickTime.createWithSeconds(start);
+      // Range comments → a marker span; otherwise omit duration entirely.
+      const duration =
+        outPoint != null && Number.isFinite(outPoint) && outPoint > start
+          ? ppro.TickTime.createWithSeconds(outPoint - start)
+          : undefined;
       // Marker mutations run inside a transaction in the 25.6+ UXP API.
       await project.executeTransaction((compoundAction) => {
         const createAction = markers.createAddMarkerAction(
-          ppro.TickTime.createWithSeconds(start),
           name,
           markerType,
+          startTime,
+          duration,
           c.content || ""
         );
         compoundAction.addAction(createAction);
-        if (outPoint != null && Number.isFinite(outPoint) && outPoint > start) {
-          const dur = ppro.TickTime.createWithSeconds(outPoint - start);
-          const durAction = markers.createSetMarkerDurationAction
-            ? markers.createSetMarkerDurationAction(createAction, dur)
-            : null;
-          if (durAction) compoundAction.addAction(durAction);
-        }
       });
       added++;
     }

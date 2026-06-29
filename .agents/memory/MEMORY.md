@@ -7,4 +7,4 @@
 - [API bearer auth & panel sessions](api-bearer-sessions.md) — /api/v1 bearer resolves session-token then legacy personal token; per-login sessions isolate shared workstations; login intentionally has no rate limit (matches /api/login).
 - [Open read-access model](access-control-model.md) — authenticated reads are intentionally ungated by project membership (hasProjectAccess = auth + exists); only writes are gated. "IDOR" flags on read routes are false positives here.
 - [<video> source reload](video-source-reload.md) — swapping a child <source> src never reloads the element; key it by source id (or call .load()), or it shows a stale/blank frame.
-- [UXP marker API](uxp-marker-api.md) — createAddMarkerAction is (tickTime,name,type,comments); "Illegal Parameter type" = any wrong-typed arg (was a color number in the comments slot), no color arg exists.
+- [UXP marker API](uxp-marker-api.md) — createAddMarkerAction is (name,markerType,startTime,duration,comments) — NAME first, NOT the TickTime; use ppro.Marker.MARKER_TYPE_COMMENT; "Illegal Parameter type" = wrong arg order/type.

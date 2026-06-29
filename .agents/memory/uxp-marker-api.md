@@ -5,12 +5,16 @@ description: Correct arg order/types for ppro Markers.createAddMarkerAction and 
 
 # Premiere UXP `createAddMarkerAction`
 
-Signature is `(tickTime, name, type, comments)`:
-- `tickTime` — `ppro.TickTime.createWithSeconds(n)`, n MUST be a real finite Number (coerce; numeric strings from the JSON API throw).
-- `name` — string label.
-- `type` — marker type value, e.g. `ppro.Constants.MarkerType.COMMENT` (fall back to the literal `"Comment"` if Constants isn't exposed).
-- `comments` — MUST be a string.
+**Verified signature (Adobe UXP types.d.ts):**
+`createAddMarkerAction(name, markerType?, startTime?, duration?, comments?)`
+- `name` — string, **comes FIRST** (NOT the TickTime).
+- `markerType` — use the constant `ppro.Marker.MARKER_TYPE_COMMENT` (also CHAPTER / SEGMENTATION / WEBLINK). A raw `"Comment"` string can throw.
+- `startTime` — `ppro.TickTime.createWithSeconds(n)`, n MUST be a finite Number (numeric strings throw).
+- `duration` — TickTime for a marker span, or `undefined` to omit.
+- `comments` — string.
 
-**Why:** `"Illegal Parameter type"` is a generic native-binding error thrown when ANY arg is the wrong type. Two separate bugs produced it here: (1) a numeric-string timestamp into `createWithSeconds`, and (2) a **color integer passed in the `comments` slot** (old code wrongly did `(...tickTime, name, commentText, COLOR_NUMBER)`). There is no color argument in this call.
+Pass `undefined` for `duration` when there's no range; `comments` still works as the 5th arg. There is no color argument — marker color is set via a separate action, not here.
 
-**How to apply:** When a UXP marker/TickTime call throws "Illegal Parameter type", check EACH argument's type against the real signature — don't assume it's the first/timestamp one. Marker color (if ever needed) must be set via a separate action, not inside createAddMarkerAction. Marker mutations must run inside `project.executeTransaction(compoundAction => ...)` and be added via `compoundAction.addAction(...)`.
+**Why:** `"Illegal Parameter type"` is a generic native-binding error thrown when ANY arg is the wrong type. The recurring bug here was passing a `TickTime` into the first (name/string) slot because the order was assumed to be `(tickTime, name, type, comments)` — it is not. Don't trust intuited arg order for ppro; check the real signature.
+
+**How to apply:** Marker mutations must run inside `project.executeTransaction(compoundAction => { ... compoundAction.addAction(action) })`. `createSetMarkerDurationAction` is NOT a documented method — set duration via the 4th arg of createAddMarkerAction instead. If "Illegal Parameter type" persists, some flows also require wrapping reads in `project.lockedAccess(...)`.
