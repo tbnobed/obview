@@ -208,9 +208,7 @@ function renderProjects(query) {
     );
   const q = (query || "").trim().toLowerCase();
   const projects = q
-    ? all.filter((p) =>
-        ((p.name || "") + " " + (p.description || "")).toLowerCase().includes(q),
-      )
+    ? all.filter((p) => (p.name || "").toLowerCase().includes(q))
     : all;
   if (!all.length) {
     list.innerHTML = '<div class="empty">No projects.</div>';
@@ -224,9 +222,8 @@ function renderProjects(query) {
   projects.forEach((p) => {
     const el = document.createElement("div");
     el.className = "item";
-    el.innerHTML = '<div class="title"></div><div class="meta"></div>';
+    el.innerHTML = '<div class="title"></div>';
     el.querySelector(".title").textContent = p.name || "Untitled";
-    el.querySelector(".meta").textContent = p.description || "";
     el.onclick = () => goFiles(p, null);
     list.appendChild(el);
   });
