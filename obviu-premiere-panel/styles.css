@@ -57,47 +57,56 @@ select { height: 26px; }
 textarea { resize: vertical; min-height: 48px; }
 
 /* ---- Buttons ---- */
-button {
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   -webkit-appearance: none;
   appearance: none;
+  box-sizing: border-box;
   margin: 0;
   background: #2680eb;
   color: #fff;
   border: 1px solid transparent;
   border-radius: 4px;
-  padding: 3px 9px;
-  height: 22px;
-  min-height: 0;
+  padding: 0 10px;
+  height: 24px;
   line-height: 1;
   font-size: 11px;
   font-weight: 600;
   text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
+  user-select: none;
 }
-button:hover { background: #3b8ef0; }
-button.full { width: 100%; }
-button.secondary { background: #2b2b2b; color: #ececec; border: 1px solid #383838; }
-button.secondary:hover { background: #303030; border-color: #4a4a4a; }
-button.ok { background: #33915b; }
-button.ok:hover { background: #3aa667; }
-button.warn { background: #c4831f; }
-button.warn:hover { background: #d8932a; }
-button.link {
+.btn:hover { background: #3b8ef0; }
+.btn.full { width: 100%; }
+.btn.secondary { background: #2b2b2b; color: #ececec; border-color: #383838; }
+.btn.secondary:hover { background: #303030; border-color: #4a4a4a; }
+.btn.ok { background: #33915b; }
+.btn.ok:hover { background: #3aa667; }
+.btn.warn { background: #c4831f; }
+.btn.warn:hover { background: #d8932a; }
+.btn.disabled { opacity: 0.5; pointer-events: none; }
+.btn.link {
+  display: inline;
   background: transparent;
   color: #2680eb;
+  border-color: transparent;
   padding: 0 2px;
   height: auto;
   line-height: 1.4;
   font-weight: 500;
 }
-button.link:hover { background: transparent; color: #3b8ef0; }
+.btn.link:hover { background: transparent; color: #3b8ef0; }
 
 /* ---- Button rows: compact, content-width, wrap when narrow ---- */
 .row { display: flex; gap: 8px; }
 .row.wrap { flex-wrap: wrap; }
 .row.between { justify-content: space-between; align-items: center; }
-.actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.actions button { flex: 0 0 auto; }
+.actions { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; }
+.actions .btn { flex: 0 0 auto; }
 
 /* ---- Disclosure (collapsible section header) ---- */
 .disclosure {
@@ -114,6 +123,9 @@ button.link:hover { background: transparent; color: #3b8ef0; }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
 }
 .disclosure:hover { background: transparent; color: #ececec; }
 .disclosure .caret { font-size: 10px; }

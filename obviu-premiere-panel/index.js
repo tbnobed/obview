@@ -229,8 +229,8 @@ async function goFiles(project, folderId) {
     } else {
       const cur = state.folders.find((f) => f.id === state.currentFolderId);
       crumb.innerHTML = "";
-      const back = document.createElement("button");
-      back.className = "link";
+      const back = document.createElement("a");
+      back.className = "btn link";
       back.textContent = "← All files";
       back.onclick = () => goFiles(project, null);
       crumb.appendChild(back);
@@ -445,12 +445,13 @@ function toggleReply(parentEl, parent) {
   const ta = document.createElement("textarea");
   ta.rows = 2;
   ta.placeholder = "Reply…";
-  const btn = document.createElement("button");
+  const btn = document.createElement("a");
+  btn.className = "btn";
   btn.textContent = "Post reply";
   btn.onclick = async () => {
     const content = ta.value.trim();
     if (!content) return;
-    btn.disabled = true;
+    btn.classList.add("disabled");
     try {
       await api("/api/v1/files/" + state.selectedVersionId + "/comments", {
         method: "POST",
@@ -459,7 +460,7 @@ function toggleReply(parentEl, parent) {
       await loadComments();
     } catch (e) {
       $("fileStatus").textContent = "Reply failed: " + e.message;
-      btn.disabled = false;
+      btn.classList.remove("disabled");
     }
   };
   box.appendChild(ta);
@@ -484,7 +485,7 @@ async function postComment() {
   const content = $("commentInput").value.trim();
   if (!content) return;
   const btn = $("btnPostComment");
-  btn.disabled = true;
+  btn.classList.add("disabled");
   $("fileStatus").textContent = "";
   const body = { content };
   if ($("commentAtTime").checked) {
@@ -502,7 +503,7 @@ async function postComment() {
   } catch (e) {
     $("fileStatus").textContent = "Post failed: " + e.message;
   } finally {
-    btn.disabled = false;
+    btn.classList.remove("disabled");
   }
 }
 
@@ -892,7 +893,7 @@ async function exportAndUpload() {
   $("seqStatus").textContent = "";
   const btn = $("btnExportUpload");
   const asNew = $("destNew").checked;
-  btn.disabled = true;
+  btn.classList.add("disabled");
   try {
     requirePremiere();
     if (!uxp) throw new Error("UXP file API unavailable.");
@@ -951,7 +952,7 @@ async function exportAndUpload() {
   } catch (e) {
     $("seqStatus").textContent = "Failed: " + e.message;
   } finally {
-    btn.disabled = false;
+    btn.classList.remove("disabled");
   }
 }
 

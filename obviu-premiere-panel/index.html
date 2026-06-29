@@ -24,7 +24,7 @@
           <label>Password</label>
           <input id="password" type="password" placeholder="••••••••" />
         </div>
-        <button id="btnConnect" class="full">Sign in</button>
+        <a id="btnConnect" class="btn full">Sign in</a>
         <p class="muted small">Sign in with your normal Obviu account.</p>
         <div id="authError" class="error"></div>
       </div>
@@ -34,7 +34,7 @@
     <div id="view-projects" class="view hidden">
       <div class="toolbar">
         <span id="meLabel" class="muted small"></span>
-        <button id="btnSignOut" class="link">Sign out</button>
+        <a id="btnSignOut" class="btn link">Sign out</a>
       </div>
       <h2>Projects</h2>
       <div id="projectsList" class="list"></div>
@@ -43,7 +43,7 @@
     <!-- Files view -->
     <div id="view-files" class="view hidden">
       <div class="toolbar">
-        <button id="btnBackProjects" class="link">&larr; Projects</button>
+        <a id="btnBackProjects" class="btn link">&larr; Projects</a>
       </div>
       <h2 id="filesTitle">Files</h2>
       <div id="breadcrumb" class="muted small"></div>
@@ -54,8 +54,8 @@
     <!-- File detail view -->
     <div id="view-file" class="view hidden">
       <div class="toolbar">
-        <button id="btnBackFiles" class="link">&larr; Files</button>
-        <button id="btnRefresh" class="link">Refresh</button>
+        <a id="btnBackFiles" class="btn link">&larr; Files</a>
+        <a id="btnRefresh" class="btn link">Refresh</a>
       </div>
       <h2 id="fileTitle" class="file-title">File</h2>
 
@@ -67,13 +67,11 @@
       <webview id="mediaView" class="media-view" width="100%" height="320" src=""></webview>
 
       <div class="actions">
-        <button id="btnImport">Import to Premiere</button>
-        <button id="btnPullMarkers" class="secondary">Pull comments to markers</button>
-        <button id="btnShare" class="secondary">Copy share link</button>
-      </div>
-      <div class="actions">
-        <button id="btnApprove" class="ok">Approve</button>
-        <button id="btnRequest" class="warn">Request changes</button>
+        <a id="btnImport" class="btn">Import to Premiere</a>
+        <a id="btnPullMarkers" class="btn secondary">Pull comments to markers</a>
+        <a id="btnShare" class="btn secondary">Copy share link</a>
+        <a id="btnApprove" class="btn ok">Approve</a>
+        <a id="btnRequest" class="btn warn">Request changes</a>
       </div>
       <div id="fileStatus" class="status"></div>
 
@@ -85,20 +83,20 @@
             <input id="commentAtTime" type="checkbox" />
             Attach playhead time
           </label>
-          <button id="btnPostComment">Post</button>
+          <a id="btnPostComment" class="btn">Post</a>
         </div>
         <div id="commentsList" class="list"></div>
       </section>
 
       <section class="card">
-        <button id="btnToggleExport" type="button" class="disclosure">
+        <a id="btnToggleExport" class="disclosure">
           <span>Send your cut</span>
           <span id="exportCaret" class="caret">&#9656;</span>
-        </button>
+        </a>
         <div id="exportBody" class="hidden">
           <p class="muted small">Export the active Premiere sequence and upload it to Obviu.</p>
           <div class="row wrap preset-row">
-            <button id="btnPickPreset" class="secondary">Choose preset…</button>
+            <a id="btnPickPreset" class="btn secondary">Choose preset…</a>
             <span id="presetLabel" class="muted small">No preset selected</span>
           </div>
           <div class="field">
@@ -113,7 +111,7 @@
             <input id="destNew" type="radio" name="dest" />
             Upload as a new file (this folder)
           </label>
-          <button id="btnExportUpload" class="full">Export &amp; upload</button>
+          <a id="btnExportUpload" class="btn full">Export &amp; upload</a>
           <div id="seqStatus" class="status"></div>
         </div>
       </section>
