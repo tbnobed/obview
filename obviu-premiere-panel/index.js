@@ -1380,6 +1380,7 @@ function init() {
   $("btnBackFiles").onclick = () => goFiles(state.project, state.currentFolderId);
   $("btnRefresh").onclick = loadComments;
   $("btnImport").onclick = importToPremiere;
+  $("btnSendCut").onclick = openSendCut;
   $("btnPullMarkers").onclick = pullMarkers;
   $("btnShare").onclick = copyShareLink;
   $("btnApprove").onclick = () => review("approved");

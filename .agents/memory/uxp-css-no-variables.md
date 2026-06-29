@@ -63,6 +63,16 @@ clipped. **How to apply:** put scrollable content in ONE flex:1 scroll child and
 make any always-visible footer/input a flex:0 0 sibling of the view — never the
 last child of the shrinking scroll region.
 
+**Don't rely on the panel flyout menu for primary actions.** Registering a
+flyout item via `uxp.entrypoints.setup({ panels: { <id>: { menuItems, invokeMenu }}})`
+did NOT surface our "Send your cut" item — the panel's ☰ showed only Premiere's
+default group menu (Close Panel / Undock / etc.). **Why:** the custom menu-item
+registration is unreliable across Premiere builds / panel-id mismatches and is
+not user-discoverable even when it works. **How to apply:** put any action the
+user must reach (export/upload, etc.) as a visible button in the panel UI that
+opens the dialog directly; keep the flyout entry only as a bonus, never the sole
+path.
+
 **Action-button layout:** Five buttons in one `flex:1 1 0` row squish and
 2-line-wrap on a real (narrow) Premiere panel. Current layout groups them:
 Import full-width (`.btn.full`), then an Approve/Request `.action-row`, then a
