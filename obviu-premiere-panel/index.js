@@ -696,8 +696,10 @@ const MARKER_COLOR = { open: 1 /* red */, resolved: 3 /* green */, changes: 2 /*
 
 async function jumpTo(sec) {
   try {
+    const s = Number(sec);
+    if (!Number.isFinite(s)) throw new Error("Comment has no valid timestamp.");
     const { seq } = await getActiveSequence();
-    const t = ppro.TickTime.createWithSeconds(sec);
+    const t = ppro.TickTime.createWithSeconds(s);
     await seq.setPlayerPosition(t);
   } catch (e) {
     $("fileStatus").textContent = "Jump failed: " + e.message;
@@ -754,8 +756,13 @@ async function pullMarkers() {
     const markers = await ppro.Markers.getMarkers(seq);
     let added = 0;
     for (const c of state.comments) {
-      if (c.timestamp == null) continue;
-      const start = c.inPoint != null ? c.inPoint : c.timestamp;
+      // Timestamps come back from the JSON API as numbers OR numeric strings;
+      // ppro.TickTime.createWithSeconds requires a real number or it throws
+      // "Illegal Parameter type". Coerce and skip anything non-finite.
+      const rawStart = c.inPoint != null ? c.inPoint : c.timestamp;
+      const start = Number(rawStart);
+      if (rawStart == null || !Number.isFinite(start)) continue;
+      const outPoint = c.outPoint != null ? Number(c.outPoint) : null;
       const st = statusOf(c);
       const name = (c.authorName || "Reviewer") + ": " + (c.content || "").slice(0, 60);
       // Marker mutations run inside a transaction in the 25.6+ UXP API.
@@ -767,8 +774,8 @@ async function pullMarkers() {
           MARKER_COLOR[st]
         );
         compoundAction.addAction(createAction);
-        if (c.outPoint != null && c.outPoint > start) {
-          const dur = ppro.TickTime.createWithSeconds(c.outPoint - start);
+        if (outPoint != null && Number.isFinite(outPoint) && outPoint > start) {
+          const dur = ppro.TickTime.createWithSeconds(outPoint - start);
           const durAction = markers.createSetMarkerDurationAction
             ? markers.createSetMarkerDurationAction(createAction, dur)
             : null;
