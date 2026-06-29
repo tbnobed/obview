@@ -48,16 +48,25 @@ input, select, textarea {
   border: 1px solid #383838;
   color: #ececec;
   border-radius: 5px;
-  padding: 7px 9px;
   font-size: 13px;
-  line-height: 1.4;
-  height: auto;
   font-family: inherit;
+}
+/* Single-line fields: explicit height + matching line-height vertically
+   centers the text. UXP does not reliably center via padding, which clipped
+   the top of glyphs. Keep vertical padding at 0 and let line-height do it. */
+input, select {
+  height: 34px;
+  line-height: 32px;
+  padding: 0 10px;
+}
+textarea {
+  padding: 8px 10px;
+  line-height: 1.4;
+  min-height: 56px;
+  resize: vertical;
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: #2680eb; }
 input::placeholder, textarea::placeholder { color: #6f6f6f; }
-select { min-height: 30px; }
-textarea { resize: vertical; min-height: 48px; }
 
 /* ---- Buttons ---- */
 .btn {

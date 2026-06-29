@@ -30,6 +30,13 @@ exposes `.selected` (the radio's `value`). When resetting a group programmatical
 set the group's `.selected` AND each radio's `.checked`, since setting one radio's
 `.checked` directly may not propagate to siblings.
 
+**Text inputs clip glyphs at the top:** UXP does NOT reliably vertically-center
+single-line `<input>`/`<select>` text via top/bottom padding — the top of the
+glyphs gets cropped. Fix: give single-line fields an explicit `height` + matching
+`line-height` (e.g. `height: 34px; line-height: 32px; padding: 0 10px;`) so
+line-height does the centering; keep vertical padding at 0. `textarea` is the
+exception — it needs real vertical padding + `line-height: 1.4` + `min-height`.
+
 **Action-button width:** The user wants the `.actions` button row to fill the
 full panel width with spacing between buttons — use `flex: 1 1 0` (+ `gap`) so
 they share width equally, and let labels wrap (`white-space: normal`,
