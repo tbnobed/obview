@@ -30,6 +30,15 @@ try {
 } catch (e) {
   uxp = null;
 }
+// UXP's Node-like fs module supports positional reads (open/read/close with a
+// byte offset), unlike storage File.read which loads the whole file into one
+// buffer. We use it to stream multi-GB exports chunk-by-chunk on upload.
+let uxpFs = null;
+try {
+  uxpFs = require("fs");
+} catch (e) {
+  uxpFs = null;
+}
 
 const POLL_MS = 30000;
 
@@ -840,11 +849,66 @@ async function exportSequence(project, seq, outPath, presetPath) {
   return mgr.exportSequence(seq, exportType, outPath, presetPath);
 }
 
+// A chunk source over a rendered export file. `read(offset, length)` returns
+// only that slice's bytes, so the whole file never sits in memory at once.
+// Uses UXP's positional fs (open/read/close); returns null if unavailable so
+// callers can fall back to a whole-file read for older builds / small exports.
+async function openChunkReader(nativePath) {
+  if (!uxpFs || typeof uxpFs.open !== "function" || typeof uxpFs.read !== "function") {
+    return null;
+  }
+  let fd;
+  let size;
+  try {
+    fd = await uxpFs.open(nativePath, "r");
+    const stat = await (uxpFs.lstat ? uxpFs.lstat(nativePath) : uxpFs.stat(nativePath));
+    size = typeof stat.size === "number" ? stat.size : Number(stat.size);
+    if (!Number.isFinite(size)) throw new Error("Could not determine export size.");
+  } catch (e) {
+    if (fd != null && uxpFs.close) {
+      try { await uxpFs.close(fd); } catch (_) {}
+    }
+    return null;
+  }
+  return {
+    size,
+    async read(offset, length) {
+      const buffer = new ArrayBuffer(length);
+      const result = await uxpFs.read(fd, buffer, 0, length, offset);
+      const bytesRead = typeof result === "number" ? result : (result && result.bytesRead);
+      if (Number.isFinite(bytesRead) && bytesRead < length) {
+        return buffer.slice(0, bytesRead);
+      }
+      return buffer;
+    },
+    async close() {
+      if (uxpFs.close) {
+        try { await uxpFs.close(fd); } catch (_) {}
+      }
+    },
+  };
+}
+
+// Fallback source backed by an in-memory ArrayBuffer (whole-file read). Used
+// only when positional reads aren't available; slicing keeps the PATCH path
+// identical to the streaming reader.
+function bufferSource(arrayBuffer) {
+  return {
+    size: arrayBuffer.byteLength,
+    async read(offset, length) {
+      return arrayBuffer.slice(offset, offset + length);
+    },
+    async close() {},
+  };
+}
+
 // Minimal resumable tus client: creation POST -> chunked PATCH, resyncing the
 // offset from the server (HEAD) on transient failure. The completing PATCH
 // returns 200 with the created file row (the server's onUploadFinish body).
-async function tusUpload(arrayBuffer, metadata, onPct) {
-  const total = arrayBuffer.byteLength;
+// `source` is a chunk reader ({ size, read(offset, length), close() }) so the
+// export is streamed slice-by-slice rather than held whole in memory.
+async function tusUpload(source, metadata, onPct) {
+  const total = source.size;
   const endpoint = state.baseUrl + "/api/uploads/tus";
 
   const createRes = await fetch(endpoint, {
@@ -870,8 +934,10 @@ async function tusUpload(arrayBuffer, metadata, onPct) {
   let fileRow = null;
   while (offset < total) {
     const end = Math.min(offset + TUS_CHUNK, total);
-    const chunk = arrayBuffer.slice(offset, end);
     try {
+      // Read only this slice from disk; on retry the offset is resynced from
+      // HEAD first, so we re-read at the corrected position next iteration.
+      const chunk = await source.read(offset, end - offset);
       const patchRes = await fetch(uploadUrl, {
         method: "PATCH",
         headers: {
@@ -918,6 +984,7 @@ async function exportAndUpload() {
     ? grp.selected === "new"
     : $("destNew").checked;
   btn.classList.add("disabled");
+  let source = null;
   try {
     requirePremiere();
     if (!uxp) throw new Error("UXP file API unavailable.");
@@ -940,10 +1007,16 @@ async function exportAndUpload() {
     const outFile = await sub.createFile(baseName, { overwrite: true });
     await exportSequence(project, seq, outFile.nativePath, state.presetPath);
 
-    // 2) Read the rendered bytes back for upload.
+    // 2) Open the rendered file for slice-by-slice reads so peak memory stays
+    // bounded regardless of export size (multi-GB cuts). Prefer UXP's
+    // positional fs; fall back to a whole-file read only where it's missing.
     $("seqStatus").textContent = "Reading render…";
     const rendered = await sub.getEntry(baseName);
-    const buf = await rendered.read({ format: uxp.storage.formats.binary });
+    source = await openChunkReader(rendered.nativePath);
+    if (!source) {
+      const buf = await rendered.read({ format: uxp.storage.formats.binary });
+      source = bufferSource(buf);
+    }
 
     // 3) Build upload metadata. To stack a new version onto the selected
     // file, customFilename must equal that file's stack key (its filename)
@@ -960,7 +1033,7 @@ async function exportAndUpload() {
 
     // 4) Upload through the resumable path with the bearer token.
     $("seqStatus").textContent = "Uploading… 0%";
-    const fileRow = await tusUpload(buf, meta, (pct) => {
+    const fileRow = await tusUpload(source, meta, (pct) => {
       $("seqStatus").textContent = "Uploading… " + pct + "%";
     });
 
@@ -976,6 +1049,9 @@ async function exportAndUpload() {
   } catch (e) {
     $("seqStatus").textContent = "Failed: " + e.message;
   } finally {
+    if (source) {
+      try { await source.close(); } catch (_) {}
+    }
     btn.classList.remove("disabled");
   }
 }
