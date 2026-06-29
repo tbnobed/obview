@@ -201,7 +201,11 @@ async function goProjects(preloaded) {
 
 function renderProjects(query) {
   const list = $("projectsList");
-  const all = state.projects || [];
+  const all = (state.projects || [])
+    .slice()
+    .sort((a, b) =>
+      (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }),
+    );
   const q = (query || "").trim().toLowerCase();
   const projects = q
     ? all.filter((p) =>
