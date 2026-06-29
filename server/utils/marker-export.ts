@@ -45,6 +45,13 @@ export function generateFCPXML(
   const totalFrames = secondsToFrames(duration, fps);
   const timebase = fps;
 
+  // Sequence-level markers (timeline ruler markers). Point markers use
+  // out=-1, which is the Final Cut Pro 7 / Premiere convention. We deliberately
+  // do NOT emit a <clipitem>/<file>: with no real media <pathurl> Premiere
+  // imports the clip as OFFLINE (red), and a <clipitem id> built from the
+  // filename contains spaces, which makes Premiere reject the whole file with
+  // an empty "File Import Failure". An empty sequence that only carries markers
+  // imports cleanly and drops the markers straight onto the timeline ruler.
   const markers = comments
     .filter(c => c.timestamp !== null && c.timestamp !== undefined)
     .sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
@@ -52,25 +59,39 @@ export function generateFCPXML(
       const inFrames = secondsToFrames(c.timestamp!, fps);
       const markerName = sanitizeLine(`[${c.authorName}] ${c.content}`).substring(0, 255);
       return `
-              <marker>
-                <name>${escapeXml(markerName)}</name>
-                <comment>${escapeXml(sanitizeLine(c.content))}</comment>
-                <in>${inFrames}</in>
-                <out>${inFrames + 1}</out>
-              </marker>`;
+    <marker>
+      <name>${escapeXml(markerName)}</name>
+      <comment>${escapeXml(sanitizeLine(c.content))}</comment>
+      <in>${inFrames}</in>
+      <out>-1</out>
+    </marker>`;
     })
     .join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xmeml>
 <xmeml version="4">
-  <sequence>
+  <sequence id="obviu-sequence-1">
     <name>${escapeXml(filename)}</name>
     <duration>${totalFrames}</duration>
     <rate>
       <timebase>${timebase}</timebase>
       <ntsc>FALSE</ntsc>
     </rate>
+    <media>
+      <video>
+        <format>
+          <samplecharacteristics>
+            <rate>
+              <timebase>${timebase}</timebase>
+              <ntsc>FALSE</ntsc>
+            </rate>
+            <width>1920</width>
+            <height>1080</height>
+          </samplecharacteristics>
+        </format>
+      </video>
+    </media>
     <timecode>
       <rate>
         <timebase>${timebase}</timebase>
@@ -79,35 +100,7 @@ export function generateFCPXML(
       <string>00:00:00:00</string>
       <frame>0</frame>
       <displayformat>NDF</displayformat>
-    </timecode>
-    <in>-1</in>
-    <out>-1</out>
-    <media>
-      <video>
-        <track>
-          <clipitem id="${escapeXml(filename)}">
-            <name>${escapeXml(filename)}</name>
-            <duration>${totalFrames}</duration>
-            <rate>
-              <timebase>${timebase}</timebase>
-              <ntsc>FALSE</ntsc>
-            </rate>
-            <start>0</start>
-            <end>${totalFrames}</end>
-            <in>0</in>
-            <out>${totalFrames}</out>
-            <file id="file-1">
-              <name>${escapeXml(filename)}</name>
-              <duration>${totalFrames}</duration>
-              <rate>
-                <timebase>${timebase}</timebase>
-                <ntsc>FALSE</ntsc>
-              </rate>
-            </file>${markers}
-          </clipitem>
-        </track>
-      </video>
-    </media>
+    </timecode>${markers}
   </sequence>
 </xmeml>`;
 }
