@@ -641,10 +641,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // member of. Global-folder projects are reached by browsing folders via
       // /api/v1/folders + /api/v1/folders/:id/projects (mirrors the web), NOT by
       // flattening every project into this list.
-      const projects =
+      let projects =
         req.user.role === "admin"
           ? await storage.getAllProjectsWithLatestVideo()
           : await storage.getProjectsByUserWithLatestVideo(req.user.id);
+      // Panel-only: at the root level show just folder-less projects. Projects
+      // that live in a folder load inside that folder via the folder browser,
+      // so we don't dump the entire library flat under "Projects". (Admins
+      // otherwise get every project here.) The web endpoints are untouched.
+      if (req.user.role === "admin") {
+        projects = projects.filter((p) => p.folderId == null);
+      }
       res.json(
         projects.map((p) => ({
           id: p.id,
