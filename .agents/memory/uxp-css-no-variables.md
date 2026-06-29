@@ -20,6 +20,16 @@ rule. Also prefer explicit `height` + `line-height` on buttons rather than only
 `min-height`. The panel is only verifiable inside Premiere, so a wrong
 assumption here costs a full user round-trip.
 
+**Native form controls look bad too:** `<input type="checkbox">` / `type="radio"`
+render with ugly default UXP chrome that can't be CSS-restyled (no reliable
+`appearance: none`, no `::before`/`::after` on inputs — same root cause as the
+`<button>` chrome problem). Fix = built-in Spectrum widgets `<sp-checkbox>` and
+`<sp-radio>`/`<sp-radio-group>` (available in Premiere UXP without imports). They
+still expose `.checked`, so existing JS reads keep working; `sp-radio-group` also
+exposes `.selected` (the radio's `value`). When resetting a group programmatically
+set the group's `.selected` AND each radio's `.checked`, since setting one radio's
+`.checked` directly may not propagate to siblings.
+
 **Action-button width:** The user wants the `.actions` button row to fill the
 full panel width with spacing between buttons — use `flex: 1 1 0` (+ `gap`) so
 they share width equally, and let labels wrap (`white-space: normal`,

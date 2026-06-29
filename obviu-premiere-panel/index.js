@@ -292,7 +292,9 @@ async function goFile(file) {
   if (destLabel) {
     destLabel.textContent = "New version of " + (file.filename || file.name || "this file");
   }
+  if ($("destGroup")) $("destGroup").selected = "version";
   if ($("destVersion")) $("destVersion").checked = true;
+  if ($("destNew")) $("destNew").checked = false;
   try {
     const detail = await api("/api/v1/files/" + file.id);
     state.file = detail;
@@ -892,7 +894,10 @@ async function tusUpload(arrayBuffer, metadata, onPct) {
 async function exportAndUpload() {
   $("seqStatus").textContent = "";
   const btn = $("btnExportUpload");
-  const asNew = $("destNew").checked;
+  const grp = $("destGroup");
+  const asNew = (grp && grp.selected != null)
+    ? grp.selected === "new"
+    : $("destNew").checked;
   btn.classList.add("disabled");
   try {
     requirePremiere();
