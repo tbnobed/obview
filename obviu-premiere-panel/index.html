@@ -70,11 +70,15 @@
       <webview id="mediaView" class="media-view" width="100%" height="320" src=""></webview>
 
       <div class="actions">
-        <a id="btnImport" class="btn">Import to Premiere</a>
-        <a id="btnPullMarkers" class="btn secondary">Pull comments to markers</a>
-        <a id="btnShare" class="btn secondary">Copy share link</a>
-        <a id="btnApprove" class="btn ok">Approve</a>
-        <a id="btnRequest" class="btn warn">Request changes</a>
+        <a id="btnImport" class="btn full">Import to Premiere</a>
+        <div class="action-row">
+          <a id="btnApprove" class="btn ok">Approve</a>
+          <a id="btnRequest" class="btn warn">Request changes</a>
+        </div>
+        <div class="action-row">
+          <a id="btnPullMarkers" class="btn secondary">Pull comments to markers</a>
+          <a id="btnShare" class="btn secondary">Copy share link</a>
+        </div>
       </div>
       <div id="fileStatus" class="status"></div>
 
