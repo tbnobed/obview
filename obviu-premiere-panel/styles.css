@@ -137,7 +137,7 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
    secondary actions each share a row, so labels get enough room instead of
    squishing five buttons into one cramped line. UXP ignores flex `gap`, so
    space rows/buttons with margins. */
-.actions { display: flex; flex-direction: column; }
+.actions { display: block; }
 .actions > * + * { margin-top: 8px; }
 .actions .btn { height: auto; min-height: 28px; padding: 5px 8px; white-space: normal; text-align: center; }
 .action-row { display: flex; }
@@ -255,10 +255,12 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
 /* Stack title over the version select: a long filename wraps to several lines,
    and UXP renders the native <select> at its own width, so a horizontal row
    makes the select overlap the wrapped title. */
-.file-head { display: flex; flex-direction: column; align-items: flex-start; }
+/* Plain block stacking: a non-growing flex column collapses to ~0 height in
+   UXP (auto flex-basis), which let the version select spill under the player. */
+.file-head { display: block; }
 .file-head .file-title { width: 100%; margin: 0 0 8px 0; }
 .version-badge {
-  align-self: flex-start;
+  display: inline-block;
   min-width: 120px;
   height: 26px; line-height: 24px;
   padding: 0 8px;

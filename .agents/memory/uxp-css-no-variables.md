@@ -37,12 +37,23 @@ glyphs gets cropped. Fix: give single-line fields an explicit `height` + matchin
 line-height does the centering; keep vertical padding at 0. `textarea` is the
 exception — it needs real vertical padding + `line-height: 1.4` + `min-height`.
 
-**Action-button width:** The user wants the `.actions` button row to fill the
-full panel width with spacing between buttons — use `flex: 1 1 0` so they share
-width equally, and let labels wrap (`white-space: normal`,
-`height: auto`/`min-height`) so the longest label ("Pull comments to markers")
-doesn't clip. (Earlier guidance to keep them `flex: 0 0 auto`/content-width was
-explicitly overridden by the user.)
+**A non-growing flex COLUMN collapses to ~0 height in UXP.** When a container is
+a flex item that does NOT grow (no `flex-grow`, i.e. auto/`0 0 auto` basis) AND
+is itself `display:flex; flex-direction:column`, UXP gives it ~0 main-size, so
+its children overflow and get painted over by whatever native layer (e.g. the
+`<webview>` player) sits below. This bit `.file-head` (version `<select>` spilled
+under the player) and `.actions` (the second button row overlapped the first).
+Fix: stack with plain `display:block` (sizes to content naturally); only keep
+the inner button *pairs* as flex ROWS. A flex column that DOES grow
+(`flex:1 1 auto` like `.tab-body`) is fine — flex-grow gives it a real height.
+Same family as the known `<webview>` collapse (needs explicit `flex:0 0 320px`,
+not auto basis).
+
+**Action-button layout:** Five buttons in one `flex:1 1 0` row squish and
+2-line-wrap on a real (narrow) Premiere panel. Current layout groups them:
+Import full-width (`.btn.full`), then an Approve/Request `.action-row`, then a
+Pull-markers/Copy-link `.action-row`. `.actions` is `display:block`; each
+`.action-row` is `display:flex` with `flex:1 1 0` buttons + `margin-left` gaps.
 
 **Flex `gap` is IGNORED by UXP.** Setting `gap` on a flex container does nothing
 on screen (same silent-drop behaviour as `var()`). To space flex children, use
