@@ -799,10 +799,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const file = await storage.getFile(fileId);
       if (!file) return res.status(404).json({ message: "File not found" });
 
-      // Build the version stack: all files in the project sharing this filename.
+      // Build the version stack. A version lineage is scoped by
+      // (filename, folderId) — the SAME scope the tus upload path uses to
+      // assign version numbers and demote prior latests. Grouping by filename
+      // alone would merge independent same-named files from different folders
+      // into one stack, which surfaces as several rows all showing "v1
+      // (latest)" (each is v1/latest within its own folder lineage).
       const siblings = await storage.getFilesByProject(file.projectId);
       const versions = siblings
-        .filter((f) => f.filename === file.filename)
+        .filter(
+          (f) =>
+            f.filename === file.filename &&
+            (f.folderId ?? null) === (file.folderId ?? null),
+        )
         .sort((a, b) => (b.version ?? 0) - (a.version ?? 0))
         .map((f) => ({
           id: f.id,
