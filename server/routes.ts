@@ -637,10 +637,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/v1/projects", apiAuth, async (req, res, next) => {
     try {
-      const projects =
-        req.user.role === "admin"
-          ? await storage.getAllProjectsWithLatestVideo()
-          : await storage.getProjectsByUserWithLatestVideo(req.user.id);
+      let projects;
+      if (req.user.role === "admin") {
+        projects = await storage.getAllProjectsWithLatestVideo();
+      } else {
+        // Membership projects PLUS projects living in global folders. The web
+        // surfaces global folders at the root (see /api/folders); the panel has
+        // no top-level folder browser, so we flatten their projects into the
+        // list — otherwise a user who isn't an explicit member never sees them.
+        projects = await storage.getProjectsByUserWithLatestVideo(req.user.id);
+        const allFolders = await storage.getAllFolders();
+        const seen = new Set(projects.map((p) => p.id));
+        for (const folder of allFolders) {
+          if (!folder.isGlobal) continue;
+          const globalProjects = await storage.getProjectsByFolderWithLatestVideo(folder.id);
+          for (const gp of globalProjects) {
+            if (!seen.has(gp.id)) {
+              seen.add(gp.id);
+              projects.push(gp);
+            }
+          }
+        }
+      }
       res.json(
         projects.map((p) => ({
           id: p.id,
