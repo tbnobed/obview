@@ -89,32 +89,33 @@
         </div>
         <div id="commentsList" class="list"></div>
       </section>
-
-      <section class="card">
-        <a id="btnToggleExport" class="disclosure">
-          <span>Send your cut</span>
-          <span id="exportCaret" class="caret">&#9656;</span>
-        </a>
-        <div id="exportBody" class="hidden">
-          <p class="muted small">Export the active Premiere sequence and upload it to Obviu.</p>
-          <div class="row wrap preset-row">
-            <a id="btnPickPreset" class="btn secondary">Choose preset…</a>
-            <span id="presetLabel" class="muted small">No preset selected</span>
-          </div>
-          <div class="field">
-            <label>Export name</label>
-            <input id="exportName" type="text" placeholder="My Cut.mp4" />
-          </div>
-          <sp-radio-group id="destGroup" column>
-            <sp-radio id="destVersion" size="s" value="version" checked><span id="destVersionLabel">New version of this file</span></sp-radio>
-            <sp-radio id="destNew" size="s" value="new">Upload as a new file (this folder)</sp-radio>
-          </sp-radio-group>
-          <a id="btnExportUpload" class="btn full">Export &amp; upload</a>
-          <div id="seqStatus" class="status"></div>
-        </div>
-      </section>
       </div>
     </div>
+
+    <!-- "Send your cut" lives in the panel flyout menu (the ☰ at the panel's
+         top); selecting it opens this modal, so the export form no longer takes
+         up room in the file view. -->
+    <dialog id="exportDialog" class="export-dialog">
+      <div class="dialog-head">
+        <h2>Send your cut</h2>
+        <a id="btnCloseExport" class="btn link">Close</a>
+      </div>
+      <p class="muted small">Export the active Premiere sequence and upload it to Obviu.</p>
+      <div class="row wrap preset-row">
+        <a id="btnPickPreset" class="btn secondary">Choose preset…</a>
+        <span id="presetLabel" class="muted small">No preset selected</span>
+      </div>
+      <div class="field">
+        <label>Export name</label>
+        <input id="exportName" type="text" placeholder="My Cut.mp4" />
+      </div>
+      <sp-radio-group id="destGroup" column>
+        <sp-radio id="destVersion" size="s" value="version" checked><span id="destVersionLabel">New version of this file</span></sp-radio>
+        <sp-radio id="destNew" size="s" value="new">Upload as a new file (this folder)</sp-radio>
+      </sp-radio-group>
+      <a id="btnExportUpload" class="btn full">Export &amp; upload</a>
+      <div id="seqStatus" class="status"></div>
+    </dialog>
 
     <script src="index.js"></script>
   </body>

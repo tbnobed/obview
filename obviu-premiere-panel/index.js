@@ -1165,6 +1165,26 @@ async function exportAndUpload() {
   }
 }
 
+// Opens the "Send your cut" export modal. UXP uses dialog.uxpShowModal (NOT the
+// browser showModal); the returned promise settles when the dialog closes, so we
+// swallow the rejection that fires on Esc / title-bar close.
+function openSendCut() {
+  const dlg = $("exportDialog");
+  if (!dlg) return;
+  if ($("seqStatus")) $("seqStatus").textContent = "";
+  if (typeof dlg.uxpShowModal === "function") {
+    dlg.uxpShowModal({
+      title: "Send your cut",
+      resize: "both",
+      size: { width: 360, height: 440 },
+    }).catch(() => {});
+  } else if (typeof dlg.showModal === "function") {
+    dlg.showModal();
+  } else {
+    dlg.removeAttribute("hidden");
+  }
+}
+
 // ---------- wire up ----------
 function init() {
   loadCreds();
@@ -1182,10 +1202,29 @@ function init() {
   $("btnPostComment").onclick = postComment;
   $("btnPickPreset").onclick = pickPreset;
   $("btnExportUpload").onclick = exportAndUpload;
-  $("btnToggleExport").onclick = () => {
-    const collapsed = $("exportBody").classList.toggle("hidden");
-    $("exportCaret").innerHTML = collapsed ? "&#9656;" : "&#9662;";
+  $("btnCloseExport").onclick = () => {
+    try { $("exportDialog").close(); } catch (_) {}
   };
+
+  // "Send your cut" lives in the panel flyout menu (the ☰ at the panel's top).
+  // menuItems + invokeMenu is the UXP way to attach a flyout to an existing
+  // "main"-HTML panel; the panel id must match manifest.json ("obviuPanel").
+  if (uxp && uxp.entrypoints && typeof uxp.entrypoints.setup === "function") {
+    try {
+      uxp.entrypoints.setup({
+        panels: {
+          obviuPanel: {
+            menuItems: [{ id: "sendCut", label: "Send your cut" }],
+            invokeMenu(id) {
+              if (id === "sendCut") openSendCut();
+            },
+          },
+        },
+      });
+    } catch (e) {
+      console.log("[obviu] flyout menu setup failed: " + e.message);
+    }
+  }
 
   // Restore the remembered export preset, if any.
   state.presetPath = localStorage.getItem("obviu.presetPath") || "";
