@@ -197,6 +197,9 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
 .media-view {
   width: 100%;
   height: 320px;
+  /* Stays pinned at the top of the file view; the comments list below scrolls
+     on its own. Without flex:0 0 auto the player gets crushed as comments grow. */
+  flex: 0 0 auto;
   border: 1px solid #383838;
   border-radius: 8px;
   background: #000;
