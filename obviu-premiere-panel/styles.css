@@ -19,9 +19,9 @@
   --warn: #c4831f;
   --warn-hover: #d8932a;
   --danger: #e5484d;
-  --radius: 6px;
+  --radius: 5px;
   --radius-lg: 8px;
-  --control-h: 30px;
+  --control-h: 26px;
 }
 
 * { box-sizing: border-box; }
@@ -93,9 +93,9 @@ button {
   color: #fff;
   border: none;
   border-radius: var(--radius);
-  padding: 0 14px;
+  padding: 0 12px;
   min-height: var(--control-h);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -120,8 +120,27 @@ button.link:hover { background: transparent; color: var(--accent-hover); }
 /* ---- Button rows: equal-width, wrap gracefully when narrow ---- */
 .row { display: flex; gap: 8px; }
 .row.wrap { flex-wrap: wrap; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.actions button { flex: 1 1 120px; }
+.row.between { justify-content: space-between; align-items: center; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.actions button { flex: 1 1 90px; }
+
+/* ---- Disclosure (collapsible section header) ---- */
+.disclosure {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+  min-height: auto;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.disclosure:hover { background: transparent; color: var(--text); }
+.disclosure .caret { font-size: 10px; }
 
 /* ---- Toolbar ---- */
 .toolbar {

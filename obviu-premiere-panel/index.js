@@ -971,6 +971,10 @@ function init() {
   $("btnPostComment").onclick = postComment;
   $("btnPickPreset").onclick = pickPreset;
   $("btnExportUpload").onclick = exportAndUpload;
+  $("btnToggleExport").onclick = () => {
+    const collapsed = $("exportBody").classList.toggle("hidden");
+    $("exportCaret").innerHTML = collapsed ? "&#9656;" : "&#9662;";
+  };
 
   // Restore the remembered export preset, if any.
   state.presetPath = localStorage.getItem("obviu.presetPath") || "";
