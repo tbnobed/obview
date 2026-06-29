@@ -814,79 +814,81 @@ async function importToPremiere() {
 
 async function pullMarkers() {
   $("fileStatus").textContent = "";
+  let project = null;
   try {
-    const { project, seq } = await getActiveSequence();
+    const seqRes = await getActiveSequence();
+    project = seqRes.project;
+    const seq = seqRes.seq;
+    // Per Adobe's UXP docs, the marker objects/actions are ONLY valid inside a
+    // synchronous project.lockedAccess() callback — touching them outside it is
+    // what throws "The script object is no longer valid". The required pattern:
+    //   1. await every async call (getMarkers) BEFORE the lock,
+    //   2. project.lockedAccess(() => { ... }) — SYNCHRONOUS, no await inside,
+    //   3. project.executeTransaction((compoundAction) => { addAction... }) and
+    //      do NOT await it (it returns a boolean, not a Promise).
+    // Signature: createAddMarkerAction(name, markerType, startTime, duration,
+    // comments); markerType is ppro.Marker.MARKER_TYPE_COMMENT ("Comment");
+    // startTime/duration MUST be TickTime (point marker = zero-length).
     const markers = await ppro.Markers.getMarkers(seq);
-    // createAddMarkerAction resolves (we get "Illegal Parameter type", not "not a
-    // function"), so the EXACT positional signature/types are what's wrong, and
-    // Adobe's docs disagree across versions. createAddMarkerAction validates its
-    // args synchronously and throws immediately on a bad type, so we can safely
-    // PROBE the known variants and use the first that doesn't throw, instead of
-    // guessing blind. markerType is the ppro.Marker.MARKER_TYPE_* constant when
-    // present (a raw "Comment" string can throw); duration is a TickTime (0 for
-    // a point marker — never `undefined`, which itself triggers the error).
     const markerType =
       (ppro.Marker && ppro.Marker.MARKER_TYPE_COMMENT) || "Comment";
-    let added = 0;
-    let chosen = -1; // index of the signature variant proven to work
-    const probeErrors = [];
+
+    // Resolve all plain values up front (no native objects yet) so the locked
+    // callback stays purely synchronous.
+    const items = [];
     for (const c of state.comments) {
-      // Timestamps come back from the JSON API as numbers OR numeric strings;
-      // ppro.TickTime.createWithSeconds requires a real number or it throws
-      // "Illegal Parameter type". Coerce and skip anything non-finite.
       const rawStart = c.inPoint != null ? c.inPoint : c.timestamp;
       const start = Number(rawStart);
       if (rawStart == null || !Number.isFinite(start)) continue;
       const outPoint = c.outPoint != null ? Number(c.outPoint) : null;
       const name = (c.authorName || "Reviewer") + ": " + (c.content || "").slice(0, 60);
-      const startTime = ppro.TickTime.createWithSeconds(start);
-      // Range comments → a marker span; point comments → zero-length marker.
-      const duration =
-        outPoint != null && Number.isFinite(outPoint) && outPoint > start
-          ? ppro.TickTime.createWithSeconds(outPoint - start)
-          : ppro.TickTime.createWithSeconds(0);
-      const comment = c.content || "";
-      // Marker mutations run inside a transaction in the 25.6+ UXP API.
-      await project.executeTransaction((compoundAction) => {
-        // Rebuilt per comment so each closure captures this comment's values.
-        const forms = [
-          ["name,type,start,dur,comment", () => markers.createAddMarkerAction(name, markerType, startTime, duration, comment)],
-          ["name,type,start,comment", () => markers.createAddMarkerAction(name, markerType, startTime, comment)],
-          ["name,type,start,dur", () => markers.createAddMarkerAction(name, markerType, startTime, duration)],
-          ["name,type,start", () => markers.createAddMarkerAction(name, markerType, startTime)],
-          ["name,start,dur,comment", () => markers.createAddMarkerAction(name, startTime, duration, comment)],
-          ["name,start,comment", () => markers.createAddMarkerAction(name, startTime, comment)],
-          ["name,start", () => markers.createAddMarkerAction(name, startTime)],
-          ["start,name,type,comment", () => markers.createAddMarkerAction(startTime, name, markerType, comment)],
-        ];
-        let action = null;
-        if (chosen >= 0) {
-          action = forms[chosen][1]();
-        } else {
-          for (let i = 0; i < forms.length; i++) {
-            try {
-              const a = forms[i][1]();
-              if (a) { action = a; chosen = i; break; }
-            } catch (err) {
-              probeErrors.push(forms[i][0] + ": " + err.message);
-            }
-          }
-        }
-        if (!action) {
-          const diag =
-            "addArity=" + (markers.createAddMarkerAction ? markers.createAddMarkerAction.length : "n/a") +
-            " markerType=" + JSON.stringify(markerType) + "(" + typeof markerType + ")" +
-            " markerKeys=" + (ppro.Marker ? Object.keys(ppro.Marker).slice(0, 16).join(",") : "-");
-          throw new Error("no working createAddMarkerAction signature [" + diag + "] tried { " + probeErrors.join(" | ") + " }");
-        }
-        compoundAction.addAction(action);
-      });
-      added++;
+      items.push({ name, start, outPoint, comment: c.content || "" });
     }
-    const via = chosen >= 0 ? " (" + ["name,type,start,dur,comment","name,type,start,comment","name,type,start,dur","name,type,start","name,start,dur,comment","name,start,comment","name,start","start,name,type,comment"][chosen] + ")" : "";
-    $("fileStatus").textContent = "Added " + added + " marker(s)." + via;
+
+    let added = 0;
+    let ok = false;
+    const runner = () => {
+      // executeTransaction returns a boolean — capture it so a failed commit
+      // doesn't get reported as success.
+      ok = project.executeTransaction((compoundAction) => {
+        for (const it of items) {
+          const startTime = ppro.TickTime.createWithSeconds(it.start);
+          const duration =
+            it.outPoint != null && Number.isFinite(it.outPoint) && it.outPoint > it.start
+              ? ppro.TickTime.createWithSeconds(it.outPoint - it.start)
+              : ppro.TickTime.createWithSeconds(0);
+          const action = markers.createAddMarkerAction(
+            it.name,
+            markerType,
+            startTime,
+            duration,
+            it.comment
+          );
+          compoundAction.addAction(action);
+          added++;
+        }
+      }, "Pull Obviu comments to markers");
+    };
+    // lockedAccess is required on 25.6+; guard for older builds that lack it.
+    if (typeof project.lockedAccess === "function") {
+      project.lockedAccess(runner);
+    } else {
+      runner();
+    }
+
+    if (ok === false) throw new Error("transaction did not commit.");
+    $("fileStatus").textContent = "Added " + added + " marker(s).";
   } catch (e) {
-    $("fileStatus").textContent = "Pull failed: " + e.message;
+    // Surface API capabilities so a user can confirm in Premiere whether the
+    // build exposes the lock/transaction surface this flow depends on.
+    let caps = "";
+    try {
+      caps =
+        " [lockedAccess=" + (typeof (project && project.lockedAccess) === "function") +
+        " executeTransaction=" + (typeof (project && project.executeTransaction) === "function") +
+        " getMarkers=" + (!!(ppro && ppro.Markers && ppro.Markers.getMarkers)) + "]";
+    } catch (_) {}
+    $("fileStatus").textContent = "Pull failed: " + e.message + caps;
   }
 }
 
