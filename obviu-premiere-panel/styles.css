@@ -231,21 +231,23 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
   background: #000;
 }
 
-/* ---- Send-your-cut modal (opened from the panel flyout menu) ---- */
+/* ---- Send-your-cut modal ---- */
+/* uxpShowModal already draws the window chrome (title bar + X) around this
+   <dialog>, so fill that window instead of floating a fixed-width card inside
+   it: full width/height, no own border/radius, transparent so the modal's
+   background shows through. */
 .export-dialog {
-  width: 360px;
-  max-width: 92vw;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   padding: 16px;
-  background: #1d1d1d;
+  background: transparent;
   color: #ececec;
-  border: 1px solid #383838;
-  border-radius: 10px;
+  border: none;
+  border-radius: 0;
 }
 /* UXP ignores flex `gap`, so space the stacked children with margins. */
 .export-dialog > * + * { margin-top: 10px; }
-.dialog-head { display: flex; justify-content: space-between; align-items: center; }
-.dialog-head h2 { font-size: 14px; font-weight: 600; margin: 0; }
-.export-dialog .btn.link { background: transparent; border: none; color: #9a9a9a; padding: 2px 4px; }
 
 /* ---- Status text ---- */
 .status, #fileStatus, #seqStatus { color: #9a9a9a; font-size: 11px; min-height: 14px; }

@@ -1395,9 +1395,7 @@ function init() {
   };
   $("btnPickPreset").onclick = pickPreset;
   $("btnExportUpload").onclick = exportAndUpload;
-  $("btnCloseExport").onclick = () => {
-    try { $("exportDialog").close(); } catch (_) {}
-  };
+  // The modal's own title-bar X closes it; the inner Close button was removed.
 
   // "Send your cut" lives in the panel flyout menu (the ☰ at the panel's top).
   // menuItems + invokeMenu is the UXP way to attach a flyout to an existing

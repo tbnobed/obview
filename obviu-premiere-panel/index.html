@@ -129,10 +129,9 @@
          top); selecting it opens this modal, so the export form no longer takes
          up room in the file view. -->
     <dialog id="exportDialog" class="export-dialog">
-      <div class="dialog-head">
-        <h2>Send your cut</h2>
-        <a id="btnCloseExport" class="btn link">Close</a>
-      </div>
+      <!-- No in-dialog title/close here: uxpShowModal provides the modal's own
+           title bar ("Send your cut") and an X, so an inner header just
+           duplicated it. -->
       <p class="muted small">Export the active Premiere sequence and upload it to Obviu.</p>
       <div class="row wrap preset-row">
         <a id="btnPickPreset" class="btn secondary">Choose preset…</a>
