@@ -755,6 +755,14 @@ async function pullMarkers() {
   try {
     const { project, seq } = await getActiveSequence();
     const markers = await ppro.Markers.getMarkers(seq);
+    // createAddMarkerAction signature is (tickTime, name, type, comments) where
+    // `type` is a marker-type value and `comments` MUST be a string. The old
+    // code passed the comment text as `type` and a COLOR NUMBER as `comments`,
+    // which threw "Illegal Parameter type" on the numeric arg. Resolve the
+    // proper type constant if exposed, else fall back to the "Comment" literal.
+    const markerType =
+      (ppro.Constants && ppro.Constants.MarkerType && ppro.Constants.MarkerType.COMMENT) ||
+      "Comment";
     let added = 0;
     for (const c of state.comments) {
       // Timestamps come back from the JSON API as numbers OR numeric strings;
@@ -764,15 +772,14 @@ async function pullMarkers() {
       const start = Number(rawStart);
       if (rawStart == null || !Number.isFinite(start)) continue;
       const outPoint = c.outPoint != null ? Number(c.outPoint) : null;
-      const st = statusOf(c);
       const name = (c.authorName || "Reviewer") + ": " + (c.content || "").slice(0, 60);
       // Marker mutations run inside a transaction in the 25.6+ UXP API.
       await project.executeTransaction((compoundAction) => {
         const createAction = markers.createAddMarkerAction(
           ppro.TickTime.createWithSeconds(start),
           name,
-          c.content || "",
-          MARKER_COLOR[st]
+          markerType,
+          c.content || ""
         );
         compoundAction.addAction(createAction);
         if (outPoint != null && Number.isFinite(outPoint) && outPoint > start) {
