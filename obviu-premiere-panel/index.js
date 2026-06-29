@@ -177,27 +177,46 @@ async function goProjects(preloaded) {
     ? state.user.name + " · " + state.baseUrl.replace(/^https?:\/\//, "")
     : state.baseUrl.replace(/^https?:\/\//, "");
   const list = $("projectsList");
+  const search = $("projectSearch");
+  if (search) search.value = "";
   list.innerHTML = '<div class="empty">Loading…</div>';
   try {
     const projects = preloaded || (await api("/api/v1/projects"));
-    if (!projects.length) {
-      list.innerHTML = '<div class="empty">No projects.</div>';
-      return;
-    }
-    list.innerHTML = "";
-    projects.forEach((p) => {
-      const el = document.createElement("div");
-      el.className = "item";
-      el.innerHTML = '<div class="title"></div><div class="meta"></div>';
-      el.querySelector(".title").textContent = p.name || "Untitled";
-      el.querySelector(".meta").textContent = p.description || "";
-      el.onclick = () => goFiles(p, null);
-      list.appendChild(el);
-    });
+    state.projects = projects;
+    renderProjects("");
   } catch (e) {
     list.innerHTML = '<div class="error"></div>';
     list.querySelector(".error").textContent = e.message;
   }
+}
+
+function renderProjects(query) {
+  const list = $("projectsList");
+  const all = state.projects || [];
+  const q = (query || "").trim().toLowerCase();
+  const projects = q
+    ? all.filter((p) =>
+        ((p.name || "") + " " + (p.description || "")).toLowerCase().includes(q),
+      )
+    : all;
+  if (!all.length) {
+    list.innerHTML = '<div class="empty">No projects.</div>';
+    return;
+  }
+  if (!projects.length) {
+    list.innerHTML = '<div class="empty">No matching projects.</div>';
+    return;
+  }
+  list.innerHTML = "";
+  projects.forEach((p) => {
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = '<div class="title"></div><div class="meta"></div>';
+    el.querySelector(".title").textContent = p.name || "Untitled";
+    el.querySelector(".meta").textContent = p.description || "";
+    el.onclick = () => goFiles(p, null);
+    list.appendChild(el);
+  });
 }
 
 // ---------- files & folders ----------
@@ -967,6 +986,7 @@ function init() {
   $("btnConnect").onclick = signIn;
   $("btnSignOut").onclick = signOut;
   $("btnBackProjects").onclick = () => goProjects();
+  $("projectSearch").oninput = (e) => renderProjects(e.target.value);
   $("btnBackFiles").onclick = () => goFiles(state.project, state.currentFolderId);
   $("btnRefresh").onclick = loadComments;
   $("btnImport").onclick = importToPremiere;
