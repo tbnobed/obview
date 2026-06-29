@@ -57,6 +57,12 @@ p { margin: 0; }
    how short the docked panel gets. UXP ignores `gap`; space with margins. */
 .file-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
 .file-scroll > * + * { margin-top: 12px; }
+/* Each section keeps its natural height; without this, flex-shrink:1 lets a tall
+   comment list compress every section (the version select, player, actions get
+   squeezed) instead of the region scrolling. flex-shrink:0 makes the content
+   overflow .file-scroll, which then scrolls. (media-grow re-enables grow on the
+   player via a more specific rule, so collapsing comments still works.) */
+.file-scroll > * { flex-shrink: 0; }
 .hidden { display: none; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 label { font-size: 11px; font-weight: 500; color: #9a9a9a; }
