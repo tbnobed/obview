@@ -58,15 +58,20 @@ textarea { resize: vertical; min-height: 48px; }
 
 /* ---- Buttons ---- */
 button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
   background: #2680eb;
   color: #fff;
-  border: none;
-  border-radius: 5px;
-  padding: 0 10px;
-  height: 24px;
-  line-height: 24px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 3px 9px;
+  height: 22px;
+  min-height: 0;
+  line-height: 1;
   font-size: 11px;
   font-weight: 600;
+  text-align: center;
   cursor: pointer;
 }
 button:hover { background: #3b8ef0; }
