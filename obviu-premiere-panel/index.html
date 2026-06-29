@@ -94,6 +94,8 @@
 
         <div class="tabs">
           <a id="tabComments" class="tab active">Comments</a>
+          <a id="tabSynopsis" class="tab">Synopsis</a>
+          <a id="tabTranscript" class="tab">Transcript</a>
           <a id="tabFields" class="tab">Fields</a>
           <a id="btnToggleComments" class="btn link tab-toggle">Hide comments</a>
         </div>
@@ -109,6 +111,16 @@
             <span id="commentCount" class="muted small"></span>
           </div>
           <div id="commentsList" class="list"></div>
+        </div>
+
+        <!-- Synopsis tab (AI summary) -->
+        <div id="tabBodySynopsis" class="tab-body hidden">
+          <div id="synopsisBody" class="synopsis"></div>
+        </div>
+
+        <!-- Transcript tab (timestamped segments; click to jump the playhead) -->
+        <div id="tabBodyTranscript" class="tab-body hidden">
+          <div id="transcriptBody" class="transcript"></div>
         </div>
 
         <!-- Fields tab -->

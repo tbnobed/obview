@@ -56,6 +56,12 @@ const state = {
   pollTimer: null,
   presetPath: "",
   presetName: "",
+  activeTab: "comments",
+  // AI transcript+synopsis cache for the currently shown version. `transcript`
+  // is undefined while loading, null when none exists yet, else the row.
+  transcript: undefined,
+  transcriptForId: null,
+  transcriptError: null,
 };
 
 // 16 MB chunks for the resumable upload, matching the web client so the
@@ -536,8 +542,15 @@ function renderVersionSelect() {
   sel.value = String(state.selectedVersionId);
   sel.onchange = () => {
     state.selectedVersionId = Number(sel.value);
+    // Transcript/synopsis are per-version; drop the cache so the new version's
+    // data loads (immediately if one of those tabs is showing).
+    state.transcript = undefined;
+    state.transcriptForId = null;
     loadComments();
     previewMedia();
+    if (state.activeTab === "synopsis" || state.activeTab === "transcript") {
+      ensureTranscript();
+    }
   };
 }
 
@@ -769,22 +782,27 @@ function setCommentsCollapsed(collapsed) {
 // active tab + collapsed state. The pinned composer only belongs to the
 // Comments tab and is hidden while comments are collapsed.
 function updateFileChrome() {
-  const onComments = state.activeTab !== "fields";
+  // The composer and the "Hide comments" grow-mode only apply to the Comments
+  // tab — the read-only Synopsis/Transcript/Fields tabs don't post anything.
+  const onComments = state.activeTab === "comments";
   $("view-file").classList.toggle("media-grow", state.commentsCollapsed && onComments);
   const composer = $("commentComposer");
   if (composer) composer.classList.toggle("hidden", !onComments || state.commentsCollapsed);
 }
 
-// Toggle between the Comments and Fields tabs of the file view.
+const FILE_TABS = ["comments", "synopsis", "transcript", "fields"];
+// Switch between the Comments / Synopsis / Transcript / Fields tabs.
 function showTab(which) {
-  const isComments = which !== "fields";
-  state.activeTab = isComments ? "comments" : "fields";
+  if (!FILE_TABS.includes(which)) which = "comments";
+  state.activeTab = which;
   updateFileChrome();
-  $("tabComments").classList.toggle("active", isComments);
-  $("tabFields").classList.toggle("active", !isComments);
-  $("tabBodyComments").classList.toggle("hidden", !isComments);
-  $("tabBodyFields").classList.toggle("hidden", isComments);
-  if (!isComments) renderFields();
+  FILE_TABS.forEach((t) => {
+    const cap = t.charAt(0).toUpperCase() + t.slice(1);
+    $("tab" + cap).classList.toggle("active", t === which);
+    $("tabBody" + cap).classList.toggle("hidden", t !== which);
+  });
+  if (which === "fields") renderFields();
+  if (which === "synopsis" || which === "transcript") ensureTranscript();
 }
 
 // Fields tab shows real, derived metadata for the selected version — no
@@ -816,6 +834,158 @@ function renderFields() {
     row.appendChild(vv);
     box.appendChild(row);
   });
+}
+
+// ---------- transcript & synopsis (AI) ----------
+// Both come from a single GET /api/v1/files/:id/transcript (the transcript row
+// also carries the synopsis `summary` + its status). Cached per version id.
+async function ensureTranscript() {
+  if (state.transcriptForId === state.selectedVersionId && state.transcript !== undefined) {
+    renderSynopsis();
+    renderTranscript();
+    return;
+  }
+  await loadTranscript();
+}
+
+async function loadTranscript() {
+  const id = state.selectedVersionId;
+  state.transcriptForId = id;
+  state.transcript = undefined; // loading
+  state.transcriptError = null;
+  renderSynopsis();
+  renderTranscript();
+  try {
+    const t = await api("/api/v1/files/" + id + "/transcript");
+    if (state.selectedVersionId !== id) return; // version switched mid-flight
+    state.transcript = t;
+  } catch (e) {
+    if (state.selectedVersionId !== id) return;
+    const msg = e.message || "";
+    // A 404 ("No transcript yet") just means nothing's been generated.
+    if (/no transcript|not found|404/i.test(msg)) {
+      state.transcript = null;
+    } else {
+      state.transcript = null;
+      state.transcriptError = msg;
+    }
+  }
+  renderSynopsis();
+  renderTranscript();
+}
+
+// True while transcription or summary is still being produced — used to keep
+// polling so the panel fills in once the background job finishes.
+function transcriptProcessing() {
+  const t = state.transcript;
+  if (t === undefined) return true; // currently loading
+  if (!t) return false;
+  const pending = (s) => s === "processing" || s === "pending" || s === "queued";
+  return pending(t.status) || pending(t.summaryStatus) || pending(t.summary_status);
+}
+
+function renderSynopsis() {
+  const box = $("synopsisBody");
+  if (!box) return;
+  box.innerHTML = "";
+  const t = state.transcript;
+  if (t === undefined) {
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    return;
+  }
+  if (state.transcriptError) {
+    const e = document.createElement("div");
+    e.className = "error";
+    e.textContent = state.transcriptError;
+    box.appendChild(e);
+    return;
+  }
+  const summary = t && t.summary;
+  const status = t && (t.summaryStatus || t.summary_status);
+  if (summary && summary.trim()) {
+    summary.trim().split(/\n{2,}/).forEach((para) => {
+      const p = document.createElement("p");
+      p.className = "synopsis-p";
+      p.textContent = para.trim();
+      box.appendChild(p);
+    });
+    return;
+  }
+  const note = document.createElement("div");
+  note.className = "empty";
+  if (status === "processing" || status === "pending" || status === "queued") {
+    note.textContent = "Generating synopsis…";
+  } else if (status === "failed" || status === "error") {
+    note.textContent = "Synopsis failed to generate.";
+  } else if (t && (t.status === "processing" || t.status === "pending")) {
+    note.textContent = "Transcribing… synopsis follows.";
+  } else {
+    note.textContent = "No synopsis for this version yet.";
+  }
+  box.appendChild(note);
+}
+
+function renderTranscript() {
+  const box = $("transcriptBody");
+  if (!box) return;
+  box.innerHTML = "";
+  const t = state.transcript;
+  if (t === undefined) {
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    return;
+  }
+  if (state.transcriptError) {
+    const e = document.createElement("div");
+    e.className = "error";
+    e.textContent = state.transcriptError;
+    box.appendChild(e);
+    return;
+  }
+  let segments = t && t.segments;
+  if (typeof segments === "string") {
+    try { segments = JSON.parse(segments); } catch (_) { segments = null; }
+  }
+  if (Array.isArray(segments) && segments.length) {
+    segments.forEach((s) => {
+      const start = Number(s.start);
+      const row = document.createElement("div");
+      row.className = "seg";
+      const tc = document.createElement("span");
+      tc.className = "seg-time";
+      if (Number.isFinite(start)) {
+        tc.textContent = fmtTime(start);
+        tc.classList.add("seg-jump");
+        tc.onclick = () => jumpTo(start);
+      } else {
+        tc.textContent = "—";
+      }
+      const tx = document.createElement("span");
+      tx.className = "seg-text";
+      tx.textContent = (s.text || "").trim();
+      row.appendChild(tc);
+      row.appendChild(tx);
+      box.appendChild(row);
+    });
+    return;
+  }
+  if (t && t.text && t.text.trim()) {
+    const p = document.createElement("div");
+    p.className = "transcript-plain";
+    p.textContent = t.text.trim();
+    box.appendChild(p);
+    return;
+  }
+  const note = document.createElement("div");
+  note.className = "empty";
+  const st = t && t.status;
+  if (st === "processing" || st === "pending" || st === "queued") {
+    note.textContent = "Transcribing…";
+  } else if (st === "failed" || st === "error") {
+    note.textContent = "Transcription failed.";
+  } else {
+    note.textContent = "No transcript for this version yet.";
+  }
+  box.appendChild(note);
 }
 
 function toggleReply(parentEl, parent) {
@@ -999,9 +1169,21 @@ function resetPreview() {
 }
 
 // ---------- polling ----------
+function pollTick() {
+  loadComments();
+  // While the AI job is still running and the user is looking at one of the AI
+  // tabs, re-fetch so the synopsis/transcript fill in once it's ready.
+  if (
+    (state.activeTab === "synopsis" || state.activeTab === "transcript") &&
+    state.transcriptForId === state.selectedVersionId &&
+    transcriptProcessing()
+  ) {
+    loadTranscript();
+  }
+}
 function startPoll() {
   stopPoll();
-  state.pollTimer = setInterval(loadComments, POLL_MS);
+  state.pollTimer = setInterval(pollTick, POLL_MS);
 }
 function stopPoll() {
   if (state.pollTimer) {
@@ -1545,7 +1727,12 @@ function init() {
   $("btnSendCutFiles").onclick = () => openSendCut(true);
   $("projectSearch").oninput = (e) => renderProjects(e.target.value);
   $("btnBackFiles").onclick = () => goFiles(state.project, state.currentFolderId);
-  $("btnRefresh").onclick = loadComments;
+  $("btnRefresh").onclick = () => {
+    loadComments();
+    if (state.activeTab === "synopsis" || state.activeTab === "transcript") {
+      loadTranscript();
+    }
+  };
   $("btnImport").onclick = importToPremiere;
   $("btnSendCut").onclick = () => openSendCut(false);
   $("btnPullMarkers").onclick = pullMarkers;
@@ -1554,6 +1741,8 @@ function init() {
   $("btnRequest").onclick = () => review("requested_changes");
   $("btnPostComment").onclick = postComment;
   $("tabComments").onclick = () => showTab("comments");
+  $("tabSynopsis").onclick = () => showTab("synopsis");
+  $("tabTranscript").onclick = () => showTab("transcript");
   $("tabFields").onclick = () => showTab("fields");
   $("btnToggleComments").onclick = () => setCommentsCollapsed(!state.commentsCollapsed);
   $("commentFilter").onchange = (e) => {

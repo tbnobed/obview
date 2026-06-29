@@ -369,6 +369,45 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
 .composer-foot { display: flex; align-items: center; margin-top: 8px; }
 .composer-foot .btn { margin-left: auto; }
 
+/* ---- Synopsis tab ---- */
+.synopsis-p {
+  margin: 0 0 10px;
+  color: #d6d6d6;
+  font-size: 12px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+/* ---- Transcript tab ---- */
+.transcript .seg {
+  display: flex;
+  align-items: baseline;
+  padding: 6px 2px;
+  border-bottom: 1px solid #2b2b2b;
+}
+.seg-time {
+  flex: 0 0 44px;
+  color: #8a8a8a;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.seg-jump { color: #5a9bf0; cursor: pointer; }
+.seg-jump:hover { color: #8bbcff; text-decoration: underline; }
+.seg-text {
+  flex: 1 1 auto;
+  color: #d6d6d6;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.transcript-plain {
+  color: #d6d6d6;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* ---- Fields tab ---- */
 .fields .field-row { display: flex; align-items: center; padding: 9px 2px; border-bottom: 1px solid #2b2b2b; }
 .fields .field-key { flex: 0 0 90px; color: #9a9a9a; font-size: 12px; }
