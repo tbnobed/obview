@@ -52,6 +52,11 @@ p { margin: 0; }
 #view-projects, #view-files, #view-file { overflow: hidden; }
 #projectsList { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+/* The file view scrolls as ONE region (player → actions → comment list) with
+   the composer pinned below it, so the comment box is never clipped no matter
+   how short the docked panel gets. UXP ignores `gap`; space with margins. */
+.file-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.file-scroll > * + * { margin-top: 12px; }
 .hidden { display: none; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 label { font-size: 11px; font-weight: 500; color: #9a9a9a; }
@@ -216,11 +221,11 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
   height: 320px;
   /* The player is a <webview>. UXP resolves flex-basis:auto from the webview's
      tiny intrinsic content (not the CSS height), so a plain flex child gets
-     collapsed to a sliver. An explicit flex-basis holds it at 320px; the shrink
-     factor (0 1) lets it give ground on a SHORT panel so the buttons/composer
-     below are never clipped on resize, down to min-height. */
-  flex: 0 1 320px;
-  min-height: 140px;
+     collapsed to a sliver. An explicit flex-basis + min-height holds it at
+     320px. It lives inside .file-scroll now, so on a short panel the whole
+     region scrolls rather than the player shrinking. */
+  flex: 0 0 320px;
+  min-height: 320px;
   border: 1px solid #383838;
   border-radius: 8px;
   background: #000;
@@ -279,9 +284,7 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
    on the player, which grows into the reclaimed space. The tab body stops
    growing so it doesn't leave a dead gap. */
 #view-file.comments-collapsed #tabBodyComments .filter-row,
-#view-file.comments-collapsed #tabBodyComments .scroll,
-#view-file.comments-collapsed #tabBodyComments .composer { display: none; }
-#view-file.comments-collapsed #tabBodyComments { flex: 0 0 auto; }
+#view-file.comments-collapsed #tabBodyComments #commentsList { display: none; }
 /* Player only grows when the Comments tab is the active one (media-grow is set
    by JS), so collapsing comments doesn't squeeze the Fields tab. */
 #view-file.media-grow .media-view { flex: 1 1 320px; }
@@ -294,9 +297,9 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
 .tab:hover { color: #cfcfcf; }
 .tab.active { color: #ececec; border-bottom-color: #2680eb; }
 
-/* A tab body fills the remaining height; its scroll area flexes while the
-   filter row and composer stay pinned. UXP needs explicit min-height:0. */
-.tab-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* Tab bodies now sit inside .file-scroll (the single scroll region), so they
+   size to content instead of being their own flex/scroll column. */
+.tab-body { display: block; }
 .tab-body.hidden { display: none; }
 
 .filter-row { display: flex; align-items: center; margin-bottom: 10px; }
@@ -308,8 +311,9 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
 }
 .filter-row .muted { margin-left: auto; }
 
-/* ---- Composer (pinned to the bottom of the comments tab) ---- */
-.composer { border-top: 1px solid #383838; padding-top: 10px; margin-top: 4px; }
+/* ---- Composer (pinned to the bottom of the whole file view) ---- */
+.composer { flex: 0 0 auto; border-top: 1px solid #383838; padding-top: 10px; }
+.composer.hidden { display: none; }
 .composer textarea { width: 100%; }
 .composer-foot { display: flex; align-items: center; margin-top: 8px; }
 .composer-foot .btn { margin-left: auto; }

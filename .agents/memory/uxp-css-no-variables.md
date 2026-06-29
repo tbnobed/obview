@@ -52,6 +52,17 @@ the player, give the `<webview>` an explicit basis WITH a shrink factor
 (`flex:0 1 320px` + a small `min-height`) so it yields height on a small panel
 instead of pushing the buttons/composer off the bottom.
 
+**A bottom input must be a pinned sibling, not nested in the scroll/flex body.**
+To keep the comment composer (and its Comment button) visible on a short/docked
+panel, the file view is one `flex:1 1 auto; min-height:0; overflow-y:auto`
+scroll region (player → actions → tabs → comment list) with the composer as a
+separate `flex:0 0 auto` sibling pinned below it. **Why:** when the input lived
+inside the flexing tab body, a short panel shrank that body below the input's
+height and the input overflowed past the view's `overflow:hidden` edge and got
+clipped. **How to apply:** put scrollable content in ONE flex:1 scroll child and
+make any always-visible footer/input a flex:0 0 sibling of the view — never the
+last child of the shrinking scroll region.
+
 **Action-button layout:** Five buttons in one `flex:1 1 0` row squish and
 2-line-wrap on a real (narrow) Premiere panel. Current layout groups them:
 Import full-width (`.btn.full`), then an Approve/Request `.action-row`, then a

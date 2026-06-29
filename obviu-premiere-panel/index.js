@@ -656,21 +656,24 @@ function setCommentsCollapsed(collapsed) {
   $("view-file").classList.toggle("comments-collapsed", collapsed);
   const btn = $("btnToggleComments");
   if (btn) btn.textContent = collapsed ? "Show comments" : "Hide comments";
-  updateMediaGrow();
+  updateFileChrome();
 }
 
-// Grow the player only when comments are collapsed AND the Comments tab is the
-// active one, so collapsing doesn't shrink the Fields tab.
-function updateMediaGrow() {
-  const grow = state.commentsCollapsed && state.activeTab !== "fields";
-  $("view-file").classList.toggle("media-grow", grow);
+// Keep the player-grow class and the composer visibility in sync with the
+// active tab + collapsed state. The pinned composer only belongs to the
+// Comments tab and is hidden while comments are collapsed.
+function updateFileChrome() {
+  const onComments = state.activeTab !== "fields";
+  $("view-file").classList.toggle("media-grow", state.commentsCollapsed && onComments);
+  const composer = $("commentComposer");
+  if (composer) composer.classList.toggle("hidden", !onComments || state.commentsCollapsed);
 }
 
 // Toggle between the Comments and Fields tabs of the file view.
 function showTab(which) {
   const isComments = which !== "fields";
   state.activeTab = isComments ? "comments" : "fields";
-  updateMediaGrow();
+  updateFileChrome();
   $("tabComments").classList.toggle("active", isComments);
   $("tabFields").classList.toggle("active", !isComments);
   $("tabBodyComments").classList.toggle("hidden", !isComments);

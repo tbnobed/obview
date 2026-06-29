@@ -62,58 +62,62 @@
         <a id="btnRefresh" class="btn link">Refresh</a>
       </div>
 
-      <div class="file-head">
-        <h2 id="fileTitle" class="file-title">File</h2>
-        <select id="versionSelect" class="version-badge"></select>
-      </div>
-
-      <webview id="mediaView" class="media-view" width="100%" height="320" src=""></webview>
-
-      <div class="actions">
-        <a id="btnImport" class="btn full">Import to Premiere</a>
-        <div class="action-row">
-          <a id="btnApprove" class="btn ok">Approve</a>
-          <a id="btnRequest" class="btn warn">Request changes</a>
+      <!-- Everything from the player down through the comment list lives in one
+           scroll region; only the composer below stays pinned. This guarantees
+           the comment box (and its Comment button) is always visible no matter
+           how short the docked panel is — short panels just scroll. -->
+      <div class="file-scroll">
+        <div class="file-head">
+          <h2 id="fileTitle" class="file-title">File</h2>
+          <select id="versionSelect" class="version-badge"></select>
         </div>
-        <div class="action-row">
-          <a id="btnPullMarkers" class="btn secondary">Pull comments to markers</a>
-          <a id="btnShare" class="btn secondary">Copy share link</a>
-        </div>
-      </div>
-      <div id="fileStatus" class="status"></div>
 
-      <div class="tabs">
-        <a id="tabComments" class="tab active">Comments</a>
-        <a id="tabFields" class="tab">Fields</a>
-        <a id="btnToggleComments" class="btn link tab-toggle">Hide comments</a>
-      </div>
+        <webview id="mediaView" class="media-view" width="100%" height="320" src=""></webview>
 
-      <!-- Comments tab -->
-      <div id="tabBodyComments" class="tab-body">
-        <div class="filter-row">
-          <select id="commentFilter" class="filter-select">
-            <option value="all">All comments</option>
-            <option value="open">Open</option>
-            <option value="resolved">Resolved</option>
-          </select>
-          <span id="commentCount" class="muted small"></span>
-        </div>
-        <div class="scroll">
-          <div id="commentsList" class="list"></div>
-        </div>
-        <div class="composer">
-          <textarea id="commentInput" rows="2" placeholder="Leave a comment…"></textarea>
-          <div class="composer-foot">
-            <sp-checkbox id="commentAtTime" size="s">Attach playhead time</sp-checkbox>
-            <a id="btnPostComment" class="btn">Comment</a>
+        <div class="actions">
+          <a id="btnImport" class="btn full">Import to Premiere</a>
+          <div class="action-row">
+            <a id="btnApprove" class="btn ok">Approve</a>
+            <a id="btnRequest" class="btn warn">Request changes</a>
+          </div>
+          <div class="action-row">
+            <a id="btnPullMarkers" class="btn secondary">Pull comments to markers</a>
+            <a id="btnShare" class="btn secondary">Copy share link</a>
           </div>
         </div>
+        <div id="fileStatus" class="status"></div>
+
+        <div class="tabs">
+          <a id="tabComments" class="tab active">Comments</a>
+          <a id="tabFields" class="tab">Fields</a>
+          <a id="btnToggleComments" class="btn link tab-toggle">Hide comments</a>
+        </div>
+
+        <!-- Comments tab -->
+        <div id="tabBodyComments" class="tab-body">
+          <div class="filter-row">
+            <select id="commentFilter" class="filter-select">
+              <option value="all">All comments</option>
+              <option value="open">Open</option>
+              <option value="resolved">Resolved</option>
+            </select>
+            <span id="commentCount" class="muted small"></span>
+          </div>
+          <div id="commentsList" class="list"></div>
+        </div>
+
+        <!-- Fields tab -->
+        <div id="tabBodyFields" class="tab-body hidden">
+          <div id="fieldsList" class="fields"></div>
+        </div>
       </div>
 
-      <!-- Fields tab -->
-      <div id="tabBodyFields" class="tab-body hidden">
-        <div class="scroll">
-          <div id="fieldsList" class="fields"></div>
+      <!-- Composer pinned to the bottom of the view (always visible). -->
+      <div id="commentComposer" class="composer">
+        <textarea id="commentInput" rows="2" placeholder="Leave a comment…"></textarea>
+        <div class="composer-foot">
+          <sp-checkbox id="commentAtTime" size="s">Attach playhead time</sp-checkbox>
+          <a id="btnPostComment" class="btn">Comment</a>
         </div>
       </div>
     </div>
