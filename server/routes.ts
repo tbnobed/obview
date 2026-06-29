@@ -665,6 +665,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Panel write: create a new (folder-less) project so the editor can export
+  // and upload a fresh cut straight from Premiere. Mirrors the web
+  // POST /api/projects: the creator becomes an editor member and the action is
+  // logged. createdById is always the authenticated user (never trust client).
+  app.post("/api/v1/projects", apiAuth, async (req, res, next) => {
+    try {
+      const name = typeof req.body?.name === "string" ? req.body.name.trim() : req.body?.name;
+      const parsed = insertProjectSchema.safeParse({ name, createdById: req.user.id });
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ message: "Invalid project data", errors: parsed.error.errors });
+      }
+      const project = await storage.createProject(parsed.data);
+      await storage.addUserToProject({
+        projectId: project.id,
+        userId: req.user.id,
+        role: "editor",
+      });
+      await storage.logActivity({
+        action: "create",
+        entityType: "project",
+        entityId: project.id,
+        userId: req.user.id,
+        metadata: { projectName: project.name },
+      });
+      res.status(201).json({
+        id: project.id,
+        name: project.name,
+        description: project.description ?? null,
+        fileCount: 0,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Top-level folders visible to the panel: the user's own folders plus every
   // global folder (mirrors the web /api/folders). Lets the panel render a
   // clickable folder browser instead of a flat project list.

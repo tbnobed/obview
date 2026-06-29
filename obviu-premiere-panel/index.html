@@ -38,6 +38,7 @@
       </div>
       <h2>Projects</h2>
       <div id="projectCrumb" class="muted small"></div>
+      <a id="btnNewProject" class="btn full">+ New project</a>
       <input id="projectSearch" type="text" placeholder="Search projects…" />
       <div id="projectsList" class="list"></div>
     </div>
@@ -49,6 +50,7 @@
       </div>
       <h2 id="filesTitle">Files</h2>
       <div id="breadcrumb" class="muted small"></div>
+      <a id="btnSendCutFiles" class="btn full">Send your cut…</a>
       <div class="scroll">
         <div id="foldersList" class="list"></div>
         <div id="filesList" class="list"></div>
@@ -128,6 +130,16 @@
     <!-- "Send your cut" lives in the panel flyout menu (the ☰ at the panel's
          top); selecting it opens this modal, so the export form no longer takes
          up room in the file view. -->
+    <dialog id="newProjectDialog" class="export-dialog">
+      <p class="muted small">Create a new project, then send your cut into it.</p>
+      <div class="field">
+        <label>Project name</label>
+        <input id="newProjectName" type="text" placeholder="My Project" maxlength="30" />
+      </div>
+      <a id="btnCreateProject" class="btn full">Create project</a>
+      <div id="newProjectStatus" class="status"></div>
+    </dialog>
+
     <dialog id="exportDialog" class="export-dialog">
       <!-- No in-dialog title/close here: uxpShowModal provides the modal's own
            title bar ("Send your cut") and an X, so an inner header just

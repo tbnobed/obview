@@ -297,6 +297,10 @@ async function goFiles(project, folderId) {
   resetPreview();
   state.project = project;
   state.currentFolderId = folderId == null ? null : folderId;
+  // We're at the file list, not viewing a file: clear any selected-file context
+  // so "Send your cut" here always uploads as a new file (no stale versioning).
+  state.file = null;
+  state.selectedVersionId = null;
   show("view-files");
   $("filesTitle").textContent = project.name || "Files";
 
@@ -1297,7 +1301,7 @@ async function exportAndUpload() {
     const tmp = await uxp.storage.localFileSystem.getTemporaryFolder();
     // Export into a fresh subfolder so a prior render Premiere/AME still holds
     // open can't cause a "resource busy or locked" overwrite failure.
-    const sub = await tmp.createFolder("obviu-exp-" + state.selectedVersionId + "-" + Date.now());
+    const sub = await tmp.createFolder("obviu-exp-" + (state.selectedVersionId || "new") + "-" + Date.now());
     const outFile = await sub.createFile(baseName, { overwrite: true });
     await exportSequence(project, seq, outFile.nativePath, state.presetPath);
 
@@ -1353,10 +1357,21 @@ async function exportAndUpload() {
 // Opens the "Send your cut" export modal. UXP uses dialog.uxpShowModal (NOT the
 // browser showModal); the returned promise settles when the dialog closes, so we
 // swallow the rejection that fires on Esc / title-bar close.
-function openSendCut() {
+function openSendCut(forceNewFile) {
   const dlg = $("exportDialog");
   if (!dlg) return;
   if ($("seqStatus")) $("seqStatus").textContent = "";
+  // No selected file (opened from the files list / a freshly created project):
+  // there's nothing to version onto, so upload as a new file in the current
+  // folder and hide the version option.
+  const grp = $("destGroup");
+  const newOnly = forceNewFile === true || !state.file;
+  if (grp) grp.style.display = newOnly ? "none" : "";
+  if (newOnly) {
+    if (grp && grp.selected != null) grp.selected = "new";
+    if ($("destNew")) $("destNew").checked = true;
+    if ($("destVersion")) $("destVersion").checked = false;
+  }
   if (typeof dlg.uxpShowModal === "function") {
     dlg.uxpShowModal({
       title: "Send your cut",
@@ -1370,17 +1385,67 @@ function openSendCut() {
   }
 }
 
+// Open the "New project" dialog. Same UXP modal pattern as openSendCut.
+function openNewProject() {
+  const dlg = $("newProjectDialog");
+  if (!dlg) return;
+  if ($("newProjectStatus")) $("newProjectStatus").textContent = "";
+  if ($("newProjectName")) $("newProjectName").value = "";
+  if (typeof dlg.uxpShowModal === "function") {
+    dlg.uxpShowModal({
+      title: "New project",
+      resize: "both",
+      size: { width: 320, height: 220 },
+    }).catch(() => {});
+  } else if (typeof dlg.showModal === "function") {
+    dlg.showModal();
+  } else {
+    dlg.removeAttribute("hidden");
+  }
+}
+
+// Create a folder-less project, then drop straight into its (empty) files view
+// so the editor can immediately "Send your cut" into it.
+async function createProject() {
+  const name = (($("newProjectName") && $("newProjectName").value) || "").trim();
+  const st = $("newProjectStatus");
+  if (!name) {
+    if (st) st.textContent = "Enter a project name.";
+    return;
+  }
+  if (st) st.textContent = "Creating…";
+  try {
+    const project = await api("/api/v1/projects", { method: "POST", body: { name } });
+    try { $("newProjectDialog").close(); } catch (_) {}
+    // Force the projects list (and folder browse state) to refresh next time.
+    state.projects = null;
+    state.browseFolderId = null;
+    state.folders = [];
+    state.file = null;
+    state.selectedVersionId = null;
+    await goFiles(project, null);
+  } catch (e) {
+    if (st) st.textContent = "Failed: " + e.message;
+  }
+}
+
 // ---------- wire up ----------
 function init() {
   loadCreds();
   $("btnConnect").onclick = signIn;
   $("btnSignOut").onclick = signOut;
   $("btnBackProjects").onclick = () => goProjects();
+  $("btnNewProject").onclick = openNewProject;
+  $("btnCreateProject").onclick = createProject;
+  $("newProjectName").onkeydown = (e) => {
+    if (e.key === "Enter") createProject();
+  };
+  $("btnSendCutFiles").onclick = () => openSendCut(true);
   $("projectSearch").oninput = (e) => renderProjects(e.target.value);
   $("btnBackFiles").onclick = () => goFiles(state.project, state.currentFolderId);
   $("btnRefresh").onclick = loadComments;
   $("btnImport").onclick = importToPremiere;
-  $("btnSendCut").onclick = openSendCut;
+  $("btnSendCut").onclick = () => openSendCut(false);
   $("btnPullMarkers").onclick = pullMarkers;
   $("btnShare").onclick = copyShareLink;
   $("btnApprove").onclick = () => review("approved");
