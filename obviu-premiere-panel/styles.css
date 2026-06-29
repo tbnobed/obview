@@ -199,9 +199,12 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
 .media-view {
   width: 100%;
   height: 320px;
-  /* Stays pinned at the top of the file view; the comments list below scrolls
-     on its own. Without flex:0 0 auto the player gets crushed as comments grow. */
-  flex: 0 0 auto;
+  /* The player is a <webview>. UXP resolves flex-basis:auto from the webview's
+     tiny intrinsic content (not the CSS height), so a plain flex child gets
+     collapsed to a sliver. An explicit flex-basis AND min-height force it to
+     hold 320px, keeping it pinned at the top while comments scroll below. */
+  flex: 0 0 320px;
+  min-height: 320px;
   border: 1px solid #383838;
   border-radius: 8px;
   background: #000;
