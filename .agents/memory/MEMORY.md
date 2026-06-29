@@ -3,6 +3,7 @@
 - [File version stacks & folder-scoped deletes](file-version-stacks.md) — storage.deleteFile cascades by (projectId,filename) ignoring folderId; folder-scoped deletes must batch exact row IDs or they trash same-named files in other folders.
 - [UXP webview domain permission](uxp-webview-domains.md) — blank <webview> = manifest domains issue; `["*"]` is invalid (no TLD wildcard), use the string `"all"`.
 - [Export routes & media metadata schema](export-and-media-schema.md) — frameRate/duration/spriteMetadata live on videoProcessing not files; share-link exports are ungated by allowDownloads, so any media-derived export format (frame thumbnails) must gate on it.
+- [UXP panel CSS — no variables](uxp-css-no-variables.md) — UXP silently drops `var(--x)`; symptom = sizes/colours never change. Use literal hex/px; don't stretch action buttons full-width.
 - [API bearer auth & panel sessions](api-bearer-sessions.md) — /api/v1 bearer resolves session-token then legacy personal token; per-login sessions isolate shared workstations; login intentionally has no rate limit (matches /api/login).
 - [Open read-access model](access-control-model.md) — authenticated reads are intentionally ungated by project membership (hasProjectAccess = auth + exists); only writes are gated. "IDOR" flags on read routes are false positives here.
 - [<video> source reload](video-source-reload.md) — swapping a child <source> src never reloads the element; key it by source id (or call .load()), or it shows a stale/blank frame.
