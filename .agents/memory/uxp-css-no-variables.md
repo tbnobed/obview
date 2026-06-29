@@ -46,6 +46,15 @@ explicitly overridden by the user.)
 
 **Flex `gap` is IGNORED by UXP.** Setting `gap` on a flex container does nothing
 on screen (same silent-drop behaviour as `var()`). To space flex children, use
-margins on the items instead — e.g. `.actions .btn + .btn { margin-left: 12px; }`.
-Symptom: bumping the `gap` value changes nothing between buttons no matter how
-large.
+margins on the items instead — e.g. `.actions .btn + .btn { margin-left: 12px; }`
+or `.list > * + * { margin-top: 6px; }` for stacked columns. Symptom: bumping the
+`gap` value changes nothing no matter how large. This bit the comment list, the
+Reply/Resolve action links (rendered as "ReplyResolve"), the `.card` sections,
+and the reply box — all relied on `gap`.
+
+**`height: 100%` doesn't resolve down the html→body chain.** Use `100vh`. With
+`html, body { height: 100% }` the body had no definite pixel height, so a nested
+`flex:1; min-height:0; overflow-y:auto` scroll region never got a bounded height —
+the whole panel overflowed and the last list item was clipped at the panel edge
+instead of scrolling. `html, body { height: 100vh }` ties body to the panel's
+real height so the inner scroll region works.
