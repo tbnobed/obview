@@ -380,6 +380,7 @@ async function goFile(file) {
   $("commentInput").value = "";
   state.commentFilter = "all";
   if ($("commentFilter")) $("commentFilter").value = "all";
+  setCommentsCollapsed(false);
   showTab("comments");
   resetPreview();
   const destLabel = $("destVersionLabel");
@@ -648,9 +649,28 @@ function commentEl(c, child, idx) {
   return el;
 }
 
+// Collapse/expand the comment list + composer so the user can focus on the
+// player (which grows to fill the freed space).
+function setCommentsCollapsed(collapsed) {
+  state.commentsCollapsed = collapsed;
+  $("view-file").classList.toggle("comments-collapsed", collapsed);
+  const btn = $("btnToggleComments");
+  if (btn) btn.textContent = collapsed ? "Show comments" : "Hide comments";
+  updateMediaGrow();
+}
+
+// Grow the player only when comments are collapsed AND the Comments tab is the
+// active one, so collapsing doesn't shrink the Fields tab.
+function updateMediaGrow() {
+  const grow = state.commentsCollapsed && state.activeTab !== "fields";
+  $("view-file").classList.toggle("media-grow", grow);
+}
+
 // Toggle between the Comments and Fields tabs of the file view.
 function showTab(which) {
   const isComments = which !== "fields";
+  state.activeTab = isComments ? "comments" : "fields";
+  updateMediaGrow();
   $("tabComments").classList.toggle("active", isComments);
   $("tabFields").classList.toggle("active", !isComments);
   $("tabBodyComments").classList.toggle("hidden", !isComments);
@@ -1364,6 +1384,7 @@ function init() {
   $("btnPostComment").onclick = postComment;
   $("tabComments").onclick = () => showTab("comments");
   $("tabFields").onclick = () => showTab("fields");
+  $("btnToggleComments").onclick = () => setCommentsCollapsed(!state.commentsCollapsed);
   $("commentFilter").onchange = (e) => {
     state.commentFilter = e.target.value;
     renderComments();

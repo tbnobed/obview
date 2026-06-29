@@ -47,7 +47,10 @@ Fix: stack with plain `display:block` (sizes to content naturally); only keep
 the inner button *pairs* as flex ROWS. A flex column that DOES grow
 (`flex:1 1 auto` like `.tab-body`) is fine — flex-grow gives it a real height.
 Same family as the known `<webview>` collapse (needs explicit `flex:0 0 320px`,
-not auto basis).
+not auto basis). To keep a short/resized panel from clipping the controls below
+the player, give the `<webview>` an explicit basis WITH a shrink factor
+(`flex:0 1 320px` + a small `min-height`) so it yields height on a small panel
+instead of pushing the buttons/composer off the bottom.
 
 **Action-button layout:** Five buttons in one `flex:1 1 0` row squish and
 2-line-wrap on a real (narrow) Premiere panel. Current layout groups them:

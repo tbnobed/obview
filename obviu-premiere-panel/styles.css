@@ -216,10 +216,11 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
   height: 320px;
   /* The player is a <webview>. UXP resolves flex-basis:auto from the webview's
      tiny intrinsic content (not the CSS height), so a plain flex child gets
-     collapsed to a sliver. An explicit flex-basis AND min-height force it to
-     hold 320px, keeping it pinned at the top while comments scroll below. */
-  flex: 0 0 320px;
-  min-height: 320px;
+     collapsed to a sliver. An explicit flex-basis holds it at 320px; the shrink
+     factor (0 1) lets it give ground on a SHORT panel so the buttons/composer
+     below are never clipped on resize, down to min-height. */
+  flex: 0 1 320px;
+  min-height: 140px;
   border: 1px solid #383838;
   border-radius: 8px;
   background: #000;
@@ -270,7 +271,20 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
 }
 
 /* ---- Tabs (Comments / Fields) ---- */
-.tabs { display: flex; border-bottom: 1px solid #383838; }
+.tabs { display: flex; align-items: center; border-bottom: 1px solid #383838; }
+/* Hide/show toggle sits at the right end of the tab strip. */
+.tab-toggle { margin-left: auto; font-size: 11px; }
+
+/* Comments collapsed: hide the list, filter and composer so the user can focus
+   on the player, which grows into the reclaimed space. The tab body stops
+   growing so it doesn't leave a dead gap. */
+#view-file.comments-collapsed #tabBodyComments .filter-row,
+#view-file.comments-collapsed #tabBodyComments .scroll,
+#view-file.comments-collapsed #tabBodyComments .composer { display: none; }
+#view-file.comments-collapsed #tabBodyComments { flex: 0 0 auto; }
+/* Player only grows when the Comments tab is the active one (media-grow is set
+   by JS), so collapsing comments doesn't squeeze the Fields tab. */
+#view-file.media-grow .media-view { flex: 1 1 320px; }
 .tab {
   padding: 7px 2px; margin-right: 20px;
   color: #9a9a9a; font-size: 12px; font-weight: 600;
