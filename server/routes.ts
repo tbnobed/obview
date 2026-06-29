@@ -637,14 +637,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/v1/projects", apiAuth, async (req, res, next) => {
     try {
-      let projects;
-      // The panel is a flat project browser with no top-level folder navigation,
-      // so membership-scoped listing hid projects living in global folders (and
-      // their nested subfolders). This app's read model is already open — any
-      // authenticated user can read any project (see hasProjectAccess) — so we
-      // list every project for everyone. This guarantees global-folder projects
-      // appear without fragile folder-tree walking. Writes remain gated.
-      projects = await storage.getAllProjectsWithLatestVideo();
+      // Admins see everything; everyone else sees only the projects they're a
+      // member of. Global-folder projects are reached by browsing folders via
+      // /api/v1/folders + /api/v1/folders/:id/projects (mirrors the web), NOT by
+      // flattening every project into this list.
+      const projects =
+        req.user.role === "admin"
+          ? await storage.getAllProjectsWithLatestVideo()
+          : await storage.getProjectsByUserWithLatestVideo(req.user.id);
+      res.json(
+        projects.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description ?? null,
+          fileCount: (p as any).fileCount ?? null,
+        })),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Top-level folders visible to the panel: the user's own folders plus every
+  // global folder (mirrors the web /api/folders). Lets the panel render a
+  // clickable folder browser instead of a flat project list.
+  app.get("/api/v1/folders", apiAuth, async (req, res, next) => {
+    try {
+      const isAdmin = req.user.role === "admin";
+      let folders = isAdmin
+        ? await storage.getAllFolders()
+        : await storage.getFoldersByUser(req.user.id);
+      if (!isAdmin) {
+        const globalFolders = (await storage.getAllFolders()).filter((f) => f.isGlobal);
+        const seen = new Set(folders.map((f) => f.id));
+        for (const gf of globalFolders) {
+          if (!seen.has(gf.id)) folders.push(gf);
+        }
+      }
+      res.json(
+        folders
+          .filter((f) => f.deletedAt == null && f.projectId == null)
+          .map((f) => ({
+            id: f.id,
+            name: f.name,
+            parentFolderId: f.parentFolderId ?? null,
+            isGlobal: !!f.isGlobal,
+          })),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Projects living directly inside a folder (mirrors the web
+  // /api/folders/:folderId/projects). Reads are open per the app's model.
+  app.get("/api/v1/folders/:folderId/projects", apiAuth, async (req, res, next) => {
+    try {
+      const folderId = parseInt(req.params.folderId);
+      if (isNaN(folderId)) return res.status(400).json({ message: "Invalid folder ID" });
+      const folder = await storage.getFolder(folderId);
+      if (!folder) return res.status(404).json({ message: "Folder not found" });
+      const projects = await storage.getProjectsByFolderWithLatestVideo(folderId);
       res.json(
         projects.map((p) => ({
           id: p.id,

@@ -178,7 +178,7 @@ async function signOut() {
   show("view-auth");
 }
 
-// ---------- projects ----------
+// ---------- projects & folder browser ----------
 async function goProjects(preloaded) {
   stopPoll();
   show("view-projects");
@@ -189,9 +189,33 @@ async function goProjects(preloaded) {
   const search = $("projectSearch");
   if (search) search.value = "";
   list.innerHTML = '<div class="empty">Loading…</div>';
+  state.browseFolderId = null;
+  state.folderProjects = [];
   try {
     const projects = preloaded || (await api("/api/v1/projects"));
     state.projects = projects;
+    try {
+      state.topFolders = await api("/api/v1/folders");
+    } catch (_) {
+      state.topFolders = [];
+    }
+    renderProjects("");
+  } catch (e) {
+    list.innerHTML = '<div class="error"></div>';
+    list.querySelector(".error").textContent = e.message;
+  }
+}
+
+// Browse into a top-level/global folder: load the projects inside it and
+// re-render. Subfolders (if any) keep nesting through the same call.
+async function browseFolder(folderId) {
+  const list = $("projectsList");
+  const search = $("projectSearch");
+  if (search) search.value = "";
+  list.innerHTML = '<div class="empty">Loading…</div>';
+  state.browseFolderId = folderId;
+  try {
+    state.folderProjects = await api("/api/v1/folders/" + folderId + "/projects");
     renderProjects("");
   } catch (e) {
     list.innerHTML = '<div class="error"></div>';
@@ -201,25 +225,57 @@ async function goProjects(preloaded) {
 
 function renderProjects(query) {
   const list = $("projectsList");
-  const all = (state.projects || [])
-    .slice()
-    .sort((a, b) =>
-      (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }),
-    );
+  const crumb = $("projectCrumb");
+  const folders = state.topFolders || [];
   const q = (query || "").trim().toLowerCase();
-  const projects = q
-    ? all.filter((p) => (p.name || "").toLowerCase().includes(q))
-    : all;
-  if (!all.length) {
-    list.innerHTML = '<div class="empty">No projects.</div>';
-    return;
+  const byName = (a, b) =>
+    (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" });
+
+  // Folders shown at the current level (root = no parent).
+  const childFolders = folders
+    .filter((f) => (f.parentFolderId ?? null) === (state.browseFolderId ?? null))
+    .slice()
+    .sort(byName);
+
+  // Projects at the current level: membership projects at root, folder
+  // contents when browsing inside a folder.
+  const projectsSource =
+    state.browseFolderId == null ? state.projects || [] : state.folderProjects || [];
+  const allProjects = projectsSource.slice().sort(byName);
+
+  // Breadcrumb / back navigation.
+  if (crumb) {
+    crumb.innerHTML = "";
+    if (state.browseFolderId != null) {
+      const cur = folders.find((f) => f.id === state.browseFolderId);
+      const back = document.createElement("a");
+      back.className = "btn link";
+      back.textContent = "← All projects";
+      back.onclick = () => goProjects(state.projects);
+      crumb.appendChild(back);
+      const label = document.createElement("span");
+      label.textContent = "  /  " + (cur ? cur.name : "Folder");
+      crumb.appendChild(label);
+    }
   }
-  if (!projects.length) {
-    list.innerHTML = '<div class="empty">No matching projects.</div>';
-    return;
-  }
+
+  const shownFolders = q
+    ? childFolders.filter((f) => (f.name || "").toLowerCase().includes(q))
+    : childFolders;
+  const shownProjects = q
+    ? allProjects.filter((p) => (p.name || "").toLowerCase().includes(q))
+    : allProjects;
+
   list.innerHTML = "";
-  projects.forEach((p) => {
+  shownFolders.forEach((f) => {
+    const el = document.createElement("div");
+    el.className = "item folder";
+    el.innerHTML = '<div class="title"></div>';
+    el.querySelector(".title").textContent = "📁  " + (f.name || "Folder");
+    el.onclick = () => browseFolder(f.id);
+    list.appendChild(el);
+  });
+  shownProjects.forEach((p) => {
     const el = document.createElement("div");
     el.className = "item";
     el.innerHTML = '<div class="title"></div>';
@@ -227,6 +283,12 @@ function renderProjects(query) {
     el.onclick = () => goFiles(p, null);
     list.appendChild(el);
   });
+
+  if (!shownFolders.length && !shownProjects.length) {
+    list.innerHTML = q
+      ? '<div class="empty">No matches.</div>'
+      : '<div class="empty">Nothing here.</div>';
+  }
 }
 
 // ---------- files & folders ----------
