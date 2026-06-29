@@ -52,6 +52,12 @@ p { margin: 0; }
 #view-projects, #view-files, #view-file { overflow: hidden; }
 #projectsList { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+/* Keep the folders list and files list at their natural height. Without this,
+   flex-shrink:1 compresses the folders box shorter than its rows, so the rows
+   overflow and the files list renders on top of them (overlapping text at the
+   folder→file boundary). flex-shrink:0 makes content overflow .scroll, which
+   then scrolls — same fix as .file-scroll. */
+.scroll > * { flex-shrink: 0; }
 /* The file view scrolls as ONE region (player → actions → comment list) with
    the composer pinned below it, so the comment box is never clipped no matter
    how short the docked panel gets. UXP ignores `gap`; space with margins. */
