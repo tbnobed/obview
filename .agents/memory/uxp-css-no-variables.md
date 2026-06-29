@@ -17,7 +17,12 @@ tell that the property is being thrown out, not mis-set.
 
 **How to apply:** Use literal values (hex colours, px sizes) directly in every
 rule. Also prefer explicit `height` + `line-height` on buttons rather than only
-`min-height`, and don't rely on flex-grow to size action buttons (full-width
-stretched buttons read as "huge" in a narrow dock — use `flex: 0 0 auto` so they
-size to their label). The panel is only verifiable inside Premiere, so a wrong
+`min-height`. The panel is only verifiable inside Premiere, so a wrong
 assumption here costs a full user round-trip.
+
+**Action-button width:** The user wants the `.actions` button row to fill the
+full panel width with spacing between buttons — use `flex: 1 1 0` (+ `gap`) so
+they share width equally, and let labels wrap (`white-space: normal`,
+`height: auto`/`min-height`) so the longest label ("Pull comments to markers")
+doesn't clip. (Earlier guidance to keep them `flex: 0 0 auto`/content-width was
+explicitly overridden by the user.)
