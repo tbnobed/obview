@@ -38,8 +38,14 @@ line-height does the centering; keep vertical padding at 0. `textarea` is the
 exception — it needs real vertical padding + `line-height: 1.4` + `min-height`.
 
 **Action-button width:** The user wants the `.actions` button row to fill the
-full panel width with spacing between buttons — use `flex: 1 1 0` (+ `gap`) so
-they share width equally, and let labels wrap (`white-space: normal`,
+full panel width with spacing between buttons — use `flex: 1 1 0` so they share
+width equally, and let labels wrap (`white-space: normal`,
 `height: auto`/`min-height`) so the longest label ("Pull comments to markers")
 doesn't clip. (Earlier guidance to keep them `flex: 0 0 auto`/content-width was
 explicitly overridden by the user.)
+
+**Flex `gap` is IGNORED by UXP.** Setting `gap` on a flex container does nothing
+on screen (same silent-drop behaviour as `var()`). To space flex children, use
+margins on the items instead — e.g. `.actions .btn + .btn { margin-left: 12px; }`.
+Symptom: bumping the `gap` value changes nothing between buttons no matter how
+large.
