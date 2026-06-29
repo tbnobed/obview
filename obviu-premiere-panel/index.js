@@ -817,15 +817,19 @@ async function pullMarkers() {
   try {
     const { project, seq } = await getActiveSequence();
     const markers = await ppro.Markers.getMarkers(seq);
-    // The verified Adobe UXP signature is:
-    //   createAddMarkerAction(name, markerType, startTime, duration, comments)
-    // i.e. NAME (string) comes FIRST and the TickTime is the 3rd arg. Earlier
-    // builds passed the TickTime into the name slot, which throws "Illegal
-    // Parameter type". markerType must be the ppro.Marker.MARKER_TYPE_* constant
-    // (a raw "Comment" string also throws); startTime/duration must be TickTime.
+    // createAddMarkerAction resolves (we get "Illegal Parameter type", not "not a
+    // function"), so the EXACT positional signature/types are what's wrong, and
+    // Adobe's docs disagree across versions. createAddMarkerAction validates its
+    // args synchronously and throws immediately on a bad type, so we can safely
+    // PROBE the known variants and use the first that doesn't throw, instead of
+    // guessing blind. markerType is the ppro.Marker.MARKER_TYPE_* constant when
+    // present (a raw "Comment" string can throw); duration is a TickTime (0 for
+    // a point marker — never `undefined`, which itself triggers the error).
     const markerType =
       (ppro.Marker && ppro.Marker.MARKER_TYPE_COMMENT) || "Comment";
     let added = 0;
+    let chosen = -1; // index of the signature variant proven to work
+    const probeErrors = [];
     for (const c of state.comments) {
       // Timestamps come back from the JSON API as numbers OR numeric strings;
       // ppro.TickTime.createWithSeconds requires a real number or it throws
@@ -836,25 +840,51 @@ async function pullMarkers() {
       const outPoint = c.outPoint != null ? Number(c.outPoint) : null;
       const name = (c.authorName || "Reviewer") + ": " + (c.content || "").slice(0, 60);
       const startTime = ppro.TickTime.createWithSeconds(start);
-      // Range comments → a marker span; otherwise omit duration entirely.
+      // Range comments → a marker span; point comments → zero-length marker.
       const duration =
         outPoint != null && Number.isFinite(outPoint) && outPoint > start
           ? ppro.TickTime.createWithSeconds(outPoint - start)
-          : undefined;
+          : ppro.TickTime.createWithSeconds(0);
+      const comment = c.content || "";
       // Marker mutations run inside a transaction in the 25.6+ UXP API.
       await project.executeTransaction((compoundAction) => {
-        const createAction = markers.createAddMarkerAction(
-          name,
-          markerType,
-          startTime,
-          duration,
-          c.content || ""
-        );
-        compoundAction.addAction(createAction);
+        // Rebuilt per comment so each closure captures this comment's values.
+        const forms = [
+          ["name,type,start,dur,comment", () => markers.createAddMarkerAction(name, markerType, startTime, duration, comment)],
+          ["name,type,start,comment", () => markers.createAddMarkerAction(name, markerType, startTime, comment)],
+          ["name,type,start,dur", () => markers.createAddMarkerAction(name, markerType, startTime, duration)],
+          ["name,type,start", () => markers.createAddMarkerAction(name, markerType, startTime)],
+          ["name,start,dur,comment", () => markers.createAddMarkerAction(name, startTime, duration, comment)],
+          ["name,start,comment", () => markers.createAddMarkerAction(name, startTime, comment)],
+          ["name,start", () => markers.createAddMarkerAction(name, startTime)],
+          ["start,name,type,comment", () => markers.createAddMarkerAction(startTime, name, markerType, comment)],
+        ];
+        let action = null;
+        if (chosen >= 0) {
+          action = forms[chosen][1]();
+        } else {
+          for (let i = 0; i < forms.length; i++) {
+            try {
+              const a = forms[i][1]();
+              if (a) { action = a; chosen = i; break; }
+            } catch (err) {
+              probeErrors.push(forms[i][0] + ": " + err.message);
+            }
+          }
+        }
+        if (!action) {
+          const diag =
+            "addArity=" + (markers.createAddMarkerAction ? markers.createAddMarkerAction.length : "n/a") +
+            " markerType=" + JSON.stringify(markerType) + "(" + typeof markerType + ")" +
+            " markerKeys=" + (ppro.Marker ? Object.keys(ppro.Marker).slice(0, 16).join(",") : "-");
+          throw new Error("no working createAddMarkerAction signature [" + diag + "] tried { " + probeErrors.join(" | ") + " }");
+        }
+        compoundAction.addAction(action);
       });
       added++;
     }
-    $("fileStatus").textContent = "Added " + added + " marker(s).";
+    const via = chosen >= 0 ? " (" + ["name,type,start,dur,comment","name,type,start,comment","name,type,start,dur","name,type,start","name,start,dur,comment","name,start,comment","name,start","start,name,type,comment"][chosen] + ")" : "";
+    $("fileStatus").textContent = "Added " + added + " marker(s)." + via;
   } catch (e) {
     $("fileStatus").textContent = "Pull failed: " + e.message;
   }
