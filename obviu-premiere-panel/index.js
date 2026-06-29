@@ -271,7 +271,7 @@ function renderProjects(query) {
     const el = document.createElement("div");
     el.className = "item folder";
     el.innerHTML = '<div class="title"></div>';
-    el.querySelector(".title").textContent = "📁  " + (f.name || "Folder");
+    el.querySelector(".title").textContent = f.name || "Folder";
     el.onclick = () => browseFolder(f.id);
     list.appendChild(el);
   });

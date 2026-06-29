@@ -178,6 +178,9 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
   border-radius: 5px;
   padding: 9px 11px;
   cursor: pointer;
+  /* Keep rows a fixed height inside the scrolling flex column — without this
+     they get squashed as the panel shrinks instead of letting the list scroll. */
+  flex: 0 0 auto;
 }
 .item:hover { background: #303030; border-color: #4a4a4a; }
 .item .title { font-weight: 600; }
