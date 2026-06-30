@@ -41,3 +41,26 @@ and the multi-form probe corrupts the transaction. Use the documented signature
 set duration via the 4th arg. Color is a separate action, not an arg here.
 Guard `lockedAccess` with a `typeof === "function"` fallback for pre-25.6
 builds.
+
+## Reading marker properties back (tag-based sync)
+
+Tag-based deletion depends on reading a live Marker's BODY back to find the
+`[obviu#id]` tag. Accessor names vary across UXP builds, so reads must try
+multiple candidates or every Obviu marker is misclassified as "untagged" and
+never removed (the comment is deleted but the marker stays on the timeline).
+Use a `firstOf([...])` helper trying: body — `em.comments` / `em.getComments()`
+/ `em.comment` / `em.getComment()` / `em.notes` / `em.getNotes()`; name —
+`em.name` / `em.getName()`; start — `em.start.seconds` / `em.getStart().seconds`
+/ `em.startTime.seconds`.
+
+Removal action factory name also varies: detect among
+`createRemoveMarkerAction` / `createDeleteMarkerAction` / `createRemoveAction`
+(returns a `make(marker)` closure, null on older builds). When no factory is
+found but orphans exist, surface the Markers object's marker-related method
+names in the panel status (own + prototype chain, filtered by
+/marker|remove|delete|action/i) so the real API name is identified from the
+running build instead of guessed.
+
+**Why:** "marker won't delete even though it's correctly tagged" traced to the
+body read (`em.comments`) returning empty on the user's build, not to the
+removal API. Never assume a single property/getter name on UXP native objects.

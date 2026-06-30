@@ -1576,6 +1576,81 @@ function parseObviuTag(body) {
   return m ? m[1] : null;
 }
 
+// Reading a Marker's properties is the load-bearing part of tag-based sync, and
+// the accessor names vary across UXP builds (property vs. getter). These try a
+// list of candidates and return the first that yields a value — if the body read
+// fails, every Obviu marker is misclassified as "untagged" and never removed,
+// which is exactly the bug these guard against.
+function firstOf(fns) {
+  for (const fn of fns) {
+    try {
+      const v = fn();
+      if (v != null && v !== "") return v;
+    } catch (_) {}
+  }
+  return undefined;
+}
+function readMarkerBody(em) {
+  const v = firstOf([
+    () => em.comments,
+    () => (typeof em.getComments === "function" ? em.getComments() : undefined),
+    () => em.comment,
+    () => (typeof em.getComment === "function" ? em.getComment() : undefined),
+    () => em.notes,
+    () => (typeof em.getNotes === "function" ? em.getNotes() : undefined),
+  ]);
+  return typeof v === "string" ? v : "";
+}
+function readMarkerName(em) {
+  const v = firstOf([
+    () => em.name,
+    () => (typeof em.getName === "function" ? em.getName() : undefined),
+  ]);
+  return typeof v === "string" ? v : "";
+}
+function readMarkerStartSeconds(em) {
+  const v = firstOf([
+    () => em.start && em.start.seconds,
+    () => (typeof em.getStart === "function" ? em.getStart().seconds : undefined),
+    () => em.startTime && em.startTime.seconds,
+  ]);
+  return typeof v === "number" ? v : NaN;
+}
+
+// The remove-action factory name also differs across builds; find whichever the
+// Markers object exposes. Returns null when none is present (older builds).
+function removeActionFactory(markers) {
+  const candidates = [
+    "createRemoveMarkerAction",
+    "createDeleteMarkerAction",
+    "createRemoveAction",
+  ];
+  for (const n of candidates) {
+    if (typeof markers[n] === "function") {
+      return { name: n, make: (m) => markers[n](m) };
+    }
+  }
+  return null;
+}
+
+// Marker-related method names on the Markers object (own + prototype chain), used
+// purely for a diagnostic when no remove factory is found, so the right API name
+// can be identified from the panel status instead of guessing.
+function markerApiNames(markers) {
+  const names = new Set();
+  try {
+    for (const k in markers) names.add(k);
+  } catch (_) {}
+  try {
+    let p = Object.getPrototypeOf(markers);
+    while (p && p !== Object.prototype) {
+      for (const k of Object.getOwnPropertyNames(p)) names.add(k);
+      p = Object.getPrototypeOf(p);
+    }
+  } catch (_) {}
+  return Array.from(names).filter((n) => /marker|remove|delete|action/i.test(n));
+}
+
 // "N to add" badge = timestamped comments that aren't on the timeline yet. It's a
 // nudge to pull (or, once live sync is on, a brief flash before the poll mirrors
 // them).
@@ -1641,10 +1716,13 @@ async function commitMarkers(project, seq, candidates, currentIdSet) {
   const markers = await ppro.Markers.getMarkers(seq);
   const markerType =
     (ppro.Marker && ppro.Marker.MARKER_TYPE_COMMENT) || "Comment";
-  const canRemove = typeof markers.createRemoveMarkerAction === "function";
+  const removeApi = removeActionFactory(markers);
+  const canRemove = !!removeApi;
+  const apiNames = canRemove ? [] : markerApiNames(markers);
   let added = 0;
   let removed = 0;
   let orphans = 0;
+  let taggedCount = 0;
   let ok = false;
   const onTimeline = new Set();
   const runner = () => {
@@ -1664,25 +1742,18 @@ async function commitMarkers(project, seq, candidates, currentIdSet) {
     const taggedById = new Map();
     const untagged = [];
     for (const em of existing) {
-      let body = "";
-      try {
-        body = em.comments || "";
-      } catch (_) {}
-      const tag = parseObviuTag(body);
+      const tag = parseObviuTag(readMarkerBody(em));
       if (tag != null) {
         taggedById.set(tag, em);
       } else {
-        let nm = "";
-        let s = NaN;
-        try {
-          nm = em.name || "";
-        } catch (_) {}
-        try {
-          s = em.start.seconds;
-        } catch (_) {}
-        untagged.push({ name: nm, start: s, em });
+        untagged.push({
+          name: readMarkerName(em),
+          start: readMarkerStartSeconds(em),
+          em,
+        });
       }
     }
+    taggedCount = taggedById.size;
     // Helper: build the add action for a candidate (tagged body so future syncs
     // recognise/dedup/remove it).
     const addActionFor = (it) => {
@@ -1761,11 +1832,11 @@ async function commitMarkers(project, seq, candidates, currentIdSet) {
       // Retag legacy markers in place (remove + re-add tagged). This is invisible
       // housekeeping, so it isn't counted in the added/removed summary.
       for (const m of migrations) {
-        compoundAction.addAction(markers.createRemoveMarkerAction(m.em));
+        compoundAction.addAction(removeApi.make(m.em));
         compoundAction.addAction(addActionFor(m.it));
       }
       for (const em of removeTargets) {
-        compoundAction.addAction(markers.createRemoveMarkerAction(em));
+        compoundAction.addAction(removeApi.make(em));
         removed++;
       }
     }, "Sync Obviu comments to markers");
@@ -1779,7 +1850,16 @@ async function commitMarkers(project, seq, candidates, currentIdSet) {
   if (ok === false) throw new Error("transaction did not commit.");
   // `removeUnsupported` lets the UI explain why a deleted comment's marker stayed
   // put on a build that doesn't expose the removal API.
-  return { added, removed, onTimeline, removeUnsupported: orphans > 0 && !canRemove };
+  return {
+    added,
+    removed,
+    onTimeline,
+    tagged: taggedCount,
+    orphans,
+    removeApi: canRemove ? removeApi.name : null,
+    apiNames,
+    removeUnsupported: orphans > 0 && !canRemove,
+  };
 }
 
 // Human-readable "added N, removed M marker(s)" tail (or "" when nothing
@@ -1820,8 +1900,17 @@ async function pullMarkers() {
     let status =
       markerSyncSummary(res, " — live sync on.") ||
       "Markers up to date — live sync on.";
+    // Always surface the reconcile stats on a manual pull so a "marker didn't go
+    // away" report can be diagnosed at a glance (ours-on-timeline / orphaned /
+    // which removal API was used).
+    status +=
+      " [" + res.tagged + " ours, " + res.orphans + " orphan" +
+      (res.removeApi ? ", via " + res.removeApi : "") + "]";
     if (res.removeUnsupported) {
-      status += " (this Premiere build can't auto-remove deleted markers.)";
+      status +=
+        " (can't auto-remove on this build; marker API: " +
+        (res.apiNames || []).join(", ") +
+        ")";
     }
     $("fileStatus").textContent = status;
   } catch (e) {
