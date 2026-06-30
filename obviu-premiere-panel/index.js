@@ -1522,7 +1522,7 @@ async function importToPremiere() {
 }
 
 // Clear per-version marker-sync state. Called whenever the shown file/version
-// changes so markers, the "N new" badge, and live-sync arm fresh.
+// changes so markers, the "N to add" badge, and live-sync arm fresh.
 function resetMarkerSync() {
   state.markedBySeq = new Map();
   state.markerSeqKey = null;
@@ -1559,7 +1559,7 @@ function markedSet() {
   return s;
 }
 
-// "N new" badge = timestamped comments that aren't on the timeline yet. It's a
+// "N to add" badge = timestamped comments that aren't on the timeline yet. It's a
 // nudge to pull (or, once live sync is on, a brief flash before the poll mirrors
 // them).
 function updateMarkerBadge() {
@@ -1567,7 +1567,7 @@ function updateMarkerBadge() {
   if (!badge) return;
   const pending = buildMarkerItems().length;
   if (pending > 0) {
-    badge.textContent = pending + " new";
+    badge.textContent = pending + " to add";
     badge.classList.remove("hidden");
   } else {
     badge.classList.add("hidden");
