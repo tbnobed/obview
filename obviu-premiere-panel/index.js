@@ -1362,8 +1362,22 @@ async function jumpTo(sec) {
 }
 
 // Download the selected media and import it into the active Premiere project.
+// Drive the download progress bar. pct = 0..100, or null to hide it.
+function setImportProgress(pct) {
+  const prog = $("importProgress");
+  if (!prog) return;
+  if (pct == null) {
+    prog.classList.add("hidden");
+    return;
+  }
+  prog.classList.remove("hidden");
+  const bar = prog.querySelector(".bar");
+  if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + "%";
+}
+
 async function importToPremiere() {
   $("fileStatus").textContent = "Downloading…";
+  setImportProgress(0);
   try {
     const project = await getActiveProject();
     if (!uxp) throw new Error("UXP file API unavailable.");
@@ -1374,7 +1388,40 @@ async function importToPremiere() {
       { headers: { Authorization: "Bearer " + state.token } }
     );
     if (!res.ok) throw new Error("Download failed: " + res.status);
-    const buf = await res.arrayBuffer();
+
+    // Stream the body so we can show real download progress. Falls back to a
+    // single arrayBuffer() read if the UXP fetch build doesn't expose a
+    // readable stream (then we just show an indeterminate "Downloading…").
+    const total = Number(res.headers.get("Content-Length")) || 0;
+    let buf;
+    if (res.body && typeof res.body.getReader === "function") {
+      const reader = res.body.getReader();
+      const chunks = [];
+      let received = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (total) {
+          const pct = Math.round((received / total) * 100);
+          $("fileStatus").textContent = "Downloading… " + pct + "%";
+          setImportProgress(pct);
+        } else {
+          $("fileStatus").textContent = "Downloading… " + fmtBytes(received);
+        }
+      }
+      const out = new Uint8Array(received);
+      let off = 0;
+      for (const c of chunks) {
+        out.set(c, off);
+        off += c.length;
+      }
+      buf = out.buffer;
+    } else {
+      buf = await res.arrayBuffer();
+    }
+    setImportProgress(100);
 
     const tmp = await uxp.storage.localFileSystem.getTemporaryFolder();
     // Stage each import in a fresh subfolder. Reusing a fixed temp filename
@@ -1386,6 +1433,9 @@ async function importToPremiere() {
     await outFile.write(buf, { format: uxp.storage.formats.binary });
     const nativePath = outFile.nativePath;
 
+    // Download done; the Premiere import step itself is one opaque UXP call
+    // with no progress, so just hide the bar and switch to "Importing…".
+    setImportProgress(null);
     $("fileStatus").textContent = "Importing…";
     // importFiles(paths, suppressUI, targetBin, importAsNumberedStills).
     // rootItem is a property on some builds, a getter on others.
@@ -1400,6 +1450,7 @@ async function importToPremiere() {
     await project.importFiles([nativePath], true, rootBin, false);
     $("fileStatus").textContent = "Imported " + name + ".";
   } catch (e) {
+    setImportProgress(null);
     $("fileStatus").textContent = "Import failed: " + e.message;
   }
 }

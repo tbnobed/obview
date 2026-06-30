@@ -566,6 +566,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.header("Vary", "Origin");
         res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
         res.header("Access-Control-Allow-Headers", "Authorization, Content-Type");
+        // Expose Content-Length so the panel can read it cross-origin and show a
+        // real download-progress percentage (otherwise fetch hides it → null).
+        res.header("Access-Control-Expose-Headers", "Content-Length");
         res.header("Access-Control-Max-Age", "600");
       }
     }
