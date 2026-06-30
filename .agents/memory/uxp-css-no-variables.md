@@ -87,6 +87,16 @@ or `.list > * + * { margin-top: 6px; }` for stacked columns. Symptom: bumping th
 Reply/Resolve action links (rendered as "ReplyResolve"), the `.card` sections,
 and the reply box — all relied on `gap`.
 
+**A toggle class must out-specify the element's own `display`.** The `.badge`
+"N new" pill stayed visible even after `updateMarkerBadge()` added `.hidden`,
+because `.badge { display: inline-block }` (later in the file) and the generic
+`.hidden { display: none }` are EQUAL specificity (one class each) so source
+order wins — `.badge` came after `.hidden`. Symptom: a stale "1 new" badge over
+an empty comment list. **Fix:** add a compound rule `.badge.hidden { display:
+none }` (two classes = higher specificity). **How to apply:** any element that
+sets its own `display` AND gets toggled with a shared utility class needs a
+compound `.<el>.hidden` rule (or `!important`); never assume `.hidden` wins.
+
 **`height: 100%` doesn't resolve down the html→body chain.** Use `100vh`. With
 `html, body { height: 100% }` the body had no definite pixel height, so a nested
 `flex:1; min-height:0; overflow-y:auto` scroll region never got a bounded height —
