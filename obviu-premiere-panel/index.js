@@ -2267,6 +2267,11 @@ function init() {
       uxp.entrypoints.setup({
         panels: {
           obviuPanel: {
+            // Newer Premiere builds reject a panel entry that has no create/show
+            // handler ("should contain either of 'create' or 'show'"), even for a
+            // "main"-HTML panel whose markup UXP loads itself — so provide a no-op
+            // show(). The flyout still comes from menuItems + invokeMenu.
+            show() {},
             menuItems: [{ id: "sendCut", label: "Send your cut" }],
             invokeMenu(id) {
               if (id === "sendCut") openSendCut();

@@ -13,6 +13,7 @@ const uxp = require("uxp");
 uxp.entrypoints.setup({
   panels: {
     obviuPanel: {                 // MUST match the manifest entrypoint id
+      show() {},                  // REQUIRED (see below) — no-op is fine
       menuItems: [{ id: "sendCut", label: "Send your cut" }],
       invokeMenu(id) { if (id === "sendCut") openSendCut(); },
     },
@@ -22,8 +23,12 @@ uxp.entrypoints.setup({
 
 - `menuItems` can live in the setup call (don't need to duplicate in manifest).
 - Calling `setup()` at module load (our `init()` runs then) is fine; it does not
-  conflict with the auto-rendered `"main"` HTML body. Keep it minimal —
-  `menuItems` + `invokeMenu` only; no `create/show` needed.
+  conflict with the auto-rendered `"main"` HTML body.
+- **Each panel entry MUST include a `create` or `show` handler**, even for a
+  `"main"`-HTML panel whose body UXP renders itself. Without it, newer Premiere
+  builds throw `entrypoints.panels.{panel} should contain either of 'create' or
+  'show'` and the whole setup (flyout included) fails. A no-op `show() {}` is
+  enough. (Older builds tolerated its absence — do not rely on that.)
 - Wrap in try/catch: if it throws, the flyout just won't appear (silent), which
   costs a Premiere reload to discover.
 
