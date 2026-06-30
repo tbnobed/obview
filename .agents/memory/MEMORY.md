@@ -7,6 +7,7 @@
 - [API bearer auth & panel sessions](api-bearer-sessions.md) — /api/v1 bearer resolves session-token then legacy personal token; per-login sessions isolate shared workstations; login intentionally has no rate limit (matches /api/login).
 - [Open read-access model](access-control-model.md) — authenticated reads are intentionally ungated by project membership (hasProjectAccess = auth + exists); only writes are gated. "IDOR" flags on read routes are false positives here.
 - [<video> source reload](video-source-reload.md) — swapping a child <source> src never reloads the element; key it by source id (or call .load()), or it shows a stale/blank frame.
+- [UXP marker auto-sync design](uxp-marker-autosync.md) — comment→marker live sync: dedup per sequence (guid/name), commit mutex, auto-sync only into the pulled sequence, record ids post-commit.
 - [UXP marker API](uxp-marker-api.md) — createAddMarkerAction must run inside synchronous project.lockedAccess→executeTransaction (the real fix); "script object no longer valid" = missing lock; sig (name,type,start,duration,comments), MARKER_TYPE_COMMENT==="Comment".
 - [UXP large-file download/import](uxp-large-file-download.md) — stream download to disk in ~8MB append-writes; one giant Uint8Array OOMs/throws "Invalid typed array length" on big media.
 - [UXP flyout menu & dialogs](uxp-flyout-and-dialog.md) — ☰ items via entrypoints.setup menuItems/invokeMenu (works on "main"-HTML panels); modals use dialog.uxpShowModal, not browser showModal.

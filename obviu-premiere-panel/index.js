@@ -54,6 +54,19 @@ const state = {
   selectedVersionId: null,
   comments: [],
   pollTimer: null,
+  // Marker auto-sync. `markedBySeq` maps a sequence key -> Set of comment ids
+  // already pushed to THAT timeline, so a re-pull (manual or via the poll) never
+  // duplicates a marker, and switching the active sequence pulls fresh into it.
+  // `markerSeqKey` is the sequence the last pull targeted. `markerSyncActive`
+  // flips on after the first manual pull, after which the poll quietly mirrors
+  // new comments into that same sequence. `markerSyncing` is an in-flight guard
+  // so an overlapping poll/user-action never commits the same markers twice.
+  // `commentsBaselined` guards the first load so existing comments aren't "new".
+  markedBySeq: new Map(),
+  markerSeqKey: null,
+  markerSyncActive: false,
+  markerSyncing: false,
+  commentsBaselined: false,
   presetPath: "",
   presetName: "",
   activeTab: "comments",
@@ -516,6 +529,7 @@ async function goFile(file) {
       state.versions.find((v) => v.isLatestVersion) ||
       state.versions[state.versions.length - 1];
     state.selectedVersionId = latest ? latest.id : file.id;
+    resetMarkerSync();
     renderVersionSelect();
     previewMedia();
     await loadComments();
@@ -553,6 +567,7 @@ function renderVersionSelect() {
     state.transcriptForId = null;
     state.mediaInfo = undefined;
     state.mediaInfoForId = null;
+    resetMarkerSync();
     loadComments();
     previewMedia();
     if (state.activeTab === "synopsis" || state.activeTab === "transcript") {
@@ -629,6 +644,15 @@ async function loadComments() {
     );
     state.comments = comments;
     renderComments();
+    updateMarkerBadge();
+    // First load for a version is the baseline — don't treat its existing
+    // comments as "new" and don't auto-push them (the user pulls explicitly).
+    // Once synced, the poll quietly mirrors any newly arrived comments.
+    if (!state.commentsBaselined) {
+      state.commentsBaselined = true;
+    } else if (state.markerSyncActive) {
+      autoSyncMarkers();
+    }
   } catch (e) {
     list.innerHTML = '<div class="error"></div>';
     list.querySelector(".error").textContent = e.message;
@@ -1497,72 +1521,154 @@ async function importToPremiere() {
   }
 }
 
+// Clear per-version marker-sync state. Called whenever the shown file/version
+// changes so markers, the "N new" badge, and live-sync arm fresh.
+function resetMarkerSync() {
+  state.markedBySeq = new Map();
+  state.markerSeqKey = null;
+  state.markerSyncActive = false;
+  state.markerSyncing = false;
+  state.commentsBaselined = false;
+  updateMarkerBadge();
+}
+
+// A stable-ish identity for a sequence so dedup/badge state is scoped to the
+// timeline the user actually pulled into (guid when exposed, else name).
+function seqKey(seq) {
+  try {
+    if (seq && seq.guid != null) {
+      const g = seq.guid;
+      return "g:" + String(typeof g.toString === "function" ? g.toString() : g);
+    }
+  } catch (_) {}
+  if (seq && seq.name) return "n:" + String(seq.name);
+  return "active";
+}
+
+// The set of comment ids already on the currently-targeted timeline. Before any
+// pull (markerSeqKey null) this is an empty sentinel so every timestamped
+// comment reads as pending — and nothing is ever written to it.
+const EMPTY_MARK_SET = new Set();
+function markedSet() {
+  if (!state.markerSeqKey) return EMPTY_MARK_SET;
+  let s = state.markedBySeq.get(state.markerSeqKey);
+  if (!s) {
+    s = new Set();
+    state.markedBySeq.set(state.markerSeqKey, s);
+  }
+  return s;
+}
+
+// "N new" badge = timestamped comments that aren't on the timeline yet. It's a
+// nudge to pull (or, once live sync is on, a brief flash before the poll mirrors
+// them).
+function updateMarkerBadge() {
+  const badge = $("markerBadge");
+  if (!badge) return;
+  const pending = buildMarkerItems().length;
+  if (pending > 0) {
+    badge.textContent = pending + " new";
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+// Plain marker descriptors (no native objects yet, so the later locked callback
+// stays purely synchronous) for every comment that has a finite start time and
+// hasn't been pushed this session. Skipping already-marked ids is what makes a
+// re-pull — manual or poll-driven — idempotent instead of duplicating markers.
+function buildMarkerItems() {
+  const marked = markedSet();
+  const items = [];
+  for (const c of state.comments) {
+    if (marked.has(c.id)) continue;
+    const rawStart = c.inPoint != null ? c.inPoint : c.timestamp;
+    const start = Number(rawStart);
+    if (rawStart == null || !Number.isFinite(start)) continue;
+    const outPoint = c.outPoint != null ? Number(c.outPoint) : null;
+    const name = (c.authorName || "Reviewer") + ": " + (c.content || "").slice(0, 60);
+    items.push({ id: c.id, name, start, outPoint, comment: c.content || "" });
+  }
+  return items;
+}
+
+// Commit marker items to the given sequence.
+// Per Adobe's UXP docs, the marker objects/actions are ONLY valid inside a
+// synchronous project.lockedAccess() callback — touching them outside it is
+// what throws "The script object is no longer valid". The required pattern:
+//   1. await every async call (getMarkers) BEFORE the lock,
+//   2. project.lockedAccess(() => { ... }) — SYNCHRONOUS, no await inside,
+//   3. project.executeTransaction((compoundAction) => { addAction... }) and
+//      do NOT await it (it returns a boolean, not a Promise).
+// Signature: createAddMarkerAction(name, markerType, startTime, duration,
+// comments); markerType is ppro.Marker.MARKER_TYPE_COMMENT ("Comment");
+// startTime/duration MUST be TickTime (point marker = zero-length).
+async function commitMarkers(project, seq, items) {
+  const markers = await ppro.Markers.getMarkers(seq);
+  const markerType =
+    (ppro.Marker && ppro.Marker.MARKER_TYPE_COMMENT) || "Comment";
+  let added = 0;
+  let ok = false;
+  const runner = () => {
+    // executeTransaction returns a boolean — capture it so a failed commit
+    // doesn't get reported as success.
+    ok = project.executeTransaction((compoundAction) => {
+      for (const it of items) {
+        const startTime = ppro.TickTime.createWithSeconds(it.start);
+        const duration =
+          it.outPoint != null && Number.isFinite(it.outPoint) && it.outPoint > it.start
+            ? ppro.TickTime.createWithSeconds(it.outPoint - it.start)
+            : ppro.TickTime.createWithSeconds(0);
+        const action = markers.createAddMarkerAction(
+          it.name,
+          markerType,
+          startTime,
+          duration,
+          it.comment
+        );
+        compoundAction.addAction(action);
+        added++;
+      }
+    }, "Pull Obviu comments to markers");
+  };
+  // lockedAccess is required on 25.6+; guard for older builds that lack it.
+  if (typeof project.lockedAccess === "function") {
+    project.lockedAccess(runner);
+  } else {
+    runner();
+  }
+  if (ok === false) throw new Error("transaction did not commit.");
+  // Only record ids after a committed transaction so a failure can be retried.
+  // Callers set markerSeqKey before committing, so this lands in the right set.
+  const marked = markedSet();
+  for (const it of items) marked.add(it.id);
+  return added;
+}
+
 async function pullMarkers() {
+  if (state.markerSyncing) return;
+  state.markerSyncing = true;
   $("fileStatus").textContent = "";
   let project = null;
   try {
     const seqRes = await getActiveSequence();
     project = seqRes.project;
-    const seq = seqRes.seq;
-    // Per Adobe's UXP docs, the marker objects/actions are ONLY valid inside a
-    // synchronous project.lockedAccess() callback — touching them outside it is
-    // what throws "The script object is no longer valid". The required pattern:
-    //   1. await every async call (getMarkers) BEFORE the lock,
-    //   2. project.lockedAccess(() => { ... }) — SYNCHRONOUS, no await inside,
-    //   3. project.executeTransaction((compoundAction) => { addAction... }) and
-    //      do NOT await it (it returns a boolean, not a Promise).
-    // Signature: createAddMarkerAction(name, markerType, startTime, duration,
-    // comments); markerType is ppro.Marker.MARKER_TYPE_COMMENT ("Comment");
-    // startTime/duration MUST be TickTime (point marker = zero-length).
-    const markers = await ppro.Markers.getMarkers(seq);
-    const markerType =
-      (ppro.Marker && ppro.Marker.MARKER_TYPE_COMMENT) || "Comment";
-
-    // Resolve all plain values up front (no native objects yet) so the locked
-    // callback stays purely synchronous.
-    const items = [];
-    for (const c of state.comments) {
-      const rawStart = c.inPoint != null ? c.inPoint : c.timestamp;
-      const start = Number(rawStart);
-      if (rawStart == null || !Number.isFinite(start)) continue;
-      const outPoint = c.outPoint != null ? Number(c.outPoint) : null;
-      const name = (c.authorName || "Reviewer") + ": " + (c.content || "").slice(0, 60);
-      items.push({ name, start, outPoint, comment: c.content || "" });
-    }
-
-    let added = 0;
-    let ok = false;
-    const runner = () => {
-      // executeTransaction returns a boolean — capture it so a failed commit
-      // doesn't get reported as success.
-      ok = project.executeTransaction((compoundAction) => {
-        for (const it of items) {
-          const startTime = ppro.TickTime.createWithSeconds(it.start);
-          const duration =
-            it.outPoint != null && Number.isFinite(it.outPoint) && it.outPoint > it.start
-              ? ppro.TickTime.createWithSeconds(it.outPoint - it.start)
-              : ppro.TickTime.createWithSeconds(0);
-          const action = markers.createAddMarkerAction(
-            it.name,
-            markerType,
-            startTime,
-            duration,
-            it.comment
-          );
-          compoundAction.addAction(action);
-          added++;
-        }
-      }, "Pull Obviu comments to markers");
-    };
-    // lockedAccess is required on 25.6+; guard for older builds that lack it.
-    if (typeof project.lockedAccess === "function") {
-      project.lockedAccess(runner);
-    } else {
-      runner();
-    }
-
-    if (ok === false) throw new Error("transaction did not commit.");
-    $("fileStatus").textContent = "Added " + added + " marker(s).";
+    // Target the active sequence's own marker set, so pulling into a different
+    // sequence than last time starts fresh (and never reports a false "up to
+    // date") while a re-pull into the same one stays idempotent.
+    state.markerSeqKey = seqKey(seqRes.seq);
+    const items = buildMarkerItems();
+    const added = items.length
+      ? await commitMarkers(project, seqRes.seq, items)
+      : 0;
+    // A manual pull arms live sync: from now on the poll mirrors new comments
+    // into this same sequence.
+    state.markerSyncActive = true;
+    updateMarkerBadge();
+    $("fileStatus").textContent = added
+      ? "Added " + added + " marker(s) — live sync on."
+      : "Markers up to date — live sync on.";
   } catch (e) {
     // Surface API capabilities so a user can confirm in Premiere whether the
     // build exposes the lock/transaction surface this flow depends on.
@@ -1574,6 +1680,32 @@ async function pullMarkers() {
         " getMarkers=" + (!!(ppro && ppro.Markers && ppro.Markers.getMarkers)) + "]";
     } catch (_) {}
     $("fileStatus").textContent = "Pull failed: " + e.message + caps;
+  } finally {
+    state.markerSyncing = false;
+  }
+}
+
+// Poll-driven: once live sync is armed, quietly push markers for comments that
+// arrived since the last pull. The in-flight guard prevents an overlapping
+// poll/user-action from double-committing. We only mirror into the SAME sequence
+// the user pulled into — never silently dump markers onto a different edit
+// they've since switched to. Failures are non-fatal (the sequence may be closed)
+// — the badge stays so the user can pull manually.
+async function autoSyncMarkers() {
+  if (state.markerSyncing) return;
+  const items = buildMarkerItems();
+  if (!items.length) return;
+  state.markerSyncing = true;
+  try {
+    const seqRes = await getActiveSequence();
+    if (seqKey(seqRes.seq) !== state.markerSeqKey) return;
+    const added = await commitMarkers(seqRes.project, seqRes.seq, items);
+    updateMarkerBadge();
+    if (added) $("fileStatus").textContent = "Synced " + added + " new marker(s).";
+  } catch (_) {
+    // Leave the badge visible; the user can retry via the Pull button.
+  } finally {
+    state.markerSyncing = false;
   }
 }
 
