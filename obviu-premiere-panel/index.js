@@ -62,6 +62,11 @@ const state = {
   transcript: undefined,
   transcriptForId: null,
   transcriptError: null,
+  // Media info cache for the currently shown version. `mediaInfo` is undefined
+  // while loading, null when unavailable, else the /mediainfo response.
+  mediaInfo: undefined,
+  mediaInfoForId: null,
+  mediaInfoError: null,
 };
 
 // 16 MB chunks for the resumable upload, matching the web client so the
@@ -542,15 +547,18 @@ function renderVersionSelect() {
   sel.value = String(state.selectedVersionId);
   sel.onchange = () => {
     state.selectedVersionId = Number(sel.value);
-    // Transcript/synopsis are per-version; drop the cache so the new version's
-    // data loads (immediately if one of those tabs is showing).
+    // Transcript/synopsis and media info are per-version; drop the caches so the
+    // new version's data loads (immediately if one of those tabs is showing).
     state.transcript = undefined;
     state.transcriptForId = null;
+    state.mediaInfo = undefined;
+    state.mediaInfoForId = null;
     loadComments();
     previewMedia();
     if (state.activeTab === "synopsis" || state.activeTab === "transcript") {
       ensureTranscript();
     }
+    if (state.activeTab === "fields") ensureMediaInfo();
   };
 }
 
@@ -801,27 +809,84 @@ function showTab(which) {
     $("tab" + cap).classList.toggle("active", t === which);
     $("tabBody" + cap).classList.toggle("hidden", t !== which);
   });
-  if (which === "fields") renderFields();
+  if (which === "fields") ensureMediaInfo();
   if (which === "synopsis" || which === "transcript") ensureTranscript();
 }
 
-// Fields tab shows real, derived metadata for the selected version — no
-// fabricated custom fields, since the data model has none.
+// ---------- media info ----------
+// Real technical metadata for the selected version, pulled from
+// GET /api/v1/files/:id/mediainfo (cached ffprobe payload). Cached per version.
+async function ensureMediaInfo() {
+  if (state.mediaInfoForId === state.selectedVersionId && state.mediaInfo !== undefined) {
+    renderFields();
+    return;
+  }
+  await loadMediaInfo();
+}
+
+async function loadMediaInfo() {
+  const id = state.selectedVersionId;
+  state.mediaInfoForId = id;
+  state.mediaInfo = undefined; // loading
+  state.mediaInfoError = null;
+  renderFields();
+  try {
+    const m = await api("/api/v1/files/" + id + "/mediainfo");
+    if (state.selectedVersionId !== id) return; // version switched mid-flight
+    state.mediaInfo = m;
+  } catch (e) {
+    if (state.selectedVersionId !== id) return;
+    state.mediaInfo = null;
+    state.mediaInfoError = e.message || "";
+  }
+  renderFields();
+}
+
+function fmtBytes(n) {
+  if (n == null || isNaN(n)) return "—";
+  const u = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0, v = Number(n);
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  return (i === 0 ? v : v.toFixed(1)) + " " + u[i];
+}
+
+function fmtDurSec(sec) {
+  const n = Number(sec);
+  if (!Number.isFinite(n) || n <= 0) return "—";
+  const h = Math.floor(n / 3600);
+  const m = Math.floor((n % 3600) / 60);
+  const s = Math.floor(n % 60);
+  const p = (x) => String(x).padStart(2, "0");
+  return (h > 0 ? h + ":" + p(m) : m) + ":" + p(s);
+}
+
+function fmtFps(fr) {
+  // ffprobe gives "30000/1001" style fractions, or we have a plain integer.
+  if (fr == null) return "—";
+  if (typeof fr === "string" && fr.includes("/")) {
+    const [a, b] = fr.split("/").map(Number);
+    if (b) { const v = a / b; return (v % 1 === 0 ? v : v.toFixed(3)) + " fps"; }
+  }
+  const n = Number(fr);
+  return Number.isFinite(n) && n > 0 ? n + " fps" : "—";
+}
+
+function fmtBitrate(bps) {
+  const n = Number(bps);
+  if (!Number.isFinite(n) || n <= 0) return "—";
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + " Mb/s";
+  if (n >= 1e3) return Math.round(n / 1e3) + " kb/s";
+  return n + " b/s";
+}
+
+// "Media info" tab: real technical metadata for the selected version.
 function renderFields() {
   const box = $("fieldsList");
   if (!box) return;
   const f = selectedFile() || state.file || {};
-  const resolved = state.comments.filter((c) => c.resolved).length;
-  const open = state.comments.length - resolved;
-  const rows = [
-    ["Name", (state.file && state.file.filename) || "—"],
-    ["Version", "v" + (f.version || 1) + (f.isLatestVersion ? " (latest)" : "")],
-    ["Comments", String(state.comments.length)],
-    ["Open", String(open)],
-    ["Resolved", String(resolved)],
-  ];
   box.innerHTML = "";
-  rows.forEach(([k, v]) => {
+
+  const addRow = (k, v) => {
     const row = document.createElement("div");
     row.className = "field-row";
     const kk = document.createElement("span");
@@ -829,11 +894,65 @@ function renderFields() {
     kk.textContent = k;
     const vv = document.createElement("span");
     vv.className = "field-val";
-    vv.textContent = v;
+    vv.textContent = v == null || v === "" ? "—" : String(v);
     row.appendChild(kk);
     row.appendChild(vv);
     box.appendChild(row);
+  };
+  const addHead = (t) => {
+    const h = document.createElement("div");
+    h.className = "field-head";
+    h.textContent = t;
+    box.appendChild(h);
+  };
+
+  // Always-available basics (don't need the probe).
+  addRow("Name", (state.file && state.file.filename) || f.filename || "—");
+  addRow("Version", "v" + (f.version || 1) + (f.isLatestVersion ? " (latest)" : ""));
+
+  const m = state.mediaInfo;
+  if (m === undefined) { addRow("Media info", "Loading…"); return; }
+  if (m === null) {
+    addRow("Media info", state.mediaInfoError || "Unavailable");
+    return;
+  }
+
+  const probe = m.probe || null;
+  const format = probe && probe.format ? probe.format : null;
+  const streams = probe && Array.isArray(probe.streams) ? probe.streams : [];
+  const vids = streams.filter((s) => s.codec_type === "video");
+  const auds = streams.filter((s) => s.codec_type === "audio");
+
+  addRow("Type", m.file && m.file.fileType);
+  addRow("Size", m.diskSize != null ? fmtBytes(m.diskSize) : fmtBytes(m.file && m.file.fileSize));
+  const dur = (format && format.duration) ?? m.duration;
+  addRow("Duration", fmtDurSec(dur));
+  if (format) {
+    addRow("Container", format.format_long_name || format.format_name);
+    addRow("Overall bitrate", fmtBitrate(format.bit_rate));
+  }
+
+  vids.forEach((s, i) => {
+    addHead(vids.length > 1 ? "Video " + (i + 1) : "Video");
+    addRow("Codec", s.codec_long_name || s.codec_name);
+    addRow("Resolution", s.width && s.height ? s.width + " × " + s.height : "—");
+    addRow("Frame rate", fmtFps(s.avg_frame_rate || s.r_frame_rate || m.frameRate));
+    addRow("Pixel format", s.pix_fmt);
+    addRow("Bitrate", fmtBitrate(s.bit_rate));
   });
+  if (!vids.length && m.frameRate) {
+    addRow("Frame rate", fmtFps(m.frameRate));
+  }
+
+  auds.forEach((s, i) => {
+    addHead(auds.length > 1 ? "Audio " + (i + 1) : "Audio");
+    addRow("Codec", s.codec_long_name || s.codec_name);
+    addRow("Channels", s.channels);
+    addRow("Sample rate", s.sample_rate ? Math.round(Number(s.sample_rate) / 1000) + " kHz" : "—");
+    addRow("Bitrate", fmtBitrate(s.bit_rate));
+  });
+
+  if (!probe && m.probeError) addRow("Note", m.probeError);
 }
 
 // ---------- transcript & synopsis (AI) ----------
@@ -1732,6 +1851,7 @@ function init() {
     if (state.activeTab === "synopsis" || state.activeTab === "transcript") {
       loadTranscript();
     }
+    if (state.activeTab === "fields") loadMediaInfo();
   };
   $("btnImport").onclick = importToPremiere;
   $("btnSendCut").onclick = () => openSendCut(false);

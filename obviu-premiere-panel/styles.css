@@ -418,6 +418,7 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
 .fields .field-row { display: flex; align-items: center; padding: 9px 2px; border-bottom: 1px solid #2b2b2b; }
 .fields .field-key { flex: 0 0 90px; color: #9a9a9a; font-size: 12px; }
 .fields .field-val { flex: 1 1 auto; color: #ececec; font-size: 12px; word-break: break-word; }
+.fields .field-head { margin-top: 14px; margin-bottom: 4px; color: #ececec; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 
 /* ---- Comments ---- */
 .comment {

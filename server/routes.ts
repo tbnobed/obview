@@ -854,6 +854,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Media info for the Premiere panel "Media info" tab. Mirrors the web
+  // /api/files/:id/mediainfo route but is bearer-authed (apiAuth). Returns the
+  // cached ffprobe payload (falling back to a live probe + backfill when the
+  // cache is empty), plus on-disk size and the recorded fileSize.
+  app.get("/api/v1/files/:id/mediainfo", apiAuth, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+
+      const fsMod = await import("fs/promises");
+      let stat: { size: number; mtimeMs: number } | null = null;
+      let onDisk = false;
+      try {
+        const s = await fsMod.stat(file.filePath);
+        stat = { size: s.size, mtimeMs: s.mtimeMs };
+        onDisk = true;
+      } catch {
+        onDisk = false;
+      }
+
+      const processing = await storage.getVideoProcessing(fileId);
+      let probe: any = processing?.mediaInfo ?? null;
+      let probeError: string | null = null;
+      const cached = !!probe;
+      if (!probe) {
+        if (onDisk) {
+          try {
+            probe = await VideoProcessor.probeFull(file.filePath);
+            if (processing) {
+              storage.updateVideoProcessing(processing.id, { mediaInfo: probe })
+                .catch((err) => console.warn("[v1 MediaInfo] backfill failed:", err));
+            }
+          } catch (err: any) {
+            probeError = err?.message || String(err);
+          }
+        } else {
+          probeError = "Original file is not present on disk";
+        }
+      }
+
+      res.json({
+        file: {
+          id: file.id,
+          filename: file.filename,
+          fileType: file.fileType,
+          fileSize: file.fileSize,
+          version: file.version ?? null,
+          isLatestVersion: file.isLatestVersion !== false,
+          createdAt: file.createdAt,
+        },
+        diskSize: stat?.size ?? null,
+        onDisk,
+        duration: processing?.duration ?? null,
+        frameRate: processing?.frameRate ?? null,
+        probe,
+        probeError,
+        cached,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/v1/files/:id/comments", apiAuth, async (req, res, next) => {
     try {
       const fileId = parseInt(req.params.id);
