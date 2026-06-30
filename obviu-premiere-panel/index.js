@@ -55,8 +55,9 @@ const state = {
   comments: [],
   pollTimer: null,
   // Marker auto-sync. `markedBySeq` maps a sequence key -> Set of comment ids
-  // already pushed to THAT timeline, so a re-pull (manual or via the poll) never
-  // duplicates a marker, and switching the active sequence pulls fresh into it.
+  // known to be on THAT timeline (from the last scan); it only drives the "N to
+  // add" badge. Dedup and deletion are reconciled against the timeline's own
+  // tagged markers in commitMarkers, so they survive a panel reload.
   // `markerSeqKey` is the sequence the last pull targeted. `markerSyncActive`
   // flips on after the first manual pull, after which the poll quietly mirrors
   // new comments into that same sequence. `markerSyncing` is an in-flight guard
@@ -1545,20 +1546,34 @@ function seqKey(seq) {
   return "active";
 }
 
-// Per-sequence Map of comment id -> { name, start, outPoint } for every comment
-// already pushed onto the currently-targeted timeline. Storing the descriptor
-// (not just the id) lets us locate and remove the marker later when its comment
-// is deleted. Before any pull (markerSeqKey null) this is an empty sentinel so
-// every timestamped comment reads as pending — and nothing is ever written to it.
-const EMPTY_MARK_MAP = new Map();
-function markedMap() {
-  if (!state.markerSeqKey) return EMPTY_MARK_MAP;
-  let m = state.markedBySeq.get(state.markerSeqKey);
-  if (!m) {
-    m = new Map();
-    state.markedBySeq.set(state.markerSeqKey, m);
+// Per-sequence Set of comment ids known to be on that timeline (from our last
+// timeline scan). This only feeds the "N to add" badge — the real source of
+// truth for what's on the timeline is the markers themselves, which we tag with
+// the comment id so add/remove reconciliation survives panel reloads. Before any
+// pull (markerSeqKey null) this is an empty sentinel.
+const EMPTY_TL_SET = new Set();
+function onTimelineSet() {
+  if (!state.markerSeqKey) return EMPTY_TL_SET;
+  let s = state.markedBySeq.get(state.markerSeqKey);
+  if (!s) {
+    s = new Set();
+    state.markedBySeq.set(state.markerSeqKey, s);
   }
-  return m;
+  return s;
+}
+
+// Each Obviu-created marker carries its comment id in the marker body as an
+// "[obviu#<id>]" tag. That tag is the only stable handle (UXP markers expose no
+// custom id field), and it lets a later sync — even after a panel reload —
+// recognise which timeline markers are ours, dedup against them, and remove the
+// ones whose comment was deleted.
+const OBVIU_TAG_RE = /\[obviu#([^\]]+)\]/;
+function markerBody(it) {
+  return (it.comment || "") + "\n[obviu#" + it.id + "]";
+}
+function parseObviuTag(body) {
+  const m = OBVIU_TAG_RE.exec(body || "");
+  return m ? m[1] : null;
 }
 
 // "N to add" badge = timestamped comments that aren't on the timeline yet. It's a
@@ -1567,7 +1582,11 @@ function markedMap() {
 function updateMarkerBadge() {
   const badge = $("markerBadge");
   if (!badge) return;
-  const pending = buildMarkerItems().length;
+  const onTl = onTimelineSet();
+  let pending = 0;
+  for (const it of buildMarkerItems()) {
+    if (!onTl.has(it.id)) pending++;
+  }
   if (pending > 0) {
     badge.textContent = pending + " to add";
     badge.classList.remove("hidden");
@@ -1577,122 +1596,173 @@ function updateMarkerBadge() {
 }
 
 // Plain marker descriptors (no native objects yet, so the later locked callback
-// stays purely synchronous) for every comment that has a finite start time and
-// hasn't been pushed this session. Skipping already-marked ids is what makes a
-// re-pull — manual or poll-driven — idempotent instead of duplicating markers.
+// stays purely synchronous) for EVERY comment that has a finite start time. This
+// is the full candidate set — commitMarkers does the real dedup against the
+// timeline's tagged markers, so we no longer pre-filter by an in-memory store
+// (which was wiped on every panel reload and broke deletion sync).
 function buildMarkerItems() {
-  const marked = markedMap();
   const items = [];
   for (const c of state.comments) {
-    if (marked.has(c.id)) continue;
     const rawStart = c.inPoint != null ? c.inPoint : c.timestamp;
     const start = Number(rawStart);
     if (rawStart == null || !Number.isFinite(start)) continue;
     const outPoint = c.outPoint != null ? Number(c.outPoint) : null;
     const name = (c.authorName || "Reviewer") + ": " + (c.content || "").slice(0, 60);
-    items.push({ id: c.id, name, start, outPoint, comment: c.content || "" });
+    items.push({ id: String(c.id), name, start, outPoint, comment: c.content || "" });
   }
   return items;
 }
 
-// Descriptors for markers we previously pushed whose comment has since been
-// deleted server-side (id no longer present in state.comments). These drive the
-// removal half of a sync so a deleted comment's marker disappears from the
-// timeline. Matched back to a real marker (in commitMarkers) by name + start.
-function buildMarkerDeletions() {
-  const marked = markedMap();
-  if (!marked.size) return [];
-  const currentIds = new Set(state.comments.map((c) => c.id));
-  const dels = [];
-  for (const [id, desc] of marked) {
-    if (!currentIds.has(id)) {
-      dels.push({ id, name: desc.name, start: desc.start });
-    }
-  }
-  return dels;
-}
-
-// Commit marker items to the given sequence.
+// Reconcile the timeline's markers against the current comment list. The
+// TIMELINE is the source of truth: we enumerate its live markers, read the
+// "[obviu#<id>]" tag we wrote into each of ours, then add markers for comments
+// that have none and remove ours whose comment was deleted. Because the tag
+// lives in the project (not in panel memory), this works correctly even after a
+// panel reload — fixing deletion sync, which previously relied on an in-memory
+// store that was wiped on every reload.
+//
 // Per Adobe's UXP docs, the marker objects/actions are ONLY valid inside a
-// synchronous project.lockedAccess() callback — touching them outside it is
-// what throws "The script object is no longer valid". The required pattern:
+// synchronous project.lockedAccess() callback — touching them outside it throws
+// "The script object is no longer valid". The required pattern:
 //   1. await every async call (getMarkers) BEFORE the lock,
 //   2. project.lockedAccess(() => { ... }) — SYNCHRONOUS, no await inside,
 //   3. project.executeTransaction((compoundAction) => { addAction... }) and
 //      do NOT await it (it returns a boolean, not a Promise).
 // Signature: createAddMarkerAction(name, markerType, startTime, duration,
 // comments); markerType is ppro.Marker.MARKER_TYPE_COMMENT ("Comment");
-// startTime/duration MUST be TickTime (point marker = zero-length).
-// `deletions` are descriptors ({ name, start }) of markers to remove (their
-// comment was deleted). We enumerate the sequence's live markers INSIDE the lock
-// (marker objects are only valid there) and match by name + start seconds, then
-// add a remove action for each. Existing-marker enumeration and the conditional
-// transaction both live in the locked runner so nothing reads a stale object and
-// an empty sync (nothing to add or remove) never fires a no-op transaction.
-async function commitMarkers(project, seq, items, deletions) {
-  const dels = deletions || [];
+// startTime/duration MUST be TickTime (point marker = zero-length). Both the
+// marker enumeration and the conditional transaction live in the locked runner
+// so nothing reads a stale object, and an empty sync (nothing to add or remove)
+// never fires a no-op transaction (which can report a false failure).
+// `candidates` = all timestamped comments; `currentIdSet` = Set of every current
+// comment id (string). Returns the set of comment ids now represented on the
+// timeline so the caller can refresh the badge.
+async function commitMarkers(project, seq, candidates, currentIdSet) {
   const markers = await ppro.Markers.getMarkers(seq);
   const markerType =
     (ppro.Marker && ppro.Marker.MARKER_TYPE_COMMENT) || "Comment";
-  const canRemove =
-    dels.length > 0 && typeof markers.createRemoveMarkerAction === "function";
+  const canRemove = typeof markers.createRemoveMarkerAction === "function";
   let added = 0;
   let removed = 0;
+  let orphans = 0;
   let ok = false;
+  const onTimeline = new Set();
   const runner = () => {
-    // Resolve deletions to real marker objects (valid only here, inside the lock).
-    const removeTargets = [];
-    if (canRemove) {
-      let existing = [];
+    // Enumerate the timeline's live markers (valid only here, inside the lock)
+    // and split into ours (carry an [obviu#id] tag) vs. the user's own markers.
+    let existing = [];
+    try {
+      const got = markers.getMarkers();
+      existing = Array.isArray(got)
+        ? got
+        : got && got.length != null
+        ? Array.from(got)
+        : [];
+    } catch (_) {
+      existing = [];
+    }
+    const taggedById = new Map();
+    const untagged = [];
+    for (const em of existing) {
+      let body = "";
       try {
-        existing = markers.getMarkers() || [];
-      } catch (_) {
-        existing = [];
+        body = em.comments || "";
+      } catch (_) {}
+      const tag = parseObviuTag(body);
+      if (tag != null) {
+        taggedById.set(tag, em);
+      } else {
+        let nm = "";
+        let s = NaN;
+        try {
+          nm = em.name || "";
+        } catch (_) {}
+        try {
+          s = em.start.seconds;
+        } catch (_) {}
+        untagged.push({ name: nm, start: s, em });
       }
-      const used = new Set();
-      for (const d of dels) {
-        for (let i = 0; i < existing.length; i++) {
-          if (used.has(i)) continue;
-          const em = existing[i];
-          let es = NaN;
-          try {
-            es = em.start.seconds;
-          } catch (_) {}
-          if (
-            em.name === d.name &&
-            Number.isFinite(es) &&
-            Math.abs(es - d.start) < 0.05
-          ) {
-            removeTargets.push(em);
-            used.add(i);
-            break;
-          }
+    }
+    // Helper: build the add action for a candidate (tagged body so future syncs
+    // recognise/dedup/remove it).
+    const addActionFor = (it) => {
+      const startTime = ppro.TickTime.createWithSeconds(it.start);
+      const duration =
+        it.outPoint != null && Number.isFinite(it.outPoint) && it.outPoint > it.start
+          ? ppro.TickTime.createWithSeconds(it.outPoint - it.start)
+          : ppro.TickTime.createWithSeconds(0);
+      return markers.createAddMarkerAction(
+        it.name,
+        markerType,
+        startTime,
+        duration,
+        markerBody(it)
+      );
+    };
+    // Classify each comment:
+    //  - already has our tagged marker -> nothing to do
+    //  - matches a legacy (pre-tag) marker at the same name+start -> migrate it
+    //    (remove the untagged marker, re-add a tagged one) so future deletes sync
+    //  - otherwise -> a fresh add
+    // Untagged matches are consumed one-to-one so a single legacy marker can't
+    // satisfy two same-name/same-time comments.
+    const addList = []; // genuinely new comments (counted as "added")
+    const migrations = []; // { it, em } legacy markers to retag (housekeeping)
+    const usedUntagged = new Set();
+    for (const it of candidates) {
+      if (taggedById.has(it.id)) {
+        onTimeline.add(it.id);
+        continue;
+      }
+      let matchIdx = -1;
+      for (let i = 0; i < untagged.length; i++) {
+        if (usedUntagged.has(i)) continue;
+        const u = untagged[i];
+        if (
+          u.name === it.name &&
+          Number.isFinite(u.start) &&
+          Math.abs(u.start - it.start) < 0.05
+        ) {
+          matchIdx = i;
+          break;
         }
+      }
+      if (matchIdx >= 0) {
+        usedUntagged.add(matchIdx);
+        onTimeline.add(it.id);
+        // Can only retag if we can remove the old one; otherwise leave it as-is
+        // (it stays on the timeline, just unmanaged for deletion).
+        if (canRemove) migrations.push({ it, em: untagged[matchIdx].em });
+        continue;
+      }
+      addList.push(it);
+    }
+    // Removals: our tagged markers whose comment no longer exists.
+    const removeTargets = [];
+    for (const [id, em] of taggedById) {
+      if (!currentIdSet.has(id)) {
+        orphans++;
+        if (canRemove) removeTargets.push(em);
       }
     }
     // Nothing to do: a no-action executeTransaction can report failure, so skip.
-    if (!items.length && !removeTargets.length) {
+    if (!addList.length && !migrations.length && !removeTargets.length) {
       ok = true;
       return;
     }
     // executeTransaction returns a boolean — capture it so a failed commit
     // doesn't get reported as success.
     ok = project.executeTransaction((compoundAction) => {
-      for (const it of items) {
-        const startTime = ppro.TickTime.createWithSeconds(it.start);
-        const duration =
-          it.outPoint != null && Number.isFinite(it.outPoint) && it.outPoint > it.start
-            ? ppro.TickTime.createWithSeconds(it.outPoint - it.start)
-            : ppro.TickTime.createWithSeconds(0);
-        const action = markers.createAddMarkerAction(
-          it.name,
-          markerType,
-          startTime,
-          duration,
-          it.comment
-        );
-        compoundAction.addAction(action);
+      for (const it of addList) {
+        compoundAction.addAction(addActionFor(it));
         added++;
+        onTimeline.add(it.id);
+      }
+      // Retag legacy markers in place (remove + re-add tagged). This is invisible
+      // housekeeping, so it isn't counted in the added/removed summary.
+      for (const m of migrations) {
+        compoundAction.addAction(markers.createRemoveMarkerAction(m.em));
+        compoundAction.addAction(addActionFor(m.it));
       }
       for (const em of removeTargets) {
         compoundAction.addAction(markers.createRemoveMarkerAction(em));
@@ -1707,20 +1777,9 @@ async function commitMarkers(project, seq, items, deletions) {
     runner();
   }
   if (ok === false) throw new Error("transaction did not commit.");
-  // Only update tracking after a committed transaction so a failure can be
-  // retried. Callers set markerSeqKey first, so this lands in the right map.
-  const marked = markedMap();
-  for (const it of items) {
-    marked.set(it.id, { name: it.name, start: it.start, outPoint: it.outPoint });
-  }
-  // Drop deleted comments from tracking when removal was attempted — even if no
-  // marker matched (the user may have removed it by hand), the comment is gone.
-  if (canRemove) {
-    for (const d of dels) marked.delete(d.id);
-  }
-  // Flag so the UI can explain why a deleted comment's marker stayed put on a
-  // build that doesn't expose the removal API.
-  return { added, removed, removeUnsupported: dels.length > 0 && !canRemove };
+  // `removeUnsupported` lets the UI explain why a deleted comment's marker stayed
+  // put on a build that doesn't expose the removal API.
+  return { added, removed, onTimeline, removeUnsupported: orphans > 0 && !canRemove };
 }
 
 // Human-readable "added N, removed M marker(s)" tail (or "" when nothing
@@ -1745,14 +1804,17 @@ async function pullMarkers() {
     // sequence than last time starts fresh (and never reports a false "up to
     // date") while a re-pull into the same one stays idempotent.
     state.markerSeqKey = seqKey(seqRes.seq);
-    const items = buildMarkerItems();
-    const deletions = buildMarkerDeletions();
-    const res =
-      items.length || deletions.length
-        ? await commitMarkers(project, seqRes.seq, items, deletions)
-        : { added: 0, removed: 0 };
-    // A manual pull arms live sync: from now on the poll mirrors new comments
-    // into this same sequence.
+    const candidates = buildMarkerItems();
+    const currentIds = new Set(state.comments.map((c) => String(c.id)));
+    // Always reconcile — even with no candidates a comment may have been deleted,
+    // and detecting that requires reading the timeline's tagged markers.
+    const res = await commitMarkers(project, seqRes.seq, candidates, currentIds);
+    // Refresh our per-sequence "on timeline" set from the scan result.
+    const tl = onTimelineSet();
+    tl.clear();
+    for (const id of res.onTimeline) tl.add(id);
+    // A manual pull arms live sync: from now on the poll mirrors changes
+    // (adds and deletes) into this same sequence.
     state.markerSyncActive = true;
     updateMarkerBadge();
     let status =
@@ -1786,14 +1848,18 @@ async function pullMarkers() {
 // — the badge stays so the user can pull manually.
 async function autoSyncMarkers() {
   if (state.markerSyncing) return;
-  const items = buildMarkerItems();
-  const deletions = buildMarkerDeletions();
-  if (!items.length && !deletions.length) return;
   state.markerSyncing = true;
   try {
     const seqRes = await getActiveSequence();
     if (seqKey(seqRes.seq) !== state.markerSeqKey) return;
-    const res = await commitMarkers(seqRes.project, seqRes.seq, items, deletions);
+    // Always reconcile against the timeline — additions AND deletions — since a
+    // deletion isn't visible without reading the timeline's tagged markers.
+    const candidates = buildMarkerItems();
+    const currentIds = new Set(state.comments.map((c) => String(c.id)));
+    const res = await commitMarkers(seqRes.project, seqRes.seq, candidates, currentIds);
+    const tl = onTimelineSet();
+    tl.clear();
+    for (const id of res.onTimeline) tl.add(id);
     updateMarkerBadge();
     const msg = markerSyncSummary(res, ".");
     if (msg) $("fileStatus").textContent = "Synced: " + msg;

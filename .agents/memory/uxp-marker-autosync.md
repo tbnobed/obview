@@ -29,26 +29,36 @@ and a 30s poll mirrors newly arrived comments live after the user pulls once.
 marker→comment jump) reuses the same builders/commit path and must keep the
 per-sequence dedup + mutex invariants.
 
-# Deletion sync (comment deleted → marker removed)
+# Deletion sync must be timeline-driven, not memory-driven
 
-To mirror server-side comment deletions, the per-sequence dedup store keeps a
-**descriptor** per pushed comment ({ name, start, outPoint }), not just the id —
-markers carry no Obviu id, so removal is matched back by **name + start.seconds**
-(small epsilon). Each sync computes deletions (tracked ids no longer in the
-comment list) and resolves them to live marker objects.
+Mirroring server-side comment deletions back onto the timeline **cannot** rely on
+an in-panel record of what was pushed: the user reloads the panel between actions,
+which wipes any in-memory store, so the panel forgets it ever created a marker and
+can't remove it. The timeline itself must be the source of truth.
 
-**Rules:**
-- Enumerate existing markers and build remove actions **inside** the
-  lockedAccess/executeTransaction runner — marker objects from the enumeration
-  are only valid there (same validity rule as createAddMarkerAction).
-- **Skip the transaction entirely when there's nothing to add AND nothing to
-  remove** (set ok=true and return). An executeTransaction with zero actions can
-  report failure → a false "transaction did not commit". This matters because a
-  deletions-only sync may resolve to zero matched markers.
-- Only stop tracking a deleted comment when the removal API is actually present
-  (`createRemoveMarkerAction`); otherwise the marker can't be removed and the id
-  must stay tracked. Surface a one-line note to the user in that case.
+**The design that works: tag every Obviu marker with its comment id.** Write
+`[obviu#<id>]` into the marker body. Then on every sync, enumerate the live
+markers, parse the tag to recognise ours, and reconcile:
+- add markers for comments whose id isn't already tagged on the timeline,
+- remove our tagged markers whose comment id is no longer in the comment list.
 
-**Why:** name+time matching is the only handle available (no stable marker id in
-the UXP API at time of writing); the no-op-transaction guard and the
-enumerate-inside-lock rule were both required to make deletion-only syncs work.
+The tag is the only stable handle — UXP markers expose no custom id field. Because
+it lives in the project, add/dedup/delete all survive panel reloads.
+
+**Rules that must hold:**
+- All marker enumeration + add/remove actions happen **inside** the
+  lockedAccess/executeTransaction runner (marker objects are only valid there).
+- **Skip the transaction when there's nothing to add, migrate, or remove** — a
+  zero-action executeTransaction can report a false failure.
+- The per-sequence in-memory Set is now only a badge hint ("N to add"); it is not
+  load-bearing for correctness and is rebuilt from each scan.
+- Legacy/pre-tag markers (and markers that match a live comment by name+start)
+  are **migrated** in place (remove untagged + re-add tagged) so future deletes
+  sync. Consume untagged matches one-to-one so one legacy marker can't suppress
+  two same-name/same-time comments.
+- If the build lacks `createRemoveMarkerAction`, surface a one-line note that
+  deleted markers can't be auto-removed.
+
+**Why:** the in-memory approach silently failed every time the user reloaded the
+panel (the actual repeated bug); only a project-persisted tag makes deletion
+reliable.
