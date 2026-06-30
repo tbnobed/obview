@@ -1545,18 +1545,20 @@ function seqKey(seq) {
   return "active";
 }
 
-// The set of comment ids already on the currently-targeted timeline. Before any
-// pull (markerSeqKey null) this is an empty sentinel so every timestamped
-// comment reads as pending — and nothing is ever written to it.
-const EMPTY_MARK_SET = new Set();
-function markedSet() {
-  if (!state.markerSeqKey) return EMPTY_MARK_SET;
-  let s = state.markedBySeq.get(state.markerSeqKey);
-  if (!s) {
-    s = new Set();
-    state.markedBySeq.set(state.markerSeqKey, s);
+// Per-sequence Map of comment id -> { name, start, outPoint } for every comment
+// already pushed onto the currently-targeted timeline. Storing the descriptor
+// (not just the id) lets us locate and remove the marker later when its comment
+// is deleted. Before any pull (markerSeqKey null) this is an empty sentinel so
+// every timestamped comment reads as pending — and nothing is ever written to it.
+const EMPTY_MARK_MAP = new Map();
+function markedMap() {
+  if (!state.markerSeqKey) return EMPTY_MARK_MAP;
+  let m = state.markedBySeq.get(state.markerSeqKey);
+  if (!m) {
+    m = new Map();
+    state.markedBySeq.set(state.markerSeqKey, m);
   }
-  return s;
+  return m;
 }
 
 // "N to add" badge = timestamped comments that aren't on the timeline yet. It's a
@@ -1579,7 +1581,7 @@ function updateMarkerBadge() {
 // hasn't been pushed this session. Skipping already-marked ids is what makes a
 // re-pull — manual or poll-driven — idempotent instead of duplicating markers.
 function buildMarkerItems() {
-  const marked = markedSet();
+  const marked = markedMap();
   const items = [];
   for (const c of state.comments) {
     if (marked.has(c.id)) continue;
@@ -1593,6 +1595,23 @@ function buildMarkerItems() {
   return items;
 }
 
+// Descriptors for markers we previously pushed whose comment has since been
+// deleted server-side (id no longer present in state.comments). These drive the
+// removal half of a sync so a deleted comment's marker disappears from the
+// timeline. Matched back to a real marker (in commitMarkers) by name + start.
+function buildMarkerDeletions() {
+  const marked = markedMap();
+  if (!marked.size) return [];
+  const currentIds = new Set(state.comments.map((c) => c.id));
+  const dels = [];
+  for (const [id, desc] of marked) {
+    if (!currentIds.has(id)) {
+      dels.push({ id, name: desc.name, start: desc.start });
+    }
+  }
+  return dels;
+}
+
 // Commit marker items to the given sequence.
 // Per Adobe's UXP docs, the marker objects/actions are ONLY valid inside a
 // synchronous project.lockedAccess() callback — touching them outside it is
@@ -1604,13 +1623,58 @@ function buildMarkerItems() {
 // Signature: createAddMarkerAction(name, markerType, startTime, duration,
 // comments); markerType is ppro.Marker.MARKER_TYPE_COMMENT ("Comment");
 // startTime/duration MUST be TickTime (point marker = zero-length).
-async function commitMarkers(project, seq, items) {
+// `deletions` are descriptors ({ name, start }) of markers to remove (their
+// comment was deleted). We enumerate the sequence's live markers INSIDE the lock
+// (marker objects are only valid there) and match by name + start seconds, then
+// add a remove action for each. Existing-marker enumeration and the conditional
+// transaction both live in the locked runner so nothing reads a stale object and
+// an empty sync (nothing to add or remove) never fires a no-op transaction.
+async function commitMarkers(project, seq, items, deletions) {
+  const dels = deletions || [];
   const markers = await ppro.Markers.getMarkers(seq);
   const markerType =
     (ppro.Marker && ppro.Marker.MARKER_TYPE_COMMENT) || "Comment";
+  const canRemove =
+    dels.length > 0 && typeof markers.createRemoveMarkerAction === "function";
   let added = 0;
+  let removed = 0;
   let ok = false;
   const runner = () => {
+    // Resolve deletions to real marker objects (valid only here, inside the lock).
+    const removeTargets = [];
+    if (canRemove) {
+      let existing = [];
+      try {
+        existing = markers.getMarkers() || [];
+      } catch (_) {
+        existing = [];
+      }
+      const used = new Set();
+      for (const d of dels) {
+        for (let i = 0; i < existing.length; i++) {
+          if (used.has(i)) continue;
+          const em = existing[i];
+          let es = NaN;
+          try {
+            es = em.start.seconds;
+          } catch (_) {}
+          if (
+            em.name === d.name &&
+            Number.isFinite(es) &&
+            Math.abs(es - d.start) < 0.05
+          ) {
+            removeTargets.push(em);
+            used.add(i);
+            break;
+          }
+        }
+      }
+    }
+    // Nothing to do: a no-action executeTransaction can report failure, so skip.
+    if (!items.length && !removeTargets.length) {
+      ok = true;
+      return;
+    }
     // executeTransaction returns a boolean — capture it so a failed commit
     // doesn't get reported as success.
     ok = project.executeTransaction((compoundAction) => {
@@ -1630,7 +1694,11 @@ async function commitMarkers(project, seq, items) {
         compoundAction.addAction(action);
         added++;
       }
-    }, "Pull Obviu comments to markers");
+      for (const em of removeTargets) {
+        compoundAction.addAction(markers.createRemoveMarkerAction(em));
+        removed++;
+      }
+    }, "Sync Obviu comments to markers");
   };
   // lockedAccess is required on 25.6+; guard for older builds that lack it.
   if (typeof project.lockedAccess === "function") {
@@ -1639,11 +1707,30 @@ async function commitMarkers(project, seq, items) {
     runner();
   }
   if (ok === false) throw new Error("transaction did not commit.");
-  // Only record ids after a committed transaction so a failure can be retried.
-  // Callers set markerSeqKey before committing, so this lands in the right set.
-  const marked = markedSet();
-  for (const it of items) marked.add(it.id);
-  return added;
+  // Only update tracking after a committed transaction so a failure can be
+  // retried. Callers set markerSeqKey first, so this lands in the right map.
+  const marked = markedMap();
+  for (const it of items) {
+    marked.set(it.id, { name: it.name, start: it.start, outPoint: it.outPoint });
+  }
+  // Drop deleted comments from tracking when removal was attempted — even if no
+  // marker matched (the user may have removed it by hand), the comment is gone.
+  if (canRemove) {
+    for (const d of dels) marked.delete(d.id);
+  }
+  // Flag so the UI can explain why a deleted comment's marker stayed put on a
+  // build that doesn't expose the removal API.
+  return { added, removed, removeUnsupported: dels.length > 0 && !canRemove };
+}
+
+// Human-readable "added N, removed M marker(s)" tail (or "" when nothing
+// changed) shared by the manual pull and the poll-driven sync.
+function markerSyncSummary(res, suffix) {
+  const parts = [];
+  if (res.added) parts.push("added " + res.added);
+  if (res.removed) parts.push("removed " + res.removed);
+  if (!parts.length) return "";
+  return parts.join(", ") + " marker(s)" + (suffix || ".");
 }
 
 async function pullMarkers() {
@@ -1659,16 +1746,22 @@ async function pullMarkers() {
     // date") while a re-pull into the same one stays idempotent.
     state.markerSeqKey = seqKey(seqRes.seq);
     const items = buildMarkerItems();
-    const added = items.length
-      ? await commitMarkers(project, seqRes.seq, items)
-      : 0;
+    const deletions = buildMarkerDeletions();
+    const res =
+      items.length || deletions.length
+        ? await commitMarkers(project, seqRes.seq, items, deletions)
+        : { added: 0, removed: 0 };
     // A manual pull arms live sync: from now on the poll mirrors new comments
     // into this same sequence.
     state.markerSyncActive = true;
     updateMarkerBadge();
-    $("fileStatus").textContent = added
-      ? "Added " + added + " marker(s) — live sync on."
-      : "Markers up to date — live sync on.";
+    let status =
+      markerSyncSummary(res, " — live sync on.") ||
+      "Markers up to date — live sync on.";
+    if (res.removeUnsupported) {
+      status += " (this Premiere build can't auto-remove deleted markers.)";
+    }
+    $("fileStatus").textContent = status;
   } catch (e) {
     // Surface API capabilities so a user can confirm in Premiere whether the
     // build exposes the lock/transaction surface this flow depends on.
@@ -1694,14 +1787,16 @@ async function pullMarkers() {
 async function autoSyncMarkers() {
   if (state.markerSyncing) return;
   const items = buildMarkerItems();
-  if (!items.length) return;
+  const deletions = buildMarkerDeletions();
+  if (!items.length && !deletions.length) return;
   state.markerSyncing = true;
   try {
     const seqRes = await getActiveSequence();
     if (seqKey(seqRes.seq) !== state.markerSeqKey) return;
-    const added = await commitMarkers(seqRes.project, seqRes.seq, items);
+    const res = await commitMarkers(seqRes.project, seqRes.seq, items, deletions);
     updateMarkerBadge();
-    if (added) $("fileStatus").textContent = "Synced " + added + " new marker(s).";
+    const msg = markerSyncSummary(res, ".");
+    if (msg) $("fileStatus").textContent = "Synced: " + msg;
   } catch (_) {
     // Leave the badge visible; the user can retry via the Pull button.
   } finally {
