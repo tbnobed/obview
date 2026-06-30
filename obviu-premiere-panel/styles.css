@@ -268,9 +268,10 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
 }
 /* Projects nested under an owner header are indented from the avatar. */
 .item.in-group { margin-left: 18px; }
-/* Override the inherited `.small` (11px): the back/breadcrumb row reads as a
-   primary nav, so size it up. The inner `.btn.link` + span inherit this size. */
-#breadcrumb { color: #9a9a9a; font-size: 14px; }
+/* Override the inherited `.small` (11px): the back/breadcrumb rows read as
+   primary nav, so size them up. The inner `.btn.link` + span inherit this size.
+   #projectCrumb = projects/folders view, #breadcrumb = files view. */
+#breadcrumb, #projectCrumb { color: #9a9a9a; font-size: 14px; }
 
 /* ---- Player ---- */
 .media-view {
