@@ -1393,35 +1393,6 @@ async function importToPremiere() {
     // single arrayBuffer() read if the UXP fetch build doesn't expose a
     // readable stream (then we just show an indeterminate "Downloading…").
     const total = Number(res.headers.get("Content-Length")) || 0;
-    let buf;
-    if (res.body && typeof res.body.getReader === "function") {
-      const reader = res.body.getReader();
-      const chunks = [];
-      let received = 0;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        received += value.length;
-        if (total) {
-          const pct = Math.round((received / total) * 100);
-          $("fileStatus").textContent = "Downloading… " + pct + "%";
-          setImportProgress(pct);
-        } else {
-          $("fileStatus").textContent = "Downloading… " + fmtBytes(received);
-        }
-      }
-      const out = new Uint8Array(received);
-      let off = 0;
-      for (const c of chunks) {
-        out.set(c, off);
-        off += c.length;
-      }
-      buf = out.buffer;
-    } else {
-      buf = await res.arrayBuffer();
-    }
-    setImportProgress(100);
 
     const tmp = await uxp.storage.localFileSystem.getTemporaryFolder();
     // Stage each import in a fresh subfolder. Reusing a fixed temp filename
@@ -1430,7 +1401,78 @@ async function importToPremiere() {
     // keeps the clip's name clean (= the original filename).
     const sub = await tmp.createFolder("obviu-imp-" + state.selectedVersionId + "-" + Date.now());
     const outFile = await sub.createFile(name, { overwrite: true });
-    await outFile.write(buf, { format: uxp.storage.formats.binary });
+    const binary = uxp.storage.formats.binary;
+
+    if (res.body && typeof res.body.getReader === "function") {
+      // Stream straight to disk in flushed blocks. Accumulating the whole file
+      // in one Uint8Array OOMs / overflows the max typed-array length on large
+      // media, and a non-Uint8Array chunk (e.g. an ArrayBuffer, whose `.length`
+      // is undefined) made `new Uint8Array(received)` throw "Invalid typed array
+      // length". Flushing ~8 MB blocks keeps peak memory bounded and append=true
+      // grows the file on disk instead.
+      const FLUSH = 8 * 1024 * 1024;
+      const reader = res.body.getReader();
+      let received = 0;
+      let wroteAny = false;
+      let pending = [];
+      let pendingLen = 0;
+      const flush = async () => {
+        if (!pendingLen) return;
+        const merged = new Uint8Array(pendingLen);
+        let o = 0;
+        for (const p of pending) { merged.set(p, o); o += p.byteLength; }
+        await outFile.write(merged.buffer, { format: binary, append: wroteAny });
+        wroteAny = true;
+        pending = [];
+        pendingLen = 0;
+      };
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!value) continue;
+        // Normalize any chunk shape (Uint8Array view or raw ArrayBuffer) to a
+        // Uint8Array so byteLength/set are always well-defined.
+        const u = ArrayBuffer.isView(value)
+          ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+          : new Uint8Array(value);
+        if (!u.byteLength) continue;
+        pending.push(u);
+        pendingLen += u.byteLength;
+        received += u.byteLength;
+        if (pendingLen >= FLUSH) await flush();
+        if (total) {
+          const pct = Math.round((received / total) * 100);
+          $("fileStatus").textContent = "Downloading… " + pct + "%";
+          setImportProgress(pct);
+        } else {
+          $("fileStatus").textContent = "Downloading… " + fmtBytes(received);
+        }
+      }
+      await flush();
+      if (!wroteAny) await outFile.write(new ArrayBuffer(0), { format: binary });
+    } else {
+      const buf = await res.arrayBuffer();
+      await outFile.write(buf, { format: binary });
+    }
+    setImportProgress(100);
+
+    // Fail fast on a silent append/write incompatibility: if the on-disk size
+    // doesn't match the advertised Content-Length, the file is corrupt and
+    // importing it would produce a broken clip with no obvious cause.
+    if (total) {
+      try {
+        const meta = await outFile.getMetadata();
+        if (meta && typeof meta.size === "number" && meta.size !== total) {
+          throw new Error(
+            "downloaded " + fmtBytes(meta.size) + " of " + fmtBytes(total) + " — file incomplete"
+          );
+        }
+      } catch (metaErr) {
+        if (metaErr && /file incomplete/.test(metaErr.message)) throw metaErr;
+        // getMetadata unsupported on this build — skip the check rather than fail.
+      }
+    }
+
     const nativePath = outFile.nativePath;
 
     // Download done; the Premiere import step itself is one opaque UXP call
