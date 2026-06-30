@@ -318,14 +318,20 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
 .preset-row { align-items: center; }
 
 /* ---- File head (title + version badge) ---- */
-/* Stack title over the version select: a long filename wraps to several lines,
-   and UXP renders the native <select> at its own width, so a horizontal row
-   makes the select overlap the wrapped title. */
-/* Plain block stacking: a non-growing flex column collapses to ~0 height in
-   UXP (auto flex-basis), which let the version select spill under the player. */
-.file-head { display: block; }
-.file-head .file-title { width: 100%; margin: 0 0 8px 0; }
+/* Title + version on ONE compact row so the header isn't a tall, mostly-empty
+   block. History of two failed approaches this avoids:
+   - A plain horizontal row let a long filename wrap and overlap the native
+     <select>. Fixed here by giving the title `flex:1 1 auto; min-width:0` so it
+     shrinks/wraps inside its own flex track, and pinning the select with
+     `flex:0 0 auto` so the two never overlap.
+   - A flex *column* collapsed to ~0 height in UXP (auto flex-basis), spilling
+     the select under the player. This is a flex *row*, so that doesn't apply.
+   flex-wrap means a very narrow docked panel still drops the select to its own
+   line instead of squashing the title. */
+.file-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.file-head .file-title { flex: 1 1 auto; min-width: 0; margin: 0; word-break: break-word; }
 .version-badge {
+  flex: 0 0 auto;
   display: inline-block;
   min-width: 120px;
   height: 26px; line-height: 24px;

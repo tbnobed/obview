@@ -9,3 +9,4 @@
 - [<video> source reload](video-source-reload.md) — swapping a child <source> src never reloads the element; key it by source id (or call .load()), or it shows a stale/blank frame.
 - [UXP marker API](uxp-marker-api.md) — createAddMarkerAction must run inside synchronous project.lockedAccess→executeTransaction (the real fix); "script object no longer valid" = missing lock; sig (name,type,start,duration,comments), MARKER_TYPE_COMMENT==="Comment".
 - [UXP flyout menu & dialogs](uxp-flyout-and-dialog.md) — ☰ items via entrypoints.setup menuItems/invokeMenu (works on "main"-HTML panels); modals use dialog.uxpShowModal, not browser showModal.
+- [UXP file-head layout](uxp-file-head-layout.md) — title+version is a flex ROW (column collapses to ~0 in UXP); growing text needs min-width:0, fixed controls flex:0 0 auto, or they overlap.
