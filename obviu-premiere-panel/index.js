@@ -2135,6 +2135,123 @@ function guessMime(name) {
   return map[ext] || "video/mp4";
 }
 
+// Export presets bundled with the plugin. AME's exportSequence only takes a
+// preset (.epr) path — there's no raw-settings API — so we ship a curated set
+// of Obviu-tuned .epr files under the plugin's own presets/ folder and expose
+// them as ready-to-pick quality options. The plugin folder is readable without
+// a permission token (getPluginFolder), so no per-machine picking is needed for
+// the built-ins; "Custom .epr…" still opens the file picker for anything else.
+let builtinPresets = [];
+// The currently committed dropdown selection ("builtin:<name>" | "custom" | "").
+// Tracked so a cancelled Custom pick can revert to the prior choice truthfully.
+let lastPresetSelection = "";
+
+async function listBuiltinPresets() {
+  try {
+    if (!uxp || !uxp.storage || !uxp.storage.localFileSystem) return [];
+    const plugin = await uxp.storage.localFileSystem.getPluginFolder();
+    if (!plugin) return [];
+    let dir = null;
+    try { dir = await plugin.getEntry("presets"); } catch (_) { return []; }
+    if (!dir || !dir.isFolder) return [];
+    const entries = await dir.getEntries();
+    return entries
+      .filter((e) => e.isFile && /\.epr$/i.test(e.name))
+      .map((e) => ({ name: e.name.replace(/\.epr$/i, ""), file: e }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch (_) {
+    return [];
+  }
+}
+
+// Point the exporter at a bundled preset and remember the choice.
+function applyBuiltinPreset(p) {
+  state.presetPath = p.file.nativePath;
+  state.presetName = p.name;
+  localStorage.setItem("obviu.presetPath", state.presetPath);
+  localStorage.setItem("obviu.presetName", state.presetName);
+  localStorage.setItem("obviu.presetSelection", "builtin:" + p.name);
+  lastPresetSelection = "builtin:" + p.name;
+  $("presetLabel").textContent = p.name;
+}
+
+// Point the dropdown + state at a saved selection value. Falls back to the first
+// built-in (or Custom when none are bundled) when the value can't be honoured.
+function restoreSelection(selVal) {
+  const sel = $("presetSelect");
+  if (!sel) return;
+  if (selVal && selVal.startsWith("builtin:")) {
+    const match = builtinPresets.find((p) => "builtin:" + p.name === selVal);
+    if (match) { sel.value = selVal; applyBuiltinPreset(match); return; }
+  }
+  if (selVal === "custom" && state.presetPath) {
+    sel.value = "custom";
+    lastPresetSelection = "custom";
+    $("presetLabel").textContent = state.presetName || "Custom preset";
+    return;
+  }
+  if (builtinPresets.length) {
+    sel.value = "builtin:" + builtinPresets[0].name;
+    applyBuiltinPreset(builtinPresets[0]);
+  } else {
+    sel.value = "custom";
+    lastPresetSelection = "";
+    $("presetLabel").textContent = state.presetName || "No preset selected";
+  }
+}
+
+// (Re)build the Export quality dropdown from the bundled presets plus a
+// "Custom .epr…" escape hatch, then re-select whatever was chosen last (falling
+// back to the first built-in, or Custom when none are bundled).
+async function refreshPresetOptions() {
+  const sel = $("presetSelect");
+  if (!sel) return;
+  builtinPresets = await listBuiltinPresets();
+  sel.innerHTML = "";
+  if (!builtinPresets.length) {
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "No built-in presets";
+    none.disabled = true;
+    sel.appendChild(none);
+  }
+  for (const p of builtinPresets) {
+    const opt = document.createElement("option");
+    opt.value = "builtin:" + p.name;
+    opt.textContent = p.name;
+    sel.appendChild(opt);
+  }
+  const custom = document.createElement("option");
+  custom.value = "custom";
+  custom.textContent = "Custom .epr…";
+  sel.appendChild(custom);
+
+  restoreSelection(localStorage.getItem("obviu.presetSelection") || "");
+}
+
+// Dropdown change: Custom opens the picker; a built-in is applied directly. If
+// the picker is cancelled we revert to the previously committed selection so the
+// visible option and the encoder's preset path never drift apart.
+async function onPresetSelectChange() {
+  const sel = $("presetSelect");
+  if (!sel) return;
+  const v = sel.value;
+  if (v === "custom") {
+    const picked = await pickPreset();
+    if (picked) {
+      lastPresetSelection = "custom";
+      localStorage.setItem("obviu.presetSelection", "custom");
+    } else {
+      restoreSelection(lastPresetSelection);
+    }
+    return;
+  }
+  if (v.startsWith("builtin:")) {
+    const match = builtinPresets.find((p) => "builtin:" + p.name === v);
+    if (match) applyBuiltinPreset(match);
+  }
+}
+
 // Let the editor pick an Adobe export preset (.epr). AME needs a preset to
 // know the container/codec; we remember the chosen one per machine. We store
 // the native path string (re-usable directly by the encoder) rather than a
@@ -2143,18 +2260,20 @@ async function pickPreset() {
   $("seqStatus").textContent = "";
   if (!uxp) {
     $("seqStatus").textContent = "UXP file API unavailable.";
-    return;
+    return false;
   }
   try {
     const f = await uxp.storage.localFileSystem.getFileForOpening({ types: ["epr"] });
-    if (!f) return;
+    if (!f) return false;
     state.presetPath = f.nativePath;
     state.presetName = f.name;
     localStorage.setItem("obviu.presetPath", state.presetPath);
     localStorage.setItem("obviu.presetName", state.presetName);
     $("presetLabel").textContent = state.presetName;
+    return true;
   } catch (e) {
     $("seqStatus").textContent = "Preset pick failed: " + e.message;
+    return false;
   }
 }
 
@@ -2494,7 +2613,7 @@ function init() {
     state.commentFilter = e.target.value;
     renderComments();
   };
-  $("btnPickPreset").onclick = pickPreset;
+  $("presetSelect").onchange = onPresetSelectChange;
   $("btnExportUpload").onclick = exportAndUpload;
   // The modal's own title-bar X closes it; the inner Close button was removed.
 
@@ -2523,10 +2642,12 @@ function init() {
     }
   }
 
-  // Restore the remembered export preset, if any.
+  // Restore the remembered export preset and populate the quality dropdown from
+  // the bundled presets/ folder (async — the plugin folder read is cheap).
   state.presetPath = localStorage.getItem("obviu.presetPath") || "";
   state.presetName = localStorage.getItem("obviu.presetName") || "";
   if (state.presetName) $("presetLabel").textContent = state.presetName;
+  refreshPresetOptions();
 
   if (state.baseUrl) $("baseUrl").value = state.baseUrl;
   if (state.token) {
