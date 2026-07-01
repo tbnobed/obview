@@ -81,6 +81,14 @@ const state = {
   mediaInfo: undefined,
   mediaInfoForId: null,
   mediaInfoError: null,
+  // Cross-folder search index: a flat [{ project, folderId }] over the WHOLE
+  // library (every folder + subfolder), built lazily on the first search and
+  // reset whenever the projects view reloads. `null` = not built yet.
+  searchIndex: null,
+  searchIndexLoading: false,
+  // In-flight build promise so rapid keystrokes coalesce onto one index build
+  // instead of firing a fresh burst of folder fetches per character.
+  searchIndexPromise: null,
 };
 
 // 16 MB chunks for the resumable upload, matching the web client so the
@@ -268,6 +276,10 @@ async function goProjects(preloaded) {
   list.innerHTML = '<div class="empty">Loading…</div>';
   state.browseFolderId = null;
   state.folderProjects = [];
+  // Fresh load invalidates the cross-folder search index.
+  state.searchIndex = null;
+  state.searchIndexLoading = false;
+  state.searchIndexPromise = null;
   // Re-init owner-group collapse defaults on a fresh load (first group open).
   state.collapsedOwners = null;
   try {
@@ -302,6 +314,137 @@ async function browseFolder(folderId) {
   }
 }
 
+// Human-readable "A / B / C" path for a folder id, walking parentFolderId up
+// the (flat) topFolders tree. Empty string for the root level.
+function folderPath(folderId) {
+  if (folderId == null) return "";
+  const folders = state.topFolders || [];
+  const parts = [];
+  let id = folderId;
+  let guard = 0;
+  while (id != null && guard++ < 50) {
+    const f = folders.find((x) => x.id === id);
+    if (!f) break;
+    parts.unshift(f.name || "Folder");
+    id = f.parentFolderId ?? null;
+  }
+  return parts.join(" / ");
+}
+
+// Build (once) a flat index of every project in the library so search can span
+// all folders/subfolders. topFolders already holds the full folder tree, so
+// fetching each folder's direct projects covers nested subfolders too. Root
+// (folder-less) projects come from state.projects. Deduped by project id.
+async function ensureSearchIndex() {
+  if (state.searchIndex) return state.searchIndex;
+  if (state.searchIndexPromise) return state.searchIndexPromise;
+  state.searchIndexLoading = true;
+  state.searchIndexPromise = (async () => {
+    try {
+      const folders = state.topFolders || [];
+      const idx = [];
+      const seen = new Set();
+      const results = await Promise.all(
+        folders.map(async (f) => {
+          try {
+            return {
+              f,
+              projects: await api("/api/v1/folders/" + f.id + "/projects"),
+            };
+          } catch (_) {
+            return { f, projects: [] };
+          }
+        })
+      );
+      for (const { f, projects } of results) {
+        for (const p of projects) {
+          if (seen.has(p.id)) continue;
+          seen.add(p.id);
+          idx.push({ project: p, folderId: f.id });
+        }
+      }
+      for (const p of state.projects || []) {
+        if (seen.has(p.id)) continue;
+        seen.add(p.id);
+        idx.push({ project: p, folderId: null });
+      }
+      state.searchIndex = idx;
+      return idx;
+    } finally {
+      state.searchIndexLoading = false;
+      state.searchIndexPromise = null;
+    }
+  })();
+  return state.searchIndexPromise;
+}
+
+// Search box handler: an empty query restores normal level browsing; a
+// non-empty one searches the whole library (building the index on first use).
+async function runProjectSearch(value) {
+  if (!(value || "").trim()) {
+    renderProjects("");
+    return;
+  }
+  if (!state.searchIndex) {
+    state.searchIndexLoading = true;
+    renderProjects(value); // shows folder matches + "Searching…" immediately
+    try {
+      await ensureSearchIndex();
+    } catch (_) {}
+  }
+  // The user may have kept typing (or cleared) while the index loaded.
+  renderProjects($("projectSearch").value);
+}
+
+// Flat, whole-library results: matching folders (navigable) then matching
+// projects, each annotated with its folder path so the location is clear.
+function renderGlobalSearch(q, byName) {
+  const list = $("projectsList");
+  const crumb = $("projectCrumb");
+  if (crumb) {
+    crumb.innerHTML = "";
+    const label = document.createElement("span");
+    label.textContent = "Search — all folders";
+    crumb.appendChild(label);
+  }
+  const folderMatches = (state.topFolders || [])
+    .filter((f) => (f.name || "").toLowerCase().includes(q))
+    .slice()
+    .sort(byName);
+  const projMatches = (state.searchIndex || [])
+    .filter((e) => (e.project.name || "").toLowerCase().includes(q))
+    .sort((a, b) => byName(a.project, b.project));
+
+  list.innerHTML = "";
+  folderMatches.forEach((f) => {
+    const el = document.createElement("div");
+    el.className = "item folder";
+    el.innerHTML = '<div class="title"></div><div class="meta"></div>';
+    el.querySelector(".title").textContent = f.name || "Folder";
+    el.querySelector(".meta").textContent =
+      folderPath(f.parentFolderId ?? null) || "All projects";
+    el.onclick = () => {
+      $("projectSearch").value = "";
+      browseFolder(f.id);
+    };
+    list.appendChild(el);
+  });
+  projMatches.forEach((e) => {
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = '<div class="title"></div><div class="meta"></div>';
+    el.querySelector(".title").textContent = e.project.name || "Untitled";
+    el.querySelector(".meta").textContent = folderPath(e.folderId) || "Projects";
+    el.onclick = () => goFiles(e.project, null);
+    list.appendChild(el);
+  });
+  if (!folderMatches.length && !projMatches.length) {
+    list.innerHTML = state.searchIndexLoading
+      ? '<div class="empty">Searching…</div>'
+      : '<div class="empty">No matches.</div>';
+  }
+}
+
 function renderProjects(query) {
   const list = $("projectsList");
   const crumb = $("projectCrumb");
@@ -309,6 +452,13 @@ function renderProjects(query) {
   const q = (query || "").trim().toLowerCase();
   const byName = (a, b) =>
     (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" });
+
+  // A non-empty query searches the WHOLE library (every folder + subfolder),
+  // not just the level currently being browsed.
+  if (q) {
+    renderGlobalSearch(q, byName);
+    return;
+  }
 
   // Folders shown at the current level (root = no parent).
   const childFolders = folders
@@ -2319,7 +2469,7 @@ function init() {
     if (e.key === "Enter") createProject();
   };
   $("btnSendCutFiles").onclick = () => openSendCut(true);
-  $("projectSearch").oninput = (e) => renderProjects(e.target.value);
+  $("projectSearch").oninput = (e) => runProjectSearch(e.target.value);
   $("btnBackFiles").onclick = () => goFiles(state.project, state.currentFolderId);
   $("btnRefresh").onclick = () => {
     loadComments();
