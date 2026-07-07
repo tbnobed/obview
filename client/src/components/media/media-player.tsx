@@ -219,6 +219,15 @@ export default function MediaPlayer({
   const has720p = videoProcessing?.status === 'completed' &&
     videoProcessing.qualities?.some((q: any) => q.resolution === '720p');
 
+  // When the full transcode fails (e.g. a long file times out), the pipeline
+  // falls back to a faststart stream-copy of the original recorded under the
+  // 'source' quality. It's the same video bitstream as the original but with
+  // the moov atom moved to the front + AAC audio, so it plays on iOS Safari
+  // where the raw original often won't. Prefer it over /content when present.
+  const hasPlayableFallback = videoProcessing?.status === 'completed' &&
+    !has720p &&
+    videoProcessing.qualities?.some((q: any) => q.resolution === 'source');
+
   // Reload the video element when the user toggles between proxy and original
   // so the new <source> set is actually picked up. Preserves time and play state.
   // Only depends on the toggle itself — file changes are handled by the player's
@@ -1647,12 +1656,13 @@ export default function MediaPlayer({
                     ? 'video/webm'
                     : 'video/mp4';
 
-              if (useOriginalQuality || !has720p) {
+              if (useOriginalQuality || (!has720p && !hasPlayableFallback)) {
                 return <source src={`/api/files/${file.id}/content`} type={mimeType} />;
               }
+              const proxy = has720p ? '720p' : 'source';
               return (
                 <>
-                  <source src={`/api/files/${file.id}/qualities/720p`} type="video/mp4" />
+                  <source src={`/api/files/${file.id}/qualities/${proxy}`} type="video/mp4" />
                   <source src={`/api/files/${file.id}/content`} type={mimeType} />
                 </>
               );

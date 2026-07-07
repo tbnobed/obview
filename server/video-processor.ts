@@ -81,21 +81,47 @@ export class VideoProcessor {
       spritePromise
     ]);
     
-    const validQualities = qualities.filter(q => q !== null) as VideoQuality[];
+    let finalQualities = qualities.filter(q => q !== null) as VideoQuality[];
 
-    // If every quality variant failed, surface the underlying FFmpeg error
-    // instead of silently completing with no playable renditions (which
-    // leaves the UI stuck on "Processing" forever).
-    if (validQualities.length === 0 && this.QUALITIES.length > 0) {
+    // If every quality variant failed (e.g. the transcode timed out on a
+    // long/large source), we still want the file to be PLAYABLE — especially
+    // on iOS Safari, which refuses to stream a large MP4/MOV whose `moov`
+    // atom isn't at the front. As a last resort, stream-copy the original
+    // into a faststart MP4 (no video re-encode — just an atom relocation plus
+    // AAC audio) so iPhones can play it. Only works when the source video
+    // codec is one iOS supports (H.264/HEVC); otherwise surface the original
+    // FFmpeg error so the file is marked failed instead of silently stuck.
+    if (finalQualities.length === 0 && this.QUALITIES.length > 0) {
       const detail = (this as any)._lastQualityError || "no quality renditions produced";
       (this as any)._lastQualityError = undefined;
-      throw new Error(`Quality encoding failed: ${detail}`);
+
+      const playable = await this.generatePlayableRemux(
+        inputPath,
+        qualitiesDir,
+        filename,
+        mediaInfo,
+      ).catch((err: any) => {
+        console.error(
+          `[VideoProcessor] iOS-playable faststart fallback failed:`,
+          err?.message || err,
+        );
+        return null;
+      });
+
+      if (playable) {
+        console.warn(
+          `[VideoProcessor] Quality encode failed (${detail}) — serving a faststart stream-copy of the original so the file still plays on iOS.`,
+        );
+        finalQualities = [playable];
+      } else {
+        throw new Error(`Quality encoding failed: ${detail}`);
+      }
     }
 
     console.log(`[VideoProcessor] Processing completed for: ${filename}`);
 
     return {
-      qualities: validQualities,
+      qualities: finalQualities,
       scrubVersion,
       thumbnailSprite: spriteResult.path,
       spriteMetadata: spriteResult.metadata,
@@ -261,6 +287,95 @@ export class VideoProcessor {
     ];
     const output = await this.executeFFprobe(args);
     return JSON.parse(output);
+  }
+
+  /**
+   * Best-effort read of the source's primary video codec, lower-cased.
+   * Prefers the already-captured ffprobe JSON; falls back to a targeted
+   * probe. Returns null if it can't be determined.
+   */
+  private static async getVideoCodec(inputPath: string, mediaInfo: any): Promise<string | null> {
+    try {
+      const streams = mediaInfo?.streams;
+      if (Array.isArray(streams)) {
+        const v = streams.find((s: any) => s.codec_type === 'video');
+        if (v?.codec_name) return String(v.codec_name).toLowerCase();
+      }
+    } catch { /* fall through to targeted probe */ }
+    try {
+      const out = await this.executeFFprobe([
+        '-v', 'quiet',
+        '-select_streams', 'v:0',
+        '-show_entries', 'stream=codec_name',
+        '-of', 'default=nk=1:nw=1',
+        inputPath,
+      ]);
+      const c = out.split('\n')[0]?.trim().toLowerCase();
+      return c || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Last-resort playable rendition used when the normal transcode produces
+   * zero renditions. Stream-copies the original video (no re-encode — fast
+   * even on 10GB+ files) into a faststart MP4 so iOS Safari can begin
+   * playback without downloading the whole file, re-encoding only the audio
+   * to AAC (cheap) because some MOV originals carry PCM/other tracks that
+   * aren't valid in MP4. Recorded under the `source` resolution label so the
+   * existing /qualities/:quality endpoints serve it with no changes.
+   *
+   * Only attempted when the source video codec is one iOS can decode
+   * (H.264/HEVC); a stream-copy can't rescue ProRes/DNxHD/VP9/AV1 sources.
+   */
+  private static async generatePlayableRemux(
+    inputPath: string,
+    outputDir: string,
+    filename: string,
+    mediaInfo: any,
+  ): Promise<VideoQuality | null> {
+    const codec = await this.getVideoCodec(inputPath, mediaInfo);
+    // Only stream-copy when we can positively confirm the source video codec
+    // is one iOS can decode. If detection fails (codec === null) we DON'T
+    // guess — a "playable" file iOS can't actually decode is worse than an
+    // honest failure, so we bail and let the caller mark the file failed.
+    const iosCompatible = codec !== null && ['h264', 'avc1', 'hevc', 'h265', 'hvc1'].includes(codec);
+    if (!iosCompatible) {
+      console.warn(
+        `[VideoProcessor] Skipping faststart fallback: source video codec "${codec ?? 'unknown'}" isn't confirmed iOS-compatible for a stream-copy.`,
+      );
+      return null;
+    }
+
+    const outputPath = path.join(outputDir, `${filename}_playable.mp4`);
+    const args = [
+      '-i', inputPath,
+      '-map', '0:v:0',
+      '-map', '0:a:0?',
+      '-c:v', 'copy',
+      '-c:a', 'aac',
+      '-b:a', '192k',
+      '-ac', '2',
+      '-movflags', '+faststart',
+      '-f', 'mp4',
+      '-y',
+      outputPath,
+    ];
+
+    console.log(`[VideoProcessor] Generating iOS-playable faststart remux (stream-copy) for: ${filename}`);
+    await this.executeFFmpeg(args, config.video.timeouts.quality);
+
+    const stats = await fs.stat(outputPath);
+    if (!stats.size) {
+      throw new Error('faststart remux produced an empty file');
+    }
+    return {
+      resolution: 'source',
+      path: outputPath,
+      size: stats.size,
+      bitrate: 'original',
+    };
   }
 
   /**

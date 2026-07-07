@@ -826,6 +826,11 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
 
   const mediaSrc = `/public/share/${token}`;
   const mediaSrc720 = `/api/share/${token}/qualities/720p`;
+  // Faststart stream-copy fallback served when the transcode failed, so the
+  // original still plays on iPhones (see MediaPlayer for the full rationale).
+  const mediaSrcSource = `/api/share/${token}/qualities/source`;
+  const hasPlayableFallback = !!(processingQ.data?.status === "completed" &&
+    !has720p && processingQ.data?.qualities?.some((q: any) => q.resolution === "source"));
 
   const heading = file.projectName || "Shared file";
 
@@ -946,7 +951,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
           >
             {isVideo && (
               <video
-                key={`${useOriginalQuality ? "hd" : "720p"}-${has720p ? 1 : 0}`}
+                key={`${useOriginalQuality ? "hd" : has720p ? "720p" : hasPlayableFallback ? "src" : "orig"}`}
                 ref={mediaRef as any}
                 controls={false}
                 playsInline
@@ -963,11 +968,11 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 className="w-full h-full object-contain bg-black cursor-pointer"
                 data-testid="share-video-player"
               >
-                {useOriginalQuality || !has720p ? (
+                {useOriginalQuality || (!has720p && !hasPlayableFallback) ? (
                   <source src={mediaSrc} type="video/mp4" />
                 ) : (
                   <>
-                    <source src={mediaSrc720} type="video/mp4" />
+                    <source src={has720p ? mediaSrc720 : mediaSrcSource} type="video/mp4" />
                     <source src={mediaSrc} type="video/mp4" />
                   </>
                 )}
