@@ -12,7 +12,7 @@ import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import { existsSync } from 'fs';
 import * as crypto from 'crypto';
-import { generateFCPXML, generateEDL, generateCSV } from './utils/marker-export';
+import { generateFCPXML, generateEDL, generateCSV, resolveMarkerExportOpts } from './utils/marker-export';
 import { generateCommentPDF } from './utils/comment-pdf';
 import { registerShareLinkRoutes, invalidateShareLinkDescendantCache } from "./share-links";
 
@@ -5337,10 +5337,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdAt: c.createdAt,
         }));
 
-      const rawDuration = parseFloat(req.query.duration as string);
-      const duration = isNaN(rawDuration) || rawDuration < 0 ? 60 : Math.min(rawDuration, 86400);
-      const rawFps = parseInt(req.query.fps as string);
-      const fps = isNaN(rawFps) || rawFps < 1 || rawFps > 120 ? 30 : rawFps;
+      // Real timing beats client hints: exact fps + embedded/panel-supplied
+      // start timecode come from the DB so exported markers land on the
+      // editor's actual timecode, not running time from zero.
+      const vp = await storage.getVideoProcessing(fileId).catch(() => undefined);
+      const { fps, startTimecode, duration } = resolveMarkerExportOpts({
+        startTimecode: file.startTimecode,
+        mediaInfo: vp?.mediaInfo,
+        frameRateColumn: vp?.frameRate,
+        durationColumn: vp?.duration,
+        queryFps: req.query.fps,
+        queryDuration: req.query.duration,
+      });
+      const exportOpts = { fps, startTimecode };
       const baseName = file.filename.replace(/\.[^.]+$/, '');
 
       if (format === 'pdf') {
@@ -5355,17 +5364,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}_comments.pdf"`);
         return res.send(pdf);
       } else if (format === 'xml') {
-        const xml = generateFCPXML(file.filename, duration, topLevel, fps);
+        const xml = generateFCPXML(file.filename, duration, topLevel, exportOpts);
         res.setHeader('Content-Type', 'application/xml');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}_markers.xml"`);
         return res.send(xml);
       } else if (format === 'edl') {
-        const edl = generateEDL(file.filename, duration, topLevel, fps);
+        const edl = generateEDL(file.filename, duration, topLevel, exportOpts);
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}_markers.edl"`);
         return res.send(edl);
       } else {
-        const csv = generateCSV(topLevel, fps);
+        const csv = generateCSV(topLevel, exportOpts);
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="${baseName}_markers.csv"`);
         return res.send(csv);

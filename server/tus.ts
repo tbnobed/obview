@@ -92,6 +92,17 @@ interface MultipartManifest {
   customFilename?: string;
   filetype: string;
   folderId?: number | null;
+  startTimecode?: string | null;
+}
+
+// Optional source start timecode sent by the Premiere panel so marker
+// exports can line up with the sequence's real timecode. Strictly
+// validated ("HH:MM:SS:FF", ";" before FF = drop-frame); anything else
+// is dropped rather than stored.
+const START_TC_RE = /^\d{2}:\d{2}:\d{2}[:;]\d{2}$/;
+function sanitizeStartTimecode(raw: unknown): string | null {
+  const s = typeof raw === "string" ? raw.trim() : "";
+  return START_TC_RE.test(s) ? s : null;
 }
 
 // Returns a valid sub-folder id for `projectId`, or null if none/invalid.
@@ -338,6 +349,7 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
           customFilename: meta.customFilename ?? undefined,
           filetype: meta.filetype || "application/octet-stream",
           folderId: await resolveSubfolderId(meta.folderId, projectId),
+          startTimecode: sanitizeStartTimecode(meta.startTimecode),
         };
 
         // Two parts of the same group MUST agree on every manifest field.
@@ -521,6 +533,7 @@ export function createTusServer(opts: CreateTusServerOptions): TusServer {
           version,
           isLatestVersion: true,
           folderId: folderIdForRow ?? undefined,
+          startTimecode: sanitizeStartTimecode(meta.startTimecode) ?? undefined,
         });
       } catch (err) {
         // DB insert failed — the moved file would otherwise be orphaned
@@ -761,6 +774,7 @@ export function createMultipartFinalizer(opts: MultipartFinalizerOptions) {
           version,
           isLatestVersion: true,
           folderId: folderIdForRow ?? undefined,
+          startTimecode: manifest.startTimecode ?? undefined,
         });
       } catch (err) {
         if (finalPath) await fs.promises.unlink(finalPath).catch(() => {});

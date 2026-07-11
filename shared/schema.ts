@@ -115,6 +115,13 @@ export const files = pgTable("files", {
   uploadedById: integer("uploaded_by_id").notNull().references(() => users.id),
   version: integer("version").notNull().default(1),
   isLatestVersion: boolean("is_latest_version").notNull().default(true),
+  // Source start timecode ("HH:MM:SS:FF", ";" before FF = drop-frame), so
+  // marker exports (EDL/XML/CSV) line up with the editor's real sequence
+  // timecode instead of running time from zero. Authoritative when set —
+  // the Premiere panel sends it at upload time from the sequence's zero
+  // point. NULL = unknown; exports fall back to the timecode embedded in
+  // the media itself (ffprobe tags in video_processing.media_info).
+  startTimecode: text("start_timecode"),
   isAvailable: boolean("is_available").notNull().default(true), // Track if file is physically available
   shareToken: text("share_token"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

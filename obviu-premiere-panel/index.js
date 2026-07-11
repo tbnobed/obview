@@ -2563,6 +2563,65 @@ function updateSendCutMode() {
   if (hint) hint.style.display = multi ? "" : "none";
 }
 
+// Sequence start timecode as "HH:MM:SS:FF" (";" before FF = drop-frame),
+// sent with uploads so Obviu's marker exports (EDL/XML/CSV) line up with the
+// editor's real timecode instead of running time from zero. Best-effort:
+// returns null when this Premiere build doesn't expose the zero point or
+// frame rate — the server then falls back to the timecode embedded in the
+// exported file itself.
+async function sequenceStartTimecode(seq) {
+  try {
+    const TPS =
+      (ppro.TickTime && ppro.TickTime.TICKS_PER_SECOND) || 254016000000;
+    let zeroSec = null;
+    if (typeof seq.getZeroPoint === "function") {
+      const zp = await seq.getZeroPoint();
+      if (zp != null) {
+        if (typeof zp.seconds === "number") zeroSec = zp.seconds;
+        else if (typeof zp.ticks === "number") zeroSec = zp.ticks / TPS;
+        else if (typeof zp.ticks === "string") zeroSec = Number(zp.ticks) / TPS;
+      }
+    }
+    if (zeroSec == null || !Number.isFinite(zeroSec) || zeroSec < 0) return null;
+    let fps = null;
+    if (typeof seq.getSettings === "function") {
+      const s = await seq.getSettings();
+      const fr = s && (s.videoFrameRate || s.frameRate);
+      if (typeof fr === "number" && fr > 0) fps = fr;
+      else if (fr && typeof fr.value === "number" && fr.value > 0) {
+        // Across builds `.value` is either fps (small) or ticks-per-frame (huge).
+        fps = fr.value > 1000 ? TPS / fr.value : fr.value;
+      } else if (fr && typeof fr.ticksPerFrame === "number" && fr.ticksPerFrame > 0) {
+        fps = TPS / fr.ticksPerFrame;
+      }
+    }
+    if (!fps || !Number.isFinite(fps) || fps < 1 || fps > 240) return null;
+    const nominal = Math.round(fps);
+    // Premiere displays fractional 30/60 fps sequences drop-frame by default.
+    const drop = Math.abs(fps - nominal) > 0.001 && (nominal === 30 || nominal === 60);
+    let frames = Math.round(zeroSec * fps);
+    if (drop) {
+      // Renumber real frames into drop-frame timecode (skip 2 frame numbers
+      // per minute — 4 at 59.94 — except every 10th minute).
+      const dropCount = nominal / 15;
+      const per10 = Math.round(fps * 600);
+      const perMin = nominal * 60 - dropCount;
+      const d = Math.floor(frames / per10);
+      const m = frames % per10;
+      frames += 9 * dropCount * d;
+      if (m > dropCount) frames += dropCount * Math.floor((m - dropCount) / perMin);
+    }
+    const p = (n) => String(n).padStart(2, "0");
+    const ff = frames % nominal;
+    const ss = Math.floor(frames / nominal) % 60;
+    const mm = Math.floor(frames / (nominal * 60)) % 60;
+    const hh = Math.floor(frames / (nominal * 3600)) % 24;
+    return p(hh) + ":" + p(mm) + ":" + p(ss) + (drop ? ";" : ":") + p(ff);
+  } catch (_) {
+    return null;
+  }
+}
+
 // Server stack keys are filenames, so exported names must be filesystem-safe.
 function sanitizeExportName(name) {
   return String(name || "")
@@ -2654,6 +2713,9 @@ async function exportAndUpload() {
         if (state.currentFolderId != null) meta.folderId = String(state.currentFolderId);
         if (!multi && !asNew && state.file) meta.customFilename = state.file.filename;
         if (multi && existingNames[baseName]) meta.customFilename = baseName;
+        // Real sequence start TC so Obviu's marker exports match the edit.
+        const startTc = await sequenceStartTimecode(item.seq);
+        if (startTc) meta.startTimecode = startTc;
 
         // 4) Upload through the resumable path with the bearer token.
         $("seqStatus").textContent = tag + "Uploading… 0%";

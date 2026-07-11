@@ -8,7 +8,7 @@ import { storage } from "./storage";
 import * as fileSystem from "./utils/filesystem";
 import { hashPassword, comparePasswords } from "./auth";
 import { insertShareLinkSchema, updateShareLinkSchema, insertCommentsUnifiedSchema } from "@shared/schema";
-import { generateFCPXML, generateEDL, generateCSV } from "./utils/marker-export";
+import { generateFCPXML, generateEDL, generateCSV, resolveMarkerExportOpts } from "./utils/marker-export";
 import { generateCommentPDF } from "./utils/comment-pdf";
 import type { ShareLink, File as DbFile } from "@shared/schema";
 import { segmentsToVtt, segmentsToSrt } from "./transcription";
@@ -875,10 +875,19 @@ export function registerShareLinkRoutes(
           createdAt: c.createdAt,
         }));
 
-      const rawDuration = parseFloat(req.query.duration as string);
-      const duration = isNaN(rawDuration) || rawDuration < 0 ? 60 : Math.min(rawDuration, 86400);
-      const rawFps = parseInt(req.query.fps as string);
-      const fps = isNaN(rawFps) || rawFps < 1 || rawFps > 120 ? 30 : rawFps;
+      // Same timing resolution as the authenticated export route: real fps
+      // and start timecode from the DB so share-link exports also line up
+      // with the editor's actual timecode.
+      const vp = await storage.getVideoProcessing(file.id).catch(() => undefined);
+      const { fps, startTimecode, duration } = resolveMarkerExportOpts({
+        startTimecode: (file as any).startTimecode,
+        mediaInfo: vp?.mediaInfo,
+        frameRateColumn: vp?.frameRate,
+        durationColumn: vp?.duration,
+        queryFps: req.query.fps,
+        queryDuration: req.query.duration,
+      });
+      const exportOpts = { fps, startTimecode };
       const baseName = file.filename.replace(/\.[^.]+$/, "");
 
       if (format === "pdf") {
@@ -902,17 +911,17 @@ export function registerShareLinkRoutes(
         res.setHeader("Content-Disposition", `attachment; filename="${baseName}_comments.pdf"`);
         return res.send(pdf);
       } else if (format === "xml") {
-        const xml = generateFCPXML(file.filename, duration, topLevel, fps);
+        const xml = generateFCPXML(file.filename, duration, topLevel, exportOpts);
         res.setHeader("Content-Type", "application/xml");
         res.setHeader("Content-Disposition", `attachment; filename="${baseName}_markers.xml"`);
         return res.send(xml);
       } else if (format === "edl") {
-        const edl = generateEDL(file.filename, duration, topLevel, fps);
+        const edl = generateEDL(file.filename, duration, topLevel, exportOpts);
         res.setHeader("Content-Type", "text/plain");
         res.setHeader("Content-Disposition", `attachment; filename="${baseName}_markers.edl"`);
         return res.send(edl);
       } else {
-        const csv = generateCSV(topLevel, fps);
+        const csv = generateCSV(topLevel, exportOpts);
         res.setHeader("Content-Type", "text/csv");
         res.setHeader("Content-Disposition", `attachment; filename="${baseName}_markers.csv"`);
         return res.send(csv);
