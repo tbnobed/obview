@@ -2421,6 +2421,123 @@ async function tusUpload(source, metadata, onPct) {
   return fileRow;
 }
 
+// ---------- Send-cut sequence picker ----------
+
+// List every sequence in the active Premiere project (defensively across
+// builds — getSequences is missing on some). Falls back to just the active
+// sequence. Returns { project, sequences: [{ seq, name, isActive }] }.
+async function listProjectSequences() {
+  const project = await getActiveProject();
+  let active = null;
+  try { active = await project.getActiveSequence(); } catch (_) {}
+  let seqs = null;
+  try {
+    if (typeof project.getSequences === "function") seqs = await project.getSequences();
+  } catch (_) {}
+  // Some builds hand back an array-like collection instead of a real array.
+  if (seqs && !Array.isArray(seqs)) {
+    try { seqs = Array.from(seqs); } catch (_) { seqs = null; }
+  }
+  if (!seqs || !seqs.length) seqs = active ? [active] : [];
+  const out = [];
+  for (const seq of seqs) {
+    let name = null;
+    try {
+      name = seq.name || (typeof seq.getName === "function" ? await seq.getName() : null);
+    } catch (_) {}
+    let isActive = false;
+    try {
+      // guid match is the reliable identity across builds; fall back to
+      // object identity, then name (names can collide, but it's only used
+      // to pre-tick the default).
+      if (active) {
+        if (seq.guid && active.guid) isActive = String(seq.guid) === String(active.guid);
+        else if (seq === active) isActive = true;
+        else if (name && active.name) isActive = name === active.name;
+      }
+    } catch (_) {}
+    out.push({ seq, name: name || "Untitled sequence", isActive });
+  }
+  return { project, sequences: out };
+}
+
+// Fill the dialog's sequence checkbox list. Active sequence pre-ticked.
+async function populateSendCutSequences() {
+  const list = $("seqList");
+  if (!list) return;
+  list.innerHTML = '<span class="muted small">Loading sequences…</span>';
+  try {
+    const { sequences } = await listProjectSequences();
+    state.sendCutSeqs = sequences;
+    list.innerHTML = "";
+    if (!sequences.length) {
+      const none = document.createElement("span");
+      none.className = "muted small";
+      none.textContent = "No sequences in this project.";
+      list.appendChild(none);
+      return;
+    }
+    const noneActive = !sequences.some((s) => s.isActive);
+    sequences.forEach((s, i) => {
+      const row = document.createElement("label");
+      row.className = "seq-row";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = s.isActive || (noneActive && i === 0) || sequences.length === 1;
+      cb.setAttribute("data-idx", String(i));
+      cb.addEventListener("change", updateSendCutMode);
+      const span = document.createElement("span");
+      span.textContent = s.name;
+      row.appendChild(cb);
+      row.appendChild(span);
+      list.appendChild(row);
+    });
+    updateSendCutMode();
+  } catch (e) {
+    list.innerHTML = "";
+    const err = document.createElement("span");
+    err.className = "muted small";
+    err.textContent = "Could not list sequences: " + e.message;
+    list.appendChild(err);
+  }
+}
+
+function selectedSendCutSeqs() {
+  const list = $("seqList");
+  if (!list || !state.sendCutSeqs) return [];
+  const out = [];
+  const boxes = list.querySelectorAll("input[type=checkbox]");
+  for (let i = 0; i < boxes.length; i++) {
+    if (boxes[i].checked) {
+      const s = state.sendCutSeqs[Number(boxes[i].getAttribute("data-idx"))];
+      if (s) out.push(s);
+    }
+  }
+  return out;
+}
+
+// One sequence keeps the classic controls (custom name + version radio).
+// Multiple sequences derive names from the sequences themselves and
+// auto-version onto same-named files, so those controls hide to avoid
+// ambiguity about which file "New version of this file" would mean.
+function updateSendCutMode() {
+  const multi = selectedSendCutSeqs().length > 1;
+  const nameField = $("exportNameField");
+  if (nameField) nameField.style.display = multi ? "none" : "";
+  const grp = $("destGroup");
+  if (grp) grp.style.display = (multi || state.sendCutNewOnly) ? "none" : "";
+  const hint = $("multiHint");
+  if (hint) hint.style.display = multi ? "" : "none";
+}
+
+// Server stack keys are filenames, so exported names must be filesystem-safe.
+function sanitizeExportName(name) {
+  return String(name || "")
+    .replace(/[\\/:*?"<>|]+/g, "_")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function exportAndUpload() {
   $("seqStatus").textContent = "";
   const btn = $("btnExportUpload");
@@ -2429,74 +2546,121 @@ async function exportAndUpload() {
     ? grp.selected === "new"
     : $("destNew").checked;
   btn.classList.add("disabled");
-  let source = null;
   try {
     requirePremiere();
     if (!uxp) throw new Error("UXP file API unavailable.");
     if (!state.presetPath) throw new Error("Choose an export preset (.epr) first.");
-    const { project, seq } = await getActiveSequence();
 
-    let seqName = "sequence";
-    try {
-      seqName = seq.name || (typeof seq.getName === "function" ? await seq.getName() : null) || "sequence";
-    } catch (_) {}
-    let baseName = $("exportName").value.trim() || seqName;
-    if (!/\.[a-z0-9]{2,4}$/i.test(baseName)) baseName += ".mp4";
+    const picked = selectedSendCutSeqs();
+    if (!picked.length) throw new Error("Tick at least one sequence.");
+    const multi = picked.length > 1;
+    const project = await getActiveProject();
 
-    // 1) Export to a temp file via the encoder / AME.
-    $("seqStatus").textContent = "Exporting sequence…";
-    const tmp = await uxp.storage.localFileSystem.getTemporaryFolder();
-    // Export into a fresh subfolder so a prior render Premiere/AME still holds
-    // open can't cause a "resource busy or locked" overwrite failure.
-    const sub = await tmp.createFolder("obviu-exp-" + (state.selectedVersionId || "new") + "-" + Date.now());
-    const outFile = await sub.createFile(baseName, { overwrite: true });
-    await exportSequence(project, seq, outFile.nativePath, state.presetPath);
-
-    // 2) Open the rendered file for slice-by-slice reads so peak memory stays
-    // bounded regardless of export size (multi-GB cuts). Prefer UXP's
-    // positional fs; fall back to a whole-file read only where it's missing.
-    $("seqStatus").textContent = "Reading render…";
-    const rendered = await sub.getEntry(baseName);
-    source = await openChunkReader(rendered.nativePath);
-    if (!source) {
-      const buf = await rendered.read({ format: uxp.storage.formats.binary });
-      source = bufferSource(buf);
+    // Multi-sequence uploads auto-version: an export whose name matches an
+    // existing file in this folder stacks onto it as a new version; the rest
+    // land as new files. Fetch the folder's filenames once up front.
+    const existingNames = {};
+    if (multi) {
+      try {
+        const scope = state.currentFolderId == null ? "root" : String(state.currentFolderId);
+        const files = await api("/api/v1/projects/" + state.project.id + "/files?folderId=" + scope);
+        (files || []).forEach((f) => { if (f && f.filename) existingNames[f.filename] = true; });
+      } catch (_) { /* listing failed — everything uploads as a new file */ }
     }
 
-    // 3) Build upload metadata. To stack a new version onto the selected
-    // file, customFilename must equal that file's stack key (its filename)
-    // and folderId must match its folder; the server then auto-versions and
-    // demotes the prior latest. For a new file we omit customFilename so the
-    // export name becomes its own stack key in the current folder.
-    const meta = {
-      filename: baseName,
-      filetype: guessMime(baseName),
-      projectId: String(state.project.id),
-    };
-    if (state.currentFolderId != null) meta.folderId = String(state.currentFolderId);
-    if (!asNew && state.file) meta.customFilename = state.file.filename;
+    const tmp = await uxp.storage.localFileSystem.getTemporaryFolder();
+    const uploaded = [];
+    const failures = [];
+    let lastFileRow = null;
 
-    // 4) Upload through the resumable path with the bearer token.
-    $("seqStatus").textContent = "Uploading… 0%";
-    const fileRow = await tusUpload(source, meta, (pct) => {
-      $("seqStatus").textContent = "Uploading… " + pct + "%";
-    });
+    // Strictly serial on purpose: parallel AME export jobs fight over the
+    // encoder and disk, and parallel multi-GB uploads fight over the WAN
+    // (see the tus gotchas) — one at a time is both faster and safer here.
+    for (let i = 0; i < picked.length; i++) {
+      const item = picked[i];
+      const tag = multi ? "Seq " + (i + 1) + "/" + picked.length + " (" + item.name + ") — " : "";
+      let source = null;
+      try {
+        let baseName = multi
+          ? sanitizeExportName(item.name)
+          : ($("exportName").value.trim() || sanitizeExportName(item.name));
+        if (!baseName) baseName = "sequence";
+        if (!/\.[a-z0-9]{2,4}$/i.test(baseName)) baseName += ".mp4";
 
-    // 5) Refresh the view and offer a share link for the new version.
-    if (fileRow && fileRow.id) {
+        // 1) Export to a temp file via the encoder / AME. Fresh subfolder per
+        // item so a prior render Premiere/AME still holds open can't cause a
+        // "resource busy or locked" overwrite failure.
+        $("seqStatus").textContent = tag + "Exporting…";
+        const sub = await tmp.createFolder(
+          "obviu-exp-" + (state.selectedVersionId || "new") + "-" + Date.now() + "-" + i
+        );
+        const outFile = await sub.createFile(baseName, { overwrite: true });
+        await exportSequence(project, item.seq, outFile.nativePath, state.presetPath);
+
+        // 2) Open the rendered file for slice-by-slice reads so peak memory
+        // stays bounded regardless of export size (multi-GB cuts). Prefer
+        // UXP's positional fs; fall back to a whole-file read where missing.
+        $("seqStatus").textContent = tag + "Reading render…";
+        const rendered = await sub.getEntry(baseName);
+        source = await openChunkReader(rendered.nativePath);
+        if (!source) {
+          const buf = await rendered.read({ format: uxp.storage.formats.binary });
+          source = bufferSource(buf);
+        }
+
+        // 3) Build upload metadata. To stack a new version onto a file,
+        // customFilename must equal that file's stack key (its filename) and
+        // folderId must match; the server then auto-versions and demotes the
+        // prior latest. Omitting customFilename makes the export its own new
+        // stack key in the current folder.
+        const meta = {
+          filename: baseName,
+          filetype: guessMime(baseName),
+          projectId: String(state.project.id),
+        };
+        if (state.currentFolderId != null) meta.folderId = String(state.currentFolderId);
+        if (!multi && !asNew && state.file) meta.customFilename = state.file.filename;
+        if (multi && existingNames[baseName]) meta.customFilename = baseName;
+
+        // 4) Upload through the resumable path with the bearer token.
+        $("seqStatus").textContent = tag + "Uploading… 0%";
+        const fileRow = await tusUpload(source, meta, (pct) => {
+          $("seqStatus").textContent = tag + "Uploading… " + pct + "%";
+        });
+        if (fileRow) lastFileRow = fileRow;
+        // Later items in this batch with the same name should stack onto
+        // what we just uploaded rather than create a duplicate file.
+        existingNames[baseName] = true;
+        uploaded.push(item.name);
+      } catch (e) {
+        failures.push(item.name + ": " + e.message);
+      } finally {
+        if (source) {
+          try { await source.close(); } catch (_) {}
+        }
+      }
+    }
+
+    // 5) Refresh the view and report. Single-sequence success keeps the old
+    // behavior (jump to the file, offer share link); batches land back on the
+    // files list with a summary.
+    if (!multi && !failures.length && lastFileRow && lastFileRow.id) {
       $("seqStatus").textContent =
-        "Uploaded v" + (fileRow.version || "?") + ". Use Copy share link to share it.";
-      await goFile({ id: fileRow.id, filename: fileRow.filename });
-    } else {
-      $("seqStatus").textContent = "Upload finished.";
+        "Uploaded v" + (lastFileRow.version || "?") + ". Use Copy share link to share it.";
+      await goFile({ id: lastFileRow.id, filename: lastFileRow.filename });
+    } else if (!failures.length) {
+      $("seqStatus").textContent =
+        "Uploaded " + uploaded.length + " sequence" + (uploaded.length === 1 ? "" : "s") + ".";
       await goFiles(state.project, state.currentFolderId);
+    } else {
+      $("seqStatus").textContent =
+        (uploaded.length ? "Uploaded " + uploaded.length + " — " : "") +
+        "failed: " + failures.join("; ");
+      if (uploaded.length) await goFiles(state.project, state.currentFolderId);
     }
   } catch (e) {
     $("seqStatus").textContent = "Failed: " + e.message;
   } finally {
-    if (source) {
-      try { await source.close(); } catch (_) {}
-    }
     btn.classList.remove("disabled");
   }
 }
@@ -2513,17 +2677,21 @@ function openSendCut(forceNewFile) {
   // folder and hide the version option.
   const grp = $("destGroup");
   const newOnly = forceNewFile === true || !state.file;
+  state.sendCutNewOnly = newOnly;
   if (grp) grp.style.display = newOnly ? "none" : "";
   if (newOnly) {
     if (grp && grp.selected != null) grp.selected = "new";
     if ($("destNew")) $("destNew").checked = true;
     if ($("destVersion")) $("destVersion").checked = false;
   }
+  // Fill the sequence checkbox list in the background — the modal opens
+  // immediately and the list pops in when Premiere answers.
+  populateSendCutSequences();
   if (typeof dlg.uxpShowModal === "function") {
     dlg.uxpShowModal({
       title: "Send your cut",
       resize: "both",
-      size: { width: 360, height: 440 },
+      size: { width: 360, height: 560 },
     }).catch(() => {});
   } else if (typeof dlg.showModal === "function") {
     dlg.showModal();

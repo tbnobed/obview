@@ -157,13 +157,18 @@
       <!-- No in-dialog title/close here: uxpShowModal provides the modal's own
            title bar ("Send your cut") and an X, so an inner header just
            duplicated it. -->
-      <p class="muted small">Export the active Premiere sequence and upload it to Obviu.</p>
+      <p class="muted small">Export Premiere sequences and upload them to Obviu.</p>
+      <div class="field">
+        <label>Sequences</label>
+        <div id="seqList" class="seq-list"></div>
+        <span id="multiHint" class="muted small" style="display:none">Each sequence uploads under its own name. If a file with the same name already exists in this folder, it becomes a new version of that file.</span>
+      </div>
       <div class="field">
         <label>Export quality</label>
         <select id="presetSelect"></select>
         <span id="presetLabel" class="muted small">No preset selected</span>
       </div>
-      <div class="field">
+      <div class="field" id="exportNameField">
         <label>Export name</label>
         <input id="exportName" type="text" placeholder="My Cut.mp4" />
       </div>

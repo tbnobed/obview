@@ -497,3 +497,18 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
 .dot.open { background: #e5484d; }
 .dot.resolved { background: #33915b; }
 .dot.changes { background: #c4831f; }
+
+/* ---- Send-cut sequence picker ---- */
+/* Literal colors/px only — UXP silently drops CSS variables. */
+.seq-list {
+  max-height: 118px; overflow-y: auto;
+  border: 1px solid #3a3a3a; border-radius: 4px;
+  background: #1e1e1e;
+  padding: 4px 6px; margin-top: 2px;
+}
+.seq-row { display: flex; align-items: center; padding: 3px 0; cursor: pointer; }
+.seq-row input { flex: 0 0 auto; margin-right: 7px; }
+.seq-row span {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px; color: #ececec;
+}
