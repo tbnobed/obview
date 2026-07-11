@@ -941,6 +941,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           resolved: c.isResolved ?? false,
           authorName: c.authorName ?? null,
           createdAt: c.createdAt ?? null,
+          // True when the comment carries a frame drawing. The panel only
+          // badges such comments; the drawing itself renders in the
+          // panel-player webview (which gets the full blob via share routes).
+          hasAnnotations: (() => {
+            try {
+              const a = c.annotations ? JSON.parse(c.annotations) : null;
+              return Array.isArray(a) && a.length > 0;
+            } catch {
+              return false;
+            }
+          })(),
         })),
       );
     } catch (error) {

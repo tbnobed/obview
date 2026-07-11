@@ -12,9 +12,10 @@
 // Everything is served by the existing public share endpoints, so no auth is
 // required inside the webview.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "wouter";
 import SharePlayerControls from "@/components/media/share-player-controls";
+import { AnnotationOverlay, type Annotation } from "@/components/media/annotation-canvas";
 
 type ApiComment = {
   id: string | number;
@@ -24,6 +25,7 @@ type ApiComment = {
   outPoint?: number | null;
   content?: string | null;
   authorName?: string | null;
+  annotations?: string | Annotation[] | null;
   user?: { name?: string | null } | null;
 };
 
@@ -35,7 +37,21 @@ type Marker = {
   outPoint?: number | null;
   content?: string | null;
   authorName?: string | null;
+  annotations?: string | Annotation[] | null;
 };
+
+// Comments store drawings as a JSON string of normalized (0-1) shapes; parse
+// defensively so a malformed blob can't take down the player.
+function parseAnnotations(c: Marker | undefined): Annotation[] | null {
+  if (!c?.annotations) return null;
+  try {
+    const parsed =
+      typeof c.annotations === "string" ? JSON.parse(c.annotations) : c.annotations;
+    return Array.isArray(parsed) && parsed.length ? (parsed as Annotation[]) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function PanelPlayerPage() {
   const params = useParams();
@@ -113,6 +129,7 @@ export default function PanelPlayerPage() {
       outPoint: c.outPoint ?? null,
       content: c.content ?? null,
       authorName: c.authorName || c.user?.name || null,
+      annotations: c.annotations ?? null,
     });
     const load = async () => {
       try {
@@ -195,6 +212,68 @@ export default function PanelPlayerPage() {
     if (Math.abs(currentTime - active.timestamp) > 0.05) setActiveCommentId(null);
   }, [currentTime, activeCommentId, comments]);
 
+  // Track the media container size so the drawing overlay canvas scales with
+  // the panel (mirrors the share page's ResizeObserver wiring).
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      setContainerSize({ width: rect.width, height: rect.height });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fileType]);
+
+  // Drawing attached to the active (clicked) comment, shown at its exact
+  // frame and cleared alongside activeCommentId when the playhead moves.
+  const activeAnnotations = useMemo(
+    () => parseAnnotations(comments.find((c) => c.id === activeCommentId)),
+    [comments, activeCommentId],
+  );
+
+  // Let the UXP panel activate a comment from its own list: via the webview
+  // message bridge when available, or a hash change (#comment=<id>&n=<nonce>)
+  // as the no-bridge fallback. Seeks to the frame and PAUSES so the drawing
+  // stays visible (playing would clear it as soon as the playhead moved).
+  useEffect(() => {
+    const activateById = (raw: string | null | undefined) => {
+      if (!raw) return;
+      const c = comments.find((x) => x.id === String(raw));
+      if (!c) return;
+      setActiveCommentId(c.id);
+      const t = c.timestamp ?? c.inPoint;
+      if (t != null) {
+        const el = mediaRef.current;
+        if (el) {
+          el.pause?.();
+          el.currentTime = t;
+          setCurrentTime(t);
+        }
+      }
+    };
+    const onMessage = (e: MessageEvent) => {
+      const d = e?.data as { type?: string; id?: string | number } | null;
+      if (d && typeof d === "object" && d.type === "obviu-show-comment") {
+        activateById(d.id != null ? String(d.id) : null);
+      }
+    };
+    const onHash = () => {
+      const m = /(?:^|[#&])comment=([^&]+)/.exec(window.location.hash || "");
+      if (m) activateById(decodeURIComponent(m[1]));
+    };
+    window.addEventListener("message", onMessage);
+    window.addEventListener("hashchange", onHash);
+    onHash();
+    return () => {
+      window.removeEventListener("message", onMessage);
+      window.removeEventListener("hashchange", onHash);
+    };
+  }, [comments]);
+
   const seekTo = (t: number) => {
     const el = mediaRef.current;
     if (!el) return;
@@ -249,6 +328,13 @@ export default function PanelPlayerPage() {
         )}
         {!isVideo && !isAudio && fileType && (
           <div className="text-gray-500 text-sm">No preview available for this file type.</div>
+        )}
+        {isVideo && activeAnnotations && containerSize.width > 0 && (
+          <AnnotationOverlay
+            annotations={activeAnnotations}
+            containerWidth={containerSize.width}
+            containerHeight={containerSize.height}
+          />
         )}
       </div>
 

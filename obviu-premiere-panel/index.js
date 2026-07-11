@@ -914,6 +914,16 @@ function commentEl(c, child, idx) {
     chip.onclick = () => jumpTo(start);
     body.appendChild(chip);
   }
+  // Pencil badge for comments carrying a frame drawing. Clicking it tells
+  // the preview player to seek to that frame and show the drawing.
+  if (c.hasAnnotations) {
+    const pen = document.createElement("span");
+    pen.className = "draw-chip";
+    pen.textContent = "✏";
+    pen.title = "Show this drawing in the preview";
+    pen.onclick = () => showDrawingInPreview(c);
+    body.appendChild(pen);
+  }
   const txt = document.createElement("span");
   txt.className = "txt";
   txt.textContent = c.content || "";
@@ -1460,6 +1470,29 @@ async function previewMedia() {
 function resetPreview() {
   const view = $("mediaView");
   if (view) view.src = "";
+}
+
+// Ask the preview player to seek to a comment's frame and show its drawing.
+// Prefers the UXP webview message bridge (manifest enableMessageBridge);
+// falls back to a hash-only src change, which is a same-document navigation
+// the player picks up via hashchange — no reload.
+function showDrawingInPreview(c) {
+  const view = $("mediaView");
+  if (!view || !view.src) {
+    $("fileStatus").textContent = "Open the preview first to see the drawing.";
+    return;
+  }
+  const id = String(c.id);
+  try {
+    if (typeof view.postMessage === "function") {
+      view.postMessage({ type: "obviu-show-comment", id: id }, "*");
+      return;
+    }
+  } catch (_) {}
+  try {
+    const baseSrc = String(view.src).split("#")[0];
+    view.src = baseSrc + "#comment=" + encodeURIComponent(id) + "&n=" + Date.now();
+  } catch (_) {}
 }
 
 // ---------- polling ----------

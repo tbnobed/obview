@@ -29,7 +29,8 @@
     "localFileSystem": "request",
     "webview": {
       "allow": "yes",
-      "domains": "all"
+      "domains": "all",
+      "enableMessageBridge": "localAndRemote"
     }
   }
 }
