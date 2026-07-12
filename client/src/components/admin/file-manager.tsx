@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, FileIcon, Video, Image as ImageIcon, FileText, File, Eye, RefreshCw, HardDrive, FileCheck, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Trash2, FileIcon, Video, Image as ImageIcon, FileText, File, Eye, RefreshCw, HardDrive, FileCheck, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, CheckCircle2, Loader2, Clock } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -129,6 +129,8 @@ interface FileDetails {
     uploadedByName: string;
     fileType?: string;
     originalFilename?: string;
+    processingStatus?: string | null;
+    processingError?: string | null;
   } | null;
 }
 
@@ -161,6 +163,7 @@ export default function FileManager() {
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [failedOnly, setFailedOnly] = useState(false);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -450,6 +453,7 @@ export default function FileManager() {
     if (!files) return undefined;
     const filtered = files
       .filter(file => !optimisticFiles.includes(file.filename))
+      .filter(file => !failedOnly || file.metadata?.processingStatus === "failed")
       .filter(file =>
         !searchText ||
         file.filename.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -476,7 +480,16 @@ export default function FileManager() {
       if (av > bv) return 1 * dir;
       return 0;
     });
-  }, [files, optimisticFiles, searchText, sortKey, sortDir]);
+  }, [files, optimisticFiles, searchText, sortKey, sortDir, failedOnly]);
+
+  // Count of files whose transcode failed, for the filter toggle badge.
+  const failedCount = useMemo(
+    () =>
+      files?.filter(
+        f => !optimisticFiles.includes(f.filename) && f.metadata?.processingStatus === "failed"
+      ).length ?? 0,
+    [files, optimisticFiles]
+  );
 
   // Drop selections that no longer exist (e.g. after delete or filter change).
   useEffect(() => {
@@ -572,6 +585,43 @@ export default function FileManager() {
     const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(2))} ${sizes[i]}`;
+  };
+
+  // Render a small badge for a file's transcode status. null status (images,
+  // or files with no processing row) renders as a muted dash.
+  const renderStatus = (status?: string | null, errorMessage?: string | null) => {
+    if (!status) return <span className="text-gray-400 dark:text-gray-500">—</span>;
+    const base = "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium";
+    if (status === "failed") {
+      return (
+        <span
+          className={`${base} bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400`}
+          title={errorMessage || "Processing failed"}
+          data-testid="status-failed"
+        >
+          <AlertTriangle className="h-3 w-3" /> Failed
+        </span>
+      );
+    }
+    if (status === "completed") {
+      return (
+        <span className={`${base} bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400`}>
+          <CheckCircle2 className="h-3 w-3" /> Ready
+        </span>
+      );
+    }
+    if (status === "processing") {
+      return (
+        <span className={`${base} bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400`}>
+          <Loader2 className="h-3 w-3 animate-spin" /> Processing
+        </span>
+      );
+    }
+    return (
+      <span className={`${base} bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400`}>
+        <Clock className="h-3 w-3" /> Pending
+      </span>
+    );
   };
 
   // Determine file icon based on filename
@@ -680,6 +730,20 @@ export default function FileManager() {
               <Trash2 className="h-4 w-4" />
             )}
             {forceDeleteMutation.isPending ? 'Deleting...' : 'Force Delete Unlinked'}
+          </Button>
+          <Button
+            onClick={() => setFailedOnly(v => !v)}
+            variant={failedOnly ? "default" : "outline"}
+            className={`flex items-center gap-2 ${failedOnly ? "" : "text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/20"}`}
+            data-testid="filter-failed-only"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            {failedOnly ? "Showing failed" : "Failed only"}
+            {failedCount > 0 && (
+              <span className="ml-1 rounded-full bg-red-600 px-1.5 text-xs font-semibold text-white">
+                {failedCount}
+              </span>
+            )}
           </Button>
           <Input
             className="max-w-xs"
@@ -936,6 +1000,7 @@ export default function FileManager() {
                   <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("projectName")}>
                     Project<SortIcon k="projectName" />
                   </TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1005,6 +1070,9 @@ export default function FileManager() {
                           <span className="text-gray-500 dark:text-gray-400">Unknown</span>
                         )}
                       </TableCell>
+                      <TableCell>
+                        {renderStatus(file.metadata?.processingStatus, file.metadata?.processingError)}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -1061,7 +1129,9 @@ export default function FileManager() {
             <FileIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-200">No Files Found</h3>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
-              {searchText
+              {failedOnly
+                ? "No files failed to process."
+                : searchText
                 ? "No files match your search criteria. Try a different search term."
                 : "There are no files in the uploads directory."}
             </p>

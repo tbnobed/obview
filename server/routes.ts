@@ -7103,7 +7103,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Get additional information about project and uploader
               const project = matchedFile.projectId ? await storage.getProject(matchedFile.projectId) : null;
               const uploader = matchedFile.uploadedById ? await storage.getUser(matchedFile.uploadedById) : null;
-              
+
+              // Surface transcode status so admins can spot files that failed
+              // to process. Only video files have a video_processing row; for
+              // everything else this stays null (rendered as "—").
+              let processingStatus: string | null = null;
+              let processingError: string | null = null;
+              if (matchedFile.fileType === "video") {
+                const vp = await storage.getVideoProcessing(matchedFile.id).catch(() => undefined);
+                if (vp) {
+                  processingStatus = vp.status;
+                  processingError = vp.errorMessage ?? null;
+                }
+              }
+
               fileMetadata = {
                 id: matchedFile.id,
                 projectId: matchedFile.projectId,
@@ -7115,6 +7128,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // at the top level) is the timestamp-random string we
                 // rename to on tus finish — useless to humans.
                 originalFilename: matchedFile.filename,
+                processingStatus,
+                processingError,
               };
             }
           } catch (err) {
