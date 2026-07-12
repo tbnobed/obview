@@ -89,6 +89,9 @@
             <a id="btnPullMarkers" class="btn secondary">Pull comments to markers<span id="markerBadge" class="badge hidden"></span></a>
             <a id="btnShare" class="btn secondary">Copy share link</a>
           </div>
+          <div class="action-row">
+            <a id="btnDelete" class="btn warn">Delete file</a>
+          </div>
         </div>
         <div id="fileStatus" class="status"></div>
         <div id="importProgress" class="progress hidden"><div class="bar"></div></div>
@@ -178,6 +181,14 @@
       </sp-radio-group>
       <a id="btnExportUpload" class="btn full">Export &amp; upload</a>
       <div id="seqStatus" class="status"></div>
+    </dialog>
+
+    <dialog id="deleteDialog" class="export-dialog">
+      <p class="muted small" id="deletePrompt">Delete this file?</p>
+      <p class="muted small">This moves the file and all its versions to the trash. An admin can restore it for a limited time.</p>
+      <a id="btnConfirmDelete" class="btn warn full">Delete file</a>
+      <a id="btnCancelDelete" class="btn secondary full">Cancel</a>
+      <div id="deleteStatus" class="status"></div>
     </dialog>
 
     <script src="index.js"></script>

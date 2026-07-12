@@ -857,6 +857,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a file from the Premiere panel. Bearer-authed mirror of the web
+  // DELETE /api/files/:fileId route: same edit-access gate, same soft-delete
+  // (moves the whole (projectId, filename) version stack to trash, restorable
+  // from /admin/trash for the retention window). Deleting one version deletes
+  // them all — the panel shows one card per file, matching the web UI.
+  app.delete("/api/v1/files/:id", apiAuth, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+
+      if (!(await userHasProjectEditAccess(req.user, file.projectId))) {
+        return res.status(403).json({ message: "You don't have permission to delete this file" });
+      }
+
+      const success = await storage.deleteFile(fileId);
+      if (!success) {
+        return res.status(404).json({ message: "File not found or already trashed" });
+      }
+
+      await storage.logActivity({
+        action: "delete",
+        entityType: "file",
+        entityId: file.id,
+        userId: req.user.id,
+        metadata: {
+          projectId: file.projectId,
+          filename: file.filename,
+          softDelete: true,
+          source: "panel",
+        },
+      });
+
+      console.log(`[FILE DELETE] 🗑  (panel) Soft-deleted file ${fileId} (${file.filename}); recoverable from /admin/trash`);
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Media info for the Premiere panel "Media info" tab. Mirrors the web
   // /api/files/:id/mediainfo route but is bearer-authed (apiAuth). Returns the
   // cached ffprobe payload (falling back to a live probe + backfill when the

@@ -1405,6 +1405,52 @@ async function copyShareLink() {
   }
 }
 
+// ---------- delete file ----------
+// Confirm, then soft-delete the whole file (all versions) via the bearer API.
+// Mirrors the web app: the file moves to trash and an admin can restore it for
+// the retention window. On success we return to the files list.
+function openDelete() {
+  if (!state.file) return;
+  const dlg = $("deleteDialog");
+  if (!dlg) return;
+  if ($("deleteStatus")) $("deleteStatus").textContent = "";
+  if ($("deletePrompt")) {
+    $("deletePrompt").textContent =
+      'Delete "' + (state.file.filename || "this file") + '"?';
+  }
+  if (typeof dlg.uxpShowModal === "function") {
+    dlg.uxpShowModal({
+      title: "Delete file",
+      resize: "both",
+      size: { width: 320, height: 240 },
+    }).catch(() => {});
+  } else if (typeof dlg.showModal === "function") {
+    dlg.showModal();
+  } else {
+    dlg.removeAttribute("hidden");
+  }
+}
+
+async function deleteFile() {
+  if (!state.file || state.deleting) return;
+  state.deleting = true;
+  const btn = $("btnConfirmDelete");
+  if (btn) btn.classList.add("disabled");
+  const st = $("deleteStatus");
+  if (st) st.textContent = "Deleting…";
+  try {
+    await api("/api/v1/files/" + state.file.id, { method: "DELETE" });
+    try { $("deleteDialog").close(); } catch (_) {}
+    stopPoll();
+    goFiles(state.project, state.currentFolderId);
+  } catch (e) {
+    if (st) st.textContent = "Delete failed: " + e.message;
+  } finally {
+    state.deleting = false;
+    if (btn) btn.classList.remove("disabled");
+  }
+}
+
 // ---------- media preview ----------
 // UXP's native <video> is a limited re-implementation; a <webview> embeds a
 // real browser engine (WebView2 / WKWebView) with full HTML5 playback. We
@@ -2864,6 +2910,9 @@ function init() {
   $("btnSendCut").onclick = () => openSendCut(false);
   $("btnPullMarkers").onclick = pullMarkers;
   $("btnShare").onclick = copyShareLink;
+  $("btnDelete").onclick = openDelete;
+  $("btnCancelDelete").onclick = () => { try { $("deleteDialog").close(); } catch (_) {} };
+  $("btnConfirmDelete").onclick = deleteFile;
   $("btnApprove").onclick = () => review("approved");
   $("btnRequest").onclick = () => review("requested_changes");
   $("btnPostComment").onclick = postComment;
