@@ -133,6 +133,8 @@ input::placeholder, textarea::placeholder { color: #6f6f6f; }
 .btn.ok:hover { background: #3aa667; }
 .btn.warn { background: #c4831f; }
 .btn.warn:hover { background: #d8932a; }
+.btn.danger { background: #c0392b; }
+.btn.danger:hover { background: #d64535; }
 .btn.disabled { opacity: 0.5; pointer-events: none; }
 .btn.link {
   display: inline;

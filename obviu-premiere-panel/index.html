@@ -79,7 +79,7 @@
         <div class="actions">
           <div class="action-row">
             <a id="btnImport" class="btn">Import to Premiere</a>
-            <a id="btnSendCut" class="btn secondary">Send your cut…</a>
+            <a id="btnDelete" class="btn danger">Delete file</a>
           </div>
           <div class="action-row">
             <a id="btnApprove" class="btn ok">Approve</a>
@@ -90,7 +90,7 @@
             <a id="btnShare" class="btn secondary">Copy share link</a>
           </div>
           <div class="action-row">
-            <a id="btnDelete" class="btn warn">Delete file</a>
+            <a id="btnSendCut" class="btn secondary">Send your cut…</a>
           </div>
         </div>
         <div id="fileStatus" class="status"></div>
@@ -186,7 +186,7 @@
     <dialog id="deleteDialog" class="export-dialog">
       <p class="muted small" id="deletePrompt">Delete this file?</p>
       <p class="muted small">This moves the file and all its versions to the trash. An admin can restore it for a limited time.</p>
-      <a id="btnConfirmDelete" class="btn warn full">Delete file</a>
+      <a id="btnConfirmDelete" class="btn danger full">Delete file</a>
       <a id="btnCancelDelete" class="btn secondary full">Cancel</a>
       <div id="deleteStatus" class="status"></div>
     </dialog>
