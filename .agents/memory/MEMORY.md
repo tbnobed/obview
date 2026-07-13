@@ -12,6 +12,7 @@
 - [UXP large-file download/import](uxp-large-file-download.md) — stream download to disk in ~8MB append-writes; one giant Uint8Array OOMs/throws "Invalid typed array length" on big media.
 - [UXP flyout menu & dialogs](uxp-flyout-and-dialog.md) — ☰ items via entrypoints.setup menuItems/invokeMenu (works on "main"-HTML panels); modals use dialog.uxpShowModal, not browser showModal.
 - [UXP file-head layout](uxp-file-head-layout.md) — title+version is a flex ROW (column collapses to ~0 in UXP); growing text needs min-width:0, fixed controls flex:0 0 auto, or they overlap.
+- [Annotation overlay aspect-lock](annotation-overlay-aspect.md) — drawings are normalized to the media box; the box must be aspect-locked to the video (like media-player) or they stretch into letterbox bars.
 - [Marker export timecode](marker-export-timecode.md) — DB truth beats client hints (ffprobe fps + start TC); DF renumber traps; UXP zeroPoint shapes vary; db:push hangs — use direct psql for additive cols.
 - [UXP webview message bridge](uxp-webview-message-bridge.md) — webview postMessage needs manifest enableMessageBridge; hash-only src change is the reload-free fallback.
 - [iOS faststart playback fallback](ios-faststart-fallback.md) — failed transcodes stream-copy the original to a faststart 'source' quality so iPhones can play it; 'source' is NOT a real proxy.

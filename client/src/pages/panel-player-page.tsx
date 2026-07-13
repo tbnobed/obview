@@ -66,6 +66,11 @@ export default function PanelPlayerPage() {
 
   const [fileType, setFileType] = useState<string>("");
   const [frameRate, setFrameRate] = useState<number>(30);
+  // Video's intrinsic aspect ratio. We aspect-lock the media box to this so the
+  // annotation overlay maps onto the actual (non-letterboxed) video rect —
+  // otherwise object-contain letterboxes the video inside the box and the
+  // overlay stretches drawings into the black bars (mirrors media-player.tsx).
+  const [videoAspect, setVideoAspect] = useState<number | null>(null);
   const [scrubSrc, setScrubSrc] = useState<string | null>(null);
   const [comments, setComments] = useState<Marker[]>([]);
   const [duration, setDuration] = useState(0);
@@ -90,6 +95,7 @@ export default function PanelPlayerPage() {
     setFrameRate(30);
     setError(null);
     setActiveCommentId(null);
+    setVideoAspect(null);
     (async () => {
       try {
         const r = await fetch(`${base}/metadata`);
@@ -169,6 +175,8 @@ export default function PanelPlayerPage() {
     };
     const onMeta = () => {
       if (Number.isFinite(el.duration)) setDuration(el.duration);
+      const v = el as HTMLVideoElement;
+      if (v.videoWidth && v.videoHeight) setVideoAspect(v.videoWidth / v.videoHeight);
     };
     const onPlay = () => {
       setIsPaused(false);
@@ -299,42 +307,53 @@ export default function PanelPlayerPage() {
 
   return (
     <div className="dark fixed inset-0 flex flex-col bg-black">
-      <div
-        ref={containerRef}
-        className="relative flex-1 min-h-0 flex items-center justify-center bg-black"
-      >
+      <div className="relative flex-1 min-h-0 flex flex-col items-center justify-center bg-black">
         {isVideo && (
-          <video
-            ref={mediaRef as any}
-            controls={false}
-            playsInline
-            preload="metadata"
-            controlsList="nodownload"
-            disablePictureInPicture
-            onClick={() => {
-              const v = mediaRef.current as HTMLVideoElement | null;
-              if (!v) return;
-              if (v.paused) v.play().catch(() => {});
-              else v.pause();
-            }}
-            className="w-full h-full object-contain bg-black cursor-pointer"
-            data-testid="panel-video-player"
+          // Aspect-locked media box: matches the video's intrinsic ratio so the
+          // annotation overlay (sized to this box) maps 1:1 onto the video with
+          // no letterboxing gap. Without this the overlay stretches drawings
+          // into the black bars.
+          <div
+            ref={containerRef}
+            className="relative w-full"
+            style={
+              videoAspect
+                ? { aspectRatio: String(videoAspect), maxHeight: "100%", maxWidth: "100%", flex: "0 1 auto" }
+                : { height: "100%" }
+            }
           >
-            <source src={mediaSrc} type="video/mp4" />
-          </video>
+            <video
+              ref={mediaRef as any}
+              controls={false}
+              playsInline
+              preload="metadata"
+              controlsList="nodownload"
+              disablePictureInPicture
+              onClick={() => {
+                const v = mediaRef.current as HTMLVideoElement | null;
+                if (!v) return;
+                if (v.paused) v.play().catch(() => {});
+                else v.pause();
+              }}
+              className="absolute inset-0 w-full h-full object-contain bg-black cursor-pointer"
+              data-testid="panel-video-player"
+            >
+              <source src={mediaSrc} type="video/mp4" />
+            </video>
+            {activeAnnotations && containerSize.width > 0 && (
+              <AnnotationOverlay
+                annotations={activeAnnotations}
+                containerWidth={containerSize.width}
+                containerHeight={containerSize.height}
+              />
+            )}
+          </div>
         )}
         {isAudio && (
           <audio ref={mediaRef as any} src={mediaSrc} className="w-full max-w-md" />
         )}
         {!isVideo && !isAudio && fileType && (
           <div className="text-gray-500 text-sm">No preview available for this file type.</div>
-        )}
-        {isVideo && activeAnnotations && containerSize.width > 0 && (
-          <AnnotationOverlay
-            annotations={activeAnnotations}
-            containerWidth={containerSize.width}
-            containerHeight={containerSize.height}
-          />
         )}
       </div>
 
