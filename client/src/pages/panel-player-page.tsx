@@ -290,11 +290,22 @@ export default function PanelPlayerPage() {
     el.play?.().catch(() => {});
   };
 
+  // Clicking a comment marker on the scrubber should PAUSE on that exact frame
+  // and keep the drawing visible — playing would move the playhead and clear
+  // the overlay immediately. Mirrors the pencil/message activation flow.
   const onCommentClick = (id: string) => {
     const c = comments.find((x) => x.id === id);
     if (!c) return;
     setActiveCommentId(id);
-    if (c.timestamp != null) seekTo(c.timestamp);
+    const t = c.timestamp ?? c.inPoint;
+    if (t != null) {
+      const el = mediaRef.current;
+      if (el) {
+        el.pause?.();
+        el.currentTime = t;
+        setCurrentTime(t);
+      }
+    }
   };
 
   if (error) {
