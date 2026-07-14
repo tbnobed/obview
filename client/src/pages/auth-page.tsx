@@ -149,34 +149,12 @@ export default function AuthPage() {
     }
   }, [user, setLocation, returnTo]);
 
-  const onLoginSubmit = async (data: LoginFormValues) => {
-    console.log("Login form submitted with data:", data);
-    
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        credentials: 'include'
-      });
-      
-      console.log("Login response status:", response.status);
-      const responseText = await response.text();
-      console.log("Login response:", responseText);
-      
-      if (response.ok) {
-        try {
-          const userResponse = JSON.parse(responseText);
-          queryClient.setQueryData(["/api/user"], userResponse);
-          setLocation(returnTo);
-        } catch (parseError) {
-          console.error("Error parsing login response:", parseError);
-        }
-      }
-    } catch (error) {
-      console.error("Login fetch error:", error);
-    }
-    
+  // Login exactly ONCE via the mutation. A previous version also fired a
+  // direct fetch('/api/login') first — two logins in a row make passport
+  // regenerate the session between them, which 401s every request the
+  // freshly-mounted dashboard already had in flight (broken thumbnails and
+  // "Unauthorized" errors until a manual refresh).
+  const onLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data, {
       onSuccess: () => {
         setLocation(returnTo);

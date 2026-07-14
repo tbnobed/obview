@@ -22,14 +22,15 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// NOTE: deliberately no logging of request/response bodies here — they can
+// contain credentials (e.g. the login password) and end up in user consoles,
+// screenshots and pasted bug reports.
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
   options?: { signal?: AbortSignal }
 ): Promise<any> {
-  console.log(`API Request: ${method} ${url}`, data ? JSON.stringify(data) : "no data");
-  
   try {
     const headers: Record<string, string> = {};
     if (data) {
@@ -44,20 +45,14 @@ export async function apiRequest(
       signal: options?.signal,
     };
     
-    console.log("Fetch options:", JSON.stringify(fetchOptions));
-    
     const res = await fetch(url, fetchOptions);
     
-    console.log(`API Response: ${res.status} ${res.statusText} for ${method} ${url}`);
-    
-    // For debugging, try to read the response body
     let responseText = '';
     try {
       const responseClone = res.clone();
       responseText = await responseClone.text();
-      console.log(`Response body: ${responseText.substring(0, 200)}${responseText.length > 200 ? '...' : ''}`);
-    } catch (readError) {
-      console.error("Error reading response:", readError);
+    } catch {
+      /* body read is best-effort; JSON parse below just falls through */
     }
     
     await throwIfResNotOk(res);
