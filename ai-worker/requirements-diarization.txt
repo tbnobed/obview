@@ -18,3 +18,7 @@
 torch==2.5.1
 torchaudio==2.5.1
 pyannote.audio==3.3.2
+# pyannote 3.x internally calls hf_hub_download(use_auth_token=...), which
+# huggingface_hub >= 1.0 removed — pin the hub below 1.0 or diarization
+# fails with: "unexpected keyword argument 'use_auth_token'".
+huggingface_hub<1.0

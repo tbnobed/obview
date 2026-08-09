@@ -10,6 +10,7 @@ description: Design decisions for speaker diarization and running the AI worker 
 - **Why:** transcription is the primary deliverable; diarization is an enhancement dependent on a gated HF token that can break independently.
 - pyannote models are gated on HuggingFace — need a token that accepted terms for BOTH speaker-diarization-3.1 and segmentation-3.0. Token lives in /etc/default/obviu-local-ai (0600), never in the unit file or repo.
 - Honest device reporting: `Pipeline.to(cuda)` can silently fail → CPU. The worker records the *actual* device it landed on and the setup script fails install if torch resolved CPU-only. Never trust "device: cuda" from config alone.
+- pyannote 3.x internally calls `hf_hub_download(use_auth_token=...)`, removed in huggingface_hub >= 1.0 → must pin `huggingface_hub<1.0` alongside pyannote; passing the token via env vars alone does NOT fix it.
 - pyannote reads audio via torchaudio, which is unreliable on video containers — always feed it a clean ffmpeg-extracted 16kHz mono WAV.
 - Speaker assignment: per transcript segment, pick the diarization turn with maximum temporal overlap; segments with no overlap keep `speaker: null` (music/silence).
 - Old workers ignore the extra request fields and old transcripts lack `speaker` — everything downstream must treat `speaker` as optional (it does).
