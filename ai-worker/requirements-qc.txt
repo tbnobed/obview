@@ -2,6 +2,11 @@
 # Install into the same venv as requirements.txt:
 #   ./venv/bin/pip install -r requirements-qc.txt
 #
+# IMPORTANT: pin torch to what the transcription/diarization stack already
+# uses. Without these pins, easyocr's unbounded torch dependency upgrades
+# torch and breaks torchaudio (torchaudio 2.5.1 requires torch==2.5.1).
+torch==2.5.1
+torchvision==0.20.1
 # Audio-event detection (coughs, throat clears, sneezes...) — PANNs.
 # First run downloads a ~400MB AudioSet checkpoint to ~/panns_data.
 panns-inference
