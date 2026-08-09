@@ -6,9 +6,10 @@
  * because the DAC subnet is point-to-point and not routable; do not expose
  * the worker on a public interface.
  *
- * The base URL is taken from SPARK_AI_URL (preferred), falling back to
- * SPARK_DIAG_URL stripped of any path so the existing diagnostics env can
- * double-duty without a second secret.
+ * The base URL is taken from TRANSCRIBE_WORKER_URL (preferred — points at
+ * whichever GPU worker runs whisper/diarization, e.g. the local L4 worker),
+ * falling back to the legacy SPARK_AI_URL, then SPARK_DIAG_URL stripped of
+ * any path so the existing diagnostics env can double-duty.
  */
 
 export interface SparkTranscribeRequest {
@@ -103,6 +104,12 @@ export class SparkHttpError extends Error {
 }
 
 function baseUrl(): string | null {
+  // TRANSCRIBE_WORKER_URL is the preferred name: it points at whichever GPU
+  // worker runs whisper/diarization (the local L4 worker on obtv-ai, or the
+  // DGX Spark). SPARK_AI_URL is kept as a legacy alias from when the Spark
+  // was the only worker.
+  const preferred = process.env.TRANSCRIBE_WORKER_URL?.trim();
+  if (preferred) return preferred.replace(/\/$/, "");
   const explicit = process.env.SPARK_AI_URL?.trim();
   if (explicit) return explicit.replace(/\/$/, "");
   const diag = process.env.SPARK_DIAG_URL?.trim();

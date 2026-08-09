@@ -15,7 +15,7 @@
 #   OBVIU_HF_TOKEN=hf_xxx UPLOADS_DIR=... ./spark/setup-local-gpu.sh
 #
 # Then point the app at it in .env and restart the app:
-#   SPARK_AI_URL=http://127.0.0.1:7682
+#   TRANSCRIBE_WORKER_URL=http://127.0.0.1:7682
 #   TRANSCRIPTION_DIARIZE=true
 #
 # Re-running is safe: each step is idempotent. The HF token is stored in
@@ -145,6 +145,6 @@ curl -sS --max-time 10 "http://${BIND_HOST}:${BIND_PORT}/health" | python3 -m js
 
 echo
 echo "Done. In the app's .env on this host, set:"
-echo "  SPARK_AI_URL=http://${BIND_HOST}:${BIND_PORT}"
+echo "  TRANSCRIBE_WORKER_URL=http://${BIND_HOST}:${BIND_PORT}"
 echo "  TRANSCRIPTION_DIARIZE=true"
 echo "then restart the app. New uploads will transcribe + diarize on the L4."
