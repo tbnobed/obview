@@ -2567,7 +2567,7 @@ export default function MediaPlayer({
       {file && (
         <div
           className={cn(
-            "w-full landscape:w-[44%] landscape:max-w-[387px] lg:w-[387px] flex-1 min-h-0 flex flex-col bg-white dark:bg-[#0f1218] border-t landscape:border-t-0 landscape:border-l lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden landscape:flex-none landscape:shrink-0 landscape:h-full landscape:max-h-full lg:flex-none lg:h-full lg:max-h-full lg:shrink-0",
+            "w-full landscape:w-[44%] landscape:max-w-[387px] lg:w-[387px] flex-1 min-h-0 flex flex-col bg-white dark:bg-zinc-950 overflow-hidden landscape:flex-none landscape:shrink-0 landscape:h-full landscape:max-h-full lg:flex-none lg:h-full lg:max-h-full lg:shrink-0",
             isSidebarHidden && "hidden"
           )}
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -2575,7 +2575,7 @@ export default function MediaPlayer({
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
             {/* Tab controls — single horizontally-scrollable strip works for
                 both desktop and mobile so all 5 labels fit without truncation. */}
-            <div className="flex items-center px-2 py-2 lg:px-3 border-b border-neutral-200 dark:border-white/5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden landscape:hidden lg:landscape:flex">
+            <div className="flex items-center px-2 py-2 lg:px-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden landscape:hidden lg:landscape:flex">
               <TabsList className="bg-transparent inline-flex w-max p-0 gap-0.5">
                 <TabsTrigger value="comments" className="text-xs px-2" onClick={() => setShowCommentsTab(true)}>
                   Comments
