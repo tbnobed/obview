@@ -37,6 +37,14 @@ Thumbs.db
 # Media files and uploads (exclude from build context)
 uploads
 attached_assets
+db-backups-manual
+
+# GPU worker runs on the host, not in Docker — exclude its venv and model caches
+ai-worker/venv
+spark/venv
+**/__pycache__
+*.gguf
+*.bin
 
 # Debug files
 npm-debug.log*

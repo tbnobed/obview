@@ -6,3 +6,9 @@ vite.config.ts.*
 *.tar.gz
 attached_assets/uploads/
 uploads/**
+
+# Python worker venv & caches (host-side, never commit)
+ai-worker/venv/
+spark/venv/
+__pycache__/
+*.gguf
