@@ -1,0 +1,29 @@
+ docker compose build && docker compose up -d
+[+] Building 57.7s (11/41)
+ => [internal] load local bake definitions                                                                                                                                 0.0s
+ => => reading from stdin 664B                                                                                                                                             0.0s
+ => [internal] load build definition from Dockerfile                                                                                                                       0.0s
+ => => transferring dockerfile: 7.02kB                                                                                                                                     0.0s
+ => [internal] load metadata for docker.io/library/node:20-bookworm-slim                                                                                                   0.5s
+ => [internal] load metadata for docker.io/library/debian:bookworm-slim                                                                                                    0.8s
+ => [internal] load .dockerignore                                                                                                                                          0.0s
+ => => transferring context: 505B                                                                                                                                          0.0s
+ => [internal] load build context                                                                                                                                         56.6s
+ => => transferring context: 3.74GB                                                                                                                                       56.6s
+ => [builder 1/8] FROM docker.io/library/node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0                                     0.0s
+ => => resolve docker.io/library/node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0                                             0.0s
+ => [whisper-builder 1/6] FROM docker.io/library/debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241                              2.6s
+ => => resolve docker.io/library/debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241                                              0.0s
+ => => sha256:039e6f9f9752f74a3ff4a6a224f64c7c864da16ed98f882107704328f41b9c42 28.23MB / 28.23MB                                                                           0.7s
+ => => extracting sha256:039e6f9f9752f74a3ff4a6a224f64c7c864da16ed98f882107704328f41b9c42                                                                                  1.9s
+ => [whisper-builder 2/6] RUN apt-get update && apt-get install -y --no-install-recommends         git make g++ cmake ca-certificates     && rm -rf /var/lib/apt/lists/*  31.4s
+ => [whisper-builder 3/6] WORKDIR /src                                                                                                                                     2.2s
+ => [whisper-builder 4/6] RUN git clone --depth 1 --branch v1.5.4 https://github.com/ggerganov/whisper.cpp.git                                                             1.8s
+ => [whisper-builder 5/6] WORKDIR /src/whisper.cpp                                                                                                                         0.1s
+ => [whisper-builder 6/6] RUN make -j$(nproc) &&     test -f ./main && cp ./main /usr/local/bin/whisper-cpp &&     chmod +x /usr/local/bin/whisper-cpp                    18.5s
+ => => # .o
+ => => # cc  -I.              -O3 -DNDEBUG -std=c11   -fPIC -D_XOPEN_SOURCE=600 -D_GNU_SOURCE -pthread -mavx -mavx2 -mfma -mf16c -msse3 -mssse3   -c ggml-backend.c -o ggml-bac
+ => => # kend.o
+ => => # cc  -I.              -O3 -DNDEBUG -std=c11   -fPIC -D_XOPEN_SOURCE=600 -D_GNU_SOURCE -pthread -mavx -mavx2 -mfma -mf16c -msse3 -mssse3   -c ggml-quants.c -o ggml-quan
+ => => # ts.o
+ => => # g++ -I. -I./examples -O3 -DNDEBUG -std=c++11 -fPIC -D_XOPEN_SOURCE=600 -D_GNU_SOURCE -pthread -mavx -mavx2 -mfma -mf16c -msse3 -mssse3 -c whisper.cpp -o whisper.o
