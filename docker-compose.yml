@@ -20,6 +20,10 @@ services:
         - VITE_APP_BASE_URL=${APP_BASE_URL:-}
     container_name: obview_app
     restart: always
+    # Run a minimal init (tini) as PID 1 so signals are forwarded and dead
+    # child processes get reaped — prevents unkillable zombie containers on
+    # stop/rebuild (ffmpeg/whisper child processes are prone to this).
+    init: true
     ports:
       - "5000:5000"  # Map host port 5000 to container port 5000 (where the server is actually listening)
     depends_on:
