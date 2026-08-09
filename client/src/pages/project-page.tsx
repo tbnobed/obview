@@ -694,7 +694,7 @@ export default function ProjectPage() {
       >
         <div className={cn(
           viewMode === "player"
-            ? "bg-black flex-1 min-h-0 flex flex-col"
+            ? "bg-white dark:bg-black flex-1 min-h-0 flex flex-col"
             : "bg-card border border-border/50 rounded-xl"
         )}>
           {viewMode === 'grid' && (
