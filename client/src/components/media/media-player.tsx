@@ -12,6 +12,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import TimelineComments from "@/components/media/timeline-comments";
 import TranscriptView from "@/components/media/transcript-view";
+import SpeakerTimeline from "@/components/media/speaker-timeline";
 import { MediaInfoBody } from "@/components/media/media-info-dialog";
 import AIInsightsView from "@/components/media/ai-insights-view";
 import { DownloadButton } from "@/components/download-button";
@@ -2170,6 +2171,19 @@ export default function MediaPlayer({
                       );
                     })}
                   </div>
+
+                  {/* Clickable per-speaker strip (diarized transcripts only) */}
+                  {file && duration > 0 && (
+                    <SpeakerTimeline
+                      fileId={file.id}
+                      duration={duration}
+                      currentTime={currentTime}
+                      onSeek={(t) => {
+                        performSeek(t);
+                        setCurrentTime(t);
+                      }}
+                    />
+                  )}
                 </div>
                 
                 {/* Comment Marker Tooltip via Portal */}
