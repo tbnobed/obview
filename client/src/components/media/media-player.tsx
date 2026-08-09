@@ -2248,7 +2248,7 @@ export default function MediaPlayer({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 rounded-lg border border-white/10 bg-white/[0.04] text-gray-400 transition-colors hover:bg-white/10 hover:border-white/20 hover:text-white"
+                      className="h-8 w-8 p-0 rounded-lg border border-sky-400/30 bg-sky-500/10 text-sky-300 transition-colors hover:bg-sky-500/25 hover:border-sky-400/60 hover:text-sky-200"
                       onClick={() => setIsVersionDialogOpen(true)}
                       title="Upload new version"
                     >
@@ -2257,7 +2257,7 @@ export default function MediaPlayer({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 rounded-lg border border-white/10 bg-white/[0.04] text-gray-400 transition-colors hover:bg-white/10 hover:border-white/20 hover:text-white"
+                      className="h-8 w-8 p-0 rounded-lg border border-violet-400/30 bg-violet-500/10 text-violet-300 transition-colors hover:bg-violet-500/25 hover:border-violet-400/60 hover:text-violet-200"
                       onClick={() => setShareDialogOpen(true)}
                       title="Share this file"
                       data-testid="button-open-file-share"
@@ -2271,8 +2271,8 @@ export default function MediaPlayer({
                       className={cn(
                         "relative h-8 w-8 p-0 rounded-lg border transition-colors",
                         userApproval?.status === 'changes_requested' || userApproval?.status === 'requested_changes'
-                          ? "border-amber-400/60 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
-                          : "border-white/10 bg-white/[0.04] text-gray-400 hover:bg-amber-500/15 hover:border-amber-400/40 hover:text-amber-300",
+                          ? "border-amber-400/70 bg-amber-500/25 text-amber-200 ring-1 ring-amber-400/50 hover:bg-amber-500/35"
+                          : "border-amber-400/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/25 hover:border-amber-400/60 hover:text-amber-200",
                       )}
                       onClick={handleRequestChanges}
                       disabled={approveMutation.isPending || !canApprove}
@@ -2299,8 +2299,8 @@ export default function MediaPlayer({
                       className={cn(
                         "relative h-8 w-8 p-0 rounded-lg border transition-colors",
                         userApproval?.status === 'approved'
-                          ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
-                          : "border-white/10 bg-white/[0.04] text-gray-400 hover:bg-emerald-500/15 hover:border-emerald-400/40 hover:text-emerald-300",
+                          ? "border-emerald-400/70 bg-emerald-500/25 text-emerald-200 ring-1 ring-emerald-400/50 hover:bg-emerald-500/35"
+                          : "border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/25 hover:border-emerald-400/60 hover:text-emerald-200",
                       )}
                       onClick={handleApprove}
                       disabled={approveMutation.isPending || !canApprove}
@@ -2327,7 +2327,7 @@ export default function MediaPlayer({
                         <Button 
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 rounded-lg border border-white/10 bg-white/[0.04] text-gray-400 transition-colors hover:bg-white/10 hover:border-white/20 hover:text-white disabled:opacity-40"
+                          className="h-8 w-8 p-0 rounded-lg border border-teal-400/30 bg-teal-500/10 text-teal-300 transition-colors hover:bg-teal-500/25 hover:border-teal-400/60 hover:text-teal-200 disabled:opacity-40"
                           onClick={handleMarkAsInReview}
                           disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
                           title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
