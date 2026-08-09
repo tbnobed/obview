@@ -19,4 +19,5 @@
 - [iOS faststart playback fallback](ios-faststart-fallback.md) — failed transcodes stream-copy the original to a faststart 'source' quality so iPhones can play it; 'source' is NOT a real proxy.
 - [Spark reserved for large QC LLM](spark-qc-llm-plan.md) — transcription lives on the L4; the Spark's 128GB is for a 70B-class model doing asset QC (wire via LLAMA_API_URL).
 - [Diarization & local-GPU worker](diarization-worker.md) — same worker runs on Spark or the L4 via SPARK_AI_URL; diarization is fail-soft, HF-gated, must report actual device (cuda→cpu fallback lies).
+- [QC pipeline design](qc-pipeline.md) — frames QC runs app-side ffmpeg (even for silent files); audio-events/OCR only ride the transcription job, so QC regenerate reuses stored data.
 - [UXP export needs a real .epr](uxp-export-presets.md) — exportSequence takes an .epr PATH only (no raw-settings API); bundle curated .epr in plugin presets/ (getPluginFolder is token-free) for the quality dropdown.

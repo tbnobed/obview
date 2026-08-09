@@ -16,6 +16,7 @@ import {
   passwordResets,
   videoProcessing,
   transcripts,
+  qcReports,
   shareLinks,
   type User,
   type InsertUser,
@@ -49,6 +50,8 @@ import {
   type InsertVideoProcessing,
   type Transcript,
   type InsertTranscript,
+  type QcReport,
+  type InsertQcReport,
   type ShareLink
 } from "@shared/schema";
 import createMemoryStore from "memorystore";
@@ -135,6 +138,11 @@ export interface IStorage {
   getTranscript(fileId: number): Promise<Transcript | undefined>;
   updateTranscript(id: number, data: Partial<InsertTranscript>): Promise<Transcript | undefined>;
   deleteTranscript(fileId: number): Promise<boolean>;
+
+  // QC report management
+  createQcReport(report: InsertQcReport): Promise<QcReport>;
+  getQcReport(fileId: number): Promise<QcReport | undefined>;
+  updateQcReport(id: number, data: Partial<InsertQcReport>): Promise<QcReport | undefined>;
 
   // New Unified Comment management (UUID-based) 
   getUnifiedComment(id: string): Promise<CommentUnified | undefined>;
@@ -240,6 +248,7 @@ export class MemStorage implements IStorage {
   private passwordResets: Map<number, PasswordReset>;
   private videoProcessing: Map<number, VideoProcessing>;
   private transcripts: Map<number, Transcript>;
+  private qcReports: Map<number, QcReport>;
   sessionStore: any; // Using any to avoid type issues
 
   currentUserId: number;
@@ -255,6 +264,7 @@ export class MemStorage implements IStorage {
   currentPasswordResetId: number;
   currentVideoProcessingId: number;
   currentTranscriptId: number;
+  currentQcReportId: number;
 
   constructor() {
     this.users = new Map();
@@ -287,6 +297,8 @@ export class MemStorage implements IStorage {
     this.currentPasswordResetId = 1;
     this.currentVideoProcessingId = 1;
     this.currentTranscriptId = 1;
+    this.qcReports = new Map();
+    this.currentQcReportId = 1;
 
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // prune expired entries every 24h
@@ -1269,6 +1281,27 @@ export class MemStorage implements IStorage {
     return this.transcripts.delete(existing.id);
   }
 
+  // QC report methods
+  async createQcReport(report: InsertQcReport): Promise<QcReport> {
+    const id = this.currentQcReportId++;
+    const now = new Date();
+    const created: QcReport = { ...(report as any), id, createdAt: now, updatedAt: now };
+    this.qcReports.set(id, created);
+    return created;
+  }
+
+  async getQcReport(fileId: number): Promise<QcReport | undefined> {
+    return Array.from(this.qcReports.values()).find(r => r.fileId === fileId);
+  }
+
+  async updateQcReport(id: number, data: Partial<InsertQcReport>): Promise<QcReport | undefined> {
+    const existing = this.qcReports.get(id);
+    if (!existing) return undefined;
+    const updated: QcReport = { ...existing, ...(data as any), updatedAt: new Date() };
+    this.qcReports.set(id, updated);
+    return updated;
+  }
+
   // New Unified Comment methods (UUID-based)
   async getUnifiedComment(id: string): Promise<CommentUnified | undefined> {
     return this.unifiedComments.get(id);
@@ -2103,6 +2136,26 @@ export class DatabaseStorage implements IStorage {
       .where(eq(transcripts.fileId, fileId))
       .returning({ deletedId: transcripts.id });
     return result.length > 0;
+  }
+
+  // QC report methods
+  async createQcReport(report: InsertQcReport): Promise<QcReport> {
+    const [created] = await db.insert(qcReports).values(report as any).returning();
+    return created;
+  }
+
+  async getQcReport(fileId: number): Promise<QcReport | undefined> {
+    const [r] = await db.select().from(qcReports).where(eq(qcReports.fileId, fileId));
+    return r;
+  }
+
+  async updateQcReport(id: number, data: Partial<InsertQcReport>): Promise<QcReport | undefined> {
+    const [updated] = await db
+      .update(qcReports)
+      .set({ ...(data as any), updatedAt: new Date() })
+      .where(eq(qcReports.id, id))
+      .returning();
+    return updated;
   }
 
   // Comment methods

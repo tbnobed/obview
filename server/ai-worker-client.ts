@@ -27,6 +27,36 @@ export interface SparkTranscribeRequest {
   num_speakers?: number | null;
   min_speakers?: number | null;
   max_speakers?: number | null;
+  /** Detect coughs/throat-clears etc. via PANNs (fail-soft). */
+  audio_events?: boolean;
+  /** OCR on-screen text from sampled frames via easyocr (fail-soft). */
+  ocr?: boolean;
+}
+
+/** Worker-side audio-event QC outcome. Fail-soft: `ok:false` still ships a transcript. */
+export interface WorkerAudioEventsInfo {
+  requested: boolean;
+  threshold?: number;
+  ok?: boolean;
+  error?: string;
+  device?: string;
+  events?: Array<{ start: number; end: number; label: string; confidence: number }>;
+  eventCount?: number;
+  durationMs?: number;
+}
+
+/** Worker-side OCR outcome. Fail-soft: `ok:false` still ships a transcript. */
+export interface WorkerOcrInfo {
+  requested: boolean;
+  intervalSec?: number;
+  langs?: string[];
+  ok?: boolean;
+  error?: string;
+  gpu?: boolean;
+  blocks?: Array<{ time: number; text: string; confidence: number }>;
+  blockCount?: number;
+  framesSampled?: number;
+  durationMs?: number;
 }
 
 /** Worker-side diarization outcome. Fail-soft: `ok:false` still ships a transcript. */
@@ -55,6 +85,8 @@ export interface SparkTranscribeResult {
   savedTo?: string;
   saveError?: string;
   diarization?: WorkerDiarizationInfo;
+  audioEvents?: WorkerAudioEventsInfo;
+  ocr?: WorkerOcrInfo;
   result: {
     language: string;
     languageProbability: number | null;

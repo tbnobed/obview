@@ -368,6 +368,43 @@ export const transcripts = pgTable("transcripts", {
 export const insertTranscriptSchema = createInsertSchema(transcripts)
   .omit({ id: true, createdAt: true, updatedAt: true });
 
+// QC REPORTS SCHEMA
+// One report per file. `findings` is the flat, UI-facing list every detector
+// contributes to; raw detector outputs are kept alongside for drill-down.
+export type QcSeverity = "info" | "warning" | "error";
+export interface QcFinding {
+  /** Detector category: "black_frame" | "freeze_frame" | "audio_event" | "ocr_spelling" */
+  type: string;
+  severity: QcSeverity;
+  /** Seconds into the media. */
+  start: number;
+  end?: number | null;
+  /** Human-readable description, e.g. "Black segment (0.4s)" or "Possible typo: 'Minsitry'". */
+  detail: string;
+  /** Detector confidence 0..1 when meaningful. */
+  confidence?: number | null;
+}
+
+export const qcReports = pgTable("qc_reports", {
+  id: serial("id").primaryKey(),
+  // Unique: one report per file (see migrations/0037 — qc_reports_file_id_idx).
+  fileId: integer("file_id").notNull().unique().references(() => files.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("pending"), // "pending", "processing", "completed", "failed"
+  findings: json("findings").$type<QcFinding[]>(),
+  // Per-detector status/errors so one failed detector doesn't hide the others.
+  // { frames: {status, error?}, audioEvents: {status, error?}, ocr: {status, error?} }
+  detectors: json("detectors").$type<Record<string, { status: string; error?: string | null }>>(),
+  // Raw OCR text blocks kept for the spell-check pass / drill-down.
+  ocrBlocks: json("ocr_blocks").$type<Array<{ time: number; text: string; confidence: number }>>(),
+  errorMessage: text("error_message"),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertQcReportSchema = createInsertSchema(qcReports)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
 // COMMENT REACTIONS SCHEMA
 export const commentReactions = pgTable("comment_reactions", {
   id: serial("id").primaryKey(),
@@ -513,6 +550,12 @@ export type InsertApproval = z.infer<typeof insertApprovalSchema>;
 
 export type VideoProcessing = typeof videoProcessing.$inferSelect;
 export type InsertVideoProcessing = z.infer<typeof insertVideoProcessingSchema>;
+
+export type Transcript = typeof transcripts.$inferSelect;
+export type InsertTranscript = z.infer<typeof insertTranscriptSchema>;
+
+export type QcReport = typeof qcReports.$inferSelect;
+export type InsertQcReport = z.infer<typeof insertQcReportSchema>;
 
 export type CommentReaction = typeof commentReactions.$inferSelect;
 

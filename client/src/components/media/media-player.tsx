@@ -13,6 +13,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import TimelineComments from "@/components/media/timeline-comments";
 import TranscriptView from "@/components/media/transcript-view";
 import SpeakerTimeline from "@/components/media/speaker-timeline";
+import QcView from "@/components/media/qc-view";
 import { MediaInfoBody } from "@/components/media/media-info-dialog";
 import AIInsightsView from "@/components/media/ai-insights-view";
 import { DownloadButton } from "@/components/download-button";
@@ -2589,6 +2590,11 @@ export default function MediaPlayer({
                     AI
                   </TabsTrigger>
                 )}
+                {(file.fileType === "video" || file.fileType === "audio") && (
+                  <TabsTrigger value="qc" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
+                    QC
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="versions" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
                   Versions
                 </TabsTrigger>
@@ -2635,6 +2641,21 @@ export default function MediaPlayer({
             {(file.fileType === "video" || file.fileType === "audio") && (
               <TabsContent value="ai" className="flex-1 min-h-0 p-0 overflow-hidden">
                 <AIInsightsView
+                  fileId={file.id}
+                  onSeek={(time: number) => {
+                    const mediaElement = videoRef.current || audioRef.current;
+                    if (mediaElement) {
+                      mediaElement.currentTime = time;
+                      setCurrentTime(time);
+                    }
+                  }}
+                />
+              </TabsContent>
+            )}
+
+            {(file.fileType === "video" || file.fileType === "audio") && (
+              <TabsContent value="qc" className="flex-1 min-h-0 p-0 overflow-auto px-2 py-2">
+                <QcView
                   fileId={file.id}
                   onSeek={(time: number) => {
                     const mediaElement = videoRef.current || audioRef.current;

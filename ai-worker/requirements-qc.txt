@@ -1,0 +1,11 @@
+# Optional QC stages for the Obviu AI worker.
+# Install into the same venv as requirements.txt:
+#   ./venv/bin/pip install -r requirements-qc.txt
+#
+# Audio-event detection (coughs, throat clears, sneezes...) — PANNs.
+# First run downloads a ~400MB AudioSet checkpoint to ~/panns_data.
+panns-inference
+librosa
+# On-screen text OCR (lower thirds, title cards) — easyocr.
+# Uses the same torch/CUDA the diarization stack installed.
+easyocr

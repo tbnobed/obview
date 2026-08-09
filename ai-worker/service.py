@@ -107,6 +107,26 @@ HF_TOKEN = (
     or None
 )
 
+# --- QC stages: audio events (PANNs) + on-screen text OCR (easyocr) -------
+# Both optional, fail-soft, installed via requirements-qc.txt.
+AUDIO_EVENTS_DEVICE = os.environ.get("OBVIU_AUDIO_EVENTS_DEVICE", DEFAULT_DEVICE)
+# AudioSet labels we surface as QC findings (mouth/throat noises + obvious
+# production problems). Matched case-insensitively as substrings.
+AUDIO_EVENT_LABELS = {
+    "cough": "cough",
+    "throat clearing": "throat_clear",
+    "sneeze": "sneeze",
+    "sniff": "sniff",
+    "hiccup": "hiccup",
+    "burping": "burp",
+    "gasp": "gasp",
+}
+AUDIO_EVENT_THRESHOLD = float(os.environ.get("OBVIU_AUDIO_EVENT_THRESHOLD", "0.30"))
+OCR_LANGS = [s for s in os.environ.get("OBVIU_OCR_LANGS", "en").split(",") if s]
+OCR_FRAME_INTERVAL_SEC = _env_int("OBVIU_OCR_FRAME_INTERVAL_SEC", 10, minimum=2, maximum=120)
+OCR_MAX_FRAMES = _env_int("OBVIU_OCR_MAX_FRAMES", 60, minimum=4, maximum=400)
+OCR_MIN_CONFIDENCE = float(os.environ.get("OBVIU_OCR_MIN_CONFIDENCE", "0.45"))
+
 app = FastAPI(title="Obviu Spark AI Worker", version=SERVICE_VERSION)
 
 # Whisper models are large (1-3 GB) and slow to load (10-30s); cache one
@@ -190,6 +210,198 @@ def _load_diarization() -> tuple[Any, str]:
         entry = (pipeline, actual_device)
         _DIARIZATION_CACHE[key] = entry
         return entry
+
+
+_PANNS_CACHE: dict[str, Any] = {}
+_PANNS_LOCK = threading.Lock()
+_OCR_CACHE: dict[str, Any] = {}
+_OCR_LOCK = threading.Lock()
+
+
+def _audio_events_available() -> dict[str, Any]:
+    try:
+        import panns_inference  # type: ignore  # noqa: F401
+        installed = True
+    except ImportError:
+        installed = False
+    return {"installed": installed, "device": AUDIO_EVENTS_DEVICE, "threshold": AUDIO_EVENT_THRESHOLD}
+
+
+def _ocr_available() -> dict[str, Any]:
+    try:
+        import easyocr  # type: ignore  # noqa: F401
+        installed = True
+    except ImportError:
+        installed = False
+    return {"installed": installed, "langs": OCR_LANGS}
+
+
+def _load_panns() -> tuple[Any, list[str], str]:
+    """Lazy-load the PANNs sound-event-detection model; returns (model, labels, device)."""
+    cached = _PANNS_CACHE.get("sed")
+    if cached is not None:
+        return cached
+    with _PANNS_LOCK:
+        cached = _PANNS_CACHE.get("sed")
+        if cached is not None:
+            return cached
+        try:
+            from panns_inference import SoundEventDetection, labels  # type: ignore
+        except ImportError as e:
+            raise RuntimeError(
+                "panns_inference is not installed. Run "
+                "`./venv/bin/pip install -r requirements-qc.txt`. "
+                f"({e})"
+            )
+        device = AUDIO_EVENTS_DEVICE
+        if device.startswith("cuda"):
+            try:
+                import torch  # type: ignore
+                if not torch.cuda.is_available():
+                    device = "cpu"
+            except Exception:  # noqa: BLE001
+                device = "cpu"
+        # First call downloads the ~400MB checkpoint to ~/panns_data.
+        model = SoundEventDetection(checkpoint_path=None, device=device)
+        entry = (model, list(labels), device)
+        _PANNS_CACHE["sed"] = entry
+        return entry
+
+
+def _run_audio_events(wav_path: Path) -> tuple[list[dict[str, Any]], str]:
+    """Detect coughs/throat-clears/etc. Returns (events, actual_device).
+
+    PANNs SED emits framewise probabilities at 100 frames/sec on 32kHz audio.
+    We chunk long files (60s windows) to bound memory, threshold the target
+    classes, and merge consecutive hot frames into events.
+    """
+    import numpy as np  # type: ignore
+    import librosa  # type: ignore
+
+    model, labels, device = _load_panns()
+
+    target_idx: dict[int, str] = {}
+    for i, lab in enumerate(labels):
+        low = lab.lower()
+        for needle, kind in AUDIO_EVENT_LABELS.items():
+            if needle in low:
+                target_idx[i] = kind
+
+    audio, _sr = librosa.load(str(wav_path), sr=32000, mono=True)
+    chunk = 60 * 32000
+    events: list[dict[str, Any]] = []
+    for off in range(0, max(len(audio), 1), chunk):
+        seg = audio[off : off + chunk]
+        if len(seg) < 32000 // 2:
+            break
+        framewise = model.inference(seg[None, :])[0]  # (frames, classes)
+        base_t = off / 32000.0
+        for idx, kind in target_idx.items():
+            probs = framewise[:, idx]
+            hot = probs >= AUDIO_EVENT_THRESHOLD
+            start = None
+            for f in range(len(hot) + 1):
+                on = f < len(hot) and hot[f]
+                if on and start is None:
+                    start = f
+                elif not on and start is not None:
+                    events.append({
+                        "start": round(base_t + start / 100.0, 2),
+                        "end": round(base_t + f / 100.0, 2),
+                        "label": kind,
+                        "confidence": round(float(np.max(probs[start:f])), 3),
+                    })
+                    start = None
+    # Merge overlapping same-label events from chunk boundaries.
+    events.sort(key=lambda e: (e["label"], e["start"]))
+    merged: list[dict[str, Any]] = []
+    for e in events:
+        last = merged[-1] if merged else None
+        if last and last["label"] == e["label"] and e["start"] - last["end"] <= 0.3:
+            last["end"] = max(last["end"], e["end"])
+            last["confidence"] = max(last["confidence"], e["confidence"])
+        else:
+            merged.append(dict(e))
+    merged.sort(key=lambda e: e["start"])
+    return merged, device
+
+
+def _load_ocr() -> tuple[Any, bool]:
+    """Lazy-load the easyocr reader; returns (reader, used_gpu)."""
+    cached = _OCR_CACHE.get("reader")
+    if cached is not None:
+        return cached
+    with _OCR_LOCK:
+        cached = _OCR_CACHE.get("reader")
+        if cached is not None:
+            return cached
+        try:
+            import easyocr  # type: ignore
+        except ImportError as e:
+            raise RuntimeError(
+                "easyocr is not installed. Run "
+                "`./venv/bin/pip install -r requirements-qc.txt`. "
+                f"({e})"
+            )
+        use_gpu = True
+        try:
+            import torch  # type: ignore
+            use_gpu = torch.cuda.is_available()
+        except Exception:  # noqa: BLE001
+            use_gpu = False
+        reader = easyocr.Reader(OCR_LANGS, gpu=use_gpu, verbose=False)
+        entry = (reader, use_gpu)
+        _OCR_CACHE["reader"] = entry
+        return entry
+
+
+def _run_ocr(target: Path, scratch: Path) -> tuple[list[dict[str, Any]], int, bool]:
+    """OCR sampled frames. Returns (blocks, frames_sampled, used_gpu).
+
+    Samples one frame every OCR_FRAME_INTERVAL_SEC (periodic sampling catches
+    lower-thirds that fade in without a scene cut), OCRs each, and dedupes
+    consecutive frames whose text didn't change.
+    """
+    frames_dir = scratch / "frames"
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    ok, _, err = _run(
+        [
+            FFMPEG_BIN, "-y",
+            "-i", str(target),
+            "-vf", f"fps=1/{OCR_FRAME_INTERVAL_SEC},scale='min(1280,iw)':-2",
+            "-frames:v", str(OCR_MAX_FRAMES),
+            "-q:v", "4",
+            str(frames_dir / "f%04d.jpg"),
+        ],
+        timeout=FFMPEG_TIMEOUT_SEC,
+    )
+    frames = sorted(frames_dir.glob("f*.jpg"))
+    if not ok and not frames:
+        raise RuntimeError(f"ffmpeg frame extraction failed: {err.strip()[:500] or 'unknown error'}")
+
+    reader, used_gpu = _load_ocr()
+    blocks: list[dict[str, Any]] = []
+    prev_norm = ""
+    for i, frame in enumerate(frames):
+        t = i * OCR_FRAME_INTERVAL_SEC
+        try:
+            results = reader.readtext(str(frame), detail=1, paragraph=False)
+        except Exception as e:  # noqa: BLE001
+            print(f"[obviu-spark-ai] OCR failed on frame {frame.name}: {e}")
+            continue
+        texts = [r[1].strip() for r in results if len(r) >= 3 and r[2] >= OCR_MIN_CONFIDENCE and len(r[1].strip()) >= 3]
+        if not texts:
+            prev_norm = ""
+            continue
+        joined = " | ".join(texts)
+        norm = " ".join(joined.lower().split())
+        # Skip frames whose visible text is unchanged from the previous sample.
+        if norm == prev_norm:
+            continue
+        prev_norm = norm
+        conf = max((float(r[2]) for r in results if len(r) >= 3), default=0.0)
+        blocks.append({"time": t, "text": joined, "confidence": round(conf, 3)})
+    return blocks, len(frames), used_gpu
 
 
 def _run_diarization(
@@ -423,6 +635,8 @@ class TranscribeRequest(BaseModel):
     num_speakers: int | None = Field(None, ge=1, le=32, description="exact speaker count, if known")
     min_speakers: int | None = Field(None, ge=1, le=32)
     max_speakers: int | None = Field(None, ge=1, le=32)
+    audio_events: bool = Field(False, description="detect coughs/throat-clears etc. (PANNs)")
+    ocr: bool = Field(False, description="OCR on-screen text from sampled frames (easyocr)")
 
 
 def _run(cmd: list[str], timeout: int = 5) -> tuple[bool, str, str]:
@@ -573,6 +787,8 @@ def info() -> dict[str, Any]:
             },
         },
         "diarization": _diarization_available(),
+        "audioEvents": _audio_events_available(),
+        "ocr": _ocr_available(),
         "endpoints": {
             "GET /health": "liveness + GPU snapshot + NFS mount status",
             "GET /info": "this payload",
@@ -706,6 +922,8 @@ def submit_transcribe_job(req: TranscribeRequest) -> JSONResponse:
                 "num_speakers": req.num_speakers,
                 "min_speakers": req.min_speakers,
                 "max_speakers": req.max_speakers,
+                "audio_events": req.audio_events,
+                "ocr": req.ocr,
             },
             "target": target,
             "modelName": model_name,
@@ -753,6 +971,12 @@ def _do_transcribe_locked(
 
         if req.diarize:
             _diarize_payload(req, target, payload, started)
+
+        if req.audio_events:
+            _audio_events_payload(req, target, payload, started)
+
+        if req.ocr:
+            _ocr_payload(req, target, payload, started)
 
         if req.save:
             _save_payload_to_nfs(payload, target)
@@ -834,6 +1058,96 @@ def _diarize_payload(
             diarizeMs=int((time.time() - diar_start) * 1000),
         )
         print(f"[obviu-spark-ai] diarization failed for {req.path}: {e}")
+
+
+def _audio_events_payload(
+    req: "TranscribeRequest", target: Path, payload: dict[str, Any], started: float
+) -> None:
+    """Audio-event QC stage (coughs, throat clearing…). Fail-soft like diarization."""
+    import tempfile
+
+    info: dict[str, Any] = {
+        "requested": True,
+        "threshold": AUDIO_EVENT_THRESHOLD,
+    }
+    payload["audioEvents"] = info
+    _set_job({
+        "path": req.path,
+        "model": payload.get("model"),
+        "startedAt": started,
+        "phase": "audio-events",
+    })
+    t0 = time.time()
+    try:
+        with tempfile.TemporaryDirectory(prefix="obviu-audioqc-") as scratch:
+            wav_path = Path(scratch) / "input.wav"
+            ok, _, err = _run(
+                [
+                    FFMPEG_BIN, "-y",
+                    "-i", str(target),
+                    "-ar", "32000",
+                    "-ac", "1",
+                    "-c:a", "pcm_s16le",
+                    str(wav_path),
+                ],
+                timeout=FFMPEG_TIMEOUT_SEC,
+            )
+            if not ok:
+                raise RuntimeError(f"ffmpeg WAV extraction failed: {err.strip()[:500] or 'unknown error'}")
+            events, device = _run_audio_events(wav_path)
+        info.update(
+            ok=True,
+            device=device,
+            events=events,
+            eventCount=len(events),
+            durationMs=int((time.time() - t0) * 1000),
+        )
+    except Exception as e:  # noqa: BLE001
+        info.update(
+            ok=False,
+            error=f"{type(e).__name__}: {e}",
+            durationMs=int((time.time() - t0) * 1000),
+        )
+        print(f"[obviu-spark-ai] audio-event detection failed for {req.path}: {e}")
+
+
+def _ocr_payload(
+    req: "TranscribeRequest", target: Path, payload: dict[str, Any], started: float
+) -> None:
+    """On-screen text OCR stage. Fail-soft like diarization."""
+    import tempfile
+
+    info: dict[str, Any] = {
+        "requested": True,
+        "intervalSec": OCR_FRAME_INTERVAL_SEC,
+        "langs": OCR_LANGS,
+    }
+    payload["ocr"] = info
+    _set_job({
+        "path": req.path,
+        "model": payload.get("model"),
+        "startedAt": started,
+        "phase": "ocr",
+    })
+    t0 = time.time()
+    try:
+        with tempfile.TemporaryDirectory(prefix="obviu-ocrqc-") as scratch:
+            blocks, frames_sampled, used_gpu = _run_ocr(target, Path(scratch))
+        info.update(
+            ok=True,
+            gpu=used_gpu,
+            blocks=blocks,
+            blockCount=len(blocks),
+            framesSampled=frames_sampled,
+            durationMs=int((time.time() - t0) * 1000),
+        )
+    except Exception as e:  # noqa: BLE001
+        info.update(
+            ok=False,
+            error=f"{type(e).__name__}: {e}",
+            durationMs=int((time.time() - t0) * 1000),
+        )
+        print(f"[obviu-spark-ai] OCR failed for {req.path}: {e}")
 
 
 def _save_payload_to_nfs(payload: dict[str, Any], target: Path) -> None:

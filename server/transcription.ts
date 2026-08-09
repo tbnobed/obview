@@ -27,6 +27,10 @@ export interface TranscriptSegment {
 // worker: a diarization error never discards a good transcript).
 const TRANSCRIPTION_DIARIZE =
   (process.env.TRANSCRIPTION_DIARIZE || "true").toLowerCase() !== "false";
+// QC stages piggyback on the transcription job (same worker, same GPU lock).
+// Both fail-soft on the worker; disable with TRANSCRIPTION_QC=false.
+const TRANSCRIPTION_QC =
+  (process.env.TRANSCRIPTION_QC || "true").toLowerCase() !== "false";
 
 /** "SPEAKER_00" -> "Speaker 1". Non-standard labels pass through as-is. */
 export function formatSpeakerLabel(raw: string): string {
@@ -278,6 +282,13 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
           errorMessage: message,
           sparkJobId: null,
         } as any);
+        // Frame QC (black/frozen frames) is still valid for silent video —
+        // run it locally even though the worker round-trip is skipped.
+        if (TRANSCRIPTION_QC) {
+          import("./qc")
+            .then((m) => m.runQcForFile(fileId, null))
+            .catch((e) => console.error(`[QC] Auto-trigger (silent file) failed for ${fileId}:`, e));
+        }
         return;
       }
     }
@@ -300,6 +311,8 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
         beam_size: 5,
         save: true,
         diarize: TRANSCRIPTION_DIARIZE,
+        audio_events: TRANSCRIPTION_QC,
+        ocr: TRANSCRIPTION_QC,
       },
       {
         onJobId: async (jobId) => {
@@ -363,6 +376,17 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
     console.log(
       `[Transcription] Completed file ${fileId}: ${segments.length} segments, ${fullText.length} chars`
     );
+
+    // Auto-trigger the QC report (fire-and-forget). Runs before the
+    // speech-quality gate on purpose: black frames / OCR findings are
+    // valid even for music-only or silent media.
+    if (TRANSCRIPTION_QC) {
+      const workerAudioEvents = result.audioEvents ?? null;
+      const workerOcr = result.ocr ?? null;
+      import("./qc")
+        .then((m) => m.runQcForFile(fileId, { audioEvents: workerAudioEvents, ocr: workerOcr }))
+        .catch((e) => console.error(`[QC] Auto-trigger failed for ${fileId}:`, e));
+    }
 
     // Detect music-only / silent / hallucinated transcripts before
     // burning LLM cycles on synopsis + chapters.

@@ -3907,6 +3907,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/files/:id/qc", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const report = await storage.getQcReport(fileId);
+      if (!report) return res.status(404).json({ message: "No QC report for this file" });
+      res.json(report);
+    } catch (err) {
+      console.error("[QC API] Get error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/files/:id/qc/regenerate", isAuthenticated, hasFileEditAccess, async (req, res) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+      // Flip status synchronously so the client's next refetch sees in-flight
+      // state (same pattern as summary/chapters regenerate).
+      const existing = await storage.getQcReport(fileId);
+      if (existing) {
+        await storage.updateQcReport(existing.id, { status: "pending", errorMessage: null } as any);
+      }
+      const { runQcForFile } = await import("./qc");
+      // No fresh worker payload on manual runs: frames re-run locally, stored
+      // OCR is re-checked, previous audio-event findings are kept.
+      runQcForFile(fileId, null).catch((err) =>
+        console.error(`[QC] Regenerate failed for file ${fileId}:`, err)
+      );
+      res.json({ message: "QC analysis started", fileId });
+    } catch (err) {
+      console.error("[QC API] Regenerate error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get("/api/files/:id/transcript.vtt", isAuthenticated, hasFileAccess, async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
