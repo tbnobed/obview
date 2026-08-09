@@ -21,6 +21,24 @@ export interface SparkTranscribeRequest {
   beam_size?: number;
   /** Persist the result JSON to <mount>/transcripts/<basename>.json. Default true. */
   save?: boolean;
+  /** Run pyannote speaker diarization and label segments with speakers. */
+  diarize?: boolean;
+  num_speakers?: number | null;
+  min_speakers?: number | null;
+  max_speakers?: number | null;
+}
+
+/** Worker-side diarization outcome. Fail-soft: `ok:false` still ships a transcript. */
+export interface SparkDiarizationInfo {
+  requested: boolean;
+  model: string;
+  device: string;
+  ok?: boolean;
+  error?: string;
+  speakers?: string[];
+  speakerCount?: number;
+  turnCount?: number;
+  diarizeMs?: number;
 }
 
 export interface SparkTranscribeResult {
@@ -35,6 +53,7 @@ export interface SparkTranscribeResult {
   totalMs: number;
   savedTo?: string;
   saveError?: string;
+  diarization?: SparkDiarizationInfo;
   result: {
     language: string;
     languageProbability: number | null;
@@ -46,6 +65,8 @@ export interface SparkTranscribeResult {
       text: string;
       avgLogprob: number | null;
       noSpeechProb: number | null;
+      /** Diarization label (e.g. "SPEAKER_00"); null/absent when not diarized or no overlap. */
+      speaker?: string | null;
       words?: Array<{
         start: number | null;
         end: number | null;

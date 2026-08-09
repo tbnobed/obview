@@ -17,4 +17,5 @@
 - [Marker export timecode](marker-export-timecode.md) — DB truth beats client hints (ffprobe fps + start TC); DF renumber traps; UXP zeroPoint shapes vary; db:push hangs — use direct psql for additive cols.
 - [UXP webview message bridge](uxp-webview-message-bridge.md) — webview postMessage needs manifest enableMessageBridge; hash-only src change is the reload-free fallback.
 - [iOS faststart playback fallback](ios-faststart-fallback.md) — failed transcodes stream-copy the original to a faststart 'source' quality so iPhones can play it; 'source' is NOT a real proxy.
+- [Diarization & local-GPU worker](diarization-worker.md) — same worker runs on Spark or the L4 via SPARK_AI_URL; diarization is fail-soft, HF-gated, must report actual device (cuda→cpu fallback lies).
 - [UXP export needs a real .epr](uxp-export-presets.md) — exportSequence takes an .epr PATH only (no raw-settings API); bundle curated .epr in plugin presets/ (getPluginFolder is token-free) for the quality dropdown.

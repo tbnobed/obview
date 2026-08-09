@@ -40,7 +40,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-SERVICE_VERSION = "0.1.0"
+SERVICE_VERSION = "0.2.0"
 MOUNT_ROOT = Path(os.environ.get("OBVIU_MOUNT_ROOT", "/mnt/obview-uploads")).resolve()
 
 
@@ -91,12 +91,151 @@ FFMPEG_TIMEOUT_SEC = _env_int(
     "OBVIU_FFMPEG_TIMEOUT_SEC", 1800, minimum=10, maximum=24 * 3600
 )
 
+# --- Speaker diarization (pyannote.audio) ---------------------------------
+# Optional stage that labels each transcript segment with SPEAKER_00/01/...
+# Requires `pip install -r requirements-diarization.txt` and a HuggingFace
+# token that has accepted the pyannote model terms
+# (https://huggingface.co/pyannote/speaker-diarization-3.1).
+DIARIZATION_MODEL = os.environ.get(
+    "OBVIU_DIARIZATION_MODEL", "pyannote/speaker-diarization-3.1"
+)
+DIARIZATION_DEVICE = os.environ.get("OBVIU_DIARIZATION_DEVICE", DEFAULT_DEVICE)
+HF_TOKEN = (
+    os.environ.get("OBVIU_HF_TOKEN")
+    or os.environ.get("HF_TOKEN")
+    or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    or None
+)
+
 app = FastAPI(title="Obviu Spark AI Worker", version=SERVICE_VERSION)
 
 # Whisper models are large (1-3 GB) and slow to load (10-30s); cache one
 # instance per (model, device, compute_type) for the process lifetime.
 _MODEL_CACHE: dict[tuple[str, str, str], Any] = {}
 _MODEL_LOAD_LOCK = threading.Lock()
+
+# Diarization pipeline is ~1GB and slow to instantiate; cache the single
+# configured (model, device) instance for the process lifetime.
+_DIARIZATION_CACHE: dict[tuple[str, str], Any] = {}
+_DIARIZATION_LOCK = threading.Lock()
+
+
+def _diarization_available() -> dict[str, Any]:
+    """Static availability report for /info and fail-fast checks."""
+    try:
+        import pyannote.audio  # type: ignore  # noqa: F401
+        installed = True
+    except ImportError:
+        installed = False
+    return {
+        "installed": installed,
+        "hasHfToken": bool(HF_TOKEN),
+        "model": DIARIZATION_MODEL,
+        "device": DIARIZATION_DEVICE,
+    }
+
+
+def _load_diarization() -> tuple[Any, str]:
+    """Lazy-load the pyannote diarization pipeline and cache it.
+
+    Returns (pipeline, actual_device). actual_device is the device the
+    pipeline genuinely runs on — if the CUDA transfer fails we fall back to
+    CPU but must report that truthfully, not claim "cuda".
+    """
+    key = (DIARIZATION_MODEL, DIARIZATION_DEVICE)
+    cached = _DIARIZATION_CACHE.get(key)
+    if cached is not None:
+        return cached
+    with _DIARIZATION_LOCK:
+        cached = _DIARIZATION_CACHE.get(key)
+        if cached is not None:
+            return cached
+        try:
+            from pyannote.audio import Pipeline  # type: ignore
+        except ImportError as e:
+            raise RuntimeError(
+                "pyannote.audio is not installed. Run "
+                "`./venv/bin/pip install -r requirements-diarization.txt`. "
+                f"({e})"
+            )
+        if not HF_TOKEN:
+            raise RuntimeError(
+                "No HuggingFace token configured (set OBVIU_HF_TOKEN or HF_TOKEN). "
+                "The pyannote diarization models are gated — create a free HF "
+                "account, accept the terms for "
+                f"{DIARIZATION_MODEL!r} and pyannote/segmentation-3.0, then set the token."
+            )
+        pipeline = Pipeline.from_pretrained(DIARIZATION_MODEL, use_auth_token=HF_TOKEN)
+        if pipeline is None:
+            raise RuntimeError(
+                f"Pipeline.from_pretrained({DIARIZATION_MODEL!r}) returned None — "
+                "usually the HF token hasn't accepted the model's gated terms."
+            )
+        actual_device = "cpu"
+        if DIARIZATION_DEVICE.startswith("cuda"):
+            try:
+                import torch  # type: ignore
+                if not torch.cuda.is_available():
+                    raise RuntimeError("torch.cuda.is_available() is False (CPU-only torch build or no visible GPU)")
+                pipeline.to(torch.device(DIARIZATION_DEVICE))
+                actual_device = DIARIZATION_DEVICE
+            except Exception as e:  # noqa: BLE001
+                print(f"[obviu-spark-ai] WARN: could not move diarization to {DIARIZATION_DEVICE}: {e} — using CPU")
+        entry = (pipeline, actual_device)
+        _DIARIZATION_CACHE[key] = entry
+        return entry
+
+
+def _run_diarization(
+    wav_path: Path,
+    *,
+    num_speakers: int | None = None,
+    min_speakers: int | None = None,
+    max_speakers: int | None = None,
+) -> tuple[list[dict[str, Any]], str]:
+    """Run diarization on a 16kHz mono WAV; return (sorted speaker turns, actual device)."""
+    pipeline, actual_device = _load_diarization()
+    kwargs: dict[str, Any] = {}
+    if num_speakers is not None:
+        kwargs["num_speakers"] = num_speakers
+    else:
+        if min_speakers is not None:
+            kwargs["min_speakers"] = min_speakers
+        if max_speakers is not None:
+            kwargs["max_speakers"] = max_speakers
+    annotation = pipeline(str(wav_path), **kwargs)
+    turns = [
+        {
+            "start": round(float(turn.start), 3),
+            "end": round(float(turn.end), 3),
+            "speaker": str(label),
+        }
+        for turn, _, label in annotation.itertracks(yield_label=True)
+    ]
+    turns.sort(key=lambda t: t["start"])
+    return turns, actual_device
+
+
+def _assign_speakers(segments: list[dict[str, Any]], turns: list[dict[str, Any]]) -> list[str]:
+    """Label each segment with the speaker that overlaps it most.
+
+    Mutates segments in place (adds seg["speaker"], possibly None when no
+    turn overlaps — e.g. music-only stretches). Returns the ordered list of
+    distinct speakers actually used.
+    """
+    speakers_seen: list[str] = []
+    for seg in segments:
+        best_speaker: str | None = None
+        best_overlap = 0.0
+        for t in turns:
+            overlap = min(seg["end"], t["end"]) - max(seg["start"], t["start"])
+            if overlap > best_overlap:
+                best_overlap = overlap
+                best_speaker = t["speaker"]
+        seg["speaker"] = best_speaker
+        if best_speaker is not None and best_speaker not in speakers_seen:
+            speakers_seen.append(best_speaker)
+    return speakers_seen
 
 # True one-job-at-a-time guarantee: this lock is held by the worker thread
 # for the entire duration of the compute. We deliberately use a synchronous
@@ -274,6 +413,10 @@ class TranscribeRequest(BaseModel):
     word_timestamps: bool = Field(True, description="emit per-word timing")
     beam_size: int = Field(5, ge=1, le=10)
     save: bool = Field(True, description="persist result to <mount>/transcripts/<basename>.json")
+    diarize: bool = Field(False, description="run pyannote speaker diarization and label segments")
+    num_speakers: int | None = Field(None, ge=1, le=32, description="exact speaker count, if known")
+    min_speakers: int | None = Field(None, ge=1, le=32)
+    max_speakers: int | None = Field(None, ge=1, le=32)
 
 
 def _run(cmd: list[str], timeout: int = 5) -> tuple[bool, str, str]:
@@ -423,6 +566,7 @@ def info() -> dict[str, Any]:
                 "useGpu": WHISPER_CPP_USE_GPU,
             },
         },
+        "diarization": _diarization_available(),
         "endpoints": {
             "GET /health": "liveness + GPU snapshot + NFS mount status",
             "GET /info": "this payload",
@@ -552,6 +696,10 @@ def submit_transcribe_job(req: TranscribeRequest) -> JSONResponse:
                 "word_timestamps": req.word_timestamps,
                 "beam_size": req.beam_size,
                 "save": req.save,
+                "diarize": req.diarize,
+                "num_speakers": req.num_speakers,
+                "min_speakers": req.min_speakers,
+                "max_speakers": req.max_speakers,
             },
             "target": target,
             "modelName": model_name,
@@ -597,6 +745,9 @@ def _do_transcribe_locked(
         else:
             payload = _do_transcribe_faster_whisper(req, target, model_name, started)
 
+        if req.diarize:
+            _diarize_payload(req, target, payload, started)
+
         if req.save:
             _save_payload_to_nfs(payload, target)
 
@@ -604,6 +755,79 @@ def _do_transcribe_locked(
     finally:
         _set_job(None)
         _JOB_LOCK.release()
+
+
+def _diarize_payload(
+    req: "TranscribeRequest", target: Path, payload: dict[str, Any], started: float
+) -> None:
+    """Diarization stage: label payload segments with speakers.
+
+    Runs inside _JOB_LOCK (same GPU serialization as transcription).
+    Fail-soft by design: a diarization failure must not throw away a good
+    transcript, so errors are reported explicitly in payload["diarization"]
+    instead of failing the whole job.
+    """
+    import tempfile
+
+    segs = (payload.get("result") or {}).get("segments") or []
+    diar: dict[str, Any] = {
+        "requested": True,
+        "model": DIARIZATION_MODEL,
+        "device": DIARIZATION_DEVICE,
+    }
+    payload["diarization"] = diar
+
+    if not segs:
+        diar.update(ok=False, error="no transcript segments to label")
+        return
+
+    _set_job({
+        "path": req.path,
+        "model": payload.get("model"),
+        "startedAt": started,
+        "phase": "diarizing",
+    })
+    diar_start = time.time()
+    try:
+        with tempfile.TemporaryDirectory(prefix="obviu-diarize-") as scratch:
+            wav_path = Path(scratch) / "input.wav"
+            # pyannote reads via torchaudio, which is unreliable on video
+            # containers — always feed it a clean 16kHz mono WAV.
+            ok, _, err = _run(
+                [
+                    FFMPEG_BIN, "-y",
+                    "-i", str(target),
+                    "-ar", "16000",
+                    "-ac", "1",
+                    "-c:a", "pcm_s16le",
+                    str(wav_path),
+                ],
+                timeout=FFMPEG_TIMEOUT_SEC,
+            )
+            if not ok:
+                raise RuntimeError(f"ffmpeg WAV extraction failed: {err.strip()[:500] or 'unknown error'}")
+            turns, actual_device = _run_diarization(
+                wav_path,
+                num_speakers=req.num_speakers,
+                min_speakers=req.min_speakers,
+                max_speakers=req.max_speakers,
+            )
+        speakers = _assign_speakers(segs, turns)
+        diar.update(
+            ok=True,
+            device=actual_device,
+            speakers=speakers,
+            speakerCount=len(speakers),
+            turnCount=len(turns),
+            diarizeMs=int((time.time() - diar_start) * 1000),
+        )
+    except Exception as e:  # noqa: BLE001
+        diar.update(
+            ok=False,
+            error=f"{type(e).__name__}: {e}",
+            diarizeMs=int((time.time() - diar_start) * 1000),
+        )
+        print(f"[obviu-spark-ai] diarization failed for {req.path}: {e}")
 
 
 def _save_payload_to_nfs(payload: dict[str, Any], target: Path) -> None:

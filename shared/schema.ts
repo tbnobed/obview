@@ -343,7 +343,7 @@ export const transcripts = pgTable("transcripts", {
   status: text("status").notNull().default("pending"), // "pending", "processing", "completed", "failed"
   language: text("language"),
   modelName: text("model_name"),
-  segments: json("segments").$type<Array<{ start: number; end: number; text: string; avgLogprob?: number | null; noSpeechProb?: number | null }>>(),
+  segments: json("segments").$type<Array<{ start: number; end: number; text: string; avgLogprob?: number | null; noSpeechProb?: number | null; speaker?: string | null }>>(),
   text: text("text"),
   errorMessage: text("error_message"),
   processedAt: timestamp("processed_at"),

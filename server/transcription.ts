@@ -19,6 +19,20 @@ export interface TranscriptSegment {
   text: string;
   avgLogprob?: number | null;
   noSpeechProb?: number | null;
+  /** Diarization label (e.g. "SPEAKER_00"); null when not diarized. */
+  speaker?: string | null;
+}
+
+// Diarization is on by default when the worker supports it (fail-soft on the
+// worker: a diarization error never discards a good transcript).
+const TRANSCRIPTION_DIARIZE =
+  (process.env.TRANSCRIPTION_DIARIZE || "true").toLowerCase() !== "false";
+
+/** "SPEAKER_00" -> "Speaker 1". Non-standard labels pass through as-is. */
+export function formatSpeakerLabel(raw: string): string {
+  const m = /^SPEAKER_(\d+)$/i.exec(raw);
+  if (m) return `Speaker ${parseInt(m[1], 10) + 1}`;
+  return raw;
 }
 
 const MODEL_NAME = process.env.WHISPER_MODEL || "base.en";
@@ -285,6 +299,7 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
         word_timestamps: true,
         beam_size: 5,
         save: true,
+        diarize: TRANSCRIPTION_DIARIZE,
       },
       {
         onJobId: async (jobId) => {
@@ -298,6 +313,27 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
       `(model=${result.model}, device=${result.device}, computeType=${result.computeType})`
     );
 
+    // Diarization is fail-soft on the worker: log the outcome loudly either way.
+    if (TRANSCRIPTION_DIARIZE) {
+      const d = result.diarization;
+      if (!d) {
+        console.warn(
+          `[Transcription] File ${fileId}: diarization requested but the worker ` +
+            `returned no diarization info — worker likely predates v0.2.0.`
+        );
+      } else if (d.ok) {
+        console.log(
+          `[Transcription] File ${fileId}: diarization found ${d.speakerCount} speaker(s) ` +
+            `in ${d.diarizeMs}ms (${d.model})`
+        );
+      } else {
+        console.warn(
+          `[Transcription] File ${fileId}: diarization failed — ${d.error}. ` +
+            `Transcript saved without speaker labels.`
+        );
+      }
+    }
+
     const segments: TranscriptSegment[] = (result.result.segments || [])
       .map((seg) => ({
         start: typeof seg.start === "number" ? seg.start : 0,
@@ -305,6 +341,7 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
         text: (seg.text || "").trim(),
         avgLogprob: typeof seg.avgLogprob === "number" ? seg.avgLogprob : null,
         noSpeechProb: typeof seg.noSpeechProb === "number" ? seg.noSpeechProb : null,
+        speaker: typeof seg.speaker === "string" ? seg.speaker : null,
       }))
       .filter((s) => s.text.length > 0);
 
@@ -430,7 +467,10 @@ export function segmentsToVtt(segments: TranscriptSegment[]): string {
   segments.forEach((seg, i) => {
     out += `${i + 1}\n`;
     out += `${formatVttTimestamp(seg.start)} --> ${formatVttTimestamp(seg.end)}\n`;
-    out += `${seg.text}\n\n`;
+    // WebVTT voice tag carries the speaker; players render it natively.
+    out += seg.speaker
+      ? `<v ${formatSpeakerLabel(seg.speaker)}>${seg.text}\n\n`
+      : `${seg.text}\n\n`;
   });
   return out;
 }
@@ -440,7 +480,9 @@ export function segmentsToSrt(segments: TranscriptSegment[]): string {
   segments.forEach((seg, i) => {
     out += `${i + 1}\n`;
     out += `${formatSrtTimestamp(seg.start)} --> ${formatSrtTimestamp(seg.end)}\n`;
-    out += `${seg.text}\n\n`;
+    out += seg.speaker
+      ? `${formatSpeakerLabel(seg.speaker)}: ${seg.text}\n\n`
+      : `${seg.text}\n\n`;
   });
   return out;
 }

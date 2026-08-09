@@ -59,6 +59,7 @@ import {
   segmentsToVtt,
   segmentsToSrt,
   isTranscriptionAvailable,
+  formatSpeakerLabel,
 } from "./transcription";
 import { collectDiagnostics } from "./diagnostics";
 import { spawn as spawnProcess } from "child_process";
@@ -3940,7 +3941,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!transcript) return res.status(404).send("No transcript available");
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="transcript-${fileId}.txt"`);
-      res.send(transcript.text || (transcript.segments || []).map((s) => s.text).join("\n"));
+      // When speaker labels exist, a per-line "Speaker N:" rendering is far
+      // more useful than the flat text blob.
+      const segs = transcript.segments || [];
+      const hasSpeakers = segs.some((s: any) => s.speaker);
+      const body = hasSpeakers
+        ? segs
+            .map((s: any) => (s.speaker ? `${formatSpeakerLabel(s.speaker)}: ${s.text}` : s.text))
+            .join("\n")
+        : transcript.text || segs.map((s: any) => s.text).join("\n");
+      res.send(body);
     } catch (err) {
       console.error("[Transcript API] TXT error:", err);
       res.status(500).send("Internal server error");
@@ -4772,7 +4782,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!t) return res.status(404).send("No transcript available");
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="transcript-${file.id}.txt"`);
-      res.send((t as any).text || ((t.segments as any[]) || []).map((s: any) => s.text).join("\n"));
+      // Match the authenticated TXT export: include speaker prefixes when present.
+      const shareSegs = (t.segments as any[]) || [];
+      const shareHasSpeakers = shareSegs.some((s: any) => s.speaker);
+      const shareBody = shareHasSpeakers
+        ? shareSegs
+            .map((s: any) => (s.speaker ? `${formatSpeakerLabel(s.speaker)}: ${s.text}` : s.text))
+            .join("\n")
+        : (t as any).text || shareSegs.map((s: any) => s.text).join("\n");
+      res.send(shareBody);
     } catch (e) { next(e); }
   });
 

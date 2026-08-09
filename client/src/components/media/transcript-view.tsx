@@ -24,7 +24,25 @@ interface TranscriptSegment {
   start: number;
   end: number;
   text: string;
+  speaker?: string | null;
 }
+
+/** "SPEAKER_00" -> "Speaker 1". Non-standard labels pass through. */
+function formatSpeakerLabel(raw: string): string {
+  const m = /^SPEAKER_(\d+)$/i.exec(raw);
+  if (m) return `Speaker ${parseInt(m[1], 10) + 1}`;
+  return raw;
+}
+
+// Stable, readable badge palette cycled per distinct speaker.
+const SPEAKER_COLORS = [
+  "text-blue-600 dark:text-blue-400",
+  "text-emerald-600 dark:text-emerald-400",
+  "text-purple-600 dark:text-purple-400",
+  "text-amber-600 dark:text-amber-400",
+  "text-rose-600 dark:text-rose-400",
+  "text-cyan-600 dark:text-cyan-400",
+];
 
 interface Transcript {
   id: number;
@@ -114,6 +132,16 @@ export default function TranscriptView({
   });
 
   const segments = transcript?.segments || [];
+
+  // Distinct speakers in order of first appearance -> stable color index.
+  const speakerColorIndex = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const s of segments) {
+      if (s.speaker && !map.has(s.speaker)) map.set(s.speaker, map.size);
+    }
+    return map;
+  }, [segments]);
+  const hasSpeakers = speakerColorIndex.size > 0;
   const filteredSegments = useMemo(() => {
     if (!search.trim()) return segments;
     const q = search.toLowerCase();
@@ -317,7 +345,21 @@ export default function TranscriptView({
                     >
                       {formatTime(seg.start)}
                     </span>
-                    <span className="flex-1 leading-snug">{seg.text}</span>
+                    <span className="flex-1 leading-snug">
+                      {seg.speaker && (
+                        <span
+                          className={`font-medium mr-1.5 ${
+                            SPEAKER_COLORS[
+                              (speakerColorIndex.get(seg.speaker) ?? 0) %
+                                SPEAKER_COLORS.length
+                            ]
+                          }`}
+                        >
+                          {formatSpeakerLabel(seg.speaker)}:
+                        </span>
+                      )}
+                      {seg.text}
+                    </span>
                   </button>
                 </li>
               );
@@ -329,6 +371,7 @@ export default function TranscriptView({
       <div className="px-4 py-1.5 border-t border-neutral-200 dark:border-gray-800 flex items-center justify-between text-xs text-neutral-500 dark:text-gray-400">
         <span>
           {segments.length} segment{segments.length === 1 ? "" : "s"}
+          {hasSpeakers ? ` · ${speakerColorIndex.size} speaker${speakerColorIndex.size === 1 ? "" : "s"}` : ""}
           {transcript.language ? ` · ${transcript.language.toUpperCase()}` : ""}
           {transcript.modelName ? ` · ${transcript.modelName}` : ""}
         </span>

@@ -1,0 +1,20 @@
+# Optional speaker-diarization stack for the Obviu AI worker.
+# Install ON TOP of requirements.txt:
+#   ./venv/bin/pip install -r requirements-diarization.txt
+#
+# Pinned as a tested matrix: torch/torchaudio must be ABI-compatible with
+# each other and with pyannote.audio. On linux x86_64 (the L4 host) the
+# default PyPI torch wheels bundle CUDA 12 — setup-local-gpu.sh verifies
+# torch.cuda.is_available() after install and fails loudly if the resolved
+# wheel is CPU-only (e.g. wrong platform or a resolver downgrade).
+#
+# The diarization models are GATED on HuggingFace. One-time setup:
+#   1. Create a free account at https://huggingface.co
+#   2. Accept the terms on BOTH model pages:
+#        https://huggingface.co/pyannote/speaker-diarization-3.1
+#        https://huggingface.co/pyannote/segmentation-3.0
+#   3. Create a read token (https://huggingface.co/settings/tokens) and
+#      set it as OBVIU_HF_TOKEN (or HF_TOKEN) in the service environment.
+torch==2.5.1
+torchaudio==2.5.1
+pyannote.audio==3.3.2
