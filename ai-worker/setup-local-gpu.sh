@@ -95,6 +95,28 @@ else
   fi
 fi
 
+# ctranslate2 (faster-whisper) dlopens libcudnn_ops at runtime. The cuDNN /
+# cuBLAS shared libs come from the pip nvidia-*-cu12 wheels, which live deep
+# inside the venv where the dynamic linker never looks — without this the
+# worker ABRTs mid-transcription with "Unable to load any of
+# {libcudnn_ops.so.9...}". Resolve the wheel lib dirs and bake them into the
+# unit's LD_LIBRARY_PATH.
+NVIDIA_LIB_PATH="$("${SERVICE_DIR}/venv/bin/python" - <<'PYEOF'
+import pathlib
+paths = []
+for mod in ("nvidia.cudnn", "nvidia.cublas"):
+    try:
+        m = __import__(mod, fromlist=["__file__"])
+        lib = pathlib.Path(m.__file__).parent / "lib"
+        if lib.is_dir():
+            paths.append(str(lib))
+    except Exception:
+        pass
+print(":".join(paths))
+PYEOF
+)"
+echo "    LD_LIBRARY_PATH for unit: ${NVIDIA_LIB_PATH:-<none found>}"
+
 echo "==> writing systemd unit at ${UNIT_PATH}"
 sudo tee "${UNIT_PATH}" >/dev/null <<EOF
 [Unit]
@@ -123,6 +145,7 @@ Environment=CUDA_VISIBLE_DEVICES=0
 # pipe — startup lines (e.g. the cuDNN warmup verdict) can sit invisible in
 # the buffer for minutes. Unbuffer so journalctl shows them immediately.
 Environment=PYTHONUNBUFFERED=1
+Environment=LD_LIBRARY_PATH=${NVIDIA_LIB_PATH}
 ExecStart=${SERVICE_DIR}/venv/bin/python ${SERVICE_DIR}/service.py
 Restart=on-failure
 RestartSec=3
