@@ -1,3 +1,4 @@
+import { debugLog } from "@/lib/debug";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import AppLayout from "@/components/layout/app-layout";
@@ -173,7 +174,7 @@ export default function ProjectPage() {
   useEffect(() => {
     // Handler for the custom event
     const handleJumpEvent = (event: any) => {
-      console.log("⚡ Received custom jump event:", event.detail);
+      debugLog("⚡ Received custom jump event:", event.detail);
       const { fileId, timestamp } = event.detail;
       
       if (fileId && timestamp !== undefined) {
@@ -186,7 +187,7 @@ export default function ProjectPage() {
     
     // Handler for the backup event
     const handleBackupEvent = (event: any) => {
-      console.log("⚡ Received backup jump event:", event.detail);
+      debugLog("⚡ Received backup jump event:", event.detail);
       const { fileId, timestamp } = event.detail;
       
       if (fileId && timestamp !== undefined) {
@@ -206,7 +207,7 @@ export default function ProjectPage() {
       try {
         const jumpData = (window as any).Obviu_jumpToMedia;
         if (jumpData && jumpData.projectId === projectId) {
-          console.log("⚡ Found global jump data:", jumpData);
+          debugLog("⚡ Found global jump data:", jumpData);
           setSelectedFileId(jumpData.fileId);
           setInitialTime(jumpData.timestamp);
           setActiveTab("media");
@@ -250,10 +251,10 @@ export default function ProjectPage() {
     
     // Parse URL query parameters (always do this regardless of hash)
     if (location) {
-      console.log("Parsing URL params from location:", location);
+      debugLog("Parsing URL params from location:", location);
       const url = new URL(window.location.href);
       const searchParams = new URLSearchParams(url.search);
-      console.log("Search params:", Object.fromEntries(searchParams.entries()));
+      debugLog("Search params:", Object.fromEntries(searchParams.entries()));
       
       // Always prioritize query parameters if they exist
       let hasTimeParam = false;
@@ -263,7 +264,7 @@ export default function ProjectPage() {
       const timeParam = searchParams.get('time');
       if (timeParam) {
         const time = parseFloat(timeParam);
-        console.log("Found time parameter:", time);
+        debugLog("Found time parameter:", time);
         if (!isNaN(time)) {
           setInitialTime(time);
           hasTimeParam = true;
@@ -274,8 +275,8 @@ export default function ProjectPage() {
       const mediaParam = searchParams.get('media');
       if (mediaParam) {
         const mediaId = parseInt(mediaParam);
-        console.log("Found media parameter:", mediaId);
-        console.log("Available files:", files);
+        debugLog("Found media parameter:", mediaId);
+        debugLog("Available files:", files);
         
         if (!isNaN(mediaId)) {
           // Always set the file ID even if it's not in the current files list yet

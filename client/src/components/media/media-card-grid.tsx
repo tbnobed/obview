@@ -1,3 +1,4 @@
+import { debugLog } from "@/lib/debug";
 import { useState, useRef, useEffect, Fragment } from "react";
 import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, CheckSquare, X, ArrowDownAZ, ArrowDownUp, RotateCw } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
@@ -442,7 +443,7 @@ function MediaCard({
         .then(metadata => {
           if (metadata) {
             setSpriteMetadata(metadata);
-            console.log(`🎬 [SPRITE] Loaded metadata for file ${file.id}:`, metadata);
+            debugLog(`🎬 [SPRITE] Loaded metadata for file ${file.id}:`, metadata);
           }
         })
         .catch(err => console.warn(`🎬 [SPRITE] Failed to load metadata for file ${file.id}:`, err));
@@ -647,7 +648,7 @@ function MediaCard({
                     src={thumbnailSrc}
                     className="hidden"
                     onLoad={() => {
-                      console.log(`🎬 [SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
+                      debugLog(`🎬 [SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
                       setSpriteLoaded(true);
                       handleThumbnailLoad();
                     }}

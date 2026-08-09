@@ -1,3 +1,4 @@
+import { debugLog } from "@/lib/debug";
 import { useLocation } from "wouter";
 import { Project, File } from "@shared/schema";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,7 +97,7 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
         .then(metadata => {
           if (metadata) {
             setSpriteMetadata(metadata);
-            console.log(`🎬 [PROJECT-SPRITE] Loaded metadata for file ${project.latestVideoFile?.id}:`, metadata);
+            debugLog(`🎬 [PROJECT-SPRITE] Loaded metadata for file ${project.latestVideoFile?.id}:`, metadata);
           }
         })
         .catch(err => console.warn(`🎬 [PROJECT-SPRITE] Failed to load metadata for file ${project.latestVideoFile?.id}:`, err));
@@ -336,7 +337,7 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
                     })()
                   }}
                   onLoad={() => {
-                    console.log(`🎬 [PROJECT-SPRITE] ✅ Sprite loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
+                    debugLog(`🎬 [PROJECT-SPRITE] ✅ Sprite loaded for project ${project.id}: ${project.latestVideoFile?.filename}`);
                     setSpriteLoaded(true);
                   }}
                   onError={() => {
