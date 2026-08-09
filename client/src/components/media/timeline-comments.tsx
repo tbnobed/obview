@@ -194,10 +194,10 @@ export default function TimelineComments({
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium" style={{color: 'hsl(var(--comments-text))'}}>
+                  <span className="text-xs font-semibold text-zinc-200">
                     {(reply as any).authorName || reply.user?.name || reply.user?.username || 'Unknown User'}
                   </span>
-                  <span className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>
+                  <span className="text-[11px] text-zinc-500">
                     {new Date(reply.createdAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -230,7 +230,7 @@ export default function TimelineComments({
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs mb-2" style={{color: 'hsl(var(--comments-text))'}}>
+                  <div className="text-xs mb-2 text-zinc-300 leading-relaxed">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={markdownComponents200}
@@ -387,9 +387,9 @@ export default function TimelineComments({
   };
 
   return (
-      <div className="comments-panel flex flex-col h-full min-h-0" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
+      <div className="comments-panel flex flex-col h-full min-h-0 bg-zinc-950 text-zinc-100">
       {/* Comment Input - Mobile: sticky at top, Desktop: hidden */}
-      <div className="sticky top-0 z-10 border-b px-2 pt-0 pb-1 lg:hidden shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))', backgroundColor: 'hsl(var(--comments-bg))'}}>
+      <div className="sticky top-0 z-10 bg-zinc-950 px-2 pt-0 pb-1 lg:hidden shrink-0">
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}
@@ -403,17 +403,17 @@ export default function TimelineComments({
       </div>
       
       {/* Filter bar */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))', backgroundColor: 'hsl(var(--comments-bg))'}}>
-        <Filter className="h-3.5 w-3.5 mr-1" style={{color: 'hsl(var(--comments-muted))'}} />
+      <div className="flex items-center gap-2 px-3 py-3 shrink-0">
+        <Filter className="h-4 w-4 text-zinc-400" />
         {(["all", "unresolved", "resolved"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={cn(
-              "text-[11px] px-2.5 py-1 rounded-md transition-all capitalize font-medium",
+              "rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors",
               filter === f
-                ? "bg-sky-400/15 text-sky-300 shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.05]"
+                ? "bg-cyan-950/80 text-cyan-400"
+                : "bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
             )}
           >
             {f}
@@ -426,7 +426,7 @@ export default function TimelineComments({
         {isLoading ? (
           // Loading state - Mobile: compact padding, Desktop: normal padding
           <div className="flex justify-center py-4 lg:py-8">
-            <Loader2 className="h-5 w-5 animate-spin lg:h-6 lg:w-6" style={{color: 'hsl(var(--comments-muted))'}} />
+            <Loader2 className="h-5 w-5 animate-spin lg:h-6 lg:w-6 text-zinc-500" />
           </div>
         ) : error ? (
           // Error state - Mobile: reduced padding, Desktop: full padding
@@ -470,13 +470,9 @@ export default function TimelineComments({
                       }
                     }
                   } : undefined}
-                  className={`relative rounded-xl p-3.5 transition-all duration-200 lg:p-4 cursor-pointer bg-[#171e25] hover:-translate-y-px hover:bg-[#1b242c] ${
-                    activeCommentId === comment.id ? 'ring-1 ring-sky-400/70 bg-sky-400/[0.06]' : ''
+                  className={`group relative rounded-2xl p-3.5 transition-colors cursor-pointer ${
+                    activeCommentId === comment.id ? 'bg-zinc-900 ring-1 ring-cyan-400/40' : 'bg-zinc-900/70 hover:bg-zinc-900'
                   }`}
-                  style={{
-                     backgroundColor: activeCommentId === comment.id ? 'hsl(210 24% 15%)' : 'hsl(var(--comments-card))',
-                    color: 'hsl(var(--comments-text))'
-                  }}
                   title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : "Select this comment"}
                   role="button"
                   tabIndex={0}
@@ -500,10 +496,10 @@ export default function TimelineComments({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-sm font-medium text-cyan-300" style={{color: 'hsl(183 72% 63%)'}}>
+                          <span className="text-xs font-semibold text-zinc-200">
                             {(comment as any).authorName || comment.user?.name || comment.user?.username || 'Unknown User'}
                           </span>
-                          <span className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>
+                          <span className="text-[11px] text-zinc-500">
                             {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }).replace(/^about /, "")}
                           </span>
                           {comment.timestamp !== null && (
@@ -511,8 +507,7 @@ export default function TimelineComments({
                                <button
                                  type="button"
                                  onClick={(e) => { e.stopPropagation(); onTimeClick(comment.timestamp); }}
-                                 className="text-[11px] font-mono tracking-tight px-2 py-1 rounded-md bg-sky-400/10 text-sky-200 hover:bg-sky-400/20 transition-colors"
-                                 style={{ color: 'hsl(199 89% 86%)' }}
+                                 className="rounded-lg bg-cyan-950/50 px-2 py-0.5 text-xs font-mono font-medium text-cyan-400 transition-colors hover:bg-cyan-900/80"
                               >
                                 {(comment as any).inPoint != null && (comment as any).outPoint != null
                                   ? `${formatTimeShort((comment as any).inPoint)} → ${formatTimeShort((comment as any).outPoint)}`
@@ -527,7 +522,7 @@ export default function TimelineComments({
                             </div>
                           )}
                         </div>
-                        <MoreHorizontal className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                        <MoreHorizontal className="h-4 w-4 shrink-0 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100" />
                       </div>
 
 
@@ -560,7 +555,7 @@ export default function TimelineComments({
                           </div>
                         </div>
                       ) : (
-                        <div className="text-sm mb-3 leading-relaxed" style={{color: 'hsl(var(--comments-text))'}}>
+                        <div className="mt-2.5 mb-3 text-xs leading-relaxed text-zinc-300">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={markdownComponents300}
@@ -576,9 +571,9 @@ export default function TimelineComments({
                       />
 
                       {/* Action buttons - Mobile: smaller spacing, Desktop: normal */}
-                       <div className="flex items-center gap-4 mt-3 -mx-1 rounded-lg bg-black/20 px-3 py-2 text-muted-foreground">
+                       <div className="mt-3 flex items-center gap-4 text-xs text-zinc-400">
                         <button
-                           className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors text-muted-foreground hover:text-cyan-300"
+                           className="flex items-center gap-1 transition-colors hover:text-zinc-200"
                           onClick={(e) => {
                             e.stopPropagation();
                             setReplyingToId(replyingToId === comment.id ? null : comment.id);
@@ -591,10 +586,10 @@ export default function TimelineComments({
                         {user && (
                           <button
                             className={cn(
-                              "inline-flex items-center gap-1.5 text-xs font-medium transition-colors",
+                              "flex items-center gap-1 transition-colors",
                               comment.isResolved
-                                ? "text-emerald-300 hover:text-emerald-200"
-                                : "text-muted-foreground hover:text-emerald-300"
+                                ? "text-emerald-400 hover:text-emerald-300"
+                                : "hover:text-zinc-200"
                             )}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -611,7 +606,7 @@ export default function TimelineComments({
 
                         {canEditComment(comment) && editingId !== comment.id && (
                           <button
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-sky-300 transition-colors"
+                            className="flex items-center gap-1 transition-colors hover:text-zinc-200"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStartEdit(comment);
@@ -624,7 +619,7 @@ export default function TimelineComments({
 
                         {canDeleteComment(comment) && (
                           <button
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-red-300 transition-colors"
+                            className="flex items-center gap-1 transition-colors hover:text-red-300"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteComment(comment);
@@ -649,7 +644,7 @@ export default function TimelineComments({
 
                   {/* Reply form - Mobile: reduced padding, Desktop: full padding */}
                   {replyingToId === comment.id && (
-                    <div className="mt-3 pl-8 border-l-2 lg:pl-11" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
+                    <div className="mt-3 pl-8 border-l-2 border-zinc-800 lg:pl-11">
                       <CommentForm
                         fileId={fileId}
                         parentId={comment.id}
@@ -676,14 +671,14 @@ export default function TimelineComments({
               {filter !== "all" ? `No ${filter} comments` : "No comments yet"}
             </p>
             {filter === "all" && (
-            <p className="mt-1 text-xs" style={{color: 'hsl(var(--comments-muted))'}}>Start a frame-accurate review note below.</p>
+            <p className="mt-1 text-xs text-zinc-500">Start a frame-accurate review note below.</p>
             )}
           </div>
         )}
       </div>
 
       {/* Comment Input - Mobile: hidden, Desktop: visible flex footer */}
-      <div className="hidden lg:block shrink-0 border-t" style={{borderColor: 'hsl(var(--comments-card-border))'}}>
+      <div className="hidden lg:block shrink-0">
         <CommentForm
           fileId={fileId}
           currentTime={currentTime}

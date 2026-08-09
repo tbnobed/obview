@@ -329,18 +329,15 @@ export default function CommentForm({
   return (
     <div 
       className={cn("comments-composer w-full p-2.5 lg:p-3", className)}
-      style={{
-        backgroundColor: 'hsl(var(--comments-bg))'
-      }}
       data-comment-form
     >
       {/* Form content - Mobile: compact spacing, Desktop: normal spacing */}
-      <div className="flex flex-col gap-1.5 w-full rounded-xl bg-[#171e25] p-2.5 shadow-[0_8px_24px_rgba(0,0,0,.16)]">
+      <div className="flex flex-col gap-2 w-full rounded-2xl bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-md">
         {!parentId && currentTime !== undefined && (
           <div className="flex items-center text-xs">
             {hasRange ? (
               <span className="inline-flex items-center gap-1">
-                <span className="font-mono px-2 py-0.5 rounded-md bg-sky-400/10 text-sky-200">
+                <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 text-[11px] font-mono font-medium text-cyan-400">
                   [{formatTime(inPoint as number)} → {formatTime(outPoint as number)}]
                 </span>
                 {onClearInOutPoints && (
@@ -356,7 +353,7 @@ export default function CommentForm({
                 )}
               </span>
             ) : (
-              <span className="font-mono px-2 py-0.5 rounded-md bg-sky-400/10 text-sky-200">
+              <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 text-[11px] font-mono font-medium text-cyan-400">
                 [{includeTimestamp ? formatTime(currentTime) : "--:--"}]
               </span>
             )}
@@ -393,7 +390,7 @@ export default function CommentForm({
                 ? `Add a comment at ${formatTime(currentTime)}...`
                 : "Leave your comment..."
           }
-          className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground text-sm resize-none border-none outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
+          className="w-full resize-none bg-transparent text-xs text-zinc-200 placeholder-zinc-500 border-none outline-none focus:outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
           style={{ 
             fontFamily: 'inherit',
             resize: 'none'
@@ -623,14 +620,14 @@ export default function CommentForm({
           <button
             type="submit"
             disabled={content.trim() === "" || createCommentMutation.isPending}
-            className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-cyan-300 text-slate-950 hover:bg-cyan-200 disabled:bg-white/[0.04] disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
+            className="flex-shrink-0 rounded-xl bg-cyan-400 px-3.5 py-1.5 text-xs font-medium text-zinc-950 transition-colors hover:bg-cyan-300 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed"
             data-testid="button-submit-comment"
             onClick={handleSubmit}
           >
             {createCommentMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <span className="inline-flex items-center"><Send className="h-3.5 w-3.5" /><span className="text-[11px] font-semibold ml-1">Send</span></span>
+              "Send"
             )}
           </button>
         </div>
