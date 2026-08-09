@@ -431,7 +431,7 @@ export default function ProjectPage() {
           Hidden in landscape on phones while a file is open so the player + comments
           get the full viewport (URL bar + header would otherwise eat ~30% of height). */}
       <header className={cn(
-        "bg-white dark:bg-[#0a0d14] border-b border-neutral-200 dark:border-gray-800/80",
+        "bg-white dark:bg-zinc-950 border-b border-neutral-200 dark:border-zinc-800/50",
         viewMode === "player" && "landscape:hidden lg:landscape:block",
       )}>
         <div className="px-3 py-2 flex items-center justify-between gap-3 lg:px-4 lg:py-2">
@@ -687,7 +687,7 @@ export default function ProjectPage() {
       <div
         ref={projectDropRef}
         className={cn(
-          "bg-neutral-50 dark:bg-[#080b12]",
+          "bg-neutral-50 dark:bg-zinc-950",
           viewMode === "player" ? "flex-1 min-h-0 flex flex-col p-0" : "overflow-auto p-0 lg:p-6",
           isProjectFileDrop && "ring-2 ring-inset ring-primary"
         )}
@@ -794,7 +794,7 @@ export default function ProjectPage() {
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary dark:text-[#10a37f]" />
+              <Clock className="h-5 w-5 text-primary dark:text-cyan-400" />
               Activity Log
             </SheetTitle>
             <SheetDescription>Recent changes and events on this project</SheetDescription>
@@ -810,7 +810,7 @@ export default function ProjectPage() {
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto bg-card dark:bg-[#0f1320] border-l border-border">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <SettingsIcon className="h-5 w-5 text-primary dark:text-[#10a37f]" />
+              <SettingsIcon className="h-5 w-5 text-primary dark:text-cyan-400" />
               Project Settings
             </SheetTitle>
             <SheetDescription>Manage project details, media, and team members</SheetDescription>
@@ -843,7 +843,7 @@ export default function ProjectPage() {
               {pendingInvitations && pendingInvitations.length > 0 && (
                 <div className="mt-6">
                   <h4 className="text-sm font-medium mb-3 flex items-center">
-                    <Mail className="h-4 w-4 mr-1.5 text-gray-500 dark:text-[#10a37f]" />
+                    <Mail className="h-4 w-4 mr-1.5 text-gray-500 dark:text-cyan-400" />
                     Pending Invitations
                   </h4>
                   <ProjectInvitations projectId={projectId} />

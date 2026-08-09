@@ -397,7 +397,7 @@ function OwnerGroup({ owner }: { owner: { ownerId: number; ownerName: string; ro
         </span>
       </button>
       {open && (
-        <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-neutral-200 dark:border-gray-800 pl-2">
+        <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-neutral-200 dark:border-zinc-800/50 pl-2">
           {owner.roots.map((f) => (
             <SidebarFolderItem key={f.id} folder={f} depth={0} />
           ))}
@@ -470,7 +470,7 @@ function SidebarProjectRow({ project, location }: { project: any; location: stri
           active
             ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400"
             : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-gray-900/70",
-          (isDragOver || isFileDropTarget) && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15",
+          (isDragOver || isFileDropTarget) && "ring-2 ring-primary-500 dark:ring-cyan-400/60 bg-primary-50/60 dark:bg-cyan-400/15",
         )}
         draggable
         onDragStart={onDragStart}
@@ -579,7 +579,7 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
         className={cn(
           "group flex w-full items-center gap-1.5 px-2 py-1.5 text-sm rounded-md transition-colors",
           "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-gray-900/70",
-          isDragOver && "ring-2 ring-primary-500 dark:ring-[#10a37f] bg-primary-50/60 dark:bg-[#10a37f]/15",
+          isDragOver && "ring-2 ring-primary-500 dark:ring-cyan-400/60 bg-primary-50/60 dark:bg-cyan-400/15",
         )}
         draggable
         onDragStart={onRowDragStart}
@@ -613,7 +613,7 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
           {folder.isGlobal ? (
             <Globe className="h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
           ) : open ? (
-            <FolderOpen className="h-4 w-4 shrink-0 text-primary-600 dark:text-[#10a37f]" />
+            <FolderOpen className="h-4 w-4 shrink-0 text-primary-600 dark:text-cyan-400" />
           ) : (
             <Folder className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-400" />
           )}
@@ -769,7 +769,7 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
       )}
 
       {open && (
-        <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-neutral-200 dark:border-gray-800 pl-2">
+        <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-neutral-200 dark:border-zinc-800/50 pl-2">
           {/* Child subfolders render above the projects list so the user
               can drill straight down through the tree without losing
               their place. */}

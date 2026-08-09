@@ -256,7 +256,7 @@ export default function ProjectsPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 dark:text-gray-500" />
             <Input
               placeholder="Search projects..."
-              className="pl-9 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-500"
+              className="pl-9 dark:bg-zinc-900/90 dark:border-0 dark:placeholder-zinc-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -267,7 +267,7 @@ export default function ProjectsPage() {
                 variant={ownerScope === "mine" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setOwnerScope("mine")}
-                className={ownerScope === "mine" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
+                className={ownerScope === "mine" ? "dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:text-zinc-950" : ""}
                 data-testid="owner-scope-mine"
               >
                 Mine
@@ -276,7 +276,7 @@ export default function ProjectsPage() {
                 variant={ownerScope === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setOwnerScope("all")}
-                className={ownerScope === "all" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
+                className={ownerScope === "all" ? "dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:text-zinc-950" : ""}
                 data-testid="owner-scope-all"
               >
                 All projects
@@ -288,7 +288,7 @@ export default function ProjectsPage() {
               variant={statusFilter === null ? "default" : "outline"} 
               size="sm"
               onClick={() => setStatusFilter(null)}
-              className={statusFilter === null ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
+              className={statusFilter === null ? "dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:text-zinc-950" : ""}
             >
               All
             </Button>
@@ -296,7 +296,7 @@ export default function ProjectsPage() {
               variant={statusFilter === "in_progress" ? "default" : "outline"} 
               size="sm"
               onClick={() => setStatusFilter("in_progress")}
-              className={statusFilter === "in_progress" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
+              className={statusFilter === "in_progress" ? "dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:text-zinc-950" : ""}
             >
               In Progress
             </Button>
@@ -304,7 +304,7 @@ export default function ProjectsPage() {
               variant={statusFilter === "in_review" ? "default" : "outline"} 
               size="sm"
               onClick={() => setStatusFilter("in_review")}
-              className={statusFilter === "in_review" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
+              className={statusFilter === "in_review" ? "dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:text-zinc-950" : ""}
             >
               In Review
             </Button>
@@ -312,7 +312,7 @@ export default function ProjectsPage() {
               variant={statusFilter === "approved" ? "default" : "outline"} 
               size="sm"
               onClick={() => setStatusFilter("approved")}
-              className={statusFilter === "approved" ? "dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white" : ""}
+              className={statusFilter === "approved" ? "dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:text-zinc-950" : ""}
             >
               Approved
             </Button>
@@ -358,7 +358,7 @@ export default function ProjectsPage() {
         {/* Project list */}
         {isLoading || foldersLoading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-[#026d55]" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary dark:text-cyan-400" />
           </div>
         ) : error ? (
           <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-md">
@@ -379,7 +379,7 @@ export default function ProjectsPage() {
                     <div className="flex items-center gap-2">
                       <span
                         className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold text-white"
-                        style={{ backgroundColor: "#026d55" }}
+                        style={{ backgroundColor: "#22d3ee" }}
                       >
                         Y
                       </span>
@@ -389,7 +389,7 @@ export default function ProjectsPage() {
                     </div>
                   }
                   count={groups.yours.length}
-                  accent="#026d55"
+                  accent="#22d3ee"
                   items={groups.yours}
                 />
               )}
@@ -472,9 +472,9 @@ export default function ProjectsPage() {
             </div>
           )
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-900 rounded-lg shadow">
-            <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-[#026d55]/20 flex items-center justify-center mb-4">
-              <FileVideo className="h-8 w-8 text-primary-400 dark:text-[#026d55]" />
+          <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-zinc-900/70 rounded-lg shadow">
+            <div className="h-16 w-16 rounded-full bg-primary-50 dark:bg-cyan-950/60 flex items-center justify-center mb-4">
+              <FileVideo className="h-8 w-8 text-primary-400 dark:text-cyan-400" />
             </div>
             {searchTerm || statusFilter ? (
               <>
@@ -488,7 +488,7 @@ export default function ProjectsPage() {
                     setSearchTerm("");
                     setStatusFilter(null);
                   }}
-                  className="dark:bg-[#026d55] dark:hover:bg-[#025943] dark:text-white"
+                  className="dark:bg-cyan-400 dark:hover:bg-cyan-300 dark:text-zinc-950"
                 >
                   Clear Filters
                 </Button>
@@ -573,7 +573,7 @@ function ProjectGroup({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={regionId}
-        className="group flex w-full items-center gap-2 px-1 py-1 mb-2 rounded-md hover:bg-neutral-100 dark:hover:bg-gray-900/50 transition-colors"
+        className="group flex w-full items-center gap-2 px-1 py-1 mb-2 rounded-md hover:bg-neutral-100 dark:hover:bg-zinc-900/60 transition-colors"
       >
         <ChevronRight
           className={cn(

@@ -553,7 +553,7 @@ function MediaCard({
     <Card 
       ref={cardRef}
       className={cn(
-        "group relative cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] bg-card border-border hover:border-foreground/20 active:opacity-70",
+        "group relative cursor-pointer transition-all duration-200 hover:scale-[1.02] rounded-2xl bg-card border-border dark:bg-zinc-900/70 dark:hover:bg-zinc-900 dark:border-transparent shadow-[0_0_14px_rgba(34,211,238,0.12)] hover:shadow-[0_0_18px_rgba(34,211,238,0.2)] active:opacity-70",
         isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent",
         isVersionDropTarget && "ring-2 ring-primary ring-offset-2 ring-offset-background border-transparent shadow-lg",
       )}
@@ -587,7 +587,7 @@ function MediaCard({
       <CardContent className="p-0">
         {/* Thumbnail Container */}
         <div 
-          className="relative aspect-video bg-muted rounded-t-lg overflow-hidden"
+          className="relative aspect-video bg-muted rounded-t-2xl overflow-hidden"
           style={{
             cursor: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M8 5v10l8-5-8-5z' fill='%23ffffff'/%3e%3c/svg%3e") 10 10, pointer`
           }}

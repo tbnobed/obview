@@ -160,7 +160,7 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
           size="sm" 
           onClick={handleScanFiles}
           disabled={isScanning}
-          className="ml-2 dark:bg-[#026d55] dark:text-white dark:border-[#026d55] dark:hover:bg-[#025943] dark:hover:border-[#025943]"
+          className="ml-2 dark:bg-cyan-400 dark:text-zinc-950 dark:border-cyan-400 dark:hover:bg-cyan-300 dark:hover:border-cyan-300"
         >
           {isScanning ? (
             <>
@@ -181,10 +181,10 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
           <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
         </div>
       ) : filteredFiles && filteredFiles.length > 0 ? (
-        <div className="border border-gray-200 dark:border-gray-800 rounded-md overflow-hidden">
+        <div className="border border-gray-200 dark:border-zinc-800/50 rounded-md overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50 dark:bg-[#0a0d14]">
+              <TableRow className="bg-gray-50 dark:bg-zinc-950">
                 <TableHead className="w-[300px]">File Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Size</TableHead>
@@ -267,7 +267,7 @@ export function ProjectMediaManager({ projectId }: { projectId: number }) {
           </Table>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed rounded-md border-gray-200 dark:border-gray-800">
+        <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed rounded-md border-gray-200 dark:border-zinc-800/50">
           <div className="text-muted-foreground mb-2">
             {searchTerm ? "No files match your search" : "No files available for this project"}
           </div>
