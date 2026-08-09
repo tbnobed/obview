@@ -470,7 +470,7 @@ export default function TimelineComments({
                       }
                     }
                   } : undefined}
-                  className={`group relative rounded-2xl p-3.5 transition-colors cursor-pointer ${
+                  className={`group relative rounded-2xl p-3.5 transition-colors cursor-pointer shadow-[0_0_14px_rgba(34,211,238,0.12)] hover:shadow-[0_0_18px_rgba(34,211,238,0.2)] transition-shadow ${
                     activeCommentId === comment.id ? 'bg-zinc-900 ring-1 ring-cyan-400/40' : 'bg-zinc-900/70 hover:bg-zinc-900'
                   }`}
                   title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : "Select this comment"}
