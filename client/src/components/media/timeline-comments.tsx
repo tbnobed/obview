@@ -508,7 +508,7 @@ export default function TimelineComments({
                                <button
                                  type="button"
                                  onClick={(e) => { e.stopPropagation(); onTimeClick(comment.timestamp); }}
-                                 className="text-[11px] font-mono tracking-tight px-2 py-1 rounded-md border border-sky-300/20 bg-sky-400/10 text-sky-200 hover:bg-sky-400/20 hover:border-sky-300/40 transition-colors"
+                                 className="text-[11px] font-mono tracking-tight px-2 py-1 rounded-md bg-sky-400/10 text-sky-200 hover:bg-sky-400/20 transition-colors"
                                  style={{ color: 'hsl(199 89% 86%)' }}
                               >
                                 {(comment as any).inPoint != null && (comment as any).outPoint != null
@@ -577,7 +577,7 @@ export default function TimelineComments({
                       {/* Action buttons - Mobile: smaller spacing, Desktop: normal */}
                        <div className="flex gap-1.5 mt-3 lg:gap-2">
                         <button
-                           className="inline-flex items-center rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] font-medium transition-colors text-muted-foreground hover:text-sky-300 hover:border-sky-300/30 hover:bg-sky-400/10"
+                           className="inline-flex items-center rounded-md bg-white/[0.04] px-2 py-1 text-[11px] font-medium transition-colors text-muted-foreground hover:text-sky-300 hover:bg-sky-400/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             setReplyingToId(replyingToId === comment.id ? null : comment.id);
@@ -593,8 +593,8 @@ export default function TimelineComments({
                              className={cn(
                                "h-7 rounded-md border px-2 text-[11px] font-medium transition-colors",
                                comment.isResolved
-                                 ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/15"
-                                 : "border-white/10 bg-white/[0.04] text-muted-foreground hover:text-emerald-300 hover:border-emerald-300/30"
+                                 ? "bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/15"
+                                 : "bg-white/[0.04] text-muted-foreground hover:text-emerald-300 "
                             )}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -612,7 +612,7 @@ export default function TimelineComments({
                         {canEditComment(comment) && editingId !== comment.id && (
                           <Button
                             variant="link"
-                             className="h-7 rounded-md border border-white/10 bg-white/[0.04] px-2 text-[11px] font-medium text-muted-foreground hover:text-sky-300 hover:border-sky-300/30 transition-colors"
+                             className="h-7 rounded-md bg-white/[0.04] px-2 text-[11px] font-medium text-muted-foreground hover:text-sky-300 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStartEdit(comment);
@@ -626,7 +626,7 @@ export default function TimelineComments({
                         {canDeleteComment(comment) && (
                           <Button
                             variant="link"
-                             className="h-7 rounded-md border border-white/10 bg-white/[0.04] px-2 text-[11px] font-medium text-muted-foreground hover:text-red-300 hover:border-red-300/30 transition-colors"
+                             className="h-7 rounded-md bg-white/[0.04] px-2 text-[11px] font-medium text-muted-foreground hover:text-red-300 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteComment(comment);
@@ -670,8 +670,8 @@ export default function TimelineComments({
           </>
         ) : (
           // Empty state - Mobile: compact padding, Desktop: spacious padding
-          <div className="mx-1 flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.025] py-10 text-center lg:py-14">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-sky-300/20 bg-sky-400/10">
+          <div className="mx-1 flex flex-col items-center justify-center rounded-xl bg-white/[0.025] py-10 text-center lg:py-14">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-sky-400/10">
               <MessageSquare className="h-5 w-5 text-sky-300" />
             </div>
             <p className="text-sm font-medium text-foreground/80">

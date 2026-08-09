@@ -865,7 +865,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 text-xs rounded-lg border border-amber-400/30 bg-amber-500/10 text-amber-300 transition-colors hover:bg-amber-500/25 hover:border-amber-400/60 hover:text-amber-200"
+                className="h-7 text-xs rounded-lg bg-amber-500/10 text-amber-300 transition-colors hover:bg-amber-500/25 hover:text-amber-200"
                 data-testid="button-request-changes"
               >
                 <MessageSquareWarning className="h-3.5 w-3.5 mr-1" />
@@ -1180,8 +1180,8 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   <div className="text-sm text-neutral-500 px-1 py-2">Loading…</div>
                 )}
                 {commentsQ.data?.length === 0 && commentFilter === "all" && (
-                  <div className="mx-1 flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.025] py-10 text-center">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-sky-300/20 bg-sky-400/10">
+                  <div className="mx-1 flex flex-col items-center justify-center rounded-xl bg-white/[0.025] py-10 text-center">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-sky-400/10">
                       <MessageSquareWarning className="h-5 w-5 text-sky-300" />
                     </div>
                     <p className="text-sm font-medium text-neutral-200">No comments yet</p>
@@ -1193,7 +1193,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   if (commentFilter === "resolved") return c.isResolved;
                   return true;
                 }).filter((c) => !c.parentId).length === 0 && (
-                  <div className="mx-1 flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.025] py-10 text-center">
+                  <div className="mx-1 flex flex-col items-center justify-center rounded-xl bg-white/[0.025] py-10 text-center">
                     <Filter className="mb-3 h-5 w-5 text-neutral-500" />
                     <p className="text-sm font-medium text-neutral-300">No {commentFilter} comments</p>
                     <p className="mt-1 text-xs text-neutral-500">Try another review filter.</p>
@@ -1234,7 +1234,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                           className={cn(
                             "rounded-xl border p-3.5 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))] cursor-pointer transition-all hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,0,0,.22)]",
                             isActive &&
-                              "ring-1 ring-sky-400/70 border-sky-400/50 bg-sky-400/[0.06]",
+                              "ring-1 ring-sky-400/70 bg-sky-400/[0.06]",
                           )}
                           data-testid={`share-comment-${c.id}`}
                         >
@@ -1263,7 +1263,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                         setDisplayAnnotations(parsePublicAnnotations(c));
                                         seekTo(c.timestamp!);
                                       }}
-                                      className="text-[11px] font-mono tracking-tight px-2 py-1 rounded-md border border-sky-300/20 bg-sky-400/10 text-sky-200 hover:bg-sky-400/20 transition-colors"
+                                      className="text-[11px] font-mono tracking-tight px-2 py-1 rounded-md bg-sky-400/10 text-sky-200 hover:bg-sky-400/20 transition-colors"
                                       title={(c as any).inPoint != null && (c as any).outPoint != null ? `Range ${fmtTime((c as any).inPoint)} → ${fmtTime((c as any).outPoint)}` : "Jump to this moment"}
                                       data-testid={`button-seek-${c.id}`}
                                     >
@@ -1338,7 +1338,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                 >
                                   <button
                                     type="button"
-                                    className="inline-flex h-7 items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2 hover:text-sky-300 hover:border-sky-300/30 hover:bg-sky-400/10"
+                                    className="inline-flex h-7 items-center gap-1 rounded-md bg-white/[0.04] px-2 hover:text-sky-300 hover:bg-sky-400/10"
                                     onClick={() => {
                                       setReplyingToId(isReplying ? null : c.id);
                                       setReplyContent("");
@@ -1430,13 +1430,13 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-neutral-50 dark:bg-white/[0.035] border-neutral-200 dark:border-white/10 h-8 text-sm rounded-lg"
+                  className="bg-neutral-50 dark:bg-white/[0.035] border-neutral-200 dark:h-8 text-sm rounded-lg"
                   data-testid="input-share-author"
                 />
                 <div className="relative">
                   <textarea
                     ref={commentInputRef}
-                    className="w-full text-sm rounded-xl border border-neutral-200 dark:border-white/10 p-2.5 pb-9 min-h-[64px] bg-neutral-50 dark:bg-white/[0.035] text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none shadow-inner"
+                    className="w-full text-sm rounded-xl border border-neutral-200 dark:p-2.5 pb-9 min-h-[64px] bg-neutral-50 dark:bg-white/[0.035] text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none shadow-inner"
                     placeholder={
                       isVideo || isAudio
                         ? `Add a comment at ${fmtTime(currentTime) || "0:00"}...`

@@ -149,7 +149,7 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
         variant="ghost"
         size={compact ? "sm" : size}
         onClick={handleOpenDialog}
-        className={`flex items-center rounded-lg border border-violet-400/30 bg-violet-500/10 text-violet-300 transition-colors hover:bg-violet-500/25 hover:border-violet-400/60 hover:text-violet-200 ${compact ? 'gap-0 p-1' : 'gap-1.5'} ${className || ''}`}
+        className={`flex items-center rounded-lg bg-violet-500/10 text-violet-300 transition-colors hover:bg-violet-500/25 hover:text-violet-200 ${compact ? 'gap-0 p-1' : 'gap-1.5'} ${className || ''}`}
         data-variant-type={variant}
         title={compact ? "Share this file" : undefined}
       >

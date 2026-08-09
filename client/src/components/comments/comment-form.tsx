@@ -335,7 +335,7 @@ export default function CommentForm({
       data-comment-form
     >
       {/* Form content - Mobile: compact spacing, Desktop: normal spacing */}
-      <div className="flex items-start gap-2 w-full lg:gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-2.5 shadow-inner">
+      <div className="flex items-start gap-2 w-full lg:gap-3 rounded-xl bg-white/[0.035] p-2.5 shadow-inner">
         <textarea
           ref={textareaRef}
           value={content}
@@ -380,7 +380,7 @@ export default function CommentForm({
         <button
           type="submit"
           disabled={content.trim() === "" || createCommentMutation.isPending}
-           className="flex-shrink-0 p-2 rounded-lg bg-sky-400/15 text-sky-200 border border-sky-300/20 hover:bg-sky-400/25 disabled:bg-white/[0.04] disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors lg:p-2.5"
+           className="flex-shrink-0 p-2 rounded-lg bg-sky-400/15 text-sky-200 hover:bg-sky-400/25 disabled:bg-white/[0.04] disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors lg:p-2.5"
           data-testid="button-submit-comment"
           onClick={handleSubmit}
         >
@@ -399,7 +399,7 @@ export default function CommentForm({
             <Clock className="h-3 w-3" />
             {hasRange ? (
               <span className="inline-flex items-center gap-1">
-               <span className="font-mono px-2 py-0.5 rounded-md border border-sky-300/20 bg-sky-400/10 text-sky-200">
+               <span className="font-mono px-2 py-0.5 rounded-md bg-sky-400/10 text-sky-200">
                   {formatTime(inPoint as number)} → {formatTime(outPoint as number)}
                 </span>
                 <span>range</span>
