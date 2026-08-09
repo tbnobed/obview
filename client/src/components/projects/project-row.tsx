@@ -109,7 +109,7 @@ export default function ProjectRow({ project, isSelected, selectedIds, onToggleS
           isSelected && "ring-2 ring-primary dark:ring-cyan-400/60",
           isFileDropTarget && "ring-2 ring-primary shadow-md",
         )}
-        style={{ boxShadow: `0 0 14px ${accentColor}22` }}
+        style={{ boxShadow: `-8px 0 16px -4px ${accentColor}40` }}
         draggable
         onDragStart={onDragStart}
         onDragEnd={clearDragPayload}
