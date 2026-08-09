@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -1107,14 +1108,14 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
 
         {/* Sidebar */}
         <aside
-          className="w-full landscape:w-[44%] landscape:max-w-[360px] lg:w-[360px] flex-1 landscape:flex-none landscape:shrink-0 lg:flex-none lg:shrink-0 flex flex-col bg-white dark:bg-[#0a0d12] border-t landscape:border-t-0 landscape:border-l lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 min-h-0 overflow-hidden"
+          className="w-full landscape:w-[44%] landscape:max-w-[360px] lg:w-[360px] flex-1 landscape:flex-none landscape:shrink-0 lg:flex-none lg:shrink-0 flex flex-col bg-white dark:bg-zinc-950 min-h-0 overflow-hidden"
           data-testid="share-sidebar"
         >
           <Tabs
             defaultValue={viewOnly ? "transcript" : "comments"}
             className="flex-1 min-h-0 flex flex-col"
           >
-            <div className="px-2 py-1 border-b border-neutral-200 dark:border-gray-800 landscape:hidden lg:landscape:block">
+            <div className="px-2 py-1 landscape:hidden lg:landscape:block">
               <TabsList className="h-7 bg-transparent p-0 gap-1">
                 {!viewOnly && (
                   <TabsTrigger
@@ -1156,17 +1157,17 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               value="comments"
               className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
             >
-              <div className="hidden sm:flex items-center gap-1 px-3 py-2 border-b border-neutral-200 dark:border-[hsl(var(--comments-card-border))] shrink-0 bg-white/[0.01]">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-3 shrink-0">
                 <Filter className="h-3.5 w-3.5 mr-1 text-neutral-400 dark:text-gray-500" />
                 {(["all", "unresolved", "resolved"] as const).map((f) => (
                   <button
                     key={f}
                     onClick={() => setCommentFilter(f)}
                     className={cn(
-                      "text-[11px] px-2.5 py-1 rounded-md transition-all capitalize font-medium",
+                      "rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors",
                       commentFilter === f
-                        ? "bg-sky-400/15 text-sky-300 shadow-sm"
-                        : "text-neutral-500 dark:text-gray-400 hover:text-neutral-200 hover:bg-white/[0.05]"
+                        ? "bg-cyan-950/80 text-cyan-400"
+                        : "bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                     )}
                   >
                     {f}
@@ -1233,9 +1234,9 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                             if (c.timestamp != null) seekTo(c.timestamp);
                           }}
                           className={cn(
-                            "rounded-xl p-3.5 bg-white dark:bg-[#171e25] cursor-pointer transition-all hover:-translate-y-px hover:bg-[#1b242c]",
+                            "group rounded-2xl p-3.5 bg-white dark:bg-zinc-900/70 cursor-pointer transition-colors dark:hover:bg-zinc-900 shadow-[0_0_14px_rgba(34,211,238,0.12)] hover:shadow-[0_0_18px_rgba(34,211,238,0.2)] transition-shadow",
                             isActive &&
-                              "ring-1 ring-sky-400/70 bg-sky-400/[0.06]",
+                              "dark:bg-zinc-900 ring-1 ring-cyan-400/40",
                           )}
                           data-testid={`share-comment-${c.id}`}
                         >
@@ -1250,11 +1251,11 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-sm font-medium text-cyan-300">
+                                  <span className="text-xs font-semibold text-zinc-200">
                                     {author}
                                   </span>
-                                  <span className="text-xs text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
-                                    {new Date(c.createdAt).toLocaleDateString()}
+                                  <span className="text-[11px] text-zinc-500">
+                                    {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true }).replace(/^about /, "")}
                                   </span>
                                   {c.timestamp != null && (
                                     <button
@@ -1264,7 +1265,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                         setDisplayAnnotations(parsePublicAnnotations(c));
                                         seekTo(c.timestamp!);
                                       }}
-                                      className="text-[11px] font-mono tracking-tight px-2 py-1 rounded-md bg-sky-400/10 text-sky-200 hover:bg-sky-400/20 transition-colors"
+                                      className="rounded-lg bg-cyan-950/50 px-2 py-0.5 text-xs font-mono font-medium text-cyan-400 transition-colors hover:bg-cyan-900/80"
                                       title={(c as any).inPoint != null && (c as any).outPoint != null ? `Range ${fmtTime((c as any).inPoint)} → ${fmtTime((c as any).outPoint)}` : "Jump to this moment"}
                                       data-testid={`button-seek-${c.id}`}
                                     >
@@ -1292,7 +1293,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                   )}
                                 </div>
                                 {!isReply && (
-                                  <MoreHorizontal className="h-4 w-4 text-neutral-500" />
+                                  <MoreHorizontal className="h-4 w-4 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100" />
                                 )}
                               </div>
                               {isEditing ? (
@@ -1326,18 +1327,18 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                   </div>
                                 </div>
                               ) : (
-                                <div className="text-sm text-neutral-800 dark:text-[hsl(var(--comments-text))] whitespace-pre-wrap break-words leading-relaxed">
+                                <div className="mt-2.5 text-xs text-zinc-300 whitespace-pre-wrap break-words leading-relaxed">
                                   {c.content}
                                 </div>
                               )}
                               {!isEditing && (
                                 <div
                                   onClick={(e) => e.stopPropagation()}
-                                  className="mt-3 flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-gray-400"
+                                  className="mt-3 flex items-center gap-4 text-xs text-zinc-400"
                                 >
                                   <button
                                     type="button"
-                                    className="inline-flex h-7 items-center gap-1 rounded-md bg-white/[0.04] px-2 hover:text-sky-300 hover:bg-sky-400/10"
+                                    className="flex items-center gap-1 transition-colors hover:text-zinc-200"
                                     onClick={() => {
                                       setReplyingToId(isReplying ? null : c.id);
                                       setReplyContent("");
@@ -1350,7 +1351,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                     <>
                                       <button
                                         type="button"
-                                        className="inline-flex items-center gap-1 hover:text-neutral-800 dark:hover:text-gray-200"
+                                        className="flex items-center gap-1 transition-colors hover:text-zinc-200"
                                         onClick={() => {
                                           setEditingId(c.id);
                                           setEditContent(c.content);
@@ -1361,7 +1362,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                       </button>
                                       <button
                                         type="button"
-                                        className="inline-flex items-center gap-1 text-red-500 hover:text-red-600"
+                                        className="flex items-center gap-1 transition-colors hover:text-red-300"
                                         onClick={() => {
                                           if (window.confirm("Delete this comment?")) {
                                             deletePost.mutate(c.id);
@@ -1424,18 +1425,18 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               </div>
 
               {/* Sticky composer */}
-              <div className="border-t border-neutral-200 dark:border-[hsl(var(--comments-card-border))] p-3 space-y-2 shrink-0 bg-white dark:bg-[#0f1218]">
+              <div className="p-3 space-y-2 shrink-0 bg-white dark:bg-zinc-950">
                 <Input
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-neutral-50 dark:bg-white/[0.035] border-neutral-200 dark:h-8 text-sm rounded-lg"
+                  className="bg-neutral-50 dark:bg-zinc-900/90 border-neutral-200 dark:border-0 dark:h-8 text-sm rounded-lg dark:text-zinc-200 dark:placeholder:text-zinc-500"
                   data-testid="input-share-author"
                 />
                 <div className="relative">
                   <textarea
                     ref={commentInputRef}
-                    className="w-full text-sm rounded-xl border border-neutral-200 dark:p-2.5 pb-9 min-h-[64px] bg-neutral-50 dark:bg-white/[0.035] text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none shadow-inner"
+                    className="w-full text-xs rounded-2xl border border-neutral-200 dark:border-0 dark:p-3 pb-9 min-h-[64px] bg-neutral-50 dark:bg-zinc-900/90 text-neutral-900 dark:text-zinc-200 placeholder:text-neutral-400 dark:placeholder:text-zinc-500 resize-none dark:shadow-2xl outline-none focus:outline-none"
                     placeholder={
                       isVideo || isAudio
                         ? `Add a comment at ${fmtTime(currentTime) || "0:00"}...`
@@ -1536,7 +1537,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                     </div>
                     <Button
                       size="icon"
-                      className="h-7 w-7 pointer-events-auto"
+                      className="h-7 w-7 pointer-events-auto rounded-xl bg-cyan-400 text-zinc-950 hover:bg-cyan-300 disabled:bg-zinc-800 disabled:text-zinc-500"
                       disabled={!content.trim() || post.isPending}
                       onClick={() => requireName(() => post.mutate())}
                       data-testid="button-post-share-comment"
@@ -1549,7 +1550,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 {(isVideo || isAudio) && (() => {
                   const hasRange = inPoint !== null && outPoint !== null && outPoint > inPoint;
                   return (
-                    <div className="hidden sm:flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                    <div className="hidden sm:flex items-center justify-between text-[11px] text-zinc-500">
                       {hasRange ? (
                         <>
                           <span className="inline-flex items-center gap-1">
@@ -1564,14 +1565,14 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                               ×
                             </button>
                           </span>
-                          <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
+                          <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 font-mono font-medium text-cyan-400">
                             {fmtTime(inPoint!)} → {fmtTime(outPoint!)}
                           </span>
                         </>
                       ) : (
                         <>
                           <span>Will be posted at {fmtTime(currentTime) || "00:00"} · I/O for range</span>
-                          <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
+                          <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 font-mono font-medium text-cyan-400">
                             {fmtTime(currentTime) || "00:00"}
                           </span>
                         </>
