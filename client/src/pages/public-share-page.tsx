@@ -1155,17 +1155,17 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
               value="comments"
               className="data-[state=active]:flex flex-col flex-1 min-h-0 m-0 overflow-hidden"
             >
-              <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 border-b border-neutral-200 dark:border-gray-800 shrink-0">
+              <div className="hidden sm:flex items-center gap-1 px-3 py-2 border-b border-neutral-200 dark:border-[hsl(var(--comments-card-border))] shrink-0 bg-white/[0.01]">
                 <Filter className="h-3.5 w-3.5 mr-1 text-neutral-400 dark:text-gray-500" />
                 {(["all", "unresolved", "resolved"] as const).map((f) => (
                   <button
                     key={f}
                     onClick={() => setCommentFilter(f)}
                     className={cn(
-                      "text-xs px-2 py-0.5 rounded-full transition-colors capitalize",
+                      "text-[11px] px-2.5 py-1 rounded-md transition-all capitalize font-medium",
                       commentFilter === f
-                        ? "bg-primary/20 text-primary dark:bg-[#10a37f]/20 dark:text-[#10a37f]"
-                        : "text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-200"
+                        ? "bg-sky-400/15 text-sky-300 shadow-sm"
+                        : "text-neutral-500 dark:text-gray-400 hover:text-neutral-200 hover:bg-white/[0.05]"
                     )}
                   >
                     {f}
@@ -1173,15 +1173,19 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 ))}
               </div>
               <div
-                className="flex-1 min-h-0 overflow-y-auto px-3 space-y-2"
+                className="comments-panel flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3"
                 data-testid="share-comments-list"
               >
                 {commentsQ.isLoading && (
                   <div className="text-sm text-neutral-500 px-1 py-2">Loading…</div>
                 )}
                 {commentsQ.data?.length === 0 && commentFilter === "all" && (
-                  <div className="text-sm text-neutral-500 px-1 py-6 text-center">
-                    No comments yet. Be the first to leave one.
+                  <div className="mx-1 flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.025] py-10 text-center">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-sky-300/20 bg-sky-400/10">
+                      <MessageSquareWarning className="h-5 w-5 text-sky-300" />
+                    </div>
+                    <p className="text-sm font-medium text-neutral-200">No comments yet</p>
+                    <p className="mt-1 text-xs text-neutral-500">Leave the first frame-accurate note.</p>
                   </div>
                 )}
                 {commentsQ.data && commentsQ.data.length > 0 && commentFilter !== "all" && (commentsQ.data || []).filter((c) => {
@@ -1189,8 +1193,10 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   if (commentFilter === "resolved") return c.isResolved;
                   return true;
                 }).filter((c) => !c.parentId).length === 0 && (
-                  <div className="text-sm text-neutral-500 px-1 py-6 text-center">
-                    No {commentFilter} comments
+                  <div className="mx-1 flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.025] py-10 text-center">
+                    <Filter className="mb-3 h-5 w-5 text-neutral-500" />
+                    <p className="text-sm font-medium text-neutral-300">No {commentFilter} comments</p>
+                    <p className="mt-1 text-xs text-neutral-500">Try another review filter.</p>
                   </div>
                 )}
                 {(() => {
@@ -1226,9 +1232,9 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                             if (c.timestamp != null) seekTo(c.timestamp);
                           }}
                           className={cn(
-                            "rounded-lg border p-3 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))] cursor-pointer transition-colors",
+                            "rounded-xl border p-3.5 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))] cursor-pointer transition-all hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,0,0,.22)]",
                             isActive &&
-                              "ring-2 ring-primary dark:ring-[#10a37f] border-primary dark:border-[#10a37f]",
+                              "ring-1 ring-sky-400/70 border-sky-400/50 bg-sky-400/[0.06]",
                           )}
                           data-testid={`share-comment-${c.id}`}
                         >
@@ -1257,7 +1263,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                         setDisplayAnnotations(parsePublicAnnotations(c));
                                         seekTo(c.timestamp!);
                                       }}
-                                      className="text-xs font-mono px-2 py-1 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))] hover:opacity-80 transition-opacity"
+                                      className="text-[11px] font-mono tracking-tight px-2 py-1 rounded-md border border-sky-300/20 bg-sky-400/10 text-sky-200 hover:bg-sky-400/20 transition-colors"
                                       title={(c as any).inPoint != null && (c as any).outPoint != null ? `Range ${fmtTime((c as any).inPoint)} → ${fmtTime((c as any).outPoint)}` : "Jump to this moment"}
                                       data-testid={`button-seek-${c.id}`}
                                     >
@@ -1328,11 +1334,11 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                               {!isEditing && (
                                 <div
                                   onClick={(e) => e.stopPropagation()}
-                                  className="mt-2 flex items-center gap-3 text-[11px] text-neutral-500 dark:text-gray-400"
+                                  className="mt-3 flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-gray-400"
                                 >
                                   <button
                                     type="button"
-                                    className="inline-flex items-center gap-1 hover:text-neutral-800 dark:hover:text-gray-200"
+                                    className="inline-flex h-7 items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2 hover:text-sky-300 hover:border-sky-300/30 hover:bg-sky-400/10"
                                     onClick={() => {
                                       setReplyingToId(isReplying ? null : c.id);
                                       setReplyContent("");
@@ -1424,13 +1430,13 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
+                  className="bg-neutral-50 dark:bg-white/[0.035] border-neutral-200 dark:border-white/10 h-8 text-sm rounded-lg"
                   data-testid="input-share-author"
                 />
                 <div className="relative">
                   <textarea
                     ref={commentInputRef}
-                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pb-9 min-h-[64px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
+                    className="w-full text-sm rounded-xl border border-neutral-200 dark:border-white/10 p-2.5 pb-9 min-h-[64px] bg-neutral-50 dark:bg-white/[0.035] text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none shadow-inner"
                     placeholder={
                       isVideo || isAudio
                         ? `Add a comment at ${fmtTime(currentTime) || "0:00"}...`

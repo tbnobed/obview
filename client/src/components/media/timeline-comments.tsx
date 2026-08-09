@@ -385,7 +385,7 @@ export default function TimelineComments({
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
+      <div className="comments-panel flex flex-col h-full min-h-0" style={{backgroundColor: 'hsl(var(--comments-bg))'}}>
       {/* Comment Input - Mobile: sticky at top, Desktop: hidden */}
       <div className="sticky top-0 z-10 border-b px-2 pt-0 pb-1 lg:hidden shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))', backgroundColor: 'hsl(var(--comments-bg))'}}>
         <CommentForm
@@ -401,17 +401,17 @@ export default function TimelineComments({
       </div>
       
       {/* Filter bar */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))', backgroundColor: 'hsl(var(--comments-bg))'}}>
+      <div className="flex items-center gap-1 px-3 py-2 border-b shrink-0" style={{borderColor: 'hsl(var(--comments-card-border))', backgroundColor: 'hsl(var(--comments-bg))'}}>
         <Filter className="h-3.5 w-3.5 mr-1" style={{color: 'hsl(var(--comments-muted))'}} />
         {(["all", "unresolved", "resolved"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={cn(
-              "text-xs px-2 py-0.5 rounded-full transition-colors capitalize",
+              "text-[11px] px-2.5 py-1 rounded-md transition-all capitalize font-medium",
               filter === f
-                ? "bg-primary/20 text-primary"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-sky-400/15 text-sky-300 shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-white/[0.05]"
             )}
           >
             {f}
@@ -420,7 +420,7 @@ export default function TimelineComments({
       </div>
 
       {/* Comments List - Mobile: basic padding, Desktop: extended padding */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-3 pb-3">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-3 py-3 pb-4">
         {isLoading ? (
           // Loading state - Mobile: compact padding, Desktop: normal padding
           <div className="flex justify-center py-4 lg:py-8">
@@ -468,12 +468,12 @@ export default function TimelineComments({
                       }
                     }
                   } : undefined}
-                  className={`relative rounded-lg border p-3 transition-all duration-200 lg:p-4 cursor-pointer hover:shadow-lg ${
-                    activeCommentId === comment.id ? 'ring-2 ring-blue-500/50 bg-blue-500/5' : ''
+                  className={`relative rounded-xl border p-3.5 transition-all duration-200 lg:p-4 cursor-pointer hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,0,0,.22)] ${
+                    activeCommentId === comment.id ? 'ring-1 ring-sky-400/70 bg-sky-400/[0.06]' : ''
                   }`}
                   style={{
-                    backgroundColor: 'hsl(var(--comments-card))',
-                    borderColor: 'hsl(var(--comments-card-border))',
+                     backgroundColor: activeCommentId === comment.id ? 'hsl(210 24% 15%)' : 'hsl(var(--comments-card))',
+                     borderColor: activeCommentId === comment.id ? 'hsl(199 89% 48% / .5)' : 'hsl(var(--comments-card-border))',
                     color: 'hsl(var(--comments-text))'
                   }}
                   title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : "Select this comment"}
@@ -505,19 +505,18 @@ export default function TimelineComments({
                           </span>
                           {comment.timestamp !== null && (
                             <div className="flex items-center gap-1.5">
-                              <span 
-                                className="text-xs font-mono px-2 py-1 rounded"
-                                style={{
-                                  backgroundColor: 'hsl(var(--comments-timestamp-bg))',
-                                  color: 'hsl(var(--comments-timestamp-fg))'
-                                }}
+                               <button
+                                 type="button"
+                                 onClick={(e) => { e.stopPropagation(); onTimeClick(comment.timestamp); }}
+                                 className="text-[11px] font-mono tracking-tight px-2 py-1 rounded-md border border-sky-300/20 bg-sky-400/10 text-sky-200 hover:bg-sky-400/20 hover:border-sky-300/40 transition-colors"
+                                 style={{ color: 'hsl(199 89% 86%)' }}
                               >
                                 {(comment as any).inPoint != null && (comment as any).outPoint != null
                                   ? `${formatTimeShort((comment as any).inPoint)} → ${formatTimeShort((comment as any).outPoint)}`
                                   : formatTime(comment.timestamp)}
-                              </span>
+                               </button>
                               {(comment as any).annotations && (
-                                <PenTool className="h-3 w-3 text-yellow-400" title="Has drawing annotation" />
+                                 <PenTool className="h-3 w-3 text-yellow-400" aria-label="Has drawing annotation" />
                               )}
                               {comment.isResolved && (
                                 <Check className="h-3 w-3 text-green-500" />
@@ -525,7 +524,7 @@ export default function TimelineComments({
                             </div>
                           )}
                         </div>
-                        <span className="text-xs font-medium" style={{color: 'hsl(var(--comments-muted))'}}>
+                         <span className="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-white/[0.04]" style={{color: 'hsl(var(--comments-muted))'}}>
                           #{index + 1}
                         </span>
                       </div>
@@ -576,9 +575,9 @@ export default function TimelineComments({
                       />
 
                       {/* Action buttons - Mobile: smaller spacing, Desktop: normal */}
-                      <div className="flex gap-2 mt-2 lg:gap-3">
+                       <div className="flex gap-1.5 mt-3 lg:gap-2">
                         <button
-                          className="text-xs font-medium transition-colors text-muted-foreground hover:text-primary"
+                           className="inline-flex items-center rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] font-medium transition-colors text-muted-foreground hover:text-sky-300 hover:border-sky-300/30 hover:bg-sky-400/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             setReplyingToId(replyingToId === comment.id ? null : comment.id);
@@ -591,9 +590,11 @@ export default function TimelineComments({
                         {user && (
                           <Button 
                             variant="link" 
-                            className={cn(
-                              "text-xs p-0 h-auto font-medium transition-colors",
-                              "text-muted-foreground hover:text-green-500"
+                             className={cn(
+                               "h-7 rounded-md border px-2 text-[11px] font-medium transition-colors",
+                               comment.isResolved
+                                 ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/15"
+                                 : "border-white/10 bg-white/[0.04] text-muted-foreground hover:text-emerald-300 hover:border-emerald-300/30"
                             )}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -611,7 +612,7 @@ export default function TimelineComments({
                         {canEditComment(comment) && editingId !== comment.id && (
                           <Button
                             variant="link"
-                            className="text-xs p-0 h-auto font-medium text-muted-foreground hover:text-primary transition-colors"
+                             className="h-7 rounded-md border border-white/10 bg-white/[0.04] px-2 text-[11px] font-medium text-muted-foreground hover:text-sky-300 hover:border-sky-300/30 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStartEdit(comment);
@@ -625,7 +626,7 @@ export default function TimelineComments({
                         {canDeleteComment(comment) && (
                           <Button
                             variant="link"
-                            className="text-xs p-0 h-auto font-medium text-muted-foreground hover:text-destructive transition-colors"
+                             className="h-7 rounded-md border border-white/10 bg-white/[0.04] px-2 text-[11px] font-medium text-muted-foreground hover:text-red-300 hover:border-red-300/30 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteComment(comment);
@@ -669,13 +670,15 @@ export default function TimelineComments({
           </>
         ) : (
           // Empty state - Mobile: compact padding, Desktop: spacious padding
-          <div className="flex flex-col items-center justify-center py-8 text-center lg:py-12">
-            <MessageSquare className="h-10 w-10 mb-3 lg:h-12 lg:w-12" style={{color: 'hsl(var(--comments-muted))'}} />
-            <p className="text-sm" style={{color: 'hsl(var(--comments-muted))'}}>
+          <div className="mx-1 flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.025] py-10 text-center lg:py-14">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-sky-300/20 bg-sky-400/10">
+              <MessageSquare className="h-5 w-5 text-sky-300" />
+            </div>
+            <p className="text-sm font-medium text-foreground/80">
               {filter !== "all" ? `No ${filter} comments` : "No comments yet"}
             </p>
             {filter === "all" && (
-              <p className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>Be the first to comment!</p>
+            <p className="mt-1 text-xs" style={{color: 'hsl(var(--comments-muted))'}}>Start a frame-accurate review note below.</p>
             )}
           </div>
         )}

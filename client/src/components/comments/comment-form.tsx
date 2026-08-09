@@ -328,14 +328,14 @@ export default function CommentForm({
 
   return (
     <div 
-      className={cn("w-full p-2 lg:p-3", className)} 
+      className={cn("comments-composer w-full p-2.5 lg:p-3", className)}
       style={{
         backgroundColor: 'hsl(var(--comments-bg))'
       }}
       data-comment-form
     >
       {/* Form content - Mobile: compact spacing, Desktop: normal spacing */}
-      <div className="flex items-start gap-2 w-full lg:gap-3">
+      <div className="flex items-start gap-2 w-full lg:gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-2.5 shadow-inner">
         <textarea
           ref={textareaRef}
           value={content}
@@ -380,14 +380,14 @@ export default function CommentForm({
         <button
           type="submit"
           disabled={content.trim() === "" || createCommentMutation.isPending}
-          className="flex-shrink-0 p-1.5 rounded bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors lg:p-2"
+           className="flex-shrink-0 p-2 rounded-lg bg-sky-400/15 text-sky-200 border border-sky-300/20 hover:bg-sky-400/25 disabled:bg-white/[0.04] disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors lg:p-2.5"
           data-testid="button-submit-comment"
           onClick={handleSubmit}
         >
           {createCommentMutation.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 text-primary-foreground animate-spin lg:h-4 lg:w-4" />
+             <Loader2 className="h-3.5 w-3.5 text-sky-200 animate-spin lg:h-4 lg:w-4" />
           ) : (
-            <Send className="h-3.5 w-3.5 text-primary-foreground lg:h-4 lg:w-4" />
+             <Send className="h-3.5 w-3.5 text-sky-200 lg:h-4 lg:w-4" />
           )}
         </button>
       </div>
@@ -399,7 +399,7 @@ export default function CommentForm({
             <Clock className="h-3 w-3" />
             {hasRange ? (
               <span className="inline-flex items-center gap-1">
-                <span className="font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
+               <span className="font-mono px-2 py-0.5 rounded-md border border-sky-300/20 bg-sky-400/10 text-sky-200">
                   {formatTime(inPoint as number)} → {formatTime(outPoint as number)}
                 </span>
                 <span>range</span>
@@ -416,7 +416,7 @@ export default function CommentForm({
                 )}
               </span>
             ) : (
-              <span>Will be posted at {includeTimestamp ? formatTime(currentTime) : 'current time'}</span>
+               <span>Will be posted at <span className="font-mono text-sky-200">{includeTimestamp ? formatTime(currentTime) : 'current time'}</span></span>
             )}
           </div>
           
@@ -428,7 +428,7 @@ export default function CommentForm({
                 type="button" 
                 size="icon" 
                 variant="ghost" 
-                className="h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted lg:h-7 lg:w-7"
+                 className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.08] lg:h-7 lg:w-7"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
               >
@@ -453,7 +453,7 @@ export default function CommentForm({
                 type="button" 
                 size="icon" 
                 variant="ghost" 
-                className="h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted lg:h-7 lg:w-7"
+                 className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.08] lg:h-7 lg:w-7"
                 onClick={() => {
                   if (isUploading) return;
                   const imageInput = document.createElement('input');
@@ -481,7 +481,7 @@ export default function CommentForm({
                   size="icon" 
                   variant="ghost" 
                   className={cn(
-                    "h-6 w-6 rounded hover:bg-muted lg:h-7 lg:w-7",
+                     "h-7 w-7 rounded-lg hover:bg-white/[0.08] lg:h-7 lg:w-7",
                     pendingAnnotations && pendingAnnotations.length > 0 
                       ? "text-[#026d55]" 
                       : "text-muted-foreground hover:text-yellow-500 dark:hover:text-yellow-400"
