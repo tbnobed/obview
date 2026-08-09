@@ -335,7 +335,33 @@ export default function CommentForm({
       data-comment-form
     >
       {/* Form content - Mobile: compact spacing, Desktop: normal spacing */}
-      <div className="flex items-start gap-2 w-full lg:gap-3 rounded-xl bg-[#171e25] p-2.5 shadow-[0_8px_24px_rgba(0,0,0,.16)]">
+      <div className="flex flex-col gap-1.5 w-full rounded-xl bg-[#171e25] p-2.5 shadow-[0_8px_24px_rgba(0,0,0,.16)]">
+        {!parentId && currentTime !== undefined && (
+          <div className="flex items-center text-xs">
+            {hasRange ? (
+              <span className="inline-flex items-center gap-1">
+                <span className="font-mono px-2 py-0.5 rounded-md bg-sky-400/10 text-sky-200">
+                  [{formatTime(inPoint as number)} → {formatTime(outPoint as number)}]
+                </span>
+                {onClearInOutPoints && (
+                  <button
+                    type="button"
+                    onClick={onClearInOutPoints}
+                    className="ml-1 text-muted-foreground hover:text-foreground"
+                    title="Clear range (press I/O again to reset)"
+                    data-testid="button-clear-in-out"
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            ) : (
+              <span className="font-mono px-2 py-0.5 rounded-md bg-sky-400/10 text-sky-200">
+                [{includeTimestamp ? formatTime(currentTime) : "--:--"}]
+              </span>
+            )}
+          </div>
+        )}
         <textarea
           ref={textareaRef}
           value={content}
@@ -376,50 +402,8 @@ export default function CommentForm({
           required
         />
         
-        {/* Submit button - Mobile: smaller padding, Desktop: normal padding */}
-        <button
-          type="submit"
-          disabled={content.trim() === "" || createCommentMutation.isPending}
-           className="flex-shrink-0 px-3 py-2 rounded-lg bg-cyan-300 text-slate-950 hover:bg-cyan-200 disabled:bg-white/[0.04] disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors lg:px-3.5"
-          data-testid="button-submit-comment"
-          onClick={handleSubmit}
-        >
-          {createCommentMutation.isPending ? (
-             <Loader2 className="h-3.5 w-3.5 text-sky-200 animate-spin lg:h-4 lg:w-4" />
-          ) : (
-             <><Send className="h-3.5 w-3.5 lg:h-4 lg:w-4" /><span className="hidden sm:inline text-[11px] font-semibold ml-1">Send</span></>
-          )}
-        </button>
-      </div>
-      
-      {/* Timestamp indicator and tools - Mobile: compact spacing, Desktop: normal spacing */}
-      {!parentId && currentTime !== undefined && (
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 lg:mt-3 lg:pt-3">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground lg:gap-2">
-            <Clock className="h-3 w-3" />
-            {hasRange ? (
-              <span className="inline-flex items-center gap-1">
-               <span className="font-mono px-2 py-0.5 rounded-md bg-sky-400/10 text-sky-200">
-                  {formatTime(inPoint as number)} → {formatTime(outPoint as number)}
-                </span>
-                <span>range</span>
-                {onClearInOutPoints && (
-                  <button
-                    type="button"
-                    onClick={onClearInOutPoints}
-                    className="ml-1 text-muted-foreground hover:text-foreground"
-                    title="Clear range (press I/O again to reset)"
-                    data-testid="button-clear-in-out"
-                  >
-                    ×
-                  </button>
-                )}
-              </span>
-            ) : (
-               <span>Will be posted at <span className="font-mono text-sky-200">{includeTimestamp ? formatTime(currentTime) : 'current time'}</span></span>
-            )}
-          </div>
-          
+        <div className="flex items-end justify-between gap-2">
+          {!parentId && currentTime !== undefined ? (
           <div className="flex items-center gap-0.5 lg:gap-1">
             {/* Tools - Mobile: tighter spacing, Desktop: normal spacing */}
             <div className="flex space-x-0.5 lg:space-x-1">
@@ -631,8 +615,26 @@ export default function CommentForm({
               {includeTimestamp ? `${formatTime(currentTime)}` : "Add time"}
             </Button>
           </div>
+          ) : (
+            <span />
+          )}
+
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={content.trim() === "" || createCommentMutation.isPending}
+            className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-cyan-300 text-slate-950 hover:bg-cyan-200 disabled:bg-white/[0.04] disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
+            data-testid="button-submit-comment"
+            onClick={handleSubmit}
+          >
+            {createCommentMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <span className="inline-flex items-center"><Send className="h-3.5 w-3.5" /><span className="text-[11px] font-semibold ml-1">Send</span></span>
+            )}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

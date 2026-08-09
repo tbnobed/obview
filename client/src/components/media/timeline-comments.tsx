@@ -3,7 +3,9 @@ import { useComments, useUpdateCommentContent } from "@/hooks/use-comments";
 import CommentForm from "@/components/comments/comment-form";
 import CommentThread from "@/components/comments/comment-thread";
 import { markdownComponents200, markdownComponents300 } from "@/lib/markdown-comment-components";
-import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock, PenTool, Pencil } from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock, PenTool, Pencil, Reply } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -493,7 +495,6 @@ export default function TimelineComments({
                         </svg>
                       </AvatarFallback>
                     </Avatar>
-                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-[#171e25]" />
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -503,7 +504,7 @@ export default function TimelineComments({
                             {(comment as any).authorName || comment.user?.name || comment.user?.username || 'Unknown User'}
                           </span>
                           <span className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>
-                            {new Date(comment.createdAt).toLocaleDateString()}
+                            {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }).replace(/^about /, "")}
                           </span>
                           {comment.timestamp !== null && (
                             <div className="flex items-center gap-1.5 ml-auto">
@@ -526,9 +527,35 @@ export default function TimelineComments({
                             </div>
                           )}
                         </div>
-                         <button type="button" className="shrink-0 text-muted-foreground hover:text-cyan-300" aria-label="More comment actions" onClick={(e) => e.stopPropagation()}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
+                        {(canEditComment(comment) || canDeleteComment(comment)) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button type="button" className="shrink-0 p-1 -m-1 text-muted-foreground hover:text-cyan-300 transition-colors" aria-label="More comment actions" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              {canEditComment(comment) && editingId !== comment.id && (
+                                <DropdownMenuItem
+                                  onClick={() => handleStartEdit(comment)}
+                                  data-testid={`button-edit-comment-${comment.id}`}
+                                >
+                                  <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                                </DropdownMenuItem>
+                              )}
+                              {canDeleteComment(comment) && (
+                                <DropdownMenuItem
+                                  className="text-red-400 focus:text-red-300"
+                                  disabled={deleteCommentMutation.isPending}
+                                  onClick={() => handleDeleteComment(comment)}
+                                  data-testid={`button-delete-comment-${comment.id}`}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
 
 
@@ -577,26 +604,25 @@ export default function TimelineComments({
                       />
 
                       {/* Action buttons - Mobile: smaller spacing, Desktop: normal */}
-                       <div className="flex gap-1.5 mt-3 lg:gap-2 text-muted-foreground">
+                       <div className="flex items-center gap-4 mt-3 -mx-1 rounded-lg bg-black/20 px-3 py-2 text-muted-foreground">
                         <button
-                           className="inline-flex items-center gap-1 px-1 py-1 text-[11px] font-medium transition-colors text-muted-foreground hover:text-cyan-300"
+                           className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors text-muted-foreground hover:text-cyan-300"
                           onClick={(e) => {
                             e.stopPropagation();
                             setReplyingToId(replyingToId === comment.id ? null : comment.id);
                           }}
                         >
-                          <MessageSquare className="h-3.5 w-3.5" /> Reply
+                          <Reply className="h-3.5 w-3.5" /> Reply
                         </button>
-                        
+
                         {/* Resolve button - only show for authenticated users */}
                         {user && (
-                          <Button 
-                            variant="link" 
-                             className={cn(
-                               "h-7 rounded-md border px-2 text-[11px] font-medium transition-colors",
-                               comment.isResolved
-                                 ? "bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/15"
-                                 : "bg-white/[0.04] text-muted-foreground hover:text-emerald-300 "
+                          <button
+                            className={cn(
+                              "inline-flex items-center gap-1.5 text-xs font-medium transition-colors",
+                              comment.isResolved
+                                ? "text-emerald-300 hover:text-emerald-200"
+                                : "text-muted-foreground hover:text-emerald-300"
                             )}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -607,41 +633,12 @@ export default function TimelineComments({
                             }}
                             disabled={toggleResolutionMutation.isPending}
                           >
-                            {comment.isResolved ? "Unresolve" : "Resolve"}
-                          </Button>
+                            <Check className="h-3.5 w-3.5" /> {comment.isResolved ? "Unresolve" : "Resolve"}
+                          </button>
                         )}
 
-                        {canEditComment(comment) && editingId !== comment.id && (
-                          <Button
-                            variant="link"
-                             className="h-7 rounded-md bg-white/[0.04] px-2 text-[11px] font-medium text-muted-foreground hover:text-sky-300 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartEdit(comment);
-                            }}
-                            data-testid={`button-edit-comment-${comment.id}`}
-                          >
-                            Edit
-                          </Button>
-                        )}
-
-                        {canDeleteComment(comment) && (
-                          <Button
-                            variant="link"
-                             className="h-7 rounded-md bg-white/[0.04] px-2 text-[11px] font-medium text-muted-foreground hover:text-red-300 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteComment(comment);
-                            }}
-                            disabled={deleteCommentMutation.isPending}
-                            data-testid={`button-delete-comment-${comment.id}`}
-                          >
-                            Delete
-                          </Button>
-                        )}
-                        
-                        {/* Reaction picker - Mobile: smaller scale, Desktop: normal scale */}
-                        <div style={{scale: '0.8', transformOrigin: 'left'}} className="lg:scale-90">
+                        {/* Reaction picker */}
+                        <div className="inline-flex items-center">
                           <ReactionPicker 
                             commentId={comment.id}
                           />
