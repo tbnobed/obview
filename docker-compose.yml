@@ -78,6 +78,9 @@ services:
       - SPARK_HOST=${SPARK_HOST:-}
       - SPARK_PORT=${SPARK_PORT:-22}
       - SPARK_DIAG_URL=${SPARK_DIAG_URL:-}
+      # GPU transcription worker (local L4 or Spark) + diarization toggle
+      - TRANSCRIBE_WORKER_URL=${TRANSCRIBE_WORKER_URL:-}
+      - TRANSCRIPTION_DIARIZE=${TRANSCRIPTION_DIARIZE:-true}
       # NVIDIA Container Toolkit triggers — these env vars are what actually
       # cause the toolkit's prestart hook to bind-mount the host's NVIDIA
       # userspace libs (nvidia-smi, libnvidia-encode.so.1, libcuda.so.1, etc.)
