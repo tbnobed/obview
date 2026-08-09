@@ -2575,30 +2575,30 @@ export default function MediaPlayer({
           <Tabs defaultValue="comments" className="flex-1 min-h-0 flex flex-col">
             {/* Tab controls — single horizontally-scrollable strip works for
                 both desktop and mobile so all 5 labels fit without truncation. */}
-            <div className="flex items-center px-2 py-2 lg:px-3 border-b border-neutral-200 dark:border-gray-800 overflow-x-auto landscape:hidden lg:landscape:flex">
-              <TabsList className="bg-transparent inline-flex w-max p-0 gap-1">
-                <TabsTrigger value="comments" className="text-xs px-2.5" onClick={() => setShowCommentsTab(true)}>
+            <div className="flex items-center px-2 py-2 lg:px-3 border-b border-neutral-200 dark:border-gray-800 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden landscape:hidden lg:landscape:flex">
+              <TabsList className="bg-transparent inline-flex w-max p-0 gap-0.5">
+                <TabsTrigger value="comments" className="text-xs px-2" onClick={() => setShowCommentsTab(true)}>
                   Comments
                 </TabsTrigger>
                 {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="transcript" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
+                  <TabsTrigger value="transcript" className="text-xs px-2" onClick={() => setShowCommentsTab(false)}>
                     Transcript
                   </TabsTrigger>
                 )}
                 {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="ai" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
+                  <TabsTrigger value="ai" className="text-xs px-2" onClick={() => setShowCommentsTab(false)}>
                     AI
                   </TabsTrigger>
                 )}
                 {(file.fileType === "video" || file.fileType === "audio") && (
-                  <TabsTrigger value="qc" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
+                  <TabsTrigger value="qc" className="text-xs px-2" onClick={() => setShowCommentsTab(false)}>
                     QC
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="versions" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
+                <TabsTrigger value="versions" className="text-xs px-2" onClick={() => setShowCommentsTab(false)}>
                   Versions
                 </TabsTrigger>
-                <TabsTrigger value="details" className="text-xs px-2.5" onClick={() => setShowCommentsTab(false)}>
+                <TabsTrigger value="details" className="text-xs px-2" onClick={() => setShowCommentsTab(false)}>
                   Details
                 </TabsTrigger>
               </TabsList>
