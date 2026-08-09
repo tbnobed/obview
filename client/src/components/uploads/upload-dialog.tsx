@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload, FileVideo, File as FileIcon, Image as ImageIcon } from "lucide-react";
+import { Upload, FileVideo, File as FileIcon, Image as ImageIcon, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadService } from "@/lib/upload-service";
 import { useFolder } from "@/hooks/use-folders";
@@ -37,7 +37,7 @@ export default function UploadDialog({
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const customFilenameRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
   const { data: targetFolder } = useFolder(folderId ?? 0, { enabled: folderId != null });
@@ -45,20 +45,34 @@ export default function UploadDialog({
   // Reset on close so reopening doesn't show the previous selection.
   useEffect(() => {
     if (!open) {
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setIsDragging(false);
       if (customFilenameRef.current) customFilenameRef.current.value = "";
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [open]);
 
-  const pickFile = (file: File) => {
-    setSelectedFile(file);
-    if (customFilenameRef.current) customFilenameRef.current.value = file.name;
+  const pickFiles = (list: FileList | File[]) => {
+    const incoming = Array.from(list);
+    if (incoming.length === 0) return;
+    setSelectedFiles((prev) => {
+      // Dedupe by name+size so re-dropping the same selection doesn't double up.
+      const seen = new Set(prev.map((f) => `${f.name}|${f.size}`));
+      const next = [...prev, ...incoming.filter((f) => !seen.has(`${f.name}|${f.size}`))];
+      if (customFilenameRef.current) {
+        customFilenameRef.current.value = next.length === 1 ? next[0].name : "";
+      }
+      return next;
+    });
+  };
+
+  const removeFile = (idx: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) pickFile(e.target.files[0]);
+    if (e.target.files) pickFiles(e.target.files);
+    e.target.value = "";
   };
 
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -76,30 +90,36 @@ export default function UploadDialog({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      pickFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files) {
+      pickFiles(e.dataTransfer.files);
     }
   }, []);
 
   const startUpload = () => {
-    if (!selectedFile) {
-      toast({ title: "No file selected", description: "Please select a file to upload", variant: "destructive" });
+    if (selectedFiles.length === 0) {
+      toast({ title: "No files selected", description: "Please select at least one file to upload", variant: "destructive" });
       return;
     }
-    const customFilename = customFilenameRef.current?.value?.trim() || undefined;
-    uploadService.uploadFile(selectedFile, projectId, customFilename, folderId);
+    // Custom filename only applies to a single-file upload.
+    const customFilename =
+      selectedFiles.length === 1 ? customFilenameRef.current?.value?.trim() || undefined : undefined;
+    for (const f of selectedFiles) {
+      uploadService.uploadFile(f, projectId, customFilename, folderId);
+    }
     toast({
-      title: "Upload started",
-      description: "Your file is uploading in the background.",
+      title: selectedFiles.length === 1 ? "Upload started" : `${selectedFiles.length} uploads queued`,
+      description:
+        selectedFiles.length === 1
+          ? "Your file is uploading in the background."
+          : "Files upload two at a time in the background.",
     });
     onOpenChange(false);
   };
 
-  const fileIcon = () => {
-    if (!selectedFile) return <Upload className="h-12 w-12 text-muted-foreground" />;
-    if (selectedFile.type.startsWith("video/")) return <FileVideo className="h-12 w-12 text-primary" />;
-    if (selectedFile.type.startsWith("image/")) return <ImageIcon className="h-12 w-12 text-primary" />;
-    return <FileIcon className="h-12 w-12 text-primary" />;
+  const iconFor = (file: File, cls = "h-4 w-4") => {
+    if (file.type.startsWith("video/")) return <FileVideo className={`${cls} text-primary shrink-0`} />;
+    if (file.type.startsWith("image/")) return <ImageIcon className={`${cls} text-primary shrink-0`} />;
+    return <FileIcon className={`${cls} text-primary shrink-0`} />;
   };
 
   const fmtSize = (bytes: number) => {
@@ -137,22 +157,14 @@ export default function UploadDialog({
           onDrop={onDrop}
           data-testid="upload-dialog-dropzone"
         >
-          {fileIcon()}
+          <Upload className="h-12 w-12 text-muted-foreground" />
           <div className="mt-4 text-center">
-            {selectedFile ? (
-              <>
-                <p className="font-medium break-all">{selectedFile.name}</p>
-                <p className="text-sm text-muted-foreground mt-1">{fmtSize(selectedFile.size)}</p>
-              </>
-            ) : (
-              <>
-                <p className="font-medium">{isDragging ? "Drop file here" : "Drag and drop or click to upload"}</p>
-                <p className="text-sm text-muted-foreground mt-1">Supports video, image, and document files</p>
-              </>
-            )}
+            <p className="font-medium">{isDragging ? "Drop files here" : "Drag and drop or click to add files"}</p>
+            <p className="text-sm text-muted-foreground mt-1">Supports video, image, and document files — select as many as you like</p>
           </div>
           <input
             type="file"
+            multiple
             ref={fileInputRef}
             onChange={onInputChange}
             className="hidden"
@@ -160,22 +172,45 @@ export default function UploadDialog({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="upload-dialog-filename">File Name (Optional)</Label>
-          <Input
-            id="upload-dialog-filename"
-            ref={customFilenameRef}
-            placeholder="Enter custom file name"
-            defaultValue={selectedFile?.name || ""}
-          />
-        </div>
+        {selectedFiles.length > 0 && (
+          <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/70 p-2">
+            {selectedFiles.map((f, i) => (
+              <div key={`${f.name}|${f.size}`} className="flex items-center gap-2 rounded-lg px-2 py-1.5 bg-white dark:bg-zinc-950/60">
+                {iconFor(f)}
+                <span className="text-xs truncate flex-1 min-w-0" title={f.name}>{f.name}</span>
+                <span className="text-xs text-muted-foreground shrink-0">{fmtSize(f.size)}</span>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-muted-foreground"
+                  onClick={(e) => { e.stopPropagation(); removeFile(i); }}
+                  title="Remove from list"
+                  data-testid={`upload-dialog-remove-${i}`}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {selectedFiles.length === 1 && (
+          <div className="space-y-2">
+            <Label htmlFor="upload-dialog-filename">File Name (Optional)</Label>
+            <Input
+              id="upload-dialog-filename"
+              ref={customFilenameRef}
+              placeholder="Enter custom file name"
+              defaultValue={selectedFiles[0]?.name || ""}
+            />
+          </div>
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={startUpload} disabled={!selectedFile} data-testid="upload-dialog-confirm">
-            Upload File
+          <Button onClick={startUpload} disabled={selectedFiles.length === 0} data-testid="upload-dialog-confirm">
+            {selectedFiles.length > 1 ? `Upload ${selectedFiles.length} Files` : "Upload File"}
           </Button>
         </DialogFooter>
       </DialogContent>

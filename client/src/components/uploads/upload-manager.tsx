@@ -28,7 +28,7 @@ export function UploadManager() {
   }
 
   const activeUploads = uploads.filter(
-    (u) => u.status === 'uploading' || u.status === 'pending' || u.status === 'paused'
+    (u) => u.status === 'uploading' || u.status === 'pending' || u.status === 'paused' || u.status === 'queued'
   ).length;
 
   return (
@@ -117,8 +117,9 @@ function UploadItem({
   onViewProject: () => void;
 }) {
   const isUploading = upload.status === 'uploading' || upload.status === 'pending';
+  const isQueued = upload.status === 'queued';
   const isPaused = upload.status === 'paused';
-  const isActive = isUploading || isPaused;
+  const isActive = isUploading || isPaused || isQueued;
 
   return (
     <div className="border rounded-md p-2 bg-background">
@@ -168,6 +169,7 @@ function UploadItem({
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>
+              {upload.status === 'queued' && 'Queued — waiting for a free slot'}
               {upload.status === 'pending' && 'Preparing…'}
               {upload.status === 'uploading' && `${formatBytes(upload.bytesPerSecond || 0)}/s`}
               {upload.status === 'paused' && 'Paused'}

@@ -40,7 +40,7 @@ export interface UploadProgress {
   fileSize: number;
   bytesUploaded: number;
   progress: number;
-  status: "pending" | "uploading" | "paused" | "completed" | "error";
+  status: "queued" | "pending" | "uploading" | "paused" | "completed" | "error";
   error?: string;
   createdAt: Date;
   /** Smoothed throughput, bytes per second. */
@@ -60,6 +60,12 @@ interface SpeedTracker {
 // the parallelism overhead (extra connection setup, finalize roundtrip)
 // would outweigh the throughput gain.
 const PARALLEL_THRESHOLD_BYTES = 100 * 1024 * 1024;
+
+// Max files transferring at once. Extra files queue and start automatically
+// as slots free up — uploading many files simultaneously just splits the
+// same uplink and makes every file slower (and multipart already opens up
+// to 4 connections per large file).
+const MAX_CONCURRENT_FILES = 2;
 
 // Default concurrency. Each part gets its own TCP connection / congestion
 // window, so combined throughput on a per-flow-shaped path is roughly
@@ -117,8 +123,17 @@ interface MultiSlot {
 
 type Slot = SingleSlot | MultiSlot;
 
+interface QueuedFile {
+  uploadId: string;
+  file: File;
+  projectId: number;
+  customFilename?: string;
+  folderId: number | null;
+}
+
 class UploadService {
   private uploads: Map<string, UploadProgress> = new Map();
+  private queue: QueuedFile[] = [];
   private slots: Map<string, Slot> = new Map();
   private speedTrackers: Map<string, SpeedTracker> = new Map();
   private listeners: Set<(uploads: UploadProgress[]) => void> = new Set();
@@ -141,13 +156,14 @@ class UploadService {
 
   hasActiveUploads(): boolean {
     return this.getAllUploads().some(
-      (u) => u.status === "uploading" || u.status === "pending" || u.status === "paused"
+      (u) => u.status === "uploading" || u.status === "pending" || u.status === "paused" || u.status === "queued"
     );
   }
 
   uploadFile(file: File, projectId: number, customFilename?: string, folderId?: number | null): string {
     const uploadId = `upload_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
+    const willQueue = this.transferringCount() >= MAX_CONCURRENT_FILES;
     const entry: UploadProgress = {
       id: uploadId,
       filename: customFilename || file.name,
@@ -155,18 +171,47 @@ class UploadService {
       fileSize: file.size,
       bytesUploaded: 0,
       progress: 0,
-      status: "pending",
+      status: willQueue ? "queued" : "pending",
       createdAt: new Date(),
     };
     this.uploads.set(uploadId, entry);
     this.notify();
 
-    if (file.size >= PARALLEL_THRESHOLD_BYTES) {
-      this.startMultipart(uploadId, file, projectId, customFilename, folderId ?? null);
+    if (willQueue) {
+      this.queue.push({ uploadId, file, projectId, customFilename, folderId: folderId ?? null });
     } else {
-      this.startSingle(uploadId, file, projectId, customFilename, folderId ?? null);
+      this.begin(uploadId, file, projectId, customFilename, folderId ?? null);
     }
     return uploadId;
+  }
+
+  /** Files actively consuming bandwidth (queued/paused/finished don't count). */
+  private transferringCount(): number {
+    let n = 0;
+    for (const u of Array.from(this.uploads.values())) {
+      if (u.status === "pending" || u.status === "uploading") n++;
+    }
+    return n;
+  }
+
+  private begin(uploadId: string, file: File, projectId: number, customFilename: string | undefined, folderId: number | null): void {
+    if (file.size >= PARALLEL_THRESHOLD_BYTES) {
+      this.startMultipart(uploadId, file, projectId, customFilename, folderId);
+    } else {
+      this.startSingle(uploadId, file, projectId, customFilename, folderId);
+    }
+  }
+
+  /** Start queued files while there are free transfer slots. */
+  private pumpQueue(): void {
+    while (this.queue.length > 0 && this.transferringCount() < MAX_CONCURRENT_FILES) {
+      const next = this.queue.shift()!;
+      const cur = this.uploads.get(next.uploadId);
+      // Skip entries cancelled/removed while they waited.
+      if (!cur || cur.status !== "queued") continue;
+      this.update(next.uploadId, { status: "pending" });
+      this.begin(next.uploadId, next.file, next.projectId, next.customFilename, next.folderId);
+    }
   }
 
   // -- Single-stream path -------------------------------------------------
@@ -492,6 +537,7 @@ class UploadService {
   }
 
   cancelUpload(id: string): boolean {
+    this.queue = this.queue.filter((q) => q.uploadId !== id);
     const slot = this.slots.get(id);
     if (slot) {
       if (slot.kind === "single") {
@@ -524,7 +570,8 @@ class UploadService {
         u &&
         (u.status === "uploading" ||
           u.status === "pending" ||
-          u.status === "paused")
+          u.status === "paused" ||
+          u.status === "queued")
       ) {
         if (this.cancelUpload(id)) count++;
       }
@@ -542,8 +589,15 @@ class UploadService {
   private update(id: string, patch: Partial<UploadProgress>): void {
     const cur = this.uploads.get(id);
     if (!cur) return;
+    const wasTransferring = cur.status === "pending" || cur.status === "uploading";
     this.uploads.set(id, { ...cur, ...patch });
     this.notify();
+    // A transfer slot freed up (completed / error / paused) — start the next
+    // queued file. Deferred so the current callback stack fully settles.
+    const now = this.uploads.get(id)!.status;
+    if (wasTransferring && now !== "pending" && now !== "uploading") {
+      setTimeout(() => this.pumpQueue(), 0);
+    }
   }
 
   private notify(): void {
