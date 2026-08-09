@@ -165,7 +165,13 @@ def _load_diarization() -> tuple[Any, str]:
                 "account, accept the terms for "
                 f"{DIARIZATION_MODEL!r} and pyannote/segmentation-3.0, then set the token."
             )
-        pipeline = Pipeline.from_pretrained(DIARIZATION_MODEL, use_auth_token=HF_TOKEN)
+        # huggingface_hub removed the `use_auth_token` kwarg (>=0.26) while older
+        # pyannote still forwards whatever we pass — so pass the token via the
+        # environment, which every hub/pyannote version respects, and call
+        # from_pretrained with no token argument at all.
+        os.environ.setdefault("HF_TOKEN", HF_TOKEN)
+        os.environ.setdefault("HUGGING_FACE_HUB_TOKEN", HF_TOKEN)
+        pipeline = Pipeline.from_pretrained(DIARIZATION_MODEL)
         if pipeline is None:
             raise RuntimeError(
                 f"Pipeline.from_pretrained({DIARIZATION_MODEL!r}) returned None — "
