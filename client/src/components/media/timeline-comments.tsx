@@ -527,35 +527,7 @@ export default function TimelineComments({
                             </div>
                           )}
                         </div>
-                        {(canEditComment(comment) || canDeleteComment(comment)) && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button type="button" className="shrink-0 p-1 -m-1 text-muted-foreground hover:text-cyan-300 transition-colors" aria-label="More comment actions" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                              {canEditComment(comment) && editingId !== comment.id && (
-                                <DropdownMenuItem
-                                  onClick={() => handleStartEdit(comment)}
-                                  data-testid={`button-edit-comment-${comment.id}`}
-                                >
-                                  <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
-                                </DropdownMenuItem>
-                              )}
-                              {canDeleteComment(comment) && (
-                                <DropdownMenuItem
-                                  className="text-red-400 focus:text-red-300"
-                                  disabled={deleteCommentMutation.isPending}
-                                  onClick={() => handleDeleteComment(comment)}
-                                  data-testid={`button-delete-comment-${comment.id}`}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
+                        <MoreHorizontal className="h-4 w-4 shrink-0 text-muted-foreground/50" />
                       </div>
 
 
@@ -637,8 +609,35 @@ export default function TimelineComments({
                           </button>
                         )}
 
+                        {canEditComment(comment) && editingId !== comment.id && (
+                          <button
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-sky-300 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEdit(comment);
+                            }}
+                            data-testid={`button-edit-comment-${comment.id}`}
+                          >
+                            <Pencil className="h-3.5 w-3.5" /> Edit
+                          </button>
+                        )}
+
+                        {canDeleteComment(comment) && (
+                          <button
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-red-300 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteComment(comment);
+                            }}
+                            disabled={deleteCommentMutation.isPending}
+                            data-testid={`button-delete-comment-${comment.id}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          </button>
+                        )}
+
                         {/* Reaction picker */}
-                        <div className="inline-flex items-center">
+                        <div className="inline-flex items-center ml-auto">
                           <ReactionPicker 
                             commentId={comment.id}
                           />
