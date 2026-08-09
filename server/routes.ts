@@ -1272,11 +1272,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Spark AI worker endpoints (admin only). The DGX Spark is reachable
   // over the private DAC link and reads media from the same uploads volume
-  // via NFS-RDMA. See server/spark-client.ts and spark/service.py.
+  // via NFS-RDMA. See server/ai-worker-client.ts and ai-worker/service.py.
   app.get("/api/admin/spark/status", isAuthenticated, isAdmin, async (_req, res) => {
     try {
-      const { sparkConfigured, sparkHealth, sparkTranscribeStatus } = await import("./spark-client");
-      if (!sparkConfigured()) {
+      const { workerConfigured, sparkHealth, sparkTranscribeStatus } = await import("./ai-worker-client");
+      if (!workerConfigured()) {
         return res.status(503).json({ ok: false, error: "spark not configured (set SPARK_AI_URL or SPARK_DIAG_URL)" });
       }
       const [health, status] = await Promise.allSettled([sparkHealth(), sparkTranscribeStatus()]);
@@ -1316,8 +1316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const sparkRelPath = rel.split(path.sep).join("/");
 
-      const { sparkConfigured, sparkTranscribe, SparkUnavailableError, SparkHttpError } = await import("./spark-client");
-      if (!sparkConfigured()) {
+      const { workerConfigured, sparkTranscribe, WorkerUnavailableError, WorkerHttpError } = await import("./ai-worker-client");
+      if (!workerConfigured()) {
         return res.status(503).json({ ok: false, error: "spark not configured (set SPARK_AI_URL)" });
       }
 
@@ -1334,13 +1334,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         res.json({ ...result, fileId, file: { id: file.id, filename: file.filename } });
       } catch (e: any) {
-        if (e instanceof SparkHttpError) {
+        if (e instanceof WorkerHttpError) {
           // Preserve the spark's status code (429 busy, 404 missing, 400
           // bad request, 503 model unavailable) so the caller sees real
           // semantics instead of a flat 503.
           return res.status(e.status).json({ ok: false, error: e.message, detail: e.detail });
         }
-        if (e instanceof SparkUnavailableError) {
+        if (e instanceof WorkerUnavailableError) {
           return res.status(503).json({ ok: false, error: e.message });
         }
         throw e;
@@ -3798,9 +3798,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== Transcript routes =====
   app.get("/api/transcription/status", isAuthenticated, async (_req, res) => {
-    const { sparkConfigured, sparkHealth } = await import("./spark-client");
+    const { workerConfigured, sparkHealth } = await import("./ai-worker-client");
     const enabled = (process.env.TRANSCRIPTION_ENABLED || "true").toLowerCase() !== "false";
-    const configured = sparkConfigured();
+    const configured = workerConfigured();
     let available = false;
     let health: any = null;
     let error: string | null = null;

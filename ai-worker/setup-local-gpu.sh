@@ -10,9 +10,9 @@
 #     requirements-diarization.txt)
 #
 # Usage (on obtv-ai, from the repo checkout):
-#   UPLOADS_DIR=/home/obtv-admin/obview/uploads ./spark/setup-local-gpu.sh
+#   UPLOADS_DIR=/home/obtv-admin/obview/uploads ./ai-worker/setup-local-gpu.sh
 #   # with diarization:
-#   OBVIU_HF_TOKEN=hf_xxx UPLOADS_DIR=... ./spark/setup-local-gpu.sh
+#   OBVIU_HF_TOKEN=hf_xxx UPLOADS_DIR=... ./ai-worker/setup-local-gpu.sh
 #
 # Then point the app at it in .env and restart the app:
 #   TRANSCRIBE_WORKER_URL=http://127.0.0.1:7682

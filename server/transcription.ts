@@ -5,13 +5,13 @@ import https from "https";
 import os from "os";
 import { storage } from "./storage";
 import {
-  sparkConfigured,
-  sparkTranscribeAsync,
-  pollSparkJob,
-  SparkHttpError,
-  SparkUnavailableError,
-  SparkJobInFlightError,
-} from "./spark-client";
+  workerConfigured,
+  workerTranscribeAsync,
+  pollWorkerJob,
+  WorkerHttpError,
+  WorkerUnavailableError,
+  WorkerJobInFlightError,
+} from "./ai-worker-client";
 
 export interface TranscriptSegment {
   start: number;
@@ -239,7 +239,7 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
   }
 
   try {
-    if (!sparkConfigured()) {
+    if (!workerConfigured()) {
       throw new Error(
         "Spark transcription worker is not configured (set SPARK_AI_URL or SPARK_DIAG_URL)."
       );
@@ -290,7 +290,7 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
     // so we no longer need our own in-process FIFO.
     console.log(`[Transcription] Submitting file ${fileId} to spark (${sparkRelPath})`);
     const t0 = Date.now();
-    const result = await sparkTranscribeAsync(
+    const result = await workerTranscribeAsync(
       {
         path: sparkRelPath,
         model: requestedModel,
@@ -394,7 +394,7 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
     // Distinguish "we lost contact with the spark / our poll deadline elapsed"
     // (job may still be running on the GPU) from "spark told us the job
     // failed" (truly terminal). Only the latter clears sparkJobId.
-    if (err instanceof SparkJobInFlightError) {
+    if (err instanceof WorkerJobInFlightError) {
       const message =
         `Lost contact with spark while job ${err.jobId} was still running. ` +
         `Spark may still be working on it; you can retry to resume polling. ` +
@@ -411,11 +411,11 @@ export async function transcribeFile(opts: RunOptions): Promise<void> {
     }
 
     let message = err?.message || "Unknown transcription error";
-    if (err instanceof SparkHttpError) {
+    if (err instanceof WorkerHttpError) {
       message = `Spark worker rejected request (HTTP ${err.status}): ${
         typeof err.detail === "string" ? err.detail : err.message
       }`;
-    } else if (err instanceof SparkUnavailableError) {
+    } else if (err instanceof WorkerUnavailableError) {
       message = `Spark worker unreachable: ${err.message}`;
     }
     console.error(`[Transcription] Failed for file ${fileId}:`, err);

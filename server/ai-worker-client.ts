@@ -30,7 +30,7 @@ export interface SparkTranscribeRequest {
 }
 
 /** Worker-side diarization outcome. Fail-soft: `ok:false` still ships a transcript. */
-export interface SparkDiarizationInfo {
+export interface WorkerDiarizationInfo {
   requested: boolean;
   model: string;
   device: string;
@@ -54,7 +54,7 @@ export interface SparkTranscribeResult {
   totalMs: number;
   savedTo?: string;
   saveError?: string;
-  diarization?: SparkDiarizationInfo;
+  diarization?: WorkerDiarizationInfo;
   result: {
     language: string;
     languageProbability: number | null;
@@ -79,10 +79,10 @@ export interface SparkTranscribeResult {
   };
 }
 
-export class SparkUnavailableError extends Error {
+export class WorkerUnavailableError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "SparkUnavailableError";
+    this.name = "WorkerUnavailableError";
   }
 }
 
@@ -90,14 +90,14 @@ export class SparkUnavailableError extends Error {
  * Thrown for non-2xx responses from the spark worker. Preserves the upstream
  * HTTP status so the admin route can map it back to the caller (e.g. 429
  * busy stays 429, 404 file-not-found stays 404, 503 model-load-failed stays
- * 503). Only network/timeout failures bubble up as SparkUnavailableError.
+ * 503). Only network/timeout failures bubble up as WorkerUnavailableError.
  */
-export class SparkHttpError extends Error {
+export class WorkerHttpError extends Error {
   status: number;
   detail: any;
   constructor(message: string, status: number, detail: any) {
     super(message);
-    this.name = "SparkHttpError";
+    this.name = "WorkerHttpError";
     this.status = status;
     this.detail = detail;
   }
@@ -124,7 +124,7 @@ function baseUrl(): string | null {
   return null;
 }
 
-export function sparkConfigured(): boolean {
+export function workerConfigured(): boolean {
   return baseUrl() !== null;
 }
 
@@ -146,7 +146,7 @@ async function fetchJson<T>(url: string, init: RequestInit, timeoutMs: number): 
     try { body = text ? JSON.parse(text) : null; } catch { body = text; }
     if (!res.ok) {
       const detail = body && typeof body === "object" && "detail" in body ? body.detail : body;
-      throw new SparkHttpError(
+      throw new WorkerHttpError(
         `spark ${init.method ?? "GET"} ${url} failed: HTTP ${res.status} - ${
           typeof detail === "string" ? detail : JSON.stringify(detail)
         }`,
@@ -157,10 +157,10 @@ async function fetchJson<T>(url: string, init: RequestInit, timeoutMs: number): 
     return body as T;
   } catch (e: any) {
     if (e?.name === "AbortError") {
-      throw new SparkUnavailableError(`spark request timed out after ${timeoutMs}ms: ${url}`);
+      throw new WorkerUnavailableError(`spark request timed out after ${timeoutMs}ms: ${url}`);
     }
-    if (e instanceof SparkUnavailableError || e instanceof SparkHttpError) throw e;
-    throw new SparkUnavailableError(`spark request error: ${e?.message ?? String(e)}`);
+    if (e instanceof WorkerUnavailableError || e instanceof WorkerHttpError) throw e;
+    throw new WorkerUnavailableError(`spark request error: ${e?.message ?? String(e)}`);
   } finally {
     clearTimeout(timer);
   }
@@ -168,13 +168,13 @@ async function fetchJson<T>(url: string, init: RequestInit, timeoutMs: number): 
 
 export async function sparkHealth(): Promise<any> {
   const base = baseUrl();
-  if (!base) throw new SparkUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
+  if (!base) throw new WorkerUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
   return fetchJson(`${base}/health`, { method: "GET" }, 5000);
 }
 
 export async function sparkTranscribeStatus(): Promise<any> {
   const base = baseUrl();
-  if (!base) throw new SparkUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
+  if (!base) throw new WorkerUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
   return fetchJson(`${base}/transcribe/status`, { method: "GET" }, 5000);
 }
 
@@ -183,7 +183,7 @@ export async function sparkTranscribe(
   opts: { timeoutMs?: number } = {},
 ): Promise<SparkTranscribeResult> {
   const base = baseUrl();
-  if (!base) throw new SparkUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
+  if (!base) throw new WorkerUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
   // Default to 2h to match the spark's TRANSCRIBE_TIMEOUT_SEC. Override per call.
   const timeoutMs = opts.timeoutMs ?? 2 * 60 * 60 * 1000;
   return fetchJson<SparkTranscribeResult>(
@@ -231,7 +231,7 @@ export async function sparkSubmitJob(
   req: SparkTranscribeRequest,
 ): Promise<SparkJobSnapshot> {
   const base = baseUrl();
-  if (!base) throw new SparkUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
+  if (!base) throw new WorkerUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
   return fetchJson<SparkJobSnapshot>(
     `${base}/transcribe/jobs`,
     {
@@ -246,20 +246,20 @@ export async function sparkSubmitJob(
 /**
  * Thrown when polling gives up but the job is still in-flight on the spark
  * (e.g. our deadline elapsed, or repeated network failures). Distinct from
- * SparkHttpError (the spark itself reported a terminal failure) so callers
+ * WorkerHttpError (the spark itself reported a terminal failure) so callers
  * can keep the jobId on record and resume polling later instead of marking
  * the transcript as a hard failure.
  */
-export class SparkJobInFlightError extends Error {
+export class WorkerJobInFlightError extends Error {
   constructor(public readonly jobId: string, message: string, public readonly cause?: unknown) {
     super(message);
-    this.name = "SparkJobInFlightError";
+    this.name = "WorkerJobInFlightError";
   }
 }
 
 export async function sparkGetJob(jobId: string): Promise<SparkJobSnapshot> {
   const base = baseUrl();
-  if (!base) throw new SparkUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
+  if (!base) throw new WorkerUnavailableError("SPARK_AI_URL/SPARK_DIAG_URL not set");
   return fetchJson<SparkJobSnapshot>(
     `${base}/transcribe/jobs/${encodeURIComponent(jobId)}`,
     { method: "GET" },
@@ -278,7 +278,7 @@ export async function sparkGetJob(jobId: string): Promise<SparkJobSnapshot> {
  * spark accepts the submission — the caller can persist the jobId
  * before the long wait so an app restart can resume polling.
  */
-export async function sparkTranscribeAsync(
+export async function workerTranscribeAsync(
   req: SparkTranscribeRequest,
   opts: {
     pollIntervalMs?: number;
@@ -292,11 +292,11 @@ export async function sparkTranscribeAsync(
   const submitted = await sparkSubmitJob(req);
   if (opts.onJobId) await opts.onJobId(submitted.jobId);
 
-  return pollSparkJob(submitted.jobId, { pollIntervalMs, overallTimeoutMs });
+  return pollWorkerJob(submitted.jobId, { pollIntervalMs, overallTimeoutMs });
 }
 
 /** Poll an existing jobId to completion. Used both for fresh submissions and restart-resume. */
-export async function pollSparkJob(
+export async function pollWorkerJob(
   jobId: string,
   opts: { pollIntervalMs?: number; overallTimeoutMs?: number } = {},
 ): Promise<SparkTranscribeResult> {
@@ -317,12 +317,12 @@ export async function pollSparkJob(
       lastPollError = null;
     } catch (e) {
       lastPollError = e;
-      if (e instanceof SparkHttpError && e.status === 404) {
+      if (e instanceof WorkerHttpError && e.status === 404) {
         // The spark genuinely lost the job (registry pruned or worker
         // restarted). The job is gone — surface as in-flight-lost so the
         // caller can decide whether to resubmit, but don't pretend the
         // job failed on the GPU.
-        throw new SparkJobInFlightError(
+        throw new WorkerJobInFlightError(
           jobId,
           `spark forgot job ${jobId} (registry pruned or worker restarted)`,
           e,
@@ -335,14 +335,14 @@ export async function pollSparkJob(
 
     if (snap.status === "completed") {
       if (!snap.result) {
-        throw new SparkHttpError(`spark job ${jobId} completed without result`, 500, snap);
+        throw new WorkerHttpError(`spark job ${jobId} completed without result`, 500, snap);
       }
       return snap.result;
     }
     if (snap.status === "failed") {
       const status = snap.error?.status ?? 500;
       const detail = snap.error?.detail ?? "unknown error";
-      throw new SparkHttpError(
+      throw new WorkerHttpError(
         `spark job ${jobId} failed: HTTP ${status} - ${
           typeof detail === "string" ? detail : JSON.stringify(detail)
         }`,
@@ -354,7 +354,7 @@ export async function pollSparkJob(
   }
   // Deadline elapsed but the job may still be running. Surface as in-flight
   // so transcription.ts keeps sparkJobId for later resumption.
-  throw new SparkJobInFlightError(
+  throw new WorkerJobInFlightError(
     jobId,
     `spark job ${jobId} did not complete within ${overallTimeoutMs}ms (still in-flight)` +
       (lastPollError ? `; last poll error: ${(lastPollError as Error)?.message ?? lastPollError}` : ""),
