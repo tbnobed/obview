@@ -22,3 +22,5 @@ pyannote.audio==3.3.2
 # huggingface_hub >= 1.0 removed — pin the hub below 1.0 or diarization
 # fails with: "unexpected keyword argument 'use_auth_token'".
 huggingface_hub<1.0
+# pyannote imports matplotlib at runtime without declaring it as a dependency.
+matplotlib
