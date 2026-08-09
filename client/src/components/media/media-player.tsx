@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2, Columns2 } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2, Columns2, FilePenLine } from "lucide-react";
 import { UploadVersionIcon, ShareFileIcon, RequestChangesIcon, ApproveIcon, MarkReviewIcon } from "@/components/media/action-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -2242,37 +2242,37 @@ export default function MediaPlayer({
               !mediaError ? "mt-1 pt-1" : "pt-1"
             )}>
               {/* Action buttons - Desktop only */}
-              <div className="hidden lg:flex items-center gap-1">
+              <div className="hidden lg:flex items-center gap-1.5">
                 {file && (
                   <>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
+                      className="h-8 w-8 p-0 rounded-lg border border-white/10 bg-white/[0.04] text-gray-400 transition-colors hover:bg-white/10 hover:border-white/20 hover:text-white"
                       onClick={() => setIsVersionDialogOpen(true)}
                       title="Upload new version"
                     >
-                      <UploadVersionIcon className="h-[22px] w-[22px]" />
+                      <FilePlus2 className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0"
+                      className="h-8 w-8 p-0 rounded-lg border border-white/10 bg-white/[0.04] text-gray-400 transition-colors hover:bg-white/10 hover:border-white/20 hover:text-white"
                       onClick={() => setShareDialogOpen(true)}
                       title="Share this file"
                       data-testid="button-open-file-share"
                     >
-                      <ShareFileIcon className="h-[22px] w-[22px]" />
+                      <Share2 className="h-4 w-4" />
                     </Button>
 
                     <Button
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "relative h-8 w-8 p-0 border-0",
+                        "relative h-8 w-8 p-0 rounded-lg border transition-colors",
                         userApproval?.status === 'changes_requested' || userApproval?.status === 'requested_changes'
-                          ? "bg-amber-500/25 hover:bg-amber-500/35 ring-1 ring-amber-400"
-                          : "bg-transparent hover:bg-white/10",
+                          ? "border-amber-400/60 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+                          : "border-white/10 bg-white/[0.04] text-gray-400 hover:bg-amber-500/15 hover:border-amber-400/40 hover:text-amber-300",
                       )}
                       onClick={handleRequestChanges}
                       disabled={approveMutation.isPending || !canApprove}
@@ -2286,7 +2286,7 @@ export default function MediaPlayer({
                               : "Request changes"
                       }
                     >
-                      <RequestChangesIcon className="h-[22px] w-[22px]" />
+                      <FilePenLine className="h-4 w-4" />
                       {otherChangesCount > 0 && (
                         <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center leading-none">
                           {otherChangesCount}
@@ -2297,10 +2297,10 @@ export default function MediaPlayer({
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "relative h-8 w-8 p-0 border-0",
+                        "relative h-8 w-8 p-0 rounded-lg border transition-colors",
                         userApproval?.status === 'approved'
-                          ? "bg-emerald-500/25 hover:bg-emerald-500/35 ring-1 ring-emerald-400"
-                          : "bg-transparent hover:bg-white/10",
+                          ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                          : "border-white/10 bg-white/[0.04] text-gray-400 hover:bg-emerald-500/15 hover:border-emerald-400/40 hover:text-emerald-300",
                       )}
                       onClick={handleApprove}
                       disabled={approveMutation.isPending || !canApprove}
@@ -2314,7 +2314,7 @@ export default function MediaPlayer({
                               : "Approve"
                       }
                     >
-                      <ApproveIcon className="h-[22px] w-[22px]" />
+                      <Check className="h-4 w-4" strokeWidth={2.5} />
                       {otherApprovedCount > 0 && (
                         <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-1 rounded-full bg-emerald-500 text-[9px] font-bold text-white flex items-center justify-center leading-none">
                           {otherApprovedCount}
@@ -2327,7 +2327,7 @@ export default function MediaPlayer({
                         <Button 
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 bg-transparent hover:bg-white/10 border-0 disabled:opacity-40"
+                          className="h-8 w-8 p-0 rounded-lg border border-white/10 bg-white/[0.04] text-gray-400 transition-colors hover:bg-white/10 hover:border-white/20 hover:text-white disabled:opacity-40"
                           onClick={handleMarkAsInReview}
                           disabled={isUpdatingStatus || !project || project.status === 'in_review' || project.status === 'approved'}
                           title={project.status === 'in_review' || project.status === 'approved' ? 'Project already in review or approved' : 'Mark project as ready for review'}
@@ -2335,7 +2335,7 @@ export default function MediaPlayer({
                           {isUpdatingStatus ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <MarkReviewIcon className="h-[22px] w-[22px]" />
+                            <ClipboardCheck className="h-4 w-4" />
                           )}
                         </Button>
                       </>
