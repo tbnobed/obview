@@ -4177,6 +4177,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // video sprite when this is NULL.
   const thumbDir = path.join(uploadsDir, "project-thumbs");
   try { if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true }); } catch {}
+  // ===== USER AVATAR =====
+  const avatarDir = path.join(process.cwd(), "uploads", "avatars");
+  fs.mkdirSync(avatarDir, { recursive: true });
+  const avatarUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, avatarDir),
+      filename: (req, file, cb) => {
+        const ext = (path.extname(file.originalname) || ".jpg").toLowerCase();
+        cb(null, `${req.user!.id}-${Date.now()}${ext}`);
+      },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      if (/^image\/(png|jpe?g|webp|gif)$/i.test(file.mimetype)) cb(null, true);
+      else cb(new Error("Only PNG, JPEG, WebP, or GIF images are allowed"));
+    },
+  });
+
+  app.post(
+    "/api/user/avatar",
+    isAuthenticated,
+    avatarUpload.single("avatar"),
+    handleMulterErrors,
+    async (req, res, next) => {
+      try {
+        if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+        const me = await storage.getUser(req.user!.id);
+        // Best-effort cleanup of the previous avatar.
+        if (me?.avatarPath) {
+          try { if (fs.existsSync(me.avatarPath)) fs.unlinkSync(me.avatarPath); } catch {}
+        }
+        await storage.updateUser(req.user!.id, { avatarPath: req.file.path } as any);
+        res.json({ ok: true });
+      } catch (error) {
+        if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch {} }
+        next(error);
+      }
+    },
+  );
+
+  app.delete("/api/user/avatar", isAuthenticated, async (req, res, next) => {
+    try {
+      const me = await storage.getUser(req.user!.id);
+      if (me?.avatarPath) {
+        try { if (fs.existsSync(me.avatarPath)) fs.unlinkSync(me.avatarPath); } catch {}
+      }
+      await storage.updateUser(req.user!.id, { avatarPath: null } as any);
+      res.json({ ok: true });
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/users/:id/avatar", isAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid user ID" });
+      const u = await storage.getUser(id);
+      if (!u?.avatarPath || !fs.existsSync(u.avatarPath)) return res.status(404).end();
+      res.setHeader("Cache-Control", "private, max-age=300");
+      res.sendFile(path.resolve(u.avatarPath));
+    } catch (error) { next(error); }
+  });
+
   const projectThumbUpload = multer({
     storage: multer.diskStorage({
       destination: (_req, _file, cb) => cb(null, thumbDir),

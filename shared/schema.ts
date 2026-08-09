@@ -20,6 +20,8 @@ export const users = pgTable("users", {
   // (e.g. the Premiere panel) for bearer auth. NULL = no token issued. The
   // plaintext is shown to the user once at generation and never stored.
   apiToken: text("api_token"),
+  // Optional profile picture (path on disk under uploads/avatars/).
+  avatarPath: text("avatar_path"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

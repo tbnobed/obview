@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import AppLayout from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Copy, Check, KeyRound } from "lucide-react";
+import { Loader2, Copy, Check, KeyRound, Camera, Trash2 } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getOwnerColor, getOwnerInitials } from "@/lib/owner-color";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
@@ -18,6 +20,30 @@ export default function SettingsPage() {
   const { user, isLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("account");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarVersion, setAvatarVersion] = useState(() => Date.now());
+
+  const avatarUploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const fd = new FormData();
+      fd.append("avatar", file);
+      const res = await fetch("/api/user/avatar", { method: "POST", body: fd, credentials: "include" });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.message || "Upload failed");
+    },
+    onSuccess: () => {
+      setAvatarVersion(Date.now());
+      toast({ title: "Profile picture updated" });
+    },
+    onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
+  });
+
+  const avatarDeleteMutation = useMutation({
+    mutationFn: async () => { await apiRequest("DELETE", "/api/user/avatar"); },
+    onSuccess: () => {
+      setAvatarVersion(Date.now());
+      toast({ title: "Profile picture removed" });
+    },
+  });
 
   // Create separate schema for each tab
   const accountFormSchema = z.object({
@@ -263,6 +289,50 @@ export default function SettingsPage() {
                 <CardDescription className="dark:text-gray-400">Update your account information and email address</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex items-center gap-4 py-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={user ? `/api/users/${user.id}/avatar?v=${avatarVersion}` : undefined} />
+                    <AvatarFallback
+                      className="text-lg"
+                      style={{ backgroundColor: `${getOwnerColor(user?.id)}33`, color: getOwnerColor(user?.id) }}
+                    >
+                      {getOwnerInitials(user?.name || user?.username)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={avatarUploadMutation.isPending}
+                    >
+                      {avatarUploadMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Camera className="h-4 w-4 mr-2" />}
+                      Upload picture
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => avatarDeleteMutation.mutate()}
+                      disabled={avatarDeleteMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remove
+                    </Button>
+                  </div>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) avatarUploadMutation.mutate(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     <FormField

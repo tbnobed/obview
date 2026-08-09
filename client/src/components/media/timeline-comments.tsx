@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getOwnerColor } from "@/lib/owner-color";
 import { getUserInitials } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation } from "@tanstack/react-query";
@@ -187,8 +188,11 @@ export default function TimelineComments({
           <div key={`${(reply as any).isPublic ? 'public' : 'auth'}-${reply.id}`}>
             <div className="flex gap-3">
               <Avatar className="h-6 w-6 flex-shrink-0">
-                <AvatarImage src={reply.user?.avatar} />
-                <AvatarFallback className="bg-muted text-foreground text-xs">
+                <AvatarImage src={reply.userId ? `/api/users/${reply.userId}/avatar` : undefined} />
+                <AvatarFallback
+                  className="text-xs"
+                  style={{ backgroundColor: `${getOwnerColor(reply.userId)}33`, color: getOwnerColor(reply.userId) }}
+                >
                   {getUserInitials((reply as any).authorName || reply.user?.name || reply.user?.username || 'U')}
                 </AvatarFallback>
               </Avatar>
@@ -470,9 +474,10 @@ export default function TimelineComments({
                       }
                     }
                   } : undefined}
-                  className={`group relative rounded-2xl p-3.5 transition-colors cursor-pointer shadow-[0_0_14px_rgba(34,211,238,0.12)] hover:shadow-[0_0_18px_rgba(34,211,238,0.2)] transition-shadow ${
+                  className={`group relative rounded-2xl p-3.5 transition-colors cursor-pointer ${
                     activeCommentId === comment.id ? 'bg-white dark:bg-zinc-900 ring-1 ring-cyan-400/40' : 'bg-white hover:bg-zinc-50 dark:bg-zinc-900/70 dark:hover:bg-zinc-900'
                   }`}
+                  style={{ boxShadow: `0 0 14px ${getOwnerColor(comment.userId)}26` }}
                   title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : "Select this comment"}
                   role="button"
                   tabIndex={0}
@@ -484,8 +489,11 @@ export default function TimelineComments({
                     {/* Avatar - Mobile: smaller, Desktop: normal */}
                     <div className="relative shrink-0">
                     <Avatar className="h-8 w-8 lg:h-9 lg:w-9">
-                      <AvatarImage src={comment.user?.avatar} />
-                      <AvatarFallback className="bg-muted text-foreground text-xs">
+                      <AvatarImage src={comment.userId ? `/api/users/${comment.userId}/avatar` : undefined} />
+                      <AvatarFallback
+                        className="text-xs"
+                        style={{ backgroundColor: `${getOwnerColor(comment.userId)}33`, color: getOwnerColor(comment.userId) }}
+                      >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
