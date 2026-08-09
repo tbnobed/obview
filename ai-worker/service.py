@@ -207,6 +207,15 @@ def _load_diarization() -> tuple[Any, str]:
                 actual_device = DIARIZATION_DEVICE
             except Exception as e:  # noqa: BLE001
                 print(f"[obviu-spark-ai] WARN: could not move diarization to {DIARIZATION_DEVICE}: {e} — using CPU")
+                # A failed .to(cuda) can leave the pipeline HALF-moved (some
+                # modules on cuda, some on cpu), which then crashes inference
+                # with "Expected all tensors to be on the same device". Force
+                # everything back onto the CPU so the fallback actually works.
+                try:
+                    import torch  # type: ignore
+                    pipeline.to(torch.device("cpu"))
+                except Exception as e2:  # noqa: BLE001
+                    print(f"[obviu-spark-ai] WARN: could not move diarization back to cpu: {e2}")
         entry = (pipeline, actual_device)
         _DIARIZATION_CACHE[key] = entry
         return entry
