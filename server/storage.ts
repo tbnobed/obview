@@ -1767,6 +1767,41 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(projects.folderId, folderId), isNull(projects.deletedAt)));
   }
 
+
+  /**
+   * Batch stats for project cards: latest video file, file count, and last
+   * file activity per project — 2 queries total instead of 2 per project.
+   */
+  private async getProjectCardStats(projectIds: number[]): Promise<Map<number, { latestVideoFile?: File; fileCount: number; latestFileAt: Date | null }>> {
+    const map = new Map<number, { latestVideoFile?: File; fileCount: number; latestFileAt: Date | null }>();
+    if (projectIds.length === 0) return map;
+    const [latestVideos, stats] = await Promise.all([
+      db
+        .selectDistinctOn([files.projectId])
+        .from(files)
+        .where(and(inArray(files.projectId, projectIds), eq(files.fileType, 'video'), isNull(files.deletedAt)))
+        .orderBy(files.projectId, desc(files.createdAt)),
+      db
+        .select({
+          projectId: files.projectId,
+          count: sql<number>`count(*)::int`,
+          latestFileAt: sql<Date | null>`max(${files.createdAt})`,
+        })
+        .from(files)
+        .where(and(inArray(files.projectId, projectIds), isNull(files.deletedAt)))
+        .groupBy(files.projectId),
+    ]);
+    for (const st of stats) {
+      map.set(st.projectId, { fileCount: Number(st.count) || 0, latestFileAt: st.latestFileAt ? new Date(st.latestFileAt) : null });
+    }
+    for (const f of latestVideos) {
+      const entry = map.get(f.projectId) || { fileCount: 0, latestFileAt: null };
+      entry.latestVideoFile = f as File;
+      map.set(f.projectId, entry);
+    }
+    return map;
+  }
+
   async getProjectsByFolderWithLatestVideo(folderId: number): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]> {
     const rows = await db
       .select({
@@ -1778,33 +1813,22 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(users.id, projects.createdById))
       .where(and(eq(projects.folderId, folderId), isNull(projects.deletedAt)));
 
-    return await Promise.all(rows.map(async (r) => {
-      const [latestVideoFile] = await db
-        .select()
-        .from(files)
-        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video'), isNull(files.deletedAt)))
-        .orderBy(desc(files.createdAt))
-        .limit(1);
-      const [{ count: fileCount, latestFileAt }] = await db
-        .select({
-          count: sql<number>`count(*)::int`,
-          latestFileAt: sql<Date | null>`max(${files.createdAt})`,
-        })
-        .from(files)
-        .where(and(eq(files.projectId, r.project.id), isNull(files.deletedAt)));
+    const stats = await this.getProjectCardStats(rows.map((r) => r.project.id));
+    return rows.map((r) => {
+      const st = stats.get(r.project.id);
       const lastActivityAt =
-        latestFileAt && new Date(latestFileAt) > new Date(r.project.updatedAt)
-          ? new Date(latestFileAt)
+        st?.latestFileAt && st.latestFileAt > new Date(r.project.updatedAt)
+          ? st.latestFileAt
           : r.project.updatedAt;
       return {
         ...r.project,
         lastActivityAt,
-        latestVideoFile: latestVideoFile || undefined,
+        latestVideoFile: st?.latestVideoFile,
         creatorUsername: r.creatorUsername ?? null,
         creatorName: r.creatorName ?? null,
-        fileCount: Number(fileCount) || 0,
+        fileCount: st?.fileCount ?? 0,
       };
-    }));
+    });
   }
 
   async createProject(insertProject: InsertProject): Promise<Project> {
@@ -1907,33 +1931,22 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(users.id, projects.createdById))
       .where(isNull(projects.deletedAt));
 
-    return await Promise.all(rows.map(async (r) => {
-      const [latestVideoFile] = await db
-        .select()
-        .from(files)
-        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video'), isNull(files.deletedAt)))
-        .orderBy(desc(files.createdAt))
-        .limit(1);
-      const [{ count: fileCount, latestFileAt }] = await db
-        .select({
-          count: sql<number>`count(*)::int`,
-          latestFileAt: sql<Date | null>`max(${files.createdAt})`,
-        })
-        .from(files)
-        .where(and(eq(files.projectId, r.project.id), isNull(files.deletedAt)));
+    const stats = await this.getProjectCardStats(rows.map((r) => r.project.id));
+    return rows.map((r) => {
+      const st = stats.get(r.project.id);
       const lastActivityAt =
-        latestFileAt && new Date(latestFileAt) > new Date(r.project.updatedAt)
-          ? new Date(latestFileAt)
+        st?.latestFileAt && st.latestFileAt > new Date(r.project.updatedAt)
+          ? st.latestFileAt
           : r.project.updatedAt;
       return {
         ...r.project,
         lastActivityAt,
-        latestVideoFile: latestVideoFile || undefined,
+        latestVideoFile: st?.latestVideoFile,
         creatorUsername: r.creatorUsername ?? null,
         creatorName: r.creatorName ?? null,
-        fileCount: Number(fileCount) || 0,
+        fileCount: st?.fileCount ?? 0,
       };
-    }));
+    });
   }
 
   async getProjectsByUserWithLatestVideo(userId: number): Promise<(Project & { latestVideoFile?: File; creatorUsername?: string | null; creatorName?: string | null; fileCount?: number })[]> {
@@ -1951,33 +1964,22 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(users.id, projects.createdById))
       .where(eq(projectUsers.userId, userId));
 
-    return await Promise.all(rows.map(async (r) => {
-      const [latestVideoFile] = await db
-        .select()
-        .from(files)
-        .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video'), isNull(files.deletedAt)))
-        .orderBy(desc(files.createdAt))
-        .limit(1);
-      const [{ count: fileCount, latestFileAt }] = await db
-        .select({
-          count: sql<number>`count(*)::int`,
-          latestFileAt: sql<Date | null>`max(${files.createdAt})`,
-        })
-        .from(files)
-        .where(and(eq(files.projectId, r.project.id), isNull(files.deletedAt)));
+    const stats = await this.getProjectCardStats(rows.map((r) => r.project.id));
+    return rows.map((r) => {
+      const st = stats.get(r.project.id);
       const lastActivityAt =
-        latestFileAt && new Date(latestFileAt) > new Date(r.project.updatedAt)
-          ? new Date(latestFileAt)
+        st?.latestFileAt && st.latestFileAt > new Date(r.project.updatedAt)
+          ? st.latestFileAt
           : r.project.updatedAt;
       return {
         ...r.project,
         lastActivityAt,
-        latestVideoFile: latestVideoFile || undefined,
+        latestVideoFile: st?.latestVideoFile,
         creatorUsername: r.creatorUsername ?? null,
         creatorName: r.creatorName ?? null,
-        fileCount: Number(fileCount) || 0,
+        fileCount: st?.fileCount ?? 0,
       };
-    }));
+    });
   }
 
   // File methods
