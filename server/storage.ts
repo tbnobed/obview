@@ -1785,12 +1785,20 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video'), isNull(files.deletedAt)))
         .orderBy(desc(files.createdAt))
         .limit(1);
-      const [{ count: fileCount }] = await db
-        .select({ count: sql<number>`count(*)::int` })
+      const [{ count: fileCount, latestFileAt }] = await db
+        .select({
+          count: sql<number>`count(*)::int`,
+          latestFileAt: sql<Date | null>`max(${files.createdAt})`,
+        })
         .from(files)
         .where(and(eq(files.projectId, r.project.id), isNull(files.deletedAt)));
+      const lastActivityAt =
+        latestFileAt && new Date(latestFileAt) > new Date(r.project.updatedAt)
+          ? new Date(latestFileAt)
+          : r.project.updatedAt;
       return {
         ...r.project,
+        lastActivityAt,
         latestVideoFile: latestVideoFile || undefined,
         creatorUsername: r.creatorUsername ?? null,
         creatorName: r.creatorName ?? null,
@@ -1906,12 +1914,20 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video'), isNull(files.deletedAt)))
         .orderBy(desc(files.createdAt))
         .limit(1);
-      const [{ count: fileCount }] = await db
-        .select({ count: sql<number>`count(*)::int` })
+      const [{ count: fileCount, latestFileAt }] = await db
+        .select({
+          count: sql<number>`count(*)::int`,
+          latestFileAt: sql<Date | null>`max(${files.createdAt})`,
+        })
         .from(files)
         .where(and(eq(files.projectId, r.project.id), isNull(files.deletedAt)));
+      const lastActivityAt =
+        latestFileAt && new Date(latestFileAt) > new Date(r.project.updatedAt)
+          ? new Date(latestFileAt)
+          : r.project.updatedAt;
       return {
         ...r.project,
+        lastActivityAt,
         latestVideoFile: latestVideoFile || undefined,
         creatorUsername: r.creatorUsername ?? null,
         creatorName: r.creatorName ?? null,
@@ -1942,12 +1958,20 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(files.projectId, r.project.id), eq(files.fileType, 'video'), isNull(files.deletedAt)))
         .orderBy(desc(files.createdAt))
         .limit(1);
-      const [{ count: fileCount }] = await db
-        .select({ count: sql<number>`count(*)::int` })
+      const [{ count: fileCount, latestFileAt }] = await db
+        .select({
+          count: sql<number>`count(*)::int`,
+          latestFileAt: sql<Date | null>`max(${files.createdAt})`,
+        })
         .from(files)
         .where(and(eq(files.projectId, r.project.id), isNull(files.deletedAt)));
+      const lastActivityAt =
+        latestFileAt && new Date(latestFileAt) > new Date(r.project.updatedAt)
+          ? new Date(latestFileAt)
+          : r.project.updatedAt;
       return {
         ...r.project,
+        lastActivityAt,
         latestVideoFile: latestVideoFile || undefined,
         creatorUsername: r.creatorUsername ?? null,
         creatorName: r.creatorName ?? null,

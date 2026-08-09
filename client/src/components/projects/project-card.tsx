@@ -185,12 +185,10 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
       <Card
         ref={cardRef}
         className={cn(
-          "group cursor-pointer transition-shadow text-sm active:opacity-70 border-l-4 relative overflow-hidden rounded-2xl dark:bg-zinc-900/70 dark:hover:bg-zinc-900 dark:border-transparent dark:border-l-4",
-          isOwner && "ring-1 ring-cyan-500/30 dark:ring-cyan-400/30",
+          "group cursor-pointer transition-colors text-sm active:opacity-70 relative overflow-hidden rounded-2xl border-0 shadow-none dark:bg-zinc-900/70 dark:hover:bg-zinc-900 bg-white",
           isSelected && "ring-2 ring-primary dark:ring-cyan-400/60 shadow-md",
           isFileDropTarget && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg"
         )}
-        style={{ borderLeftColor: accentColor }}
         draggable
         onDragStart={onDragStart}
         onDragEnd={clearDragPayload}
@@ -200,7 +198,7 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
         {onToggleSelect && (
           <div
             className={cn(
-              "absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-white/80 dark:bg-zinc-900/70/80 backdrop-blur-sm transition-opacity",
+              "absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm transition-opacity",
               isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}
             onClick={(e) => {
@@ -398,7 +396,7 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
                 <svg className="inline-block h-3.5 w-3.5 mr-1 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                 </svg>
-                {formatTimeAgo(new Date(project.updatedAt))}
+                {formatTimeAgo(new Date((project as any).lastActivityAt ?? project.updatedAt))}
               </span>
               {typeof project.fileCount === "number" && (
                 <span className="flex items-center" data-testid={`project-file-count-${project.id}`}>

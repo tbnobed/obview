@@ -105,12 +105,10 @@ export default function ProjectRow({ project, isSelected, selectedIds, onToggleS
       <div
         ref={rowRef}
         className={cn(
-          "group flex items-center gap-3 px-3 py-2.5 rounded-xl border-l-4 border border-neutral-200 dark:border-transparent bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-900 cursor-pointer transition-colors",
-          isOwner && "ring-1 ring-cyan-500/30 dark:ring-cyan-400/30",
+          "group flex items-center gap-3 px-3 py-2.5 rounded-xl border-0 bg-white dark:bg-zinc-900/70 dark:hover:bg-zinc-900 cursor-pointer transition-colors",
           isSelected && "ring-2 ring-primary dark:ring-cyan-400/60",
           isFileDropTarget && "ring-2 ring-primary shadow-md",
         )}
-        style={{ borderLeftColor: accentColor }}
         draggable
         onDragStart={onDragStart}
         onDragEnd={clearDragPayload}
@@ -192,7 +190,7 @@ export default function ProjectRow({ project, isSelected, selectedIds, onToggleS
         )}
 
         <div className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400 w-28 text-right">
-          {formatTimeAgo(new Date(project.updatedAt))}
+          {formatTimeAgo(new Date((project as any).lastActivityAt ?? project.updatedAt))}
         </div>
 
         {canDelete && (
