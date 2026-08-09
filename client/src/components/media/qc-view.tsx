@@ -11,6 +11,8 @@ import {
   ShieldCheck,
   MonitorX,
   Snowflake,
+  Zap,
+  Timer,
   Mic,
   SpellCheck,
 } from "lucide-react";
@@ -43,6 +45,8 @@ function formatTime(seconds: number) {
 const TYPE_META: Record<string, { label: string; icon: typeof Info }> = {
   black_frame: { label: "Black frame", icon: MonitorX },
   freeze_frame: { label: "Frozen frames", icon: Snowflake },
+  flash_frame: { label: "Flash frame", icon: Zap },
+  short_shot: { label: "Short shot", icon: Timer },
   audio_event: { label: "Audio event", icon: Mic },
   ocr_spelling: { label: "On-screen text", icon: SpellCheck },
 };

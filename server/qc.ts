@@ -23,6 +23,11 @@ const QC_ENABLED = (process.env.QC_ENABLED || "true").toLowerCase() !== "false";
 // Min black duration (s) worth reporting; sub-frame blips at cuts are normal.
 const BLACK_MIN_DURATION = parseFloat(process.env.QC_BLACK_MIN_DURATION || "0.1");
 const FREEZE_MIN_DURATION = parseFloat(process.env.QC_FREEZE_MIN_DURATION || "2");
+// Shot/cut analysis: flash frames are shots of <= QC_FLASH_MAX_FRAMES frames;
+// anything shorter than QC_SHOT_MIN_DURATION seconds is flagged as a short shot.
+const SCENE_THRESHOLD = parseFloat(process.env.QC_SCENE_THRESHOLD || "0.3");
+const FLASH_MAX_FRAMES = parseInt(process.env.QC_FLASH_MAX_FRAMES || "4", 10);
+const SHOT_MIN_DURATION = parseFloat(process.env.QC_SHOT_MIN_DURATION || "2");
 const FFMPEG_TIMEOUT_MS = 30 * 60 * 1000;
 
 interface WorkerQcPayload {
@@ -109,6 +114,100 @@ export function parseFrameFindings(stdout: string, stderr: string): QcFinding[] 
     });
   });
 
+  return findings;
+}
+
+// ---------------------------------------------------------------------------
+// Detector 1b: shot analysis — flash frames & short shots (local ffmpeg)
+// ---------------------------------------------------------------------------
+
+/** fps + duration via ffprobe; fps parsed from "30000/1001"-style rate. */
+function probeVideoStats(filePath: string): Promise<{ fps: number; duration: number }> {
+  return new Promise((resolve, reject) => {
+    const args = [
+      "-v", "error",
+      "-select_streams", "v:0",
+      "-show_entries", "stream=avg_frame_rate,r_frame_rate:format=duration",
+      "-of", "json", filePath,
+    ];
+    const proc = spawn("ffprobe", args);
+    let out = ""; let err = "";
+    proc.stdout.on("data", (d) => { out += d.toString(); });
+    proc.stderr.on("data", (d) => { err += d.toString(); });
+    proc.on("error", reject);
+    proc.on("close", (code) => {
+      if (code !== 0) return reject(new Error(`ffprobe exited ${code}: ${err.slice(-300)}`));
+      try {
+        const j = JSON.parse(out);
+        const rate: string = j?.streams?.[0]?.avg_frame_rate && j.streams[0].avg_frame_rate !== "0/0"
+          ? j.streams[0].avg_frame_rate
+          : j?.streams?.[0]?.r_frame_rate || "0/1";
+        const [num, den] = rate.split("/").map(Number);
+        const fps = den > 0 ? num / den : 0;
+        const duration = parseFloat(j?.format?.duration || "0");
+        if (!fps || !duration) return reject(new Error(`ffprobe returned fps=${fps} duration=${duration}`));
+        resolve({ fps, duration });
+      } catch (e) { reject(e as Error); }
+    });
+  });
+}
+
+/** Scene-cut timestamps (s) via ffmpeg scene-score select. */
+function detectSceneCuts(filePath: string): Promise<number[]> {
+  return new Promise((resolve, reject) => {
+    const vf = `select='gt(scene,${SCENE_THRESHOLD})',metadata=mode=print:key=lavfi.scene_score:file=-`;
+    const args = ["-hide_banner", "-nostats", "-i", filePath, "-vf", vf, "-an", "-f", "null", "-"];
+    const proc = spawn("ffmpeg", args);
+    let stdout = ""; let stderr = "";
+    proc.stdout.on("data", (d) => { stdout += d.toString(); });
+    proc.stderr.on("data", (d) => { stderr += d.toString(); });
+    const timer = setTimeout(() => {
+      proc.kill("SIGKILL");
+      reject(new Error(`ffmpeg scene detection timed out after ${FFMPEG_TIMEOUT_MS}ms`));
+    }, FFMPEG_TIMEOUT_MS);
+    proc.on("error", (e) => { clearTimeout(timer); reject(e); });
+    proc.on("close", (code) => {
+      clearTimeout(timer);
+      if (code !== 0) return reject(new Error(`ffmpeg scene detection exited ${code}: ${stderr.slice(-500)}`));
+      // metadata=print emits "frame:12  pts:6006  pts_time:6.006" lines for selected frames.
+      const cuts: number[] = [];
+      const re = /pts_time:([\d.]+)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(stdout)) !== null) cuts.push(parseFloat(m[1]));
+      resolve(cuts);
+    });
+  });
+}
+
+/** Turn cut timestamps into flash-frame / short-shot findings. Exported for tests. */
+export function computeShotFindings(cuts: number[], fps: number, duration: number): QcFinding[] {
+  const findings: QcFinding[] = [];
+  if (!fps || !duration) return findings;
+  const boundaries = [0, ...cuts.filter((t) => t > 0 && t < duration).sort((a, b) => a - b), duration];
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const start = boundaries[i];
+    const end = boundaries[i + 1];
+    const len = end - start;
+    if (len <= 0) continue;
+    const frames = Math.max(1, Math.round(len * fps));
+    if (frames <= FLASH_MAX_FRAMES) {
+      findings.push({
+        type: "flash_frame",
+        severity: "error",
+        start,
+        end,
+        detail: `Flash frame: ${frames} frame${frames === 1 ? "" : "s"} (${(len * 1000).toFixed(0)}ms) between cuts`,
+      });
+    } else if (len < SHOT_MIN_DURATION) {
+      findings.push({
+        type: "short_shot",
+        severity: "warning",
+        start,
+        end,
+        detail: `Short shot: ${len.toFixed(2)}s (minimum ${SHOT_MIN_DURATION}s)`,
+      });
+    }
+  }
   return findings;
 }
 
@@ -207,11 +306,31 @@ async function runQcJob(fileId: number, worker: WorkerQcPayload | null): Promise
       detectors.frames = { status: "failed", error: e?.message || String(e) };
       console.warn(`[QC] File ${fileId}: frame analysis failed — ${e?.message}`);
     }
+    // Shot analysis (flash frames / short shots) — separate status so a
+    // scene-detection failure never hides black/freeze findings.
+    try {
+      const t0 = Date.now();
+      const [{ fps, duration }, cuts] = await Promise.all([
+        probeVideoStats(file.filePath),
+        detectSceneCuts(file.filePath),
+      ]);
+      const shotFindings = computeShotFindings(cuts, fps, duration);
+      findings.push(...shotFindings);
+      detectors.shots = { status: "completed" };
+      console.log(
+        `[QC] File ${fileId}: shot analysis found ${shotFindings.length} finding(s) across ${cuts.length + 1} shot(s) in ${Date.now() - t0}ms`
+      );
+    } catch (e: any) {
+      detectors.shots = { status: "failed", error: e?.message || String(e) };
+      console.warn(`[QC] File ${fileId}: shot analysis failed — ${e?.message}`);
+    }
   } else {
-    detectors.frames = {
+    const skip = {
       status: "skipped",
       error: file.fileType !== "video" ? "not a video" : "source file not on disk",
     };
+    detectors.frames = skip;
+    detectors.shots = skip;
   }
 
   // --- 2. Audio events (from the worker payload) ---
