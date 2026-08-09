@@ -398,7 +398,7 @@ export default function MultiSharePage() {
             )}
             {!authLoading && !user && (
               <a
-                className="inline-flex items-center text-xs border border-gray-700 text-gray-200 rounded-md px-3 py-1.5 hover:bg-gray-800"
+                className="inline-flex items-center text-xs border border-neutral-300 text-neutral-700 hover:bg-neutral-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 rounded-md px-3 py-1.5"
                 href={signInHref(token)}
                 data-testid="link-sign-in-active"
               >
