@@ -864,8 +864,8 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
             <DialogTrigger asChild>
               <Button
                 size="sm"
-                variant="destructive"
-                className="h-7 text-xs"
+                variant="ghost"
+                className="h-7 text-xs rounded-lg border border-amber-400/30 bg-amber-500/10 text-amber-300 transition-colors hover:bg-amber-500/25 hover:border-amber-400/60 hover:text-amber-200"
                 data-testid="button-request-changes"
               >
                 <MessageSquareWarning className="h-3.5 w-3.5 mr-1" />

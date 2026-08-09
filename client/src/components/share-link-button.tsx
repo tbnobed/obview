@@ -12,8 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ShareIcon, CopyIcon, CheckIcon, Mail, Send, Loader2 } from "lucide-react";
-import { ShareFileIcon } from "@/components/media/action-icons";
+import { ShareIcon, CopyIcon, CheckIcon, Mail, Send, Loader2, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -147,14 +146,14 @@ export function ShareLinkButton({ fileId, variant = "outline", size = "sm", comp
   return (
     <>
       <Button 
-        variant={variant} 
+        variant="ghost"
         size={compact ? "sm" : size}
         onClick={handleOpenDialog}
-        className={`flex items-center ${compact ? 'gap-0 p-1' : 'gap-1.5'} ${className || ''}`}
+        className={`flex items-center rounded-lg border border-violet-400/30 bg-violet-500/10 text-violet-300 transition-colors hover:bg-violet-500/25 hover:border-violet-400/60 hover:text-violet-200 ${compact ? 'gap-0 p-1' : 'gap-1.5'} ${className || ''}`}
         data-variant-type={variant}
         title={compact ? "Share this file" : undefined}
       >
-        <ShareFileIcon className="h-[22px] w-[22px]" />
+        <Share2 className="h-4 w-4" />
         {!compact && <span className="text-xs font-medium">Share File</span>}
       </Button>
 
