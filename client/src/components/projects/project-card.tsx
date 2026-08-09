@@ -185,7 +185,7 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
       <Card
         ref={cardRef}
         className={cn(
-          "group cursor-pointer transition-shadow text-sm active:opacity-70 border-l-4 relative overflow-hidden rounded-2xl dark:bg-zinc-900/70 dark:hover:bg-zinc-900 dark:border-transparent dark:border-l-4 shadow-[0_0_14px_rgba(34,211,238,0.12)] hover:shadow-[0_0_18px_rgba(34,211,238,0.2)]",
+          "group cursor-pointer transition-shadow text-sm active:opacity-70 border-l-4 relative overflow-hidden rounded-2xl dark:bg-zinc-900/70 dark:hover:bg-zinc-900 dark:border-transparent dark:border-l-4",
           isOwner && "ring-1 ring-cyan-500/30 dark:ring-cyan-400/30",
           isSelected && "ring-2 ring-primary dark:ring-cyan-400/60 shadow-md",
           isFileDropTarget && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg"
