@@ -6,3 +6,10 @@ pydantic>=2.7,<3
 # with a cu13 build; if model load fails with a CUDA error, see
 # README.md > "Whisper on Blackwell" for the fallback build steps.
 faster-whisper>=1.0.3
+# Pin ctranslate2 to the CUDA 12 line on x86_64 (the L4 host). Newer CT2
+# wheels are built against CUDA 13 and pull the whole nvidia-*-cu13 stack
+# into the venv NEXT TO torch's cu12 wheels — torch then resolves mixed
+# libraries and cuDNN dies with CUDNN_STATUS_NOT_INITIALIZED for every
+# torch stage (diarization/PANNs/OCR). On the Spark (aarch64, CUDA 13) the
+# newer wheel is the correct one, hence the platform marker.
+ctranslate2<4.6; platform_machine == "x86_64"
