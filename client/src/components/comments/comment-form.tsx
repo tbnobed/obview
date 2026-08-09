@@ -394,7 +394,7 @@ export default function CommentForm({
       
       {/* Timestamp indicator and tools - Mobile: compact spacing, Desktop: normal spacing */}
       {!parentId && currentTime !== undefined && (
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border lg:mt-3 lg:pt-3">
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 lg:mt-3 lg:pt-3">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground lg:gap-2">
             <Clock className="h-3 w-3" />
             {hasRange ? (
@@ -532,7 +532,7 @@ export default function CommentForm({
                     >
                       <div className="emoji-picker-container">
                         {/* Emoji Category Tabs - Mobile: smaller padding, Desktop: normal */}
-                        <div className="border-b border-border flex overflow-x-auto">
+                        <div className="border-b border-white/5 flex overflow-x-auto">
                           {Object.keys(emojiCategories).map((category) => (
                             <button
                               key={category}
@@ -603,7 +603,7 @@ export default function CommentForm({
                         </div>
                         
                         {/* Helper text - Mobile: smaller padding, Desktop: normal */}
-                        <div className="px-2 pb-2 pt-1 border-t border-border lg:px-3">
+                        <div className="px-2 pb-2 pt-1 border-t border-white/5 lg:px-3">
                           <div className="text-xs text-muted-foreground text-center">
                             Click an emoji to add it
                           </div>

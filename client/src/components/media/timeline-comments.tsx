@@ -180,7 +180,7 @@ export default function TimelineComments({
     if (replies.length === 0) return null;
     
     return (
-      <div className={`mt-3 space-y-3 ${depth > 0 ? 'ml-4 pl-4 border-l border-border' : ''}`}>
+      <div className={`mt-3 space-y-3 ${depth > 0 ? 'ml-4 pl-4 border-l border-white/5' : ''}`}>
         {replies.map((reply: any) => (
           <div key={`${(reply as any).isPublic ? 'public' : 'auth'}-${reply.id}`}>
             <div className="flex gap-3">
@@ -290,7 +290,7 @@ export default function TimelineComments({
 
                 {/* Reply Form for nested replies */}
                 {replyingToId === reply.id && (
-                  <div className="mt-3 pl-4 border-l-2 border-border">
+                  <div className="mt-3 pl-4 border-l-2 border-white/10">
                     <CommentForm
                       fileId={fileId}
                       parentId={reply.id}
