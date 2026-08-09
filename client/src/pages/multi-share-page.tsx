@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { createPortal } from "react-dom";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -1700,8 +1701,8 @@ function FileViewer({
         className={cn(
           playerOnly && "hidden",
           fullScreen
-            ? "w-full landscape:w-[44%] landscape:max-w-[360px] lg:w-[360px] flex-1 landscape:flex-none landscape:shrink-0 lg:flex-none lg:shrink-0 bg-white dark:bg-[#0f1218] border-t landscape:border-t-0 landscape:border-l lg:border-t-0 lg:border-l border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col min-h-0 landscape:h-auto lg:h-auto"
-            : "rounded-lg bg-white dark:bg-[#0f1218] border border-neutral-200 dark:border-gray-800 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]",
+            ? "w-full landscape:w-[44%] landscape:max-w-[360px] lg:w-[360px] flex-1 landscape:flex-none landscape:shrink-0 lg:flex-none lg:shrink-0 bg-white dark:bg-zinc-950 overflow-hidden flex flex-col min-h-0 landscape:h-auto lg:h-auto"
+            : "rounded-lg bg-white dark:bg-zinc-950 border border-neutral-200 dark:border-0 overflow-hidden flex flex-col h-[calc(70vh+88px)] min-h-[520px]",
         )}
       >
         <Tabs
@@ -1717,7 +1718,7 @@ function FileViewer({
           })()}
           className="flex-1 min-h-0 flex flex-col"
         >
-          <div className="px-2 py-1 border-b border-neutral-200 dark:border-gray-800 landscape:hidden lg:landscape:block">
+          <div className="px-2 py-1 landscape:hidden lg:landscape:block">
             <TabsList className="h-7 bg-transparent p-0 gap-1">
               <TabsTrigger value="comments" className="text-xs px-3">
                 Comments
@@ -1744,17 +1745,17 @@ function FileViewer({
             value="comments"
             className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
           >
-            <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 border-b border-neutral-200 dark:border-gray-800 shrink-0">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-3 shrink-0">
               <Filter className="h-3.5 w-3.5 mr-1 text-neutral-400 dark:text-gray-500" />
               {(["all", "unresolved", "resolved"] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setCommentFilter(f)}
                   className={cn(
-                    "text-xs px-2 py-0.5 rounded-full transition-colors capitalize",
+                    "rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors",
                     commentFilter === f
-                      ? "bg-primary/20 text-primary dark:bg-[#10a37f]/20 dark:text-[#10a37f]"
-                      : "text-neutral-500 dark:text-gray-400 hover:text-neutral-700 dark:hover:text-gray-200"
+                      ? "bg-cyan-950/80 text-cyan-400"
+                      : "bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                   )}
                 >
                   {f}
@@ -1808,8 +1809,8 @@ function FileViewer({
                           if (c.timestamp != null) seekTo(c.timestamp);
                         }}
                         className={cn(
-                          "rounded-lg border p-3 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))] cursor-pointer transition-colors",
-                          isActive && "ring-2 ring-primary dark:ring-[#10a37f] border-primary dark:border-[#10a37f]",
+                          "group rounded-2xl p-3.5 bg-white dark:bg-zinc-900/70 cursor-pointer transition-colors dark:hover:bg-zinc-900 border border-neutral-200 dark:border-0 shadow-[0_0_14px_rgba(34,211,238,0.12)] hover:shadow-[0_0_18px_rgba(34,211,238,0.2)]",
+                          isActive && "dark:bg-zinc-900 ring-1 ring-cyan-400/40",
                         )}
                         data-testid={`share-comment-${c.id}`}
                       >
@@ -1824,11 +1825,11 @@ function FileViewer({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-medium text-neutral-900 dark:text-[hsl(var(--comments-text))]">
+                                <span className="text-xs font-semibold dark:text-zinc-200 text-neutral-900">
                                   {author}
                                 </span>
-                                <span className="text-xs text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
-                                  {new Date(c.createdAt).toLocaleDateString()}
+                                <span className="text-[11px] text-zinc-500">
+                                  {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true }).replace(/^about /, "")}
                                 </span>
                                 {c.timestamp != null && (
                                   <button
@@ -1838,7 +1839,7 @@ function FileViewer({
                                       setDisplayAnnotations(parseAnnotations(c));
                                       seekTo(c.timestamp!);
                                     }}
-                                    className="text-xs font-mono px-2 py-1 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))] hover:opacity-80 transition-opacity"
+                                    className="rounded-lg bg-cyan-950/50 px-2 py-0.5 text-xs font-mono font-medium text-cyan-400 transition-colors hover:bg-cyan-900/80"
                                     title={(c as any).inPoint != null && (c as any).outPoint != null ? `Range ${fmtTime((c as any).inPoint)} → ${fmtTime((c as any).outPoint)}` : "Jump to this moment"}
                                   >
                                     {(c as any).inPoint != null && (c as any).outPoint != null
@@ -1865,7 +1866,7 @@ function FileViewer({
                                 )}
                               </div>
                               {!isReply && (
-                                <span className="text-xs font-medium text-neutral-500 dark:text-[hsl(var(--comments-muted))] shrink-0">
+                                <span className="text-[11px] text-zinc-500 shrink-0">
                                   #{index + 1}
                                 </span>
                               )}
@@ -1901,18 +1902,18 @@ function FileViewer({
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-sm text-neutral-800 dark:text-[hsl(var(--comments-text))] whitespace-pre-wrap break-words leading-relaxed">
+                              <div className="mt-2.5 text-xs dark:text-zinc-300 text-neutral-800 whitespace-pre-wrap break-words leading-relaxed">
                                 {c.content}
                               </div>
                             )}
                             {!isEditing && allowComments && (
                               <div
                                 onClick={(e) => e.stopPropagation()}
-                                className="mt-2 flex items-center gap-3 text-[11px] text-neutral-500 dark:text-gray-400"
+                                className="mt-3 flex items-center gap-4 text-xs dark:text-zinc-400 text-neutral-500"
                               >
                                 <button
                                   type="button"
-                                  className="inline-flex items-center gap-1 hover:text-neutral-800 dark:hover:text-gray-200"
+                                  className="flex items-center gap-1 transition-colors hover:text-neutral-800 dark:hover:text-zinc-200"
                                   onClick={() => {
                                     setReplyingToId(isReplying ? null : c.id);
                                     setReplyContent("");
@@ -1925,7 +1926,7 @@ function FileViewer({
                                   <>
                                     <button
                                       type="button"
-                                      className="inline-flex items-center gap-1 hover:text-neutral-800 dark:hover:text-gray-200"
+                                      className="flex items-center gap-1 transition-colors hover:text-neutral-800 dark:hover:text-zinc-200"
                                       onClick={() => {
                                         setEditingId(c.id);
                                         setEditContent(c.content);
@@ -1936,7 +1937,7 @@ function FileViewer({
                                     </button>
                                     <button
                                       type="button"
-                                      className="inline-flex items-center gap-1 text-red-500 hover:text-red-600"
+                                      className="flex items-center gap-1 transition-colors text-red-400/80 hover:text-red-300"
                                       onClick={() => {
                                         if (window.confirm("Delete this comment?")) {
                                           deletePost.mutate(c.id);
@@ -2015,18 +2016,18 @@ function FileViewer({
                 </Alert>
               </div>
             ) : (
-              <div className="border-t border-neutral-200 dark:border-[hsl(var(--comments-card-border))] p-3 space-y-2 shrink-0 bg-white dark:bg-[#0f1218]">
+              <div className="p-3 space-y-2 shrink-0 bg-white dark:bg-zinc-950">
                 <Input
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-neutral-50 dark:bg-gray-800 border-neutral-200 dark:border-gray-700 h-8 text-sm"
+                  className="bg-neutral-50 dark:bg-zinc-900/90 border-neutral-200 dark:border-0 h-8 text-sm rounded-lg dark:text-zinc-200 dark:placeholder:text-zinc-500"
                   data-testid="input-share-author"
                 />
                 <div className="relative">
                   <textarea
                     ref={commentInputRef}
-                    className="w-full text-sm rounded-md border border-neutral-200 dark:border-gray-700 p-2 pb-9 min-h-[64px] bg-neutral-50 dark:bg-gray-800 text-neutral-900 dark:text-gray-100 placeholder:text-neutral-400 dark:placeholder:text-gray-500 resize-none"
+                    className="w-full text-xs rounded-2xl border border-neutral-200 dark:border-0 p-3 pb-9 min-h-[64px] bg-neutral-50 dark:bg-zinc-900/90 text-neutral-900 dark:text-zinc-200 placeholder:text-neutral-400 dark:placeholder:text-zinc-500 resize-none outline-none focus:outline-none dark:shadow-2xl"
                     placeholder={
                       isVideo || isAudio
                         ? `Add a comment at ${fmtTime(currentTime) || "0:00"}...`
@@ -2127,7 +2128,7 @@ function FileViewer({
                     </div>
                     <Button
                       size="icon"
-                      className="h-7 w-7 pointer-events-auto"
+                      className="h-7 w-7 pointer-events-auto rounded-xl bg-cyan-400 text-zinc-950 hover:bg-cyan-300 disabled:bg-zinc-800 disabled:text-zinc-500"
                       disabled={!content.trim() || post.isPending}
                       onClick={() => requireName(() => post.mutate())}
                       data-testid="button-post-share-comment"
@@ -2140,7 +2141,7 @@ function FileViewer({
                 {(isVideo || isAudio) && (() => {
                   const hasRange = inPoint !== null && outPoint !== null && outPoint > inPoint;
                   return (
-                    <div className="hidden sm:flex items-center justify-between text-[11px] text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
+                    <div className="hidden sm:flex items-center justify-between text-[11px] text-zinc-500">
                       {hasRange ? (
                         <>
                           <span className="inline-flex items-center gap-1">
@@ -2155,14 +2156,14 @@ function FileViewer({
                               ×
                             </button>
                           </span>
-                          <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
+                          <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 font-mono font-medium text-cyan-400">
                             {fmtTime(inPoint!)} → {fmtTime(outPoint!)}
                           </span>
                         </>
                       ) : (
                         <>
                           <span>Will be posted at {fmtTime(currentTime) || "00:00"} · I/O for range</span>
-                          <span className="font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-[hsl(var(--comments-timestamp-bg))] text-amber-700 dark:text-[hsl(var(--comments-timestamp-fg))]">
+                          <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 font-mono font-medium text-cyan-400">
                             {fmtTime(currentTime) || "00:00"}
                           </span>
                         </>
