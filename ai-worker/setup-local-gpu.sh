@@ -119,6 +119,10 @@ Environment=OBVIU_WHISPER_COMPUTE_TYPE=float16
 Environment=HF_HOME=${SERVICE_DIR}/models
 Environment=HUGGINGFACE_HUB_CACHE=${SERVICE_DIR}/models/hub
 Environment=CUDA_VISIBLE_DEVICES=0
+# print() goes to stdout, which is BLOCK-buffered under systemd's journal
+# pipe — startup lines (e.g. the cuDNN warmup verdict) can sit invisible in
+# the buffer for minutes. Unbuffer so journalctl shows them immediately.
+Environment=PYTHONUNBUFFERED=1
 ExecStart=${SERVICE_DIR}/venv/bin/python ${SERVICE_DIR}/service.py
 Restart=on-failure
 RestartSec=3
