@@ -129,6 +129,37 @@ OCR_MIN_CONFIDENCE = float(os.environ.get("OBVIU_OCR_MIN_CONFIDENCE", "0.45"))
 
 app = FastAPI(title="Obviu Spark AI Worker", version=SERVICE_VERSION)
 
+
+def _warmup_torch_cudnn() -> None:
+    """Initialize torch's cuDNN BEFORE ctranslate2 (faster-whisper) loads its own.
+
+    faster-whisper's ctranslate2 dlopens its own cuDNN into the process; once
+    that copy is resolved, torch's cuDNN handle creation fails with
+    CUDNN_STATUS_NOT_INITIALIZED — which killed diarization/PANNs/OCR on every
+    job (whisper always runs first). Running one tiny conv on the GPU at
+    startup forces torch to load and initialize ITS cuDNN first, so both
+    stacks coexist. Fail-soft: a warmup failure just logs; the per-stage CPU
+    fallbacks still apply.
+    """
+    try:
+        import torch  # type: ignore
+
+        if not torch.cuda.is_available():
+            return
+        x = torch.randn(1, 1, 8, 8, device="cuda")
+        w = torch.randn(1, 1, 3, 3, device="cuda")
+        torch.nn.functional.conv2d(x, w)
+        torch.cuda.synchronize()
+        print(
+            f"[obviu-spark-ai] torch cuDNN warmup ok "
+            f"(cudnn={torch.backends.cudnn.version()}, device={torch.cuda.get_device_name(0)})"
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[obviu-spark-ai] WARN: torch cuDNN warmup failed: {e}")
+
+
+_warmup_torch_cudnn()
+
 # Whisper models are large (1-3 GB) and slow to load (10-30s); cache one
 # instance per (model, device, compute_type) for the process lifetime.
 _MODEL_CACHE: dict[tuple[str, str, str], Any] = {}
