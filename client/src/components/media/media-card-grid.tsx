@@ -61,18 +61,23 @@ const getFileIcon = (fileType: string) => {
 // the badge flips from "Processing" to "Ready" without the user refreshing,
 // and invalidates the parent file list on the pending→completed edge so
 // duration / poster / hasScrubVersion show up immediately.
-const getProcessingStatus = (fileId: number, projectId?: number) => {
+const getProcessingStatus = (fileId: number, projectId?: number, fileCreatedAt?: string | Date) => {
   const queryClient = useQueryClient();
   const prevStatusRef = useRef<string | undefined>(undefined);
+  // Only keep polling files uploaded within the last hour. A file whose job
+  // is still not completed/failed after that is stuck server-side — endless
+  // 3s polls from every such card just churn the page (poor INP) without
+  // ever resolving.
+  const fresh = fileCreatedAt ? Date.now() - new Date(fileCreatedAt).getTime() < 60 * 60 * 1000 : false;
   const { data: processing } = useQuery({
     queryKey: ['/api/files', fileId, 'processing'],
     queryFn: ({ signal }) => apiRequest('GET', `/api/files/${fileId}/processing`, undefined, { signal }),
     enabled: !!fileId,
-    staleTime: 5000,
+    staleTime: 60000,
     retry: false,
     refetchInterval: (q) => {
       const s = (q.state.data as any)?.status;
-      return s === 'completed' || s === 'failed' ? false : 3000;
+      return s === 'completed' || s === 'failed' || !fresh ? false : 3000;
     },
     refetchIntervalInBackground: false,
   });
@@ -433,7 +438,7 @@ function MediaCard({
     setShareDialogOpen(true);
   };
   
-  const processing = getProcessingStatus(file.id, file.projectId);
+  const processing = getProcessingStatus(file.id, file.projectId, (file as any).createdAt);
   
   // Load sprite metadata for video files
   useEffect(() => {

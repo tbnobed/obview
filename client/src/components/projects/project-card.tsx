@@ -59,8 +59,19 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   
-  // Fetch video processing data for optimal scrubbing (when video file exists)
-  const { data: videoProcessing } = useQuery({
+  // Processing status ships with the /api/projects payload (batched
+  // server-side), so cards normally make ZERO per-card requests. We only
+  // fall back to fetching/polling when a job is genuinely in flight — and
+  // only for files uploaded in the last hour, so stale/stuck jobs can't
+  // leave dozens of cards polling every 3s forever (that was the main
+  // dashboard INP killer with 60+ projects).
+  const knownStatus = (project as any).latestVideoProcessingStatus as string | null | undefined;
+  const settled = knownStatus === 'completed' || knownStatus === 'failed';
+  const fileAgeMs = project.latestVideoFile
+    ? Date.now() - new Date((project.latestVideoFile as any).createdAt).getTime()
+    : Infinity;
+  const mayStillBeEncoding = fileAgeMs < 60 * 60 * 1000;
+  const { data: polledProcessing } = useQuery({
     queryKey: ['/api/files', project.latestVideoFile?.id, 'processing'],
     queryFn: async () => {
       if (!project.latestVideoFile) return null;
@@ -72,14 +83,9 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
         return null;
       }
     },
-    enabled: !!project.latestVideoFile,
+    enabled: !!project.latestVideoFile && !settled && mayStillBeEncoding,
     retry: false,
     refetchOnWindowFocus: false,
-    // Poll every 3s while encoding is in flight so the project card thumb
-    // gets its scrub sprite + duration without a manual refresh. The
-    // sprite-metadata effect below already keys off
-    // `videoProcessing?.status === 'completed'`, so it fires the moment
-    // this poll flips to completed.
     refetchInterval: (q) => {
       const s = (q.state.data as any)?.status;
       return s === 'completed' || s === 'failed' ? false : 3000;
@@ -88,6 +94,9 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
     // Don't show query errors, processing is optional
     meta: { suppressErrorToast: true }
   });
+  const videoProcessing = settled || !mayStillBeEncoding
+    ? (knownStatus != null ? { status: knownStatus } as any : null)
+    : polledProcessing;
   
   // Load sprite metadata for video files
   useEffect(() => {

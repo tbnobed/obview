@@ -1772,8 +1772,8 @@ export class DatabaseStorage implements IStorage {
    * Batch stats for project cards: latest video file, file count, and last
    * file activity per project — 2 queries total instead of 2 per project.
    */
-  private async getProjectCardStats(projectIds: number[]): Promise<Map<number, { latestVideoFile?: File; fileCount: number; latestFileAt: Date | null }>> {
-    const map = new Map<number, { latestVideoFile?: File; fileCount: number; latestFileAt: Date | null }>();
+  private async getProjectCardStats(projectIds: number[]): Promise<Map<number, { latestVideoFile?: File; latestVideoProcessingStatus?: string | null; fileCount: number; latestFileAt: Date | null }>> {
+    const map = new Map<number, { latestVideoFile?: File; latestVideoProcessingStatus?: string | null; fileCount: number; latestFileAt: Date | null }>();
     if (projectIds.length === 0) return map;
     const [latestVideos, stats] = await Promise.all([
       db
@@ -1798,6 +1798,21 @@ export class DatabaseStorage implements IStorage {
       const entry = map.get(f.projectId) || { fileCount: 0, latestFileAt: null };
       entry.latestVideoFile = f as File;
       map.set(f.projectId, entry);
+    }
+    // Processing status of each latest video in one query, so project cards
+    // don't need a per-card /api/files/:id/processing request on mount.
+    const videoIds = latestVideos.map((f: any) => f.id);
+    if (videoIds.length > 0) {
+      const procRows = await db
+        .select({ fileId: videoProcessing.fileId, status: videoProcessing.status })
+        .from(videoProcessing)
+        .where(inArray(videoProcessing.fileId, videoIds));
+      const byFile = new Map(procRows.map((r: any) => [r.fileId, r.status]));
+      for (const entry of Array.from(map.values())) {
+        if (entry.latestVideoFile) {
+          entry.latestVideoProcessingStatus = byFile.get(entry.latestVideoFile.id) ?? null;
+        }
+      }
     }
     return map;
   }
@@ -1824,6 +1839,7 @@ export class DatabaseStorage implements IStorage {
         ...r.project,
         lastActivityAt,
         latestVideoFile: st?.latestVideoFile,
+        latestVideoProcessingStatus: st?.latestVideoProcessingStatus ?? null,
         creatorUsername: r.creatorUsername ?? null,
         creatorName: r.creatorName ?? null,
         fileCount: st?.fileCount ?? 0,
@@ -1942,6 +1958,7 @@ export class DatabaseStorage implements IStorage {
         ...r.project,
         lastActivityAt,
         latestVideoFile: st?.latestVideoFile,
+        latestVideoProcessingStatus: st?.latestVideoProcessingStatus ?? null,
         creatorUsername: r.creatorUsername ?? null,
         creatorName: r.creatorName ?? null,
         fileCount: st?.fileCount ?? 0,
@@ -1975,6 +1992,7 @@ export class DatabaseStorage implements IStorage {
         ...r.project,
         lastActivityAt,
         latestVideoFile: st?.latestVideoFile,
+        latestVideoProcessingStatus: st?.latestVideoProcessingStatus ?? null,
         creatorUsername: r.creatorUsername ?? null,
         creatorName: r.creatorName ?? null,
         fileCount: st?.fileCount ?? 0,
