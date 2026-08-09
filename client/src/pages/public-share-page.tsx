@@ -837,12 +837,12 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
   const heading = file.projectName || "Shared file";
 
   return (
-    <div className="w-screen flex flex-col bg-black text-gray-100 overflow-hidden" style={{ height: '100dvh' }}>
+    <div className="w-screen flex flex-col bg-neutral-50 text-neutral-900 dark:bg-black dark:text-gray-100 overflow-hidden" style={{ height: '100dvh' }}>
       {/* Slim top bar */}
-      <header className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0 landscape:hidden lg:landscape:flex">
+      <header className="flex items-center justify-between px-3 py-2 border-b border-neutral-200 dark:border-gray-800 shrink-0 landscape:hidden lg:landscape:flex">
         <div className="flex items-center gap-2 min-w-0">
           <Logo className="h-6 w-auto" />
-          <div className="text-xs text-gray-400 truncate hidden sm:block">{heading}</div>
+          <div className="text-xs text-neutral-500 dark:text-gray-400 truncate hidden sm:block">{heading}</div>
           <span className="text-gray-600 hidden sm:inline">/</span>
           <div
             className="font-medium text-sm truncate text-gray-100"
@@ -1166,8 +1166,8 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                     className={cn(
                       "rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors",
                       commentFilter === f
-                        ? "bg-cyan-950/80 text-cyan-400"
-                        : "bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                        ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/80 dark:text-cyan-400"
+                        : "bg-zinc-200/70 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                     )}
                   >
                     {f}
@@ -1251,7 +1251,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-xs font-semibold text-zinc-200">
+                                  <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                                     {author}
                                   </span>
                                   <span className="text-[11px] text-zinc-500">
@@ -1265,7 +1265,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                         setDisplayAnnotations(parsePublicAnnotations(c));
                                         seekTo(c.timestamp!);
                                       }}
-                                      className="rounded-lg bg-cyan-950/50 px-2 py-0.5 text-xs font-mono font-medium text-cyan-400 transition-colors hover:bg-cyan-900/80"
+                                      className="rounded-lg bg-cyan-100 text-cyan-700 hover:bg-cyan-200 dark:bg-cyan-950/50 dark:text-cyan-400 dark:hover:bg-cyan-900/80 px-2 py-0.5 text-xs font-mono font-medium transition-colors"
                                       title={(c as any).inPoint != null && (c as any).outPoint != null ? `Range ${fmtTime((c as any).inPoint)} → ${fmtTime((c as any).outPoint)}` : "Jump to this moment"}
                                       data-testid={`button-seek-${c.id}`}
                                     >
@@ -1327,18 +1327,18 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                   </div>
                                 </div>
                               ) : (
-                                <div className="mt-2.5 text-xs text-zinc-300 whitespace-pre-wrap break-words leading-relaxed">
+                                <div className="mt-2.5 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words leading-relaxed">
                                   {c.content}
                                 </div>
                               )}
                               {!isEditing && (
                                 <div
                                   onClick={(e) => e.stopPropagation()}
-                                  className="mt-3 flex items-center gap-4 text-xs text-zinc-400"
+                                  className="mt-3 flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400"
                                 >
                                   <button
                                     type="button"
-                                    className="flex items-center gap-1 transition-colors hover:text-zinc-200"
+                                    className="flex items-center gap-1 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
                                     onClick={() => {
                                       setReplyingToId(isReplying ? null : c.id);
                                       setReplyContent("");
@@ -1351,7 +1351,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                     <>
                                       <button
                                         type="button"
-                                        className="flex items-center gap-1 transition-colors hover:text-zinc-200"
+                                        className="flex items-center gap-1 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200"
                                         onClick={() => {
                                           setEditingId(c.id);
                                           setEditContent(c.content);
@@ -1537,7 +1537,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                     </div>
                     <Button
                       size="icon"
-                      className="h-7 w-7 pointer-events-auto rounded-xl bg-cyan-400 text-zinc-950 hover:bg-cyan-300 disabled:bg-zinc-800 disabled:text-zinc-500"
+                      className="h-7 w-7 pointer-events-auto rounded-xl bg-cyan-400 text-zinc-950 hover:bg-cyan-300 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
                       disabled={!content.trim() || post.isPending}
                       onClick={() => requireName(() => post.mutate())}
                       data-testid="button-post-share-comment"
@@ -1565,14 +1565,14 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                               ×
                             </button>
                           </span>
-                          <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 font-mono font-medium text-cyan-400">
+                          <span className="rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-400 px-2 py-0.5 font-mono font-medium">
                             {fmtTime(inPoint!)} → {fmtTime(outPoint!)}
                           </span>
                         </>
                       ) : (
                         <>
                           <span>Will be posted at {fmtTime(currentTime) || "00:00"} · I/O for range</span>
-                          <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 font-mono font-medium text-cyan-400">
+                          <span className="rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-400 px-2 py-0.5 font-mono font-medium">
                             {fmtTime(currentTime) || "00:00"}
                           </span>
                         </>
