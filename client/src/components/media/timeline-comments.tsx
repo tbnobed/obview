@@ -468,12 +468,11 @@ export default function TimelineComments({
                       }
                     }
                   } : undefined}
-                  className={`relative rounded-xl border p-3.5 transition-all duration-200 lg:p-4 cursor-pointer hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,0,0,.22)] ${
+                  className={`relative rounded-xl p-3.5 transition-all duration-200 lg:p-4 cursor-pointer bg-[#171e25] hover:-translate-y-px hover:bg-[#1b242c] ${
                     activeCommentId === comment.id ? 'ring-1 ring-sky-400/70 bg-sky-400/[0.06]' : ''
                   }`}
                   style={{
                      backgroundColor: activeCommentId === comment.id ? 'hsl(210 24% 15%)' : 'hsl(var(--comments-card))',
-                     borderColor: activeCommentId === comment.id ? 'hsl(199 89% 48% / .5)' : 'hsl(var(--comments-card-border))',
                     color: 'hsl(var(--comments-text))'
                   }}
                   title={comment.timestamp !== null ? `Jump to ${formatTime(comment.timestamp)} in the video` : "Select this comment"}
@@ -485,7 +484,8 @@ export default function TimelineComments({
 
                   <div className="flex gap-3">
                     {/* Avatar - Mobile: smaller, Desktop: normal */}
-                    <Avatar className="h-7 w-7 flex-shrink-0 lg:h-8 lg:w-8">
+                    <div className="relative shrink-0">
+                    <Avatar className="h-8 w-8 lg:h-9 lg:w-9">
                       <AvatarImage src={comment.user?.avatar} />
                       <AvatarFallback className="bg-muted text-foreground text-xs">
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -493,18 +493,20 @@ export default function TimelineComments({
                         </svg>
                       </AvatarFallback>
                     </Avatar>
+                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-[#171e25]" />
+                    </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium" style={{color: 'hsl(var(--comments-text))'}}>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-sm font-medium text-cyan-300" style={{color: 'hsl(183 72% 63%)'}}>
                             {(comment as any).authorName || comment.user?.name || comment.user?.username || 'Unknown User'}
                           </span>
                           <span className="text-xs" style={{color: 'hsl(var(--comments-muted))'}}>
                             {new Date(comment.createdAt).toLocaleDateString()}
                           </span>
                           {comment.timestamp !== null && (
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 ml-auto">
                                <button
                                  type="button"
                                  onClick={(e) => { e.stopPropagation(); onTimeClick(comment.timestamp); }}
@@ -524,9 +526,9 @@ export default function TimelineComments({
                             </div>
                           )}
                         </div>
-                         <span className="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-white/[0.04]" style={{color: 'hsl(var(--comments-muted))'}}>
-                          #{index + 1}
-                        </span>
+                         <button type="button" className="shrink-0 text-muted-foreground hover:text-cyan-300" aria-label="More comment actions" onClick={(e) => e.stopPropagation()}>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
                       </div>
 
 
@@ -575,15 +577,15 @@ export default function TimelineComments({
                       />
 
                       {/* Action buttons - Mobile: smaller spacing, Desktop: normal */}
-                       <div className="flex gap-1.5 mt-3 lg:gap-2">
+                       <div className="flex gap-1.5 mt-3 lg:gap-2 text-muted-foreground">
                         <button
-                           className="inline-flex items-center rounded-md bg-white/[0.04] px-2 py-1 text-[11px] font-medium transition-colors text-muted-foreground hover:text-sky-300 hover:bg-sky-400/10"
+                           className="inline-flex items-center gap-1 px-1 py-1 text-[11px] font-medium transition-colors text-muted-foreground hover:text-cyan-300"
                           onClick={(e) => {
                             e.stopPropagation();
                             setReplyingToId(replyingToId === comment.id ? null : comment.id);
                           }}
                         >
-                          Reply
+                          <MessageSquare className="h-3.5 w-3.5" /> Reply
                         </button>
                         
                         {/* Resolve button - only show for authenticated users */}

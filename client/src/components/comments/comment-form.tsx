@@ -335,7 +335,7 @@ export default function CommentForm({
       data-comment-form
     >
       {/* Form content - Mobile: compact spacing, Desktop: normal spacing */}
-      <div className="flex items-start gap-2 w-full lg:gap-3 rounded-xl bg-white/[0.035] p-2.5 shadow-inner">
+      <div className="flex items-start gap-2 w-full lg:gap-3 rounded-xl bg-[#171e25] p-2.5 shadow-[0_8px_24px_rgba(0,0,0,.16)]">
         <textarea
           ref={textareaRef}
           value={content}
@@ -380,14 +380,14 @@ export default function CommentForm({
         <button
           type="submit"
           disabled={content.trim() === "" || createCommentMutation.isPending}
-           className="flex-shrink-0 p-2 rounded-lg bg-sky-400/15 text-sky-200 hover:bg-sky-400/25 disabled:bg-white/[0.04] disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors lg:p-2.5"
+           className="flex-shrink-0 px-3 py-2 rounded-lg bg-cyan-300 text-slate-950 hover:bg-cyan-200 disabled:bg-white/[0.04] disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors lg:px-3.5"
           data-testid="button-submit-comment"
           onClick={handleSubmit}
         >
           {createCommentMutation.isPending ? (
              <Loader2 className="h-3.5 w-3.5 text-sky-200 animate-spin lg:h-4 lg:w-4" />
           ) : (
-             <Send className="h-3.5 w-3.5 text-sky-200 lg:h-4 lg:w-4" />
+             <><Send className="h-3.5 w-3.5 lg:h-4 lg:w-4" /><span className="hidden sm:inline text-[11px] font-semibold ml-1">Send</span></>
           )}
         </button>
       </div>

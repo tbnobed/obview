@@ -54,6 +54,7 @@ import {
   Check,
   Filter,
   LogIn,
+  MoreHorizontal,
 } from "lucide-react";
 
 const APP_BASE = (import.meta.env.VITE_APP_BASE_URL as string | undefined)
@@ -1232,7 +1233,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                             if (c.timestamp != null) seekTo(c.timestamp);
                           }}
                           className={cn(
-                            "rounded-xl border p-3.5 bg-white dark:bg-[hsl(var(--comments-card))] border-neutral-200 dark:border-[hsl(var(--comments-card-border))] cursor-pointer transition-all hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(0,0,0,.22)]",
+                            "rounded-xl p-3.5 bg-white dark:bg-[#171e25] cursor-pointer transition-all hover:-translate-y-px hover:bg-[#1b242c]",
                             isActive &&
                               "ring-1 ring-sky-400/70 bg-sky-400/[0.06]",
                           )}
@@ -1249,7 +1250,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-sm font-medium text-neutral-900 dark:text-[hsl(var(--comments-text))]">
+                                  <span className="text-sm font-medium text-cyan-300">
                                     {author}
                                   </span>
                                   <span className="text-xs text-neutral-500 dark:text-[hsl(var(--comments-muted))]">
@@ -1291,9 +1292,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                                   )}
                                 </div>
                                 {!isReply && (
-                                  <span className="text-xs font-medium text-neutral-500 dark:text-[hsl(var(--comments-muted))] shrink-0">
-                                    #{index + 1}
-                                  </span>
+                                  <MoreHorizontal className="h-4 w-4 text-neutral-500" />
                                 )}
                               </div>
                               {isEditing ? (
