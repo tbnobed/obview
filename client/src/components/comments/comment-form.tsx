@@ -328,16 +328,16 @@ export default function CommentForm({
 
   return (
     <div 
-      className={cn("comments-composer w-full p-2.5 lg:p-3", className)}
+      className={cn("comments-composer w-full p-2.5 lg:p-3 bg-zinc-100 dark:bg-zinc-950", className)}
       data-comment-form
     >
       {/* Form content - Mobile: compact spacing, Desktop: normal spacing */}
-      <div className="flex flex-col gap-2 w-full rounded-2xl bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-md">
+      <div className="flex flex-col gap-2 w-full rounded-2xl bg-white dark:bg-zinc-900/90 p-3 shadow-lg dark:shadow-2xl backdrop-blur-md">
         {!parentId && currentTime !== undefined && (
           <div className="flex items-center text-xs">
             {hasRange ? (
               <span className="inline-flex items-center gap-1">
-                <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 text-[11px] font-mono font-medium text-cyan-400">
+                <span className="rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-400 px-2 py-0.5 text-[11px] font-mono font-medium">
                   [{formatTime(inPoint as number)} → {formatTime(outPoint as number)}]
                 </span>
                 {onClearInOutPoints && (
@@ -353,7 +353,7 @@ export default function CommentForm({
                 )}
               </span>
             ) : (
-              <span className="rounded-lg bg-cyan-950/60 px-2 py-0.5 text-[11px] font-mono font-medium text-cyan-400">
+              <span className="rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-400 px-2 py-0.5 text-[11px] font-mono font-medium">
                 [{includeTimestamp ? formatTime(currentTime) : "--:--"}]
               </span>
             )}
@@ -390,7 +390,7 @@ export default function CommentForm({
                 ? `Add a comment at ${formatTime(currentTime)}...`
                 : "Leave your comment..."
           }
-          className="w-full resize-none bg-transparent text-xs text-zinc-200 placeholder-zinc-500 border-none outline-none focus:outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
+          className="w-full resize-none bg-transparent text-xs text-zinc-800 placeholder-zinc-400 dark:text-zinc-200 dark:placeholder-zinc-500 border-none outline-none focus:outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
           style={{ 
             fontFamily: 'inherit',
             resize: 'none'
@@ -620,7 +620,7 @@ export default function CommentForm({
           <button
             type="submit"
             disabled={content.trim() === "" || createCommentMutation.isPending}
-            className="flex-shrink-0 rounded-xl bg-cyan-400 px-3.5 py-1.5 text-xs font-medium text-zinc-950 transition-colors hover:bg-cyan-300 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed"
+            className="flex-shrink-0 rounded-xl bg-cyan-400 px-3.5 py-1.5 text-xs font-medium text-zinc-950 transition-colors hover:bg-cyan-300 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500 disabled:cursor-not-allowed"
             data-testid="button-submit-comment"
             onClick={handleSubmit}
           >
