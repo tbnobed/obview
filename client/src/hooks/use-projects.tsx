@@ -6,6 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 export const useProjects = () => {
   return useQuery<Project[]>({
     queryKey: ["/api/projects"],
+    // The global cache default is staleTime: Infinity + no focus refetch,
+    // which left dashboards open in a tab showing hours-old cards (uploads
+    // and deletes made from other tabs / the Premiere panel never appear).
+    // Lists must go stale and re-ask on focus.
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
     select: (data) => {
       // Sort projects by updatedAt date (most recent first)
       return [...data].sort((a, b) => {

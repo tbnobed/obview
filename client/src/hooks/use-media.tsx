@@ -8,6 +8,10 @@ export const useMediaFiles = (projectId?: number) => {
   return useQuery<File[]>({
     queryKey: [`/api/projects/${projectId}/files`],
     enabled: !!projectId,
+    // See useProjects: file lists must not be cached forever — uploads and
+    // deletes from other tabs / the Premiere panel have to show up on focus.
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 };
 
