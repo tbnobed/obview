@@ -222,8 +222,16 @@ export default function Sidebar() {
           <div className="flex flex-col px-4 py-4 border-t border-neutral-200 dark:border-gray-900">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-700 dark:to-primary-900 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                  {user.name.charAt(0).toUpperCase()}
+                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-700 dark:to-primary-900 flex items-center justify-center text-white font-semibold text-sm shadow-sm overflow-hidden">
+                  {(user as any).avatarPath ? (
+                    <img
+                      src={`/api/users/${user.id}/avatar`}
+                      alt={user.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    user.name.charAt(0).toUpperCase()
+                  )}
                 </div>
               </div>
               <div className="ml-3">

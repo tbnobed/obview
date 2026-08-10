@@ -68,8 +68,16 @@ export default function Header() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full">
-          <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-400 font-semibold">
-            {user?.name.charAt(0).toUpperCase()}
+          <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-400 font-semibold overflow-hidden">
+            {(user as any)?.avatarPath ? (
+              <img
+                src={`/api/users/${user!.id}/avatar`}
+                alt={user?.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              user?.name.charAt(0).toUpperCase()
+            )}
           </div>
         </Button>
       </DropdownMenuTrigger>
