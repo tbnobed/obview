@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2, Columns2, FilePenLine } from "lucide-react";
+import { AlertCircle, Check, Layers, Maximize, Pause, Play, Volume2, VolumeX, File, FileVideo, ClipboardCheck, Loader2, Upload, X, Image as ImageIcon, ChevronDown, Share2, FilePlus2, Columns2, FilePenLine, Rewind, FastForward } from "lucide-react";
 import { UploadVersionIcon, ShareFileIcon, RequestChangesIcon, ApproveIcon, MarkReviewIcon } from "@/components/media/action-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -1356,6 +1356,39 @@ export default function MediaPlayer({
     }
   };
 
+  // Jump the playhead by a fixed number of seconds (skip buttons + wheel scrub).
+  const skipBy = (deltaSec: number) => {
+    const el = videoRef.current || audioRef.current;
+    if (!el) return;
+    const max = duration || el.duration || 0;
+    const raw = el.currentTime + deltaSec;
+    const t = Math.max(0, max > 0 ? Math.min(max, raw) : raw);
+    el.currentTime = t;
+    setCurrentTime(t);
+  };
+
+  // Wheel-scrub over the timeline: one frame per tick, Shift = 1 second.
+  // Attached as a non-passive native listener (via callback ref) because
+  // React's synthetic onWheel is passive at the root, so preventDefault()
+  // there can't stop the page from scrolling while scrubbing.
+  const wheelScrubRef = useRef<(e: WheelEvent) => void>(() => {});
+  wheelScrubRef.current = (e: WheelEvent) => {
+    e.preventDefault();
+    const fps = frameRate && frameRate > 0 ? frameRate : 30;
+    const dir = (e.deltaY || e.deltaX) > 0 ? 1 : -1;
+    skipBy(dir * (e.shiftKey ? 1 : 1 / fps));
+  };
+  const wheelCleanupRef = useRef<(() => void) | null>(null);
+  const wheelScrubAreaRef = useCallback((node: HTMLDivElement | null) => {
+    wheelCleanupRef.current?.();
+    wheelCleanupRef.current = null;
+    if (node) {
+      const l = (e: WheelEvent) => wheelScrubRef.current(e);
+      node.addEventListener("wheel", l, { passive: false });
+      wheelCleanupRef.current = () => node.removeEventListener("wheel", l);
+    }
+  }, []);
+
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!progressRef.current) return;
     
@@ -1931,7 +1964,28 @@ export default function MediaPlayer({
                         <Play className="h-6 w-6 landscape:h-4 landscape:w-4" />
                       )}
                     </Button>
-                    
+
+                    <Button
+                      onClick={() => skipBy(-10)}
+                      variant="ghost"
+                      size="icon"
+                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0 landscape:h-7 landscape:w-7"
+                      title="Back 10 seconds (Shift+J)"
+                      data-testid="button-skip-back-10"
+                    >
+                      <Rewind className="h-5 w-5 landscape:h-4 landscape:w-4" />
+                    </Button>
+                    <Button
+                      onClick={() => skipBy(10)}
+                      variant="ghost"
+                      size="icon"
+                      className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] flex-shrink-0 landscape:h-7 landscape:w-7"
+                      title="Forward 10 seconds (Shift+L)"
+                      data-testid="button-skip-forward-10"
+                    >
+                      <FastForward className="h-5 w-5 landscape:h-4 landscape:w-4" />
+                    </Button>
+
                     {/* Volume control - Desktop only */}
                     <div className="hidden lg:flex items-center space-x-2">
                       <button onClick={toggleMute} className="text-neutral-600 hover:text-neutral-900 dark:text-gray-400 dark:hover:text-[#026d55] transition-colors" title={isMuted ? "Unmute (M)" : "Mute (M)"}>
@@ -2003,6 +2057,7 @@ export default function MediaPlayer({
                   
                   {/* Extended hover area around progress bar */}
                   <div
+                    ref={wheelScrubAreaRef}
                     className="relative py-2 cursor-pointer"
                     style={{
                       touchAction: 'pan-x',
