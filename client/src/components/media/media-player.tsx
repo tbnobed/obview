@@ -141,14 +141,13 @@ export default function MediaPlayer({
     queryKey: ['/api/files', file?.id, 'processing'],
     queryFn: async () => {
       if (!file) return null;
-      try {
-        const result = await apiRequest('GET', `/api/files/${file.id}/processing`);
-        return result;
-      } catch (error) {
-        // Processing not available yet or failed - that's OK, use original file
-        console.log(`[VideoProcessing] Processing data not available for file ${file.id}, using original file`);
-        return null;
-      }
+      // Plain fetch so a routine 404 (no processing record) doesn't
+      // console.error via apiRequest. 401s still throw so the retry
+      // logic below can handle the session race.
+      const res = await fetch(`/api/files/${file.id}/processing`, { credentials: 'include' });
+      if (res.status === 401) throw new Error('Unauthorized');
+      if (!res.ok) return null;
+      return res.json();
     },
     enabled: !!user && !!file && file.fileType === 'video',
     retry: (failureCount, error: any) => {

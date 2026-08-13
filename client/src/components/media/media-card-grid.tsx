@@ -71,7 +71,15 @@ const getProcessingStatus = (fileId: number, projectId?: number, fileCreatedAt?:
   const fresh = fileCreatedAt ? Date.now() - new Date(fileCreatedAt).getTime() < 60 * 60 * 1000 : false;
   const { data: processing } = useQuery({
     queryKey: ['/api/files', fileId, 'processing'],
-    queryFn: ({ signal }) => apiRequest('GET', `/api/files/${fileId}/processing`, undefined, { signal }),
+    // Plain fetch (not apiRequest): a missing processing record is a normal
+    // 404 for older/audio/image files, and apiRequest console.errors every
+    // failure — which spammed the console on dashboards full of such files.
+    queryFn: async ({ signal }) => {
+      const res = await fetch(`/api/files/${fileId}/processing`, { credentials: 'include', signal });
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error(`Failed to load processing status (${res.status})`);
+      return res.json();
+    },
     enabled: !!fileId,
     staleTime: 60000,
     retry: false,

@@ -76,8 +76,11 @@ export default function ProjectCard({ project, isSelected, selectedIds, onToggle
     queryFn: async () => {
       if (!project.latestVideoFile) return null;
       try {
-        const result = await apiRequest('GET', `/api/files/${project.latestVideoFile.id}/processing`);
-        return result;
+        // Plain fetch so a routine 404 (no processing record) doesn't
+        // console.error via apiRequest.
+        const res = await fetch(`/api/files/${project.latestVideoFile.id}/processing`, { credentials: 'include' });
+        if (!res.ok) return null;
+        return await res.json();
       } catch (error) {
         // Processing not available yet - that's OK, use original file
         return null;
