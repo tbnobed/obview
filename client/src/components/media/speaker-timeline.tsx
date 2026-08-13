@@ -1,5 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+// Persisted show/hide preference for the speaker strip (all files, all sessions).
+const HIDDEN_KEY = "speaker_timeline_hidden";
+function readHiddenPref(): boolean {
+  try {
+    return localStorage.getItem(HIDDEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 interface TranscriptSegment {
   start: number;
@@ -118,10 +129,48 @@ export default function SpeakerTimeline({
     }));
   }, [transcript?.segments]);
 
+  const [hidden, setHidden] = useState<boolean>(readHiddenPref);
+  const toggleHidden = () => {
+    setHidden((h) => {
+      const next = !h;
+      try {
+        localStorage.setItem(HIDDEN_KEY, next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  };
+
   if (!duration || duration <= 0 || speakerRows.length === 0) return null;
+
+  if (hidden) {
+    return (
+      <div className="mt-1 select-none" data-testid="speaker-timeline-collapsed">
+        <button
+          onClick={toggleHidden}
+          className="flex items-center gap-1 text-[10px] font-medium text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          title="Show speaker view"
+          data-testid="button-show-speakers"
+        >
+          <ChevronDown className="h-3 w-3" />
+          Speakers ({speakerRows.length})
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-1 space-y-0.5 select-none" data-testid="speaker-timeline">
+      <div className="flex items-center">
+        <button
+          onClick={toggleHidden}
+          className="flex items-center gap-1 text-[10px] font-medium text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          title="Hide speaker view"
+          data-testid="button-hide-speakers"
+        >
+          <ChevronUp className="h-3 w-3" />
+          Speakers
+        </button>
+      </div>
       {speakerRows.map((row) => (
         <div key={row.speaker} className="flex items-center gap-2 group/speaker">
           <span
