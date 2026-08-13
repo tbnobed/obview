@@ -508,17 +508,21 @@ sp-radio-group[column] { display: flex; flex-direction: column; gap: 6px; }
   background: #1e1e1e;
   padding: 4px 6px; margin-top: 2px;
 }
-/* Plain inline flow, not flex: UXP collapses a flex-child span to zero
-   width here (checkbox shows, name paints stray below the row). */
+/* UXP quirk: neither flex nor inline flow reliably keeps the name beside
+   the checkbox (flex collapses the span to zero width; inline flow wraps
+   the span to a second line, so overflow:hidden erased it). Absolutely
+   position the checkbox and let the name fill the label's own line box —
+   layouts UXP cannot reflow. */
 .seq-row {
-  display: block; padding: 3px 0; cursor: pointer;
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  display: block; position: relative;
+  padding: 4px 0 4px 26px; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 12px; color: #ececec; line-height: 16px;
 }
 .seq-row input {
-  display: inline-block; vertical-align: middle; margin: 0 7px 0 0;
+  position: absolute; left: 4px; top: 4px; margin: 0;
 }
 .seq-row span {
-  display: inline; vertical-align: middle;
   font-size: 12px; color: #ececec;
 }
 
