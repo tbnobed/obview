@@ -1,0 +1,80 @@
+obtv-admin@tustin-obviu2:~$ # OS + kernel
+cat /etc/os-release | head -2; uname -r
+
+# CPU / RAM
+lscpu | grep -E '^(Model name|CPU\(s\)|Thread|Core)'; free -h
+
+# GPU + driver (if driver already installed; else lspci)
+nvidia-smi || lspci | grep -i nvidia
+
+# Disks, layout, and what's mounted where (root vs data disks)
+lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT
+df -h / /srv 2>/dev/null
+
+# Network
+ip -br a; ip r | head -2
+
+# What's already installed
+docker --version 2>/dev/null; docker compose version 2>/dev/null
+nvidia-ctk --version 2>/dev/null
+python3.12 --version 2>/dev/null || python3 --version
+git --version 2>/dev/null
+
+# Is the nvidia runtime wired into docker (needed for NVENC + GPU in containers)
+cat /etc/docker/daemon.json 2>/dev/null
+
+# Free ports / anything already listening
+ss -tlnp | head -20
+PRETTY_NAME="Ubuntu 24.04.4 LTS"
+NAME="Ubuntu"
+6.8.0-137-generic
+CPU(s):                                  56
+Model name:                              Intel(R) Xeon(R) CPU E5-2690 v4 @ 2.60GHz
+Thread(s) per core:                      2
+Core(s) per socket:                      14
+CPU(s) scaling MHz:                      39%
+               total        used        free      shared  buff/cache   available
+Mem:           125Gi       1.9Gi       124Gi       5.4Mi       664Mi       123Gi
+Swap:          8.0Gi          0B       8.0Gi
+-bash: nvidia-smi: command not found
+82:00.0 3D controller: NVIDIA Corporation GV100GL [Tesla PG500-216] (rev a1)
+NAME                  SIZE TYPE FSTYPE      MOUNTPOIN
+sda                   3.3T disk
+├─sda1                  1G part vfat        /boot/efi
+├─sda2                  2G part ext4        /boot
+└─sda3                3.3T part LVM2_member
+  └─ubuntu--vg-lv--0  3.3T lvm  ext4        /
+Filesystem                    Size  Used Avail Use% Mounted on
+/dev/mapper/ubuntu--vg-lv--0  3.3T   11G  3.1T   1% /
+/dev/mapper/ubuntu--vg-lv--0  3.3T   11G  3.1T   1% /
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eno3             UP             fdd5:72f9:862:8c9a:266e:96ff:fe33:7c4/64 fe80::266e:96ff:fe33:7c4/64
+eno1             UP             192.168.201.167/22 fdd5:72f9:862:8c9a:266e:96ff:fe33:7c0/64 fe80::266e:96ff:fe33:7c0/64
+eno4             DOWN
+eno2             DOWN
+docker0          DOWN           172.17.0.1/16
+default via 192.168.200.1 dev eno1 proto static
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown
+Docker version 29.7.2, build a7dcaa6
+Docker Compose version v5.4.0
+Python 3.12.3
+git version 2.43.0
+{
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "10m", "max-file": "3" },
+  "live-restore": true,
+  "default-address-pools": [
+    { "base": "172.30.0.0/16", "size": 24 }
+  ]
+}
+State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+LISTEN 0      4096      127.0.0.54:53        0.0.0.0:*
+LISTEN 0      4096         0.0.0.0:22        0.0.0.0:*
+LISTEN 0      4096   127.0.0.53%lo:53        0.0.0.0:*
+LISTEN 0      4096            [::]:22           [::]:*
+obtv-admin@tustin-obviu2:~$ du -sh /srv/obviu/uploads /srv/obviu/db-backups
+docker compose -f ~/obview/docker-compose.yml exec db psql -U postgres -d obview -c "select pg_size_pretty(pg_database_size('obview'));"
+du: cannot access '/srv/obviu/uploads': No such file or directory
+du: cannot access '/srv/obviu/db-backups': No such file or directory
+open /home/obtv-admin/obview/docker-compose.yml: no such file or directory
+obtv-admin@tustin-obviu2:~$
