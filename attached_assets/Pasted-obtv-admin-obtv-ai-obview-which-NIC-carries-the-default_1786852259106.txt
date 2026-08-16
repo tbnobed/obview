@@ -1,0 +1,99 @@
+obtv-admin@obtv-ai:~/obview$ # which NIC carries the default route, and its negotiated link speed
+IFACE=$(ip r | awk '/default/{print $5; exit}')
+echo "iface: $IFACE"
+sudo ethtool $IFACE | grep -E 'Speed|Duplex|Link detected'
+iface: enp3s0f0
+[sudo] password for obtv-admin:
+        Speed: 10000Mb/s
+        Duplex: Full
+        Link detected: yes
+obtv-admin@obtv-ai:~/obview$ sudo apt install -y iperf3 && iperf3 -c 192.168.201.167 -t 10 -P 4
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+iperf3 is already the newest version (3.16-1build2).
+The following packages were automatically installed and are no longer required:
+  libgl1-amber-dri libglapi-mesa libllvm17t64
+Use 'sudo apt autoremove' to remove them.
+0 upgraded, 0 newly installed, 0 to remove and 292 not upgraded.
+iperf3: error - unable to connect to server - server may have stopped running or use a different port, firewall issue, etc.: Connection refused
+obtv-admin@obtv-ai:~/obview$ iperf3 -c 192.168.201.167 -t 10 -P 4
+Connecting to host 192.168.201.167, port 5201
+[  5] local 192.168.200.201 port 44828 connected to 192.168.201.167 port 5201
+[  7] local 192.168.200.201 port 44840 connected to 192.168.201.167 port 5201
+[  9] local 192.168.200.201 port 44854 connected to 192.168.201.167 port 5201
+[ 11] local 192.168.200.201 port 44862 connected to 192.168.201.167 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec   284 MBytes  2.38 Gbits/sec   14    526 KBytes
+[  7]   0.00-1.00   sec   284 MBytes  2.38 Gbits/sec   27    535 KBytes
+[  9]   0.00-1.00   sec   283 MBytes  2.37 Gbits/sec   19    370 KBytes
+[ 11]   0.00-1.00   sec   284 MBytes  2.38 Gbits/sec   10    498 KBytes
+[SUM]   0.00-1.00   sec  1.11 GBytes  9.51 Gbits/sec   70
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   1.00-2.00   sec   278 MBytes  2.33 Gbits/sec   14    419 KBytes
+[  7]   1.00-2.00   sec   280 MBytes  2.35 Gbits/sec    3    523 KBytes
+[  9]   1.00-2.00   sec   278 MBytes  2.33 Gbits/sec   15    475 KBytes
+[ 11]   1.00-2.00   sec   280 MBytes  2.35 Gbits/sec    4    563 KBytes
+[SUM]   1.00-2.00   sec  1.09 GBytes  9.36 Gbits/sec   36
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   2.00-3.00   sec   280 MBytes  2.34 Gbits/sec    0    484 KBytes
+[  7]   2.00-3.00   sec   278 MBytes  2.33 Gbits/sec    0    475 KBytes
+[  9]   2.00-3.00   sec   280 MBytes  2.35 Gbits/sec    0    469 KBytes
+[ 11]   2.00-3.00   sec   280 MBytes  2.34 Gbits/sec    2    495 KBytes
+[SUM]   2.00-3.00   sec  1.09 GBytes  9.37 Gbits/sec    2
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   3.00-4.00   sec   219 MBytes  1.84 Gbits/sec    0    390 KBytes
+[  7]   3.00-4.00   sec   339 MBytes  2.84 Gbits/sec    0    503 KBytes
+[  9]   3.00-4.00   sec   338 MBytes  2.84 Gbits/sec    0    529 KBytes
+[ 11]   3.00-4.00   sec   219 MBytes  1.84 Gbits/sec    0    356 KBytes
+[SUM]   3.00-4.00   sec  1.09 GBytes  9.36 Gbits/sec    0
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   4.00-5.00   sec   186 MBytes  1.56 Gbits/sec    0    413 KBytes
+[  7]   4.00-5.00   sec   372 MBytes  3.12 Gbits/sec    0    461 KBytes
+[  9]   4.00-5.00   sec   374 MBytes  3.13 Gbits/sec    0    472 KBytes
+[ 11]   4.00-5.00   sec   188 MBytes  1.58 Gbits/sec    1    424 KBytes
+[SUM]   4.00-5.00   sec  1.09 GBytes  9.40 Gbits/sec    1
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   5.00-6.00   sec   185 MBytes  1.55 Gbits/sec    0    365 KBytes
+[  7]   5.00-6.00   sec   372 MBytes  3.12 Gbits/sec    0    495 KBytes
+[  9]   5.00-6.00   sec   371 MBytes  3.11 Gbits/sec    0    532 KBytes
+[ 11]   5.00-6.00   sec   187 MBytes  1.57 Gbits/sec    1    424 KBytes
+[SUM]   5.00-6.00   sec  1.09 GBytes  9.35 Gbits/sec    1
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   6.00-7.00   sec   233 MBytes  1.95 Gbits/sec    0    402 KBytes
+[  7]   6.00-7.00   sec   327 MBytes  2.74 Gbits/sec    0    631 KBytes
+[  9]   6.00-7.00   sec   328 MBytes  2.75 Gbits/sec    0    498 KBytes
+[ 11]   6.00-7.00   sec   233 MBytes  1.95 Gbits/sec    0    458 KBytes
+[SUM]   6.00-7.00   sec  1.09 GBytes  9.40 Gbits/sec    0
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   7.00-8.00   sec   185 MBytes  1.56 Gbits/sec    0    444 KBytes
+[  7]   7.00-8.00   sec   371 MBytes  3.12 Gbits/sec    0    469 KBytes
+[  9]   7.00-8.00   sec   371 MBytes  3.11 Gbits/sec    1    560 KBytes
+[ 11]   7.00-8.00   sec   188 MBytes  1.58 Gbits/sec    0    376 KBytes
+[SUM]   7.00-8.00   sec  1.09 GBytes  9.36 Gbits/sec    1
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   8.00-9.00   sec   187 MBytes  1.57 Gbits/sec    0    351 KBytes
+[  7]   8.00-9.00   sec   371 MBytes  3.11 Gbits/sec    0    486 KBytes
+[  9]   8.00-9.00   sec   372 MBytes  3.12 Gbits/sec    0    498 KBytes
+[ 11]   8.00-9.00   sec   186 MBytes  1.56 Gbits/sec    0    382 KBytes
+[SUM]   8.00-9.00   sec  1.09 GBytes  9.37 Gbits/sec    0
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   9.00-10.00  sec   248 MBytes  2.07 Gbits/sec    0   5.66 KBytes
+[  7]   9.00-10.00  sec   315 MBytes  2.64 Gbits/sec    0   5.66 KBytes
+[  9]   9.00-10.00  sec   313 MBytes  2.62 Gbits/sec    0   5.66 KBytes
+[ 11]   9.00-10.00  sec   245 MBytes  2.06 Gbits/sec    0    441 KBytes
+[SUM]   9.00-10.00  sec  1.09 GBytes  9.39 Gbits/sec    0
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec  2.23 GBytes  1.92 Gbits/sec   28             sender
+[  5]   0.00-10.00  sec  2.23 GBytes  1.91 Gbits/sec                  receiver
+[  7]   0.00-10.00  sec  3.23 GBytes  2.78 Gbits/sec   30             sender
+[  7]   0.00-10.00  sec  3.23 GBytes  2.77 Gbits/sec                  receiver
+[  9]   0.00-10.00  sec  3.23 GBytes  2.78 Gbits/sec   35             sender
+[  9]   0.00-10.00  sec  3.23 GBytes  2.77 Gbits/sec                  receiver
+[ 11]   0.00-10.00  sec  2.24 GBytes  1.92 Gbits/sec   18             sender
+[ 11]   0.00-10.00  sec  2.23 GBytes  1.92 Gbits/sec                  receiver
+[SUM]   0.00-10.00  sec  10.9 GBytes  9.39 Gbits/sec  111             sender
+[SUM]   0.00-10.00  sec  10.9 GBytes  9.38 Gbits/sec                  receiver
+
+iperf Done.

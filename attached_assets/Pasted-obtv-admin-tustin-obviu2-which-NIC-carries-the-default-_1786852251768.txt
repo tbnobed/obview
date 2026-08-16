@@ -1,0 +1,98 @@
+obtv-admin@tustin-obviu2:~$ # which NIC carries the default route, and its negotiated link speed
+IFACE=$(ip r | awk '/default/{print $5; exit}')
+echo "iface: $IFACE"
+sudo ethtool $IFACE | grep -E 'Speed|Duplex|Link detected'
+iface: eno1
+[sudo] password for obtv-admin:
+        Speed: 10000Mb/s
+        Duplex: Full
+        Link detected: yes
+obtv-admin@tustin-obviu2:~$ # new box (192.168.201.167):
+sudo apt install -y iperf3 && iperf3 -s
+
+# old box:
+sudo apt install -y iperf3 && iperf3 -c 192.168.201.167 -t 10 -P 4^C
+obtv-admin@tustin-obviu2:~$ ^C
+obtv-admin@tustin-obviu2:~$ ^C
+obtv-admin@tustin-obviu2:~$ ^C
+obtv-admin@tustin-obviu2:~$ ^C
+obtv-admin@tustin-obviu2:~$ sudo apt install -y iperf3 && iperf3 -s
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+The following packages were automatically installed and are no longer required:
+  libtirpc-common libtirpc3t64 python3-netifaces
+Use 'sudo apt autoremove' to remove them.
+The following additional packages will be installed:
+  libiperf0 libsctp1
+Suggested packages:
+  lksctp-tools
+The following NEW packages will be installed:
+  iperf3 libiperf0 libsctp1
+0 upgraded, 3 newly installed, 0 to remove and 0 not upgraded.
+Need to get 115 kB of archives.
+After this operation, 390 kB of additional disk space will be used.
+Get:1 http://us.archive.ubuntu.com/ubuntu noble/main amd64 libsctp1 amd64 1.0.19+dfsg-2build1 [9146 B]
+Get:2 http://us.archive.ubuntu.com/ubuntu noble/universe amd64 libiperf0 amd64 3.16-1build2 [87.1 kB]
+Get:3 http://us.archive.ubuntu.com/ubuntu noble/universe amd64 iperf3 amd64 3.16-1build2 [19.0 kB]
+Fetched 115 kB in 0s (260 kB/s)
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libsctp1:amd64.
+(Reading database ... 76355 files and directories currently installed.)
+Preparing to unpack .../libsctp1_1.0.19+dfsg-2build1_amd64.deb ...
+Unpacking libsctp1:amd64 (1.0.19+dfsg-2build1) ...
+Selecting previously unselected package libiperf0:amd64.
+Preparing to unpack .../libiperf0_3.16-1build2_amd64.deb ...
+Unpacking libiperf0:amd64 (3.16-1build2) ...
+Selecting previously unselected package iperf3.
+Preparing to unpack .../iperf3_3.16-1build2_amd64.deb ...
+Unpacking iperf3 (3.16-1build2) ...
+Setting up libsctp1:amd64 (1.0.19+dfsg-2build1) ...
+Setting up libiperf0:amd64 (3.16-1build2) ...
+Setting up iperf3 (3.16-1build2) ...
+debconf: unable to initialize frontend: Dialog
+debconf: (No usable dialog-like program is installed, so the dialog based frontend cannot be used. at /usr/share/perl5/Debconf/FrontEnd/Dialog.pm line 79.)
+debconf: falling back to frontend: Readline
+Configuring iperf3
+------------------
+
+Choose this option if Iperf3 should start automatically as a daemon, now and at boot time.
+
+Start Iperf3 as a daemon automatically? [yes/no]
+
+Start Iperf3 as a daemon automatically? [yes/no] yes
+
+
+Processing triggers for libc-bin (2.39-0ubuntu8.8) ...
+Scanning processes...
+Scanning processor microcode...
+Scanning linux images...
+
+Running kernel seems to be up-to-date.
+
+The processor microcode seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+iperf3: error - unable to start listener for connections: Address already in use
+iperf3: exiting
+obtv-admin@tustin-obviu2:~$ iperf3 -s
+iperf3: error - unable to start listener for connections: Address already in use
+iperf3: exiting
+obtv-admin@tustin-obviu2:~$ sudo apt install -y iperf3 && iperf3 -s
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+iperf3 is already the newest version (3.16-1build2).
+The following packages were automatically installed and are no longer required:
+  libtirpc-common libtirpc3t64 python3-netifaces
+Use 'sudo apt autoremove' to remove them.
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+iperf3: error - unable to start listener for connections: Address already in use
+iperf3: exiting
+obtv-admin@tustin-obviu2:~$
