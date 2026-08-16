@@ -1,0 +1,332 @@
+obtv-admin@tustin-obviu2:~/obview$ gunzip -c /srv/obviu/db-backups/daily-20260815-080001.sql.gz | docker compose exec -T db psql -U postgres -d obview
+docker compose up -d
+docker compose ps
+SET
+SET
+SET
+SET
+SET
+ set_config
+------------
+
+(1 row)
+
+SET
+SET
+SET
+SET
+CREATE EXTENSION
+COMMENT
+CREATE EXTENSION
+COMMENT
+SET
+SET
+ERROR:  relation "activity_logs" already exists
+ERROR:  relation "activity_logs_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "api_sessions" already exists
+ERROR:  relation "api_sessions_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "approvals" already exists
+ERROR:  relation "approvals_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "comment_reactions" already exists
+ERROR:  relation "comment_reactions_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "comments" already exists
+ERROR:  relation "comments_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "comments_unified" already exists
+ERROR:  relation "files" already exists
+ERROR:  relation "files_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "folders" already exists
+ERROR:  relation "folders_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "invitations" already exists
+ERROR:  relation "invitations_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "password_resets" already exists
+ERROR:  relation "password_resets_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "pg_session" already exists
+ERROR:  relation "project_users" already exists
+ERROR:  relation "project_users_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "projects" already exists
+ERROR:  relation "projects_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "public_comments" already exists
+ERROR:  relation "public_comments_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "qc_reports" already exists
+ERROR:  relation "qc_reports_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "recent_projects" already exists
+ERROR:  relation "schema_migrations" already exists
+ERROR:  relation "session" already exists
+ERROR:  relation "share_links" already exists
+ERROR:  relation "transcripts" already exists
+ERROR:  relation "transcripts_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "users" already exists
+ERROR:  relation "users_id_seq" already exists
+ALTER SEQUENCE
+ERROR:  relation "video_processing" already exists
+ERROR:  relation "video_processing_id_seq" already exists
+ALTER SEQUENCE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ERROR:  insert or update on table "activity_logs" violates foreign key constraint "activity_logs_user_id_fkey"
+DETAIL:  Key (user_id)=(2) is not present in table "users".
+ERROR:  insert or update on table "api_sessions" violates foreign key constraint "api_sessions_user_id_fkey"
+DETAIL:  Key (user_id)=(2) is not present in table "users".
+ERROR:  insert or update on table "approvals" violates foreign key constraint "approvals_file_id_fkey"
+DETAIL:  Key (file_id)=(245) is not present in table "files".
+ERROR:  insert or update on table "comment_reactions" violates foreign key constraint "fk_comment_reactions_comment_id"
+DETAIL:  Key (comment_id)=(655a4e97-12b3-4698-bb3c-e3522f70aca2) is not present in table "comments_unified".
+COPY 0
+ERROR:  insert or update on table "comments_unified" violates foreign key constraint "fk_comments_unified_file_id"
+DETAIL:  Key (file_id)=(72) is not present in table "files".
+ERROR:  insert or update on table "files" violates foreign key constraint "files_project_id_fkey"
+DETAIL:  Key (project_id)=(32) is not present in table "projects".
+ERROR:  insert or update on table "folders" violates foreign key constraint "folders_created_by_id_fkey"
+DETAIL:  Key (created_by_id)=(50) is not present in table "users".
+ERROR:  insert or update on table "invitations" violates foreign key constraint "invitations_created_by_id_fkey"
+DETAIL:  Key (created_by_id)=(2) is not present in table "users".
+ERROR:  insert or update on table "password_resets" violates foreign key constraint "password_resets_user_id_fkey"
+DETAIL:  Key (user_id)=(13) is not present in table "users".
+COPY 0
+ERROR:  insert or update on table "project_users" violates foreign key constraint "project_users_project_id_fkey"
+DETAIL:  Key (project_id)=(29) is not present in table "projects".
+ERROR:  insert or update on table "projects" violates foreign key constraint "projects_created_by_id_fkey"
+DETAIL:  Key (created_by_id)=(6) is not present in table "users".
+COPY 0
+ERROR:  insert or update on table "qc_reports" violates foreign key constraint "qc_reports_file_id_fkey"
+DETAIL:  Key (file_id)=(2289) is not present in table "files".
+ERROR:  insert or update on table "recent_projects" violates foreign key constraint "recent_projects_project_id_fkey"
+DETAIL:  Key (project_id)=(68) is not present in table "projects".
+ERROR:  duplicate key value violates unique constraint "schema_migrations_pkey"
+DETAIL:  Key (filename)=(0000_smooth_whistler.sql) already exists.
+CONTEXT:  COPY schema_migrations, line 1
+COPY 70
+ERROR:  insert or update on table "share_links" violates foreign key constraint "share_links_created_by_id_fkey"
+DETAIL:  Key (created_by_id)=(2) is not present in table "users".
+ERROR:  insert or update on table "transcripts" violates foreign key constraint "transcripts_file_id_fkey"
+DETAIL:  Key (file_id)=(1093) is not present in table "files".
+ERROR:  duplicate key value violates unique constraint "users_pkey"
+DETAIL:  Key (id)=(1) already exists.
+CONTEXT:  COPY users, line 7
+ERROR:  insert or update on table "video_processing" violates foreign key constraint "video_processing_file_id_fkey"
+DETAIL:  Key (file_id)=(71) is not present in table "files".
+ setval
+--------
+   9795
+(1 row)
+
+ setval
+--------
+     18
+(1 row)
+
+ setval
+--------
+     31
+(1 row)
+
+ setval
+--------
+     62
+(1 row)
+
+ setval
+--------
+     22
+(1 row)
+
+ setval
+--------
+   2445
+(1 row)
+
+ setval
+--------
+    234
+(1 row)
+
+ setval
+--------
+     88
+(1 row)
+
+ setval
+--------
+     17
+(1 row)
+
+ setval
+--------
+    139
+(1 row)
+
+ setval
+--------
+    133
+(1 row)
+
+ setval
+--------
+     22
+(1 row)
+
+ setval
+--------
+    159
+(1 row)
+
+ setval
+--------
+   2341
+(1 row)
+
+ setval
+--------
+     71
+(1 row)
+
+ setval
+--------
+   2385
+(1 row)
+
+ERROR:  multiple primary keys for table "activity_logs" are not allowed
+ERROR:  multiple primary keys for table "api_sessions" are not allowed
+ERROR:  relation "api_sessions_token_hash_key" already exists
+ERROR:  multiple primary keys for table "approvals" are not allowed
+ERROR:  multiple primary keys for table "comment_reactions" are not allowed
+ERROR:  multiple primary keys for table "comments" are not allowed
+ERROR:  multiple primary keys for table "comments_unified" are not allowed
+ERROR:  multiple primary keys for table "files" are not allowed
+ERROR:  multiple primary keys for table "folders" are not allowed
+ERROR:  multiple primary keys for table "invitations" are not allowed
+ALTER TABLE
+ERROR:  multiple primary keys for table "password_resets" are not allowed
+ERROR:  relation "password_resets_token_key" already exists
+ERROR:  multiple primary keys for table "pg_session" are not allowed
+ERROR:  multiple primary keys for table "project_users" are not allowed
+ERROR:  relation "project_users_project_id_user_id_unique" already exists
+ERROR:  multiple primary keys for table "projects" are not allowed
+ERROR:  multiple primary keys for table "public_comments" are not allowed
+ERROR:  multiple primary keys for table "qc_reports" are not allowed
+ERROR:  multiple primary keys for table "recent_projects" are not allowed
+ERROR:  multiple primary keys for table "schema_migrations" are not allowed
+ERROR:  multiple primary keys for table "session" are not allowed
+ERROR:  multiple primary keys for table "share_links" are not allowed
+ERROR:  relation "share_links_token_key" already exists
+ERROR:  multiple primary keys for table "transcripts" are not allowed
+ALTER TABLE
+ERROR:  multiple primary keys for table "users" are not allowed
+ALTER TABLE
+ERROR:  multiple primary keys for table "video_processing" are not allowed
+ERROR:  relation "IDX_password_resets_token" already exists
+ERROR:  relation "IDX_password_resets_user_id" already exists
+ERROR:  relation "IDX_pg_session_expire" already exists
+ERROR:  relation "IDX_session_expire" already exists
+ERROR:  relation "idx_activity_logs_entity_type_id" already exists
+ERROR:  relation "idx_activity_logs_user_id" already exists
+ERROR:  relation "idx_approvals_file_id" already exists
+ERROR:  relation "idx_comment_reactions_comment_id" already exists
+ERROR:  relation "idx_comment_reactions_comment_reaction" already exists
+ERROR:  relation "idx_comment_reactions_unique_anonymous" already exists
+ERROR:  relation "idx_comment_reactions_unique_user" already exists
+ERROR:  relation "idx_comments_file_id" already exists
+ERROR:  relation "idx_comments_timestamp" already exists
+ERROR:  relation "idx_comments_unified_file_id" already exists
+ERROR:  relation "idx_comments_unified_file_timestamp" already exists
+ERROR:  relation "idx_comments_unified_parent_id" already exists
+ERROR:  relation "idx_comments_unified_user_id" already exists
+ERROR:  relation "idx_comments_user_id" already exists
+ERROR:  relation "idx_files_deleted_at" already exists
+ERROR:  relation "idx_files_folder_id" already exists
+ERROR:  relation "idx_files_is_latest_version" already exists
+ERROR:  relation "idx_files_project_id" already exists
+ERROR:  relation "idx_files_share_token" already exists
+ERROR:  relation "idx_folders_created_by_id" already exists
+ERROR:  relation "idx_folders_deleted_at" already exists
+ERROR:  relation "idx_folders_name" already exists
+ERROR:  relation "idx_folders_parent_id" already exists
+ERROR:  relation "idx_folders_project_id" already exists
+ERROR:  relation "idx_invitations_email" already exists
+ERROR:  relation "idx_invitations_token" already exists
+ERROR:  relation "idx_password_resets_token" already exists
+ERROR:  relation "idx_password_resets_user_id" already exists
+ERROR:  relation "idx_project_users_project_id" already exists
+ERROR:  relation "idx_project_users_user_id" already exists
+ERROR:  relation "idx_projects_deleted_at" already exists
+ERROR:  relation "idx_projects_folder_id" already exists
+ERROR:  relation "idx_public_comments_creator_token" already exists
+ERROR:  relation "idx_public_comments_file_id" already exists
+ERROR:  relation "idx_public_comments_parent_id" already exists
+ERROR:  relation "idx_video_processing_file_id" already exists
+ERROR:  relation "idx_video_processing_status" already exists
+ERROR:  relation "qc_reports_file_id_idx" already exists
+ERROR:  relation "recent_projects_user_opened_idx" already exists
+ERROR:  relation "share_links_scope_idx" already exists
+ERROR:  relation "share_links_token_idx" already exists
+ERROR:  relation "transcripts_file_id_idx" already exists
+ERROR:  constraint "activity_logs_user_id_fkey" for relation "activity_logs" already exists
+ERROR:  constraint "api_sessions_user_id_fkey" for relation "api_sessions" already exists
+ERROR:  constraint "approvals_file_id_fkey" for relation "approvals" already exists
+ERROR:  constraint "approvals_user_id_fkey" for relation "approvals" already exists
+ERROR:  constraint "comment_reactions_comment_id_fkey" for relation "comment_reactions" already exists
+ERROR:  constraint "comment_reactions_user_id_fkey" for relation "comment_reactions" already exists
+ERROR:  constraint "comments_file_id_fkey" for relation "comments" already exists
+ERROR:  constraint "comments_parent_id_fkey" for relation "comments" already exists
+ERROR:  constraint "comments_user_id_fkey" for relation "comments" already exists
+ERROR:  constraint "files_folder_id_fkey" for relation "files" already exists
+ERROR:  constraint "files_project_id_fkey" for relation "files" already exists
+ERROR:  constraint "files_requested_changes_by_id_fkey" for relation "files" already exists
+ERROR:  constraint "files_uploaded_by_id_fkey" for relation "files" already exists
+ERROR:  constraint "fk_comment_reactions_comment_id" for relation "comment_reactions" already exists
+ERROR:  constraint "fk_comment_reactions_user_id" for relation "comment_reactions" already exists
+ERROR:  constraint "fk_comments_unified_file_id" for relation "comments_unified" already exists
+ERROR:  constraint "fk_comments_unified_parent_id" for relation "comments_unified" already exists
+ERROR:  constraint "fk_comments_unified_user_id" for relation "comments_unified" already exists
+ERROR:  constraint "folders_created_by_id_fkey" for relation "folders" already exists
+ERROR:  constraint "folders_parent_folder_id_fkey" for relation "folders" already exists
+ERROR:  constraint "folders_project_id_fkey" for relation "folders" already exists
+ERROR:  constraint "invitations_accepted_by_id_fkey" for relation "invitations" already exists
+ERROR:  constraint "invitations_created_by_id_fkey" for relation "invitations" already exists
+ERROR:  constraint "invitations_project_id_fkey" for relation "invitations" already exists
+ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+ERROR:  constraint "project_users_project_id_fkey" for relation "project_users" already exists
+ERROR:  constraint "project_users_user_id_fkey" for relation "project_users" already exists
+ERROR:  constraint "projects_created_by_id_fkey" for relation "projects" already exists
+ERROR:  constraint "projects_folder_id_fkey" for relation "projects" already exists
+ERROR:  constraint "public_comments_file_id_fkey" for relation "public_comments" already exists
+ERROR:  constraint "qc_reports_file_id_fkey" for relation "qc_reports" already exists
+ERROR:  constraint "recent_projects_project_id_fkey" for relation "recent_projects" already exists
+ERROR:  constraint "recent_projects_user_id_fkey" for relation "recent_projects" already exists
+ERROR:  constraint "share_links_created_by_id_fkey" for relation "share_links" already exists
+ERROR:  constraint "transcripts_file_id_fkey" for relation "transcripts" already exists
+ERROR:  constraint "video_processing_file_id_fkey" for relation "video_processing" already exists
+[+] up 2/2
+ ✔ Container obview_db  Healthy                                                                                                                                          0.6s
+ ✔ Container obview_app Running                                                                                                                                          0.0s
+NAME         IMAGE                COMMAND                  SERVICE   CREATED          STATUS                    PORTS
+obview_app   obview-app           "/app/scripts/docker…"   app       18 minutes ago   Up 18 minutes (healthy)   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+obview_db    postgres:16-alpine   "docker-entrypoint.s…"   db        36 seconds ago   Up 35 seconds (healthy)   5432/tcp
