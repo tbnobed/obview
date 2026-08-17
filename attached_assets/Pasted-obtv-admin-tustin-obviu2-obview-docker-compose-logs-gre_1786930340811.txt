@@ -1,0 +1,166 @@
+obtv-admin@tustin-obviu2:~/obview$ docker compose logs | grep ERROR
+obview_db  | 2026-08-16 05:02:57.799 UTC [61] ERROR:  relation "activity_logs" already exists
+obview_db  | 2026-08-16 05:02:57.800 UTC [61] ERROR:  relation "activity_logs_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.802 UTC [61] ERROR:  relation "api_sessions" already exists
+obview_db  | 2026-08-16 05:02:57.802 UTC [61] ERROR:  relation "api_sessions_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.803 UTC [61] ERROR:  relation "approvals" already exists
+obview_db  | 2026-08-16 05:02:57.803 UTC [61] ERROR:  relation "approvals_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.804 UTC [61] ERROR:  relation "comment_reactions" already exists
+obview_db  | 2026-08-16 05:02:57.804 UTC [61] ERROR:  relation "comment_reactions_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.805 UTC [61] ERROR:  relation "comments" already exists
+obview_db  | 2026-08-16 05:02:57.805 UTC [61] ERROR:  relation "comments_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.806 UTC [61] ERROR:  relation "comments_unified" already exists
+obview_db  | 2026-08-16 05:02:57.807 UTC [61] ERROR:  relation "files" already exists
+obview_db  | 2026-08-16 05:02:57.807 UTC [61] ERROR:  relation "files_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.808 UTC [61] ERROR:  relation "folders" already exists
+obview_db  | 2026-08-16 05:02:57.808 UTC [61] ERROR:  relation "folders_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.809 UTC [61] ERROR:  relation "invitations" already exists
+obview_db  | 2026-08-16 05:02:57.809 UTC [61] ERROR:  relation "invitations_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.810 UTC [61] ERROR:  relation "password_resets" already exists
+obview_db  | 2026-08-16 05:02:57.810 UTC [61] ERROR:  relation "password_resets_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.811 UTC [61] ERROR:  relation "pg_session" already exists
+obview_db  | 2026-08-16 05:02:57.811 UTC [61] ERROR:  relation "project_users" already exists
+obview_db  | 2026-08-16 05:02:57.812 UTC [61] ERROR:  relation "project_users_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.812 UTC [61] ERROR:  relation "projects" already exists
+obview_db  | 2026-08-16 05:02:57.813 UTC [61] ERROR:  relation "projects_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.813 UTC [61] ERROR:  relation "public_comments" already exists
+obview_db  | 2026-08-16 05:02:57.814 UTC [61] ERROR:  relation "public_comments_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.814 UTC [61] ERROR:  relation "qc_reports" already exists
+obview_db  | 2026-08-16 05:02:57.815 UTC [61] ERROR:  relation "qc_reports_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.815 UTC [61] ERROR:  relation "recent_projects" already exists
+obview_db  | 2026-08-16 05:02:57.816 UTC [61] ERROR:  relation "schema_migrations" already exists
+obview_db  | 2026-08-16 05:02:57.816 UTC [61] ERROR:  relation "session" already exists
+obview_db  | 2026-08-16 05:02:57.816 UTC [61] ERROR:  relation "share_links" already exists
+obview_db  | 2026-08-16 05:02:57.816 UTC [61] ERROR:  relation "transcripts" already exists
+obview_db  | 2026-08-16 05:02:57.817 UTC [61] ERROR:  relation "transcripts_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.817 UTC [61] ERROR:  relation "users" already exists
+obview_db  | 2026-08-16 05:02:57.818 UTC [61] ERROR:  relation "users_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.818 UTC [61] ERROR:  relation "video_processing" already exists
+obview_db  | 2026-08-16 05:02:57.819 UTC [61] ERROR:  relation "video_processing_id_seq" already exists
+obview_db  | 2026-08-16 05:02:57.932 UTC [61] ERROR:  insert or update on table "activity_logs" violates foreign key constraint "activity_logs_user_id_fkey"
+obview_db  | 2026-08-16 05:02:57.933 UTC [61] ERROR:  insert or update on table "api_sessions" violates foreign key constraint "api_sessions_user_id_fkey"
+obview_db  | 2026-08-16 05:02:57.936 UTC [61] ERROR:  insert or update on table "approvals" violates foreign key constraint "approvals_file_id_fkey"
+obview_db  | 2026-08-16 05:02:57.939 UTC [61] ERROR:  insert or update on table "comment_reactions" violates foreign key constraint "fk_comment_reactions_comment_id"
+obview_db  | 2026-08-16 05:02:57.976 UTC [61] ERROR:  insert or update on table "comments_unified" violates foreign key constraint "fk_comments_unified_file_id"
+obview_db  | 2026-08-16 05:02:57.987 UTC [61] ERROR:  insert or update on table "files" violates foreign key constraint "files_project_id_fkey"
+obview_db  | 2026-08-16 05:02:57.990 UTC [61] ERROR:  insert or update on table "folders" violates foreign key constraint "folders_created_by_id_fkey"
+obview_db  | 2026-08-16 05:02:57.992 UTC [61] ERROR:  insert or update on table "invitations" violates foreign key constraint "invitations_created_by_id_fkey"
+obview_db  | 2026-08-16 05:02:57.993 UTC [61] ERROR:  insert or update on table "password_resets" violates foreign key constraint "password_resets_user_id_fkey"
+obview_db  | 2026-08-16 05:02:57.995 UTC [61] ERROR:  insert or update on table "project_users" violates foreign key constraint "project_users_project_id_fkey"
+obview_db  | 2026-08-16 05:02:57.997 UTC [61] ERROR:  insert or update on table "projects" violates foreign key constraint "projects_created_by_id_fkey"
+obview_db  | 2026-08-16 05:02:58.019 UTC [61] ERROR:  insert or update on table "qc_reports" violates foreign key constraint "qc_reports_file_id_fkey"
+obview_db  | 2026-08-16 05:02:58.023 UTC [61] ERROR:  insert or update on table "recent_projects" violates foreign key constraint "recent_projects_project_id_fkey"
+obview_db  | 2026-08-16 05:02:58.024 UTC [61] ERROR:  duplicate key value violates unique constraint "schema_migrations_pkey"
+obview_db  | 2026-08-16 05:02:58.040 UTC [61] ERROR:  insert or update on table "share_links" violates foreign key constraint "share_links_created_by_id_fkey"
+obview_db   | 2026-08-16 05:02:59.057 UTC [61] ERROR:  insert or update on table "transcripts" violates foreign key constraint "transcripts_file_id_fkey"
+obview_db   | 2026-08-16 05:02:59.058 UTC [61] ERROR:  duplicate key value violates unique constraint "users_pkey"
+obview_db   | 2026-08-16 05:02:59.116 UTC [61] ERROR:  insert or update on table "video_processing" violates foreign key constraint "video_processing_file_id_fkey"
+obview_db   | 2026-08-16 05:02:59.140 UTC [61] ERROR:  multiple primary keys for table "activity_logs" are not allowed
+obview_db   | 2026-08-16 05:02:59.140 UTC [61] ERROR:  multiple primary keys for table "api_sessions" are not allowed
+obview_db   | 2026-08-16 05:02:59.140 UTC [61] ERROR:  relation "api_sessions_token_hash_key" already exists
+obview_db   | 2026-08-16 05:02:59.141 UTC [61] ERROR:  multiple primary keys for table "approvals" are not allowed
+obview_db   | 2026-08-16 05:02:59.141 UTC [61] ERROR:  multiple primary keys for table "comment_reactions" are not allowed
+obview_db   | 2026-08-16 05:02:59.141 UTC [61] ERROR:  multiple primary keys for table "comments" are not allowed
+obview_db   | 2026-08-16 05:02:59.141 UTC [61] ERROR:  multiple primary keys for table "comments_unified" are not allowed
+obview_db   | 2026-08-16 05:02:59.142 UTC [61] ERROR:  multiple primary keys for table "files" are not allowed
+obview_db   | 2026-08-16 05:02:59.142 UTC [61] ERROR:  multiple primary keys for table "folders" are not allowed
+obview_db   | 2026-08-16 05:02:59.142 UTC [61] ERROR:  multiple primary keys for table "invitations" are not allowed
+obview_db   | 2026-08-16 05:02:59.145 UTC [61] ERROR:  multiple primary keys for table "password_resets" are not allowed
+obview_db   | 2026-08-16 05:02:59.145 UTC [61] ERROR:  relation "password_resets_token_key" already exists
+obview_db   | 2026-08-16 05:02:59.146 UTC [61] ERROR:  multiple primary keys for table "pg_session" are not allowed
+obview_db   | 2026-08-16 05:02:59.146 UTC [61] ERROR:  multiple primary keys for table "project_users" are not allowed
+obview_db   | 2026-08-16 05:02:59.146 UTC [61] ERROR:  relation "project_users_project_id_user_id_unique" already exists
+obview_db   | 2026-08-16 05:02:59.146 UTC [61] ERROR:  multiple primary keys for table "projects" are not allowed
+obview_db   | 2026-08-16 05:02:59.147 UTC [61] ERROR:  multiple primary keys for table "public_comments" are not allowed
+obview_db   | 2026-08-16 05:02:59.147 UTC [61] ERROR:  multiple primary keys for table "qc_reports" are not allowed
+obview_db   | 2026-08-16 05:02:59.147 UTC [61] ERROR:  multiple primary keys for table "recent_projects" are not allowed
+obview_db   | 2026-08-16 05:02:59.147 UTC [61] ERROR:  multiple primary keys for table "schema_migrations" are not allowed
+obview_db   | 2026-08-16 05:02:59.147 UTC [61] ERROR:  multiple primary keys for table "session" are not allowed
+obview_db   | 2026-08-16 05:02:59.147 UTC [61] ERROR:  multiple primary keys for table "share_links" are not allowed
+obview_db   | 2026-08-16 05:02:59.148 UTC [61] ERROR:  relation "share_links_token_key" already exists
+obview_db   | 2026-08-16 05:02:59.148 UTC [61] ERROR:  multiple primary keys for table "transcripts" are not allowed
+obview_db   | 2026-08-16 05:02:59.150 UTC [61] ERROR:  multiple primary keys for table "users" are not allowed
+obview_db   | 2026-08-16 05:02:59.152 UTC [61] ERROR:  multiple primary keys for table "video_processing" are not allowed
+obview_db   | 2026-08-16 05:02:59.152 UTC [61] ERROR:  relation "IDX_password_resets_token" already exists
+obview_db   | 2026-08-16 05:02:59.152 UTC [61] ERROR:  relation "IDX_password_resets_user_id" already exists
+obview_db   | 2026-08-16 05:02:59.153 UTC [61] ERROR:  relation "IDX_pg_session_expire" already exists
+obview_db   | 2026-08-16 05:02:59.153 UTC [61] ERROR:  relation "IDX_session_expire" already exists
+obview_db   | 2026-08-16 05:02:59.153 UTC [61] ERROR:  relation "idx_activity_logs_entity_type_id" already exists
+obview_db   | 2026-08-16 05:02:59.153 UTC [61] ERROR:  relation "idx_activity_logs_user_id" already exists
+obview_db   | 2026-08-16 05:02:59.154 UTC [61] ERROR:  relation "idx_approvals_file_id" already exists
+obview_db   | 2026-08-16 05:02:59.154 UTC [61] ERROR:  relation "idx_comment_reactions_comment_id" already exists
+obview_db   | 2026-08-16 05:02:59.154 UTC [61] ERROR:  relation "idx_comment_reactions_comment_reaction" already exists
+obview_db   | 2026-08-16 05:02:59.154 UTC [61] ERROR:  relation "idx_comment_reactions_unique_anonymous" already exists
+obview_db   | 2026-08-16 05:02:59.155 UTC [61] ERROR:  relation "idx_comment_reactions_unique_user" already exists
+obview_db   | 2026-08-16 05:02:59.155 UTC [61] ERROR:  relation "idx_comments_file_id" already exists
+obview_db   | 2026-08-16 05:02:59.155 UTC [61] ERROR:  relation "idx_comments_timestamp" already exists
+obview_db   | 2026-08-16 05:02:59.155 UTC [61] ERROR:  relation "idx_comments_unified_file_id" already exists
+obview_db   | 2026-08-16 05:02:59.156 UTC [61] ERROR:  relation "idx_comments_unified_file_timestamp" already exists
+obview_db   | 2026-08-16 05:02:59.156 UTC [61] ERROR:  relation "idx_comments_unified_parent_id" already exists
+obview_db   | 2026-08-16 05:02:59.156 UTC [61] ERROR:  relation "idx_comments_unified_user_id" already exists
+obview_db   | 2026-08-16 05:02:59.156 UTC [61] ERROR:  relation "idx_comments_user_id" already exists
+obview_db   | 2026-08-16 05:02:59.156 UTC [61] ERROR:  relation "idx_files_deleted_at" already exists
+obview_db   | 2026-08-16 05:02:59.157 UTC [61] ERROR:  relation "idx_files_folder_id" already exists
+obview_db   | 2026-08-16 05:02:59.157 UTC [61] ERROR:  relation "idx_files_is_latest_version" already exists
+obview_db   | 2026-08-16 05:02:59.157 UTC [61] ERROR:  relation "idx_files_project_id" already exists
+obview_db   | 2026-08-16 05:02:59.157 UTC [61] ERROR:  relation "idx_files_share_token" already exists
+obview_db   | 2026-08-16 05:02:59.157 UTC [61] ERROR:  relation "idx_folders_created_by_id" already exists
+obview_db   | 2026-08-16 05:02:59.157 UTC [61] ERROR:  relation "idx_folders_deleted_at" already exists
+obview_db   | 2026-08-16 05:02:59.158 UTC [61] ERROR:  relation "idx_folders_name" already exists
+obview_db   | 2026-08-16 05:02:59.158 UTC [61] ERROR:  relation "idx_folders_parent_id" already exists
+obview_db   | 2026-08-16 05:02:59.158 UTC [61] ERROR:  relation "idx_folders_project_id" already exists
+obview_db   | 2026-08-16 05:02:59.158 UTC [61] ERROR:  relation "idx_invitations_email" already exists
+obview_db   | 2026-08-16 05:02:59.158 UTC [61] ERROR:  relation "idx_invitations_token" already exists
+obview_db   | 2026-08-16 05:02:59.159 UTC [61] ERROR:  relation "idx_password_resets_token" already exists
+obview_db   | 2026-08-16 05:02:59.159 UTC [61] ERROR:  relation "idx_password_resets_user_id" already exists
+obview_db   | 2026-08-16 05:02:59.159 UTC [61] ERROR:  relation "idx_project_users_project_id" already exists
+obview_db   | 2026-08-16 05:02:59.159 UTC [61] ERROR:  relation "idx_project_users_user_id" already exists
+obview_db   | 2026-08-16 05:02:59.159 UTC [61] ERROR:  relation "idx_projects_deleted_at" already exists
+obview_db   | 2026-08-16 05:02:59.159 UTC [61] ERROR:  relation "idx_projects_folder_id" already exists
+obview_db   | 2026-08-16 05:02:59.160 UTC [61] ERROR:  relation "idx_public_comments_creator_token" already exists
+obview_db   | 2026-08-16 05:02:59.160 UTC [61] ERROR:  relation "idx_public_comments_file_id" already exists
+obview_db   | 2026-08-16 05:02:59.160 UTC [61] ERROR:  relation "idx_public_comments_parent_id" already exists
+obview_db   | 2026-08-16 05:02:59.160 UTC [61] ERROR:  relation "idx_video_processing_file_id" already exists
+obview_db   | 2026-08-16 05:02:59.160 UTC [61] ERROR:  relation "idx_video_processing_status" already exists
+obview_db   | 2026-08-16 05:02:59.160 UTC [61] ERROR:  relation "qc_reports_file_id_idx" already exists
+obview_db   | 2026-08-16 05:02:59.161 UTC [61] ERROR:  relation "recent_projects_user_opened_idx" already exists
+obview_db   | 2026-08-16 05:02:59.161 UTC [61] ERROR:  relation "share_links_scope_idx" already exists
+obview_db   | 2026-08-16 05:02:59.161 UTC [61] ERROR:  relation "share_links_token_idx" already exists
+obview_db   | 2026-08-16 05:02:59.161 UTC [61] ERROR:  relation "transcripts_file_id_idx" already exists
+obview_db   | 2026-08-16 05:02:59.161 UTC [61] ERROR:  constraint "activity_logs_user_id_fkey" for relation "activity_logs" already exists
+obview_db   | 2026-08-16 05:02:59.162 UTC [61] ERROR:  constraint "api_sessions_user_id_fkey" for relation "api_sessions" already exists
+obview_db   | 2026-08-16 05:02:59.162 UTC [61] ERROR:  constraint "approvals_file_id_fkey" for relation "approvals" already exists
+obview_db   | 2026-08-16 05:02:59.162 UTC [61] ERROR:  constraint "approvals_user_id_fkey" for relation "approvals" already exists
+obview_db   | 2026-08-16 05:02:59.162 UTC [61] ERROR:  constraint "comment_reactions_comment_id_fkey" for relation "comment_reactions" already exists
+obview_db   | 2026-08-16 05:02:59.162 UTC [61] ERROR:  constraint "comment_reactions_user_id_fkey" for relation "comment_reactions" already exists
+obview_db   | 2026-08-16 05:02:59.162 UTC [61] ERROR:  constraint "comments_file_id_fkey" for relation "comments" already exists
+obview_db   | 2026-08-16 05:02:59.162 UTC [61] ERROR:  constraint "comments_parent_id_fkey" for relation "comments" already exists
+obview_db   | 2026-08-16 05:02:59.163 UTC [61] ERROR:  constraint "comments_user_id_fkey" for relation "comments" already exists
+obview_db   | 2026-08-16 05:02:59.163 UTC [61] ERROR:  constraint "files_folder_id_fkey" for relation "files" already exists
+obview_db   | 2026-08-16 05:02:59.163 UTC [61] ERROR:  constraint "files_project_id_fkey" for relation "files" already exists
+obview_db   | 2026-08-16 05:02:59.163 UTC [61] ERROR:  constraint "files_requested_changes_by_id_fkey" for relation "files" already exists
+obview_db   | 2026-08-16 05:02:59.163 UTC [61] ERROR:  constraint "files_uploaded_by_id_fkey" for relation "files" already exists
+obview_db   | 2026-08-16 05:02:59.163 UTC [61] ERROR:  constraint "fk_comment_reactions_comment_id" for relation "comment_reactions" already exists
+obview_db   | 2026-08-16 05:02:59.164 UTC [61] ERROR:  constraint "fk_comment_reactions_user_id" for relation "comment_reactions" already exists
+obview_db   | 2026-08-16 05:02:59.164 UTC [61] ERROR:  constraint "fk_comments_unified_file_id" for relation "comments_unified" already exists
+obview_db   | 2026-08-16 05:02:59.164 UTC [61] ERROR:  constraint "fk_comments_unified_parent_id" for relation "comments_unified" already exists
+obview_db   | 2026-08-16 05:02:59.164 UTC [61] ERROR:  constraint "fk_comments_unified_user_id" for relation "comments_unified" already exists
+obview_db   | 2026-08-16 05:02:59.164 UTC [61] ERROR:  constraint "folders_created_by_id_fkey" for relation "folders" already exists
+obview_db   | 2026-08-16 05:02:59.164 UTC [61] ERROR:  constraint "folders_parent_folder_id_fkey" for relation "folders" already exists
+obview_db   | 2026-08-16 05:02:59.164 UTC [61] ERROR:  constraint "folders_project_id_fkey" for relation "folders" already exists
+obview_db   | 2026-08-16 05:02:59.165 UTC [61] ERROR:  constraint "invitations_accepted_by_id_fkey" for relation "invitations" already exists
+obview_db   | 2026-08-16 05:02:59.165 UTC [61] ERROR:  constraint "invitations_created_by_id_fkey" for relation "invitations" already exists
+obview_db   | 2026-08-16 05:02:59.165 UTC [61] ERROR:  constraint "invitations_project_id_fkey" for relation "invitations" already exists
+obview_db   | 2026-08-16 05:02:59.165 UTC [61] ERROR:  constraint "password_resets_user_id_fkey" for relation "password_resets" already exists
+obview_db   | 2026-08-16 05:02:59.165 UTC [61] ERROR:  constraint "project_users_project_id_fkey" for relation "project_users" already exists
+obview_db   | 2026-08-16 05:02:59.165 UTC [61] ERROR:  constraint "project_users_user_id_fkey" for relation "project_users" already exists
+obview_db   | 2026-08-16 05:02:59.166 UTC [61] ERROR:  constraint "projects_created_by_id_fkey" for relation "projects" already exists
+obview_db   | 2026-08-16 05:02:59.166 UTC [61] ERROR:  constraint "projects_folder_id_fkey" for relation "projects" already exists
+obview_db   | 2026-08-16 05:02:59.166 UTC [61] ERROR:  constraint "public_comments_file_id_fkey" for relation "public_comments" already exists
+obview_db   | 2026-08-16 05:02:59.166 UTC [61] ERROR:  constraint "qc_reports_file_id_fkey" for relation "qc_reports" already exists
+obview_db   | 2026-08-16 05:02:59.166 UTC [61] ERROR:  constraint "recent_projects_project_id_fkey" for relation "recent_projects" already exists
+obview_db   | 2026-08-16 05:02:59.166 UTC [61] ERROR:  constraint "recent_projects_user_id_fkey" for relation "recent_projects" already exists
+obview_db   | 2026-08-16 05:02:59.166 UTC [61] ERROR:  constraint "share_links_created_by_id_fkey" for relation "share_links" already exists
+obview_db   | 2026-08-16 05:02:59.167 UTC [61] ERROR:  constraint "transcripts_file_id_fkey" for relation "transcripts" already exists
+obview_db   | 2026-08-16 05:02:59.167 UTC [61] ERROR:  constraint "video_processing_file_id_fkey" for relation "video_processing" already exists
+obview_db   | 2026-08-17 01:04:57.725 UTC [54547] ERROR:  column "error" does not exist at character 43
