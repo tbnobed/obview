@@ -147,11 +147,11 @@ export default function SpeakerTimeline({
       <div className="mt-1 select-none" data-testid="speaker-timeline-collapsed">
         <button
           onClick={toggleHidden}
-          className="flex items-center gap-1 text-[10px] font-medium text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          className="flex items-center gap-1.5 rounded-md border border-neutral-200 dark:border-gray-700 bg-neutral-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700 transition-colors"
           title="Show speaker view"
           data-testid="button-show-speakers"
         >
-          <ChevronDown className="h-3 w-3" />
+          <ChevronDown className="h-3.5 w-3.5" />
           Speakers ({speakerRows.length})
         </button>
       </div>
@@ -163,11 +163,11 @@ export default function SpeakerTimeline({
       <div className="flex items-center">
         <button
           onClick={toggleHidden}
-          className="flex items-center gap-1 text-[10px] font-medium text-neutral-400 hover:text-neutral-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+          className="flex items-center gap-1.5 rounded-md border border-neutral-200 dark:border-gray-700 bg-neutral-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700 transition-colors"
           title="Hide speaker view"
           data-testid="button-hide-speakers"
         >
-          <ChevronUp className="h-3 w-3" />
+          <ChevronUp className="h-3.5 w-3.5" />
           Speakers
         </button>
       </div>
