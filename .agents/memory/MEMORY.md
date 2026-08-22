@@ -22,4 +22,4 @@
 - [QC pipeline design](qc-pipeline.md) — frames QC runs app-side ffmpeg (even for silent files); audio-events/OCR only ride the transcription job, so QC regenerate reuses stored data.
 - [UXP export needs a real .epr](uxp-export-presets.md) — exportSequence takes an .epr PATH only (no raw-settings API); bundle curated .epr in plugin presets/ (getPluginFolder is token-free) for the quality dropdown.
 - [Registration and invitation trust boundary](registration-invitation-trust.md) — client flags never authorize signup; enforce roles, token secrecy, and one-time acceptance on the server and database.
-- [Docker production builds](docker-production-builds.md) — force builder dev tools, test the full image, and tolerate BtbN removing old versioned FFmpeg assets.
+- [Docker production builds](docker-production-builds.md) — make the builder toolchain non-optional, test the full image, and tolerate BtbN removing old FFmpeg assets.

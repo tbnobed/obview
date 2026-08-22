@@ -11,10 +11,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY package*.json ./
-# Vite, esbuild, and TypeScript are dev dependencies but are required to build
-# the production bundle. Explicitly include them so a hosting environment's
-# NODE_ENV/NPM_CONFIG_OMIT setting cannot leave the builder without `vite`.
-RUN npm ci --include=dev
+# The production image is built from source, and its startup verification also
+# uses tsx. These tools are regular dependencies so production-mode npm settings
+# cannot omit them. Older checkouts may still classify them as dev-only, so the
+# fallback install makes the builder self-contained during rolling upgrades.
+RUN npm ci --include=dev && \
+    if [ ! -x node_modules/.bin/vite ] || [ ! -x node_modules/.bin/esbuild ]; then \
+      npm install --no-save \
+        vite@6.4.3 \
+        esbuild@0.25.0 \
+        @vitejs/plugin-react@4.3.4 \
+        @replit/vite-plugin-runtime-error-modal@0.0.3 \
+        postcss@8.5.18 \
+        tailwindcss@3.4.17 \
+        autoprefixer@10.4.20 \
+        tailwindcss-animate@1.0.7 \
+        @tailwindcss/typography@0.5.15 \
+        tsx@4.19.1; \
+    fi && \
+    test -x node_modules/.bin/vite && \
+    test -x node_modules/.bin/esbuild
 
 COPY . .
 
