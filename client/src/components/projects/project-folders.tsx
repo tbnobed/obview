@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2, Share2 } from "lucide-react";
+import { formatTimeAgo } from "@/lib/utils/formatters";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
 import {
@@ -300,11 +301,18 @@ export function ProjectFoldersStrip({
               <button
                 type="button"
                 onClick={() => onSelectFolder(f.id)}
-                className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                className="flex items-start gap-2 flex-1 min-w-0 text-left"
                 data-testid={`subfolder-${f.id}`}
               >
-                <FolderIcon className="h-4 w-4 text-amber-400 shrink-0" />
-                <span className="truncate">{f.name}</span>
+                <FolderIcon className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <span className="block truncate">{f.name}</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">
+                    {(f as any).fileCount ?? 0} file{((f as any).fileCount ?? 0) !== 1 ? "s" : ""}
+                    {" · "}
+                    {formatTimeAgo(new Date((f as any).lastActivityAt ?? f.updatedAt))}
+                  </span>
+                </div>
               </button>
               {canEdit && (
                 <button

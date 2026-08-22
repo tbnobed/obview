@@ -6962,6 +6962,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const projectId = parseInt(req.params.projectId);
       const subfolders = await storage.getProjectFolders(projectId);
+      // Enrich each folder with file count and last activity in one query.
+      if (subfolders.length > 0) {
+        const folderIds = subfolders.map((f) => f.id);
+        const statsRows = await db
+          .select({
+            folderId: filesTable.folderId,
+            fileCount: sql<number>`count(*)::int`,
+            latestFileAt: sql<string | null>`max(${filesTable.createdAt})`,
+          })
+          .from(filesTable)
+          .where(and(
+            eq(filesTable.projectId, projectId),
+            isNull(filesTable.deletedAt),
+            inArray(filesTable.folderId, folderIds),
+          ))
+          .groupBy(filesTable.folderId);
+        const byFolder = new Map(statsRows.filter(r => r.folderId != null).map(r => [r.folderId as number, r]));
+        return res.json(subfolders.map((f) => {
+          const st = byFolder.get(f.id);
+          const latestFileAt = st?.latestFileAt ? new Date(st.latestFileAt) : null;
+          const folderUpdatedAt = new Date(f.updatedAt);
+          const lastActivityAt = latestFileAt && latestFileAt > folderUpdatedAt ? latestFileAt : folderUpdatedAt;
+          return { ...f, fileCount: st?.fileCount ?? 0, lastActivityAt };
+        }));
+      }
       res.json(subfolders);
     } catch (e) { next(e); }
   });
