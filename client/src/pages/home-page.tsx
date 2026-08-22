@@ -92,7 +92,7 @@ export default function HomePage() {
     return [...projects]
       .sort(
         (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          new Date((b as any).lastActivityAt ?? b.updatedAt).getTime() - new Date((a as any).lastActivityAt ?? a.updatedAt).getTime()
       )
       .slice(0, 10);
   }, [projects]);

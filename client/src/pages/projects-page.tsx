@@ -159,7 +159,7 @@ export default function ProjectsPage() {
       switch (sortState.key) {
         case "name": return (p.name || "").toLowerCase();
         case "created": return new Date((p as any).createdAt ?? 0).getTime();
-        case "updated": return new Date(p.updatedAt ?? 0).getTime();
+        case "updated": return new Date((p as any).lastActivityAt ?? p.updatedAt ?? 0).getTime();
       }
     };
     return [...matched].sort((a, b) => {
