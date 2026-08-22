@@ -455,17 +455,14 @@ type MentionEmailRecipient = {
 };
 
 async function resolveCommentMentions(args: {
-  projectId: number;
   authorId: number;
   content: string;
   submittedUserIds: number[];
 }): Promise<{ mentions: CommentMention[]; recipients: MentionEmailRecipient[] }> {
   if (args.submittedUserIds.length === 0) return { mentions: [], recipients: [] };
 
-  const projectUsers = await storage.getProjectUsers(args.projectId);
-  const memberIds = new Set(projectUsers.map((projectUser) => projectUser.userId));
   const candidateIds = args.submittedUserIds.filter(
-    (userId) => userId !== args.authorId && memberIds.has(userId),
+    (userId) => userId !== args.authorId,
   );
 
   const users = await Promise.all(candidateIds.map((userId) => storage.getUser(userId)));
@@ -1195,7 +1192,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const resolvedMentions = await resolveCommentMentions({
-        projectId: file.projectId,
         authorId: actor.id,
         content: validationResult.data.content,
         submittedUserIds: getSubmittedMentionIds(req.body),
@@ -5709,7 +5705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Safe, file-scoped teammate lookup for the authenticated comment composer.
+  // Safe user-directory lookup for the authenticated comment composer.
   // Public share pages never call or expose this endpoint.
   app.get("/api/files/:fileId/mentionable-users", isAuthenticated, async (req, res, next) => {
     try {
@@ -5719,8 +5715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!file) return res.status(404).json({ message: "File not found" });
       const actor = req.user!;
 
-      const projectUsers = await storage.getProjectUsers(file.projectId);
-      const users = await Promise.all(projectUsers.map((projectUser) => storage.getUser(projectUser.userId)));
+      const users = await storage.getAllUsers();
       res.json(
         users
           .filter((user) =>
@@ -5784,7 +5779,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🔍 [COMMENT API] Validation passed, comment data:`, JSON.stringify(validationResult.data));
       
       const resolvedMentions = await resolveCommentMentions({
-        projectId: file.projectId,
         authorId: actor.id,
         content: validationResult.data.content,
         submittedUserIds: getSubmittedMentionIds(req.body),
@@ -5910,7 +5904,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .filter((userId): userId is number => Number.isInteger(userId) && userId > 0)
           : [];
         const revalidatedMentions = await resolveCommentMentions({
-          projectId: file.projectId,
           authorId: comment.userId ?? req.user.id,
           content: updates.content,
           submittedUserIds: existingMentionIds,

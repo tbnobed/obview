@@ -95,7 +95,7 @@ export default function CommentForm({
       return Array.isArray(data) ? data : [];
     },
     enabled: !!user,
-    staleTime: 60_000,
+    staleTime: 0,
   });
 
   const filteredMentionUsers = useMemo(() => {
@@ -452,8 +452,12 @@ export default function CommentForm({
             onChange={(e) => {
               const nextContent = e.target.value;
               const cursor = e.target.selectionStart ?? nextContent.length;
+              const nextMentionSearch = findMentionSearch(nextContent, cursor);
+              if (nextMentionSearch && !mentionSearch) {
+                void mentionableUsers.refetch();
+              }
               setContent(nextContent);
-              setMentionSearch(findMentionSearch(nextContent, cursor));
+              setMentionSearch(nextMentionSearch);
               setActiveMentionIndex(0);
               setMentionedUserIds((current) =>
                 current.filter((userId) => {
