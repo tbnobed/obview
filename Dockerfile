@@ -155,7 +155,7 @@ RUN chmod +x ./scripts/*.sh
 # job inherits it. Debian cron reads /var/spool/cron/crontabs/root.
 # A thin wrapper lets the entrypoint call "crond -b -L <log>" without
 # caring which cron implementation is installed.
-RUN printf '#!/bin/sh\nexec /usr/sbin/cron "$@"\n' > /usr/local/bin/crond && \
+RUN printf '#!/bin/sh\n# Debian cron daemonizes automatically; discard busybox-style flags.\nexec /usr/sbin/cron\n' > /usr/local/bin/crond && \
     chmod +x /usr/local/bin/crond && \
     mkdir -p /var/spool/cron/crontabs && \
     printf '0 3 * * * /app/scripts/backup-cron.sh >> /var/log/backup-cron.log 2>&1\n' \

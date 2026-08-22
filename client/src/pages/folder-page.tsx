@@ -288,7 +288,7 @@ export default function FolderPage() {
         sorted.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? "", undefined, { sensitivity: "base" }));
         break;
       case "updated-desc":
-        sorted.sort((a, b) => ts((b as any).updatedAt) - ts((a as any).updatedAt));
+        sorted.sort((a, b) => ts((b as any).lastActivityAt ?? (b as any).updatedAt) - ts((a as any).lastActivityAt ?? (a as any).updatedAt));
         break;
       case "created-desc":
         sorted.sort((a, b) => ts((b as any).createdAt) - ts((a as any).createdAt));
