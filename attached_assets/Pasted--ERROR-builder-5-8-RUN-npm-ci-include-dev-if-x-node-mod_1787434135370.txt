@@ -1,0 +1,68 @@
+ => ERROR [builder 5/8] RUN npm ci --include=dev &&     if [ ! -x node_modules/.bin/vite ] || [ ! -x node_modules/.bin/esbuild ]; then       npm install --no-save       149.4s
+ => [production  5/22] COPY --from=whisper-builder /usr/local/bin/whisper-cpp /usr/local/bin/whisper-cpp                                                                   0.1s
+------
+ > [builder 5/8] RUN npm ci --include=dev &&     if [ ! -x node_modules/.bin/vite ] || [ ! -x node_modules/.bin/esbuild ]; then       npm install --no-save         vite@6.4.3         esbuild@0.25.0         @vitejs/plugin-react@4.3.4         @replit/vite-plugin-runtime-error-modal@0.0.3         postcss@8.5.18         tailwindcss@3.4.17         autoprefixer@10.4.20         tailwindcss-animate@1.0.7         @tailwindcss/typography@0.5.15         tsx@4.19.1;     fi &&     test -x node_modules/.bin/vite &&     test -x node_modules/.bin/esbuild:
+6.991 npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+7.026 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+72.82 npm notice
+72.82 npm notice New major version of npm available! 10.8.2 -> 12.0.2
+72.82 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+72.82 npm notice To update run: npm install -g npm@12.0.2
+72.82 npm notice
+72.82 npm error Exit handler never called!
+72.82 npm error This is an error with npm itself. Please report this error at:
+72.82 npm error   <https://github.com/npm/cli/issues>
+72.82 npm error A complete log of this run can be found in: /root/.npm/_logs/2026-08-22T21_26_09_612Z-debug-0.log
+149.2 npm error Exit handler never called!
+149.2 npm error This is an error with npm itself. Please report this error at:
+149.2 npm error   <https://github.com/npm/cli/issues>
+149.2 npm error A complete log of this run can be found in: /root/.npm/_logs/2026-08-22T21_27_22_428Z-debug-0.log
+------
+[+] build 0/1
+ ⠙ Image obview-app Building                                                                                                                                              178.6s
+Dockerfile:18
+
+--------------------
+
+  17 |     # fallback install makes the builder self-contained during rolling upgrades.
+
+  18 | >>> RUN npm ci --include=dev && \
+
+  19 | >>>     if [ ! -x node_modules/.bin/vite ] || [ ! -x node_modules/.bin/esbuild ]; then \
+
+  20 | >>>       npm install --no-save \
+
+  21 | >>>         vite@6.4.3 \
+
+  22 | >>>         esbuild@0.25.0 \
+
+  23 | >>>         @vitejs/plugin-react@4.3.4 \
+
+  24 | >>>         @replit/vite-plugin-runtime-error-modal@0.0.3 \
+
+  25 | >>>         postcss@8.5.18 \
+
+  26 | >>>         tailwindcss@3.4.17 \
+
+  27 | >>>         autoprefixer@10.4.20 \
+
+  28 | >>>         tailwindcss-animate@1.0.7 \
+
+  29 | >>>         @tailwindcss/typography@0.5.15 \
+
+  30 | >>>         tsx@4.19.1; \
+
+  31 | >>>     fi && \
+
+  32 | >>>     test -x node_modules/.bin/vite && \
+
+  33 | >>>     test -x node_modules/.bin/esbuild
+
+  34 |
+
+--------------------
+
+failed to solve: process "/bin/sh -c npm ci --include=dev &&     if [ ! -x node_modules/.bin/vite ] || [ ! -x node_modules/.bin/esbuild ]; then       npm install --no-save         vite@6.4.3         esbuild@0.25.0         @vitejs/plugin-react@4.3.4         @replit/vite-plugin-runtime-error-modal@0.0.3         postcss@8.5.18         tailwindcss@3.4.17         autoprefixer@10.4.20         tailwindcss-animate@1.0.7         @tailwindcss/typography@0.5.15         tsx@4.19.1;     fi &&     test -x node_modules/.bin/vite &&     test -x node_modules/.bin/esbuild" did not complete successfully: exit code: 1
+
+[+] up 1/1
+ ✔ Container obview_app Started  
