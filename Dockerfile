@@ -10,17 +10,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# npm 10.8.2 can crash inside Docker with "Exit handler never called" during
-# clean installs. Pin the patched npm 10 release before installing packages.
-ARG NPM_VERSION=10.9.8
-RUN npm install --global "npm@${NPM_VERSION}" && \
-    test "$(npm --version)" = "${NPM_VERSION}"
+# npm 10.x can crash inside Docker with "Exit handler never called" during
+# clean installs, including on otherwise identical hosts. Use a pinned pnpm
+# release through Corepack so the production build does not depend on npm's
+# unreliable installer path.
+ARG PNPM_VERSION=9.15.9
+RUN corepack enable && \
+    corepack prepare "pnpm@${PNPM_VERSION}" --activate && \
+    test "$(pnpm --version)" = "${PNPM_VERSION}"
 
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 # The production image is built from source, and its startup verification also
-# uses tsx. These tools are regular dependencies so production-mode npm settings
+# uses tsx. These tools are regular dependencies so production-mode settings
 # cannot omit them. Fail immediately if the build binaries are unavailable.
-RUN npm ci --include=dev && \
+RUN pnpm install --frozen-lockfile --prod=false && \
     test -x node_modules/.bin/vite && \
     test -x node_modules/.bin/esbuild
 
@@ -47,11 +50,11 @@ RUN echo "=== BUILDING APPLICATION ===" && \
     echo "VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION" && \
     echo "VITE_SHORT_LINK_BASE_URL=$VITE_SHORT_LINK_BASE_URL" && \
     echo "VITE_APP_BASE_URL=$VITE_APP_BASE_URL" && \
-    npm run build && \
+    pnpm run build && \
     echo "=== BUILD VERIFICATION ===" && \
     ls -la dist/ && \
     echo "Building production server..." && \
-    npx esbuild server/production.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/production.js && \
+    pnpm exec esbuild server/production.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/production.js && \
     test -f dist/production.js && echo "✅ Production server built: dist/production.js" || (echo "❌ Production server build failed" && exit 1)
 
 # ----- whisper.cpp builder -----
@@ -121,6 +124,7 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 # Copy dependencies and configuration files
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/vite.config.ts ./
 

@@ -272,7 +272,7 @@ fi
 # where someone edited schema.ts but forgot to author migrations/NNNN_*.sql.
 echo "Verifying schema matches shared/schema.ts..."
 if [ -f "/app/scripts/verify-schema.ts" ]; then
-  if ! npx tsx /app/scripts/verify-schema.ts; then
+  if ! /app/node_modules/.bin/tsx /app/scripts/verify-schema.ts; then
     echo "❌ Aborting startup: schema drift detected (see above)."
     exit 1
   fi
