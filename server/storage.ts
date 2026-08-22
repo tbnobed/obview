@@ -2599,10 +2599,8 @@ export class DatabaseStorage implements IStorage {
 
   async getInvitationByToken(token: string): Promise<Invitation | undefined> {
     try {
-      console.log(`Database getInvitationByToken: Looking up invitation with token: ${token}`);
-      
       if (!token || typeof token !== 'string' || token.trim() === '') {
-        console.log('Invalid token format provided:', token);
+        console.log('Invalid invitation token format provided');
         return undefined;
       }
       

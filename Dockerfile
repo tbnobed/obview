@@ -15,7 +15,7 @@ RUN npm ci
 
 COPY . .
 
-ARG VITE_DISABLE_REGISTRATION=false
+ARG VITE_DISABLE_REGISTRATION=true
 ENV VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION
 
 # Public-facing short-link domain baked into the client bundle so the

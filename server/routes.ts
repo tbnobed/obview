@@ -51,7 +51,7 @@ import {
   folders as foldersTable,
   type CommentMention,
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { sql, inArray, eq, and, isNull } from "drizzle-orm";
 import { VideoProcessor } from "./video-processor";
 import { createTusServer, createMultipartFinalizer, createMultipartCanceller, HttpError as TusHttpError, TUS_USER_HEADER } from "./tus";
@@ -594,6 +594,86 @@ async function hasFileEditAccess(req: Request, res: Response, next: NextFunction
     return res.status(403).json({ message: "Insufficient permissions" });
   } catch (error) {
     next(error);
+  }
+}
+
+type InvitationAcceptance =
+  | { ok: true; invitationId: number; projectId: number | null; role: string }
+  | { ok: false; status: number; message: string };
+
+async function acceptInvitationTransaction(params: {
+  token: string;
+  userId: number;
+  userEmail: string;
+}): Promise<InvitationAcceptance> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query(
+      `SELECT id, email, project_id, role, expires_at, is_accepted
+       FROM invitations
+       WHERE token = $1
+       FOR UPDATE`,
+      [params.token],
+    );
+    const invitation = result.rows[0];
+
+    if (!invitation) {
+      await client.query("ROLLBACK");
+      return { ok: false, status: 404, message: "Invitation not found or invalid link" };
+    }
+    if (invitation.is_accepted) {
+      await client.query("ROLLBACK");
+      return { ok: false, status: 409, message: "Invitation has already been accepted" };
+    }
+    if (new Date(invitation.expires_at) <= new Date()) {
+      await client.query("ROLLBACK");
+      return { ok: false, status: 410, message: "Invitation has expired" };
+    }
+    if (String(invitation.email).trim().toLowerCase() !== params.userEmail.trim().toLowerCase()) {
+      await client.query("ROLLBACK");
+      return { ok: false, status: 403, message: "This invitation is for a different email address" };
+    }
+
+    const projectId = invitation.project_id === null ? null : Number(invitation.project_id);
+    const role = String(invitation.role);
+    if (projectId === null) {
+      if (!["admin", "editor", "viewer", "user"].includes(role)) {
+        await client.query("ROLLBACK");
+        return { ok: false, status: 400, message: "Invitation has an invalid system role" };
+      }
+      await client.query("UPDATE users SET role = $1 WHERE id = $2", [role, params.userId]);
+    } else {
+      if (!["editor", "viewer"].includes(role)) {
+        await client.query("ROLLBACK");
+        return { ok: false, status: 400, message: "Invitation has an invalid project role" };
+      }
+      await client.query(
+        `INSERT INTO project_users (project_id, user_id, role)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (project_id, user_id)
+         DO UPDATE SET role = EXCLUDED.role`,
+        [projectId, params.userId, role],
+      );
+    }
+
+    await client.query(
+      "UPDATE invitations SET is_accepted = TRUE WHERE id = $1",
+      [invitation.id],
+    );
+    await client.query("COMMIT");
+
+    return {
+      ok: true,
+      invitationId: Number(invitation.id),
+      projectId,
+      role,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -1546,7 +1626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { fileURLToPath } = await import('url');
           const __filename = fileURLToPath(import.meta.url);
           const __dirname = path.dirname(__filename);
-          const logDir = path.join(__dirname, 'logs');
+          const logDir = process.env.EMAIL_LOG_DIR?.trim() || path.join(process.cwd(), 'logs');
           const logFilePath = path.join(logDir, 'sendgrid.log');
           
           if (fs.existsSync(logFilePath)) {
@@ -1613,10 +1693,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getAllUsers();
       
-      // Remove passwords from response
+      // Remove credential material from response.
       const safeUsers = users.map(user => {
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
+        const { password, apiToken, ...safeUser } = user;
+        return safeUser;
       });
       
       res.json(safeUsers);
@@ -1644,12 +1724,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Remove sensitive information
           let creatorInfo = null;
           if (creator) {
-            const { password, ...creatorWithoutPassword } = creator;
-            creatorInfo = creatorWithoutPassword;
+            const { password, apiToken, ...safeCreator } = creator;
+            creatorInfo = safeCreator;
           }
           
           return {
-            ...invitation,
+            id: invitation.id,
+            email: invitation.email,
+            projectId: invitation.projectId,
+            role: invitation.role,
+            expiresAt: invitation.expiresAt,
+            isAccepted: invitation.isAccepted,
+            emailSent: invitation.emailSent,
+            createdById: invitation.createdById,
+            createdAt: invitation.createdAt,
             creator: creatorInfo,
             project: project,
             isSystemInvite: invitation.projectId === null
@@ -1685,8 +1773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
+      const { password, apiToken, ...userWithoutPassword } = user;
       
       res.json(userWithoutPassword);
     } catch (error) {
@@ -1764,8 +1851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Remove password from response
-      const { password: pwd, ...userWithoutPassword } = updatedUser;
+      const { password: pwd, apiToken, ...userWithoutPassword } = updatedUser;
 
       res.json(userWithoutPassword);
     } catch (error) {
@@ -1860,8 +1946,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Return user without password
-      const { password, ...userWithoutPassword } = updatedUser;
+      const { password, apiToken, ...userWithoutPassword } = updatedUser;
       res.status(200).json(userWithoutPassword);
     } catch (error) {
       next(error);
@@ -1939,7 +2024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const { password, ...safeUser } = user;
+      const { password, apiToken, ...safeUser } = user;
       res.json(safeUser);
     } catch (error) {
       next(error);
@@ -1957,7 +2042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const { password, ...safeUser } = user;
+      const { password, apiToken, ...safeUser } = user;
       res.json(safeUser);
     } catch (error) {
       next(error);
@@ -2923,12 +3008,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (!user) return null;
           
-          // Remove password from response
-          const { password, ...userWithoutPassword } = user;
+          // Never expose password or API-token hashes in project-member responses.
+          const { password, apiToken, ...safeUser } = user;
           
           return {
             ...pu,
-            user: userWithoutPassword,
+            user: safeUser,
           };
         })
       );
@@ -2955,6 +3040,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Invalid data", 
           errors: validationResult.error.errors 
         });
+      }
+      if (!["editor", "viewer"].includes(validationResult.data.role)) {
+        return res.status(400).json({ message: "Project role must be editor or viewer" });
       }
       
       // Check if user exists
@@ -4807,18 +4895,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = req.params.token;
       const quality = req.params.quality;
       
-      console.log(`[PRODUCTION QUALITY] Request for token: ${token}, quality: ${quality}`);
+      console.log(`[PRODUCTION QUALITY] Request for shared quality: ${quality}`);
       
       const file = await storage.getFileByShareToken(token);
       if (!file) {
-        console.error(`[PRODUCTION QUALITY] File not found for token: ${token}`);
+        console.error("[PRODUCTION QUALITY] File not found for share token");
         return res.status(404).send('File not found');
       }
       
       console.log(`[PRODUCTION QUALITY] Found file: ${file.filename} (ID: ${file.id})`);
       
       if (file.isAvailable === false) {
-        console.log(`[PRODUCTION QUALITY] File marked as unavailable for token ${token}`);
+        console.log("[PRODUCTION QUALITY] Shared file marked as unavailable");
         return res.status(404).send('File not available');
       }
 
@@ -4894,18 +4982,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const token = req.params.token;
       
-      console.log(`[PRODUCTION SCRUB] Request for token: ${token}`);
+      console.log("[PRODUCTION SCRUB] Request for shared scrub version");
       
       const file = await storage.getFileByShareToken(token);
       if (!file) {
-        console.error(`[PRODUCTION SCRUB] File not found for token: ${token}`);
+        console.error("[PRODUCTION SCRUB] File not found for share token");
         return res.status(404).send('File not found');
       }
       
       console.log(`[PRODUCTION SCRUB] Found file: ${file.filename} (ID: ${file.id})`);
       
       if (file.isAvailable === false) {
-        console.log(`[PRODUCTION SCRUB] File marked as unavailable for token ${token}`);
+        console.log("[PRODUCTION SCRUB] Shared file marked as unavailable");
         return res.status(404).send('File not available');
       }
 
@@ -5151,14 +5239,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/public/share/:token", async (req, res, next) => {
     try {
       const token = req.params.token;
-      console.log(`[PRODUCTION SHARE] Request for token: ${token}`);
+      console.log("[PRODUCTION SHARE] Request for shared file");
       
       // Find file by share token
       const files = await storage.getAllFiles();
       const file = files.find((f: StorageFile) => f.shareToken === token);
       
       if (!file) {
-        console.error(`[PRODUCTION SHARE] File not found for token: ${token}`);
+        console.error("[PRODUCTION SHARE] File not found for share token");
         // Return 404 without JSON to avoid Content-Type issues
         return res.status(404).send('File not found');
       }
@@ -5168,7 +5256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if file is marked as unavailable
       if (file.isAvailable === false) {
-        console.log(`[PRODUCTION SHARE] File marked as unavailable for token ${token}`);
+        console.log("[PRODUCTION SHARE] Shared file marked as unavailable");
         return res.status(404).send('File not available');
       }
       
@@ -5360,14 +5448,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = req.params.token;
       const fileId = parseInt(req.params.fileId);
       
-      console.log(`[SHARE FILE] Request for file ${fileId} via token: ${token}`);
+      console.log(`[SHARE FILE] Request for shared file ${fileId}`);
       
       // Find the main shared file by token to validate access
       const files = await storage.getAllFiles();
       const sharedFile = files.find((f: StorageFile) => f.shareToken === token);
       
       if (!sharedFile) {
-        console.error(`[SHARE FILE] Invalid share token: ${token}`);
+        console.error("[SHARE FILE] Invalid share token");
         return res.status(404).json({ message: "Share link not found" });
       }
       
@@ -7900,45 +7988,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new invitation
   app.post("/api/invite", isAuthenticated, async (req, res, next) => {
     try {
-      console.log("POST /api/invite - Starting invitation creation process");
-      console.log("Request body:", JSON.stringify(req.body));
-      
-      const { email, projectId, role = "viewer", appUrl } = req.body;
-      
-      if (!email) {
-        console.error("POST /api/invite - Email is required but was not provided");
-        return res.status(400).json({ message: "Email is required" });
+      const parsed = z.object({
+        email: z.string().trim().email().max(254),
+        projectId: z.coerce.number().int().positive().nullable().optional(),
+        role: z.string().trim().optional().default("viewer"),
+      }).safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid invitation details" });
       }
-      
-      if (!req.user) {
-        console.error("POST /api/invite - No authenticated user found");
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      // Log the client domain if provided
-      if (appUrl) {
-        console.log(`Client URL provided for invitation: ${appUrl}`);
-      } else {
-        console.warn("No client URL provided for invitation - using default domain");
-      }
+      const { email, projectId, role } = parsed.data;
+      const actor = req.user!;
+      const targetProjectId = projectId ?? null;
       
       // Admin invitation (system-wide) versus project-specific invitation
-      const isAdminInvite = !projectId;
-      console.log(`Invitation type: ${isAdminInvite ? 'System-wide (Admin)' : 'Project-specific'}`);
-      console.log(`Inviting email: ${email} with role: ${role}`);
+      const isAdminInvite = targetProjectId === null;
+      const allowedRoles = isAdminInvite
+        ? new Set(["admin", "editor", "viewer", "user"])
+        : new Set(["editor", "viewer"]);
+      if (!allowedRoles.has(role)) {
+        return res.status(400).json({ message: "Invalid invitation role" });
+      }
       
       // For project-specific invitations, perform additional checks
-      if (!isAdminInvite) {
-        console.log(`Checking project ${projectId} exists`);
-        const project = await storage.getProject(parseInt(projectId));
+      if (targetProjectId !== null) {
+        console.log(`Checking project ${targetProjectId} exists`);
+        const project = await storage.getProject(targetProjectId);
         if (!project) {
-          console.error(`Project with ID ${projectId} not found`);
+          console.error(`Project with ID ${targetProjectId} not found`);
           return res.status(404).json({ message: "Project not found" });
         }
         
         // Check if user has edit access to the project (honors global-folder editor grant).
-        if (!(await userHasProjectEditAccess(req.user, parseInt(projectId)))) {
-          console.error(`User ${req.user.id} does not have permission to invite users to project ${projectId}`);
+        if (!(await userHasProjectEditAccess(actor, targetProjectId))) {
+          console.error(`User ${actor.id} does not have permission to invite users to project ${targetProjectId}`);
           return res.status(403).json({ message: "You don't have permission to invite users to this project" });
         }
         
@@ -7949,16 +8031,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If user exists and is already a member of the project, return an error
         if (existingUser) {
           console.log(`User with email ${email} exists (ID: ${existingUser.id}), checking if already in project`);
-          const existingMember = await storage.getProjectUser(parseInt(projectId), existingUser.id);
+          const existingMember = await storage.getProjectUser(targetProjectId, existingUser.id);
           if (existingMember) {
-            console.error(`User ${existingUser.id} is already a member of project ${projectId}`);
+            console.error(`User ${existingUser.id} is already a member of project ${targetProjectId}`);
             return res.status(400).json({ message: "User is already a member of this project" });
           }
         }
         
         // Check if there's already a pending invitation for this email and project
-        console.log(`Checking for existing invitations for email ${email} in project ${projectId}`);
-        const existingInvitations = await storage.getInvitationsByProject(parseInt(projectId));
+        console.log(`Checking for existing invitations for email ${email} in project ${targetProjectId}`);
+        const existingInvitations = await storage.getInvitationsByProject(targetProjectId);
         const alreadyInvited = existingInvitations.some(inv => inv.email === email && !inv.isAccepted);
         
         if (alreadyInvited) {
@@ -7967,9 +8049,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         // For admin invitations, only admins can create them
-        console.log(`System invitation - checking if user ${req.user.id} is an admin`);
-        if (req.user.role !== "admin") {
-          console.error(`User ${req.user.id} with role ${req.user.role} attempted to create a system invitation`);
+        console.log(`System invitation - checking if user ${actor.id} is an admin`);
+        if (actor.role !== "admin") {
+          console.error(`User ${actor.id} with role ${actor.role} attempted to create a system invitation`);
           return res.status(403).json({ message: "Only administrators can send system-wide invitations" });
         }
         
@@ -8001,14 +8083,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7); // Invitation expires in 7 days
       
-      console.log(`Creating invitation for ${email} with token ${token.substring(0, 8)}...`);
+      console.log(`Creating invitation for ${email}`);
       
       // Create the invitation (initially with emailSent as false)
       const invitation = await storage.createInvitation({
         email,
         role,
-        createdById: req.user.id,
-        projectId: projectId ? parseInt(projectId) : null,
+        createdById: actor.id,
+        projectId: targetProjectId,
         token,
         expiresAt,
         isAccepted: false,
@@ -8020,12 +8102,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If SendGrid API key is available, send an email
       let emailSent = false;
       console.log(`Checking SendGrid API key availability for invitation to ${email}`);
-      console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
       // For project-specific invitations, get the project
       let projectObj;
-      if (!isAdminInvite) {
-        projectObj = await storage.getProject(parseInt(projectId));
+      if (targetProjectId !== null) {
+        projectObj = await storage.getProject(targetProjectId);
       }
       
       if (process.env.SENDGRID_API_KEY) {
@@ -8035,7 +8116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { sendInvitationEmail, sendSystemInvitationEmail } = await import('./utils/sendgrid');
           
           // Get the name of the user who created the invitation
-          const inviter = await storage.getUser(req.user.id);
+          const inviter = await storage.getUser(actor.id);
           
           if (inviter) {
             if (isAdminInvite) {
@@ -8048,7 +8129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 inviter.name,
                 role,
                 token,
-                appUrl // Pass the client app URL (undefined if not provided)
+              undefined
               );
               
               if (emailSent) {
@@ -8072,7 +8153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 projectObj.name,
                 role,
                 token,
-                appUrl // Pass the client app URL (undefined if not provided)
+                undefined
               );
               
               if (emailSent) {
@@ -8106,7 +8187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Log system-wide invitation
         console.log(`Logging system-wide invitation activity`);
         await storage.logActivity({
-          userId: req.user.id,
+          userId: actor.id,
           action: "invited_user_to_system",
           entityType: "system",
           entityId: invitation.id, // Use invitation ID as the entity ID
@@ -8116,23 +8197,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Log project-specific invitation
         console.log(`Logging project-specific invitation activity`);
         await storage.logActivity({
-          userId: req.user.id,
+          userId: actor.id,
           action: "invited_user",
           entityType: "project",
-          entityId: parseInt(projectId),
+          entityId: targetProjectId!,
           metadata: { inviteeEmail: email, role, emailSent }
         });
       }
       
-      // Debug the final response data
       const responseData = { 
         invitationId: invitation.id,
-        token: invitation.token,
         email: invitation.email,
         emailSent // Include the email sent status that the client needs
       };
-      
-      console.log("DEBUGGING INVITATION RESPONSE:", JSON.stringify(responseData));
       
       // Return the invitation details in a client-friendly format
       console.log(`Sending 201 response with invitation data`);
@@ -8151,7 +8228,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/invite/:token", async (req, res, next) => {
     try {
       const { token } = req.params;
-      console.log(`Retrieving invitation details for token: ${token}`);
       
       // Find the invitation
       const invitation = await storage.getInvitationByToken(token);
@@ -8159,7 +8235,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Invitation lookup result:`, invitation ? `Found invitation ID: ${invitation.id}` : 'No invitation found');
       
       if (!invitation) {
-        console.log(`Invitation not found for token: ${token}`);
         return res.status(404).json({ message: "Invitation not found or invalid link" });
       }
       
@@ -8186,17 +8261,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Project details: ${project ? `Found "${project.name}"` : 'Project not found'}`);
       console.log(`Creator details: ${creator ? `Found "${creator.name}"` : 'Creator not found'}`);
       
-      // Remove sensitive information
-      let creatorInfo = null;
-      if (creator) {
-        const { password, ...creatorWithoutPassword } = creator;
-        creatorInfo = creatorWithoutPassword;
-      }
-      
       const response = {
-        ...invitation,
-        project,
-        creator: creatorInfo
+        email: invitation.email,
+        role: invitation.role,
+        expiresAt: invitation.expiresAt,
+        project: project ? { id: project.id, name: project.name } : null,
+        creator: creator ? { id: creator.id, name: creator.name } : null,
       };
       
       console.log(`Sending invitation details response for ${invitation.email}`);
@@ -8215,21 +8285,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { token } = req.params;
-      console.log(`VALIDATE TOKEN DEBUG: Testing token validation for: ${token}`);
+      console.log("VALIDATE TOKEN DEBUG: Testing invitation token validation");
       
       // Find the invitation
       const invitation = await storage.getInvitationByToken(token);
       
       if (!invitation) {
-        console.log(`VALIDATE TOKEN DEBUG: No invitation found for token: ${token}`);
+        console.log("VALIDATE TOKEN DEBUG: No invitation found");
         return res.status(404).json({ 
           status: "error", 
-          message: "Invitation not found", 
-          token 
+          message: "Invitation not found",
         });
       }
-      
-      console.log(`VALIDATE TOKEN DEBUG: Found invitation details:`, invitation);
       
       // Get project and creator details
       const project = await storage.getProject(invitation.projectId);
@@ -8238,7 +8305,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = {
         status: "success",
         invitation: {
-          ...invitation,
+          id: invitation.id,
+          email: invitation.email,
+          projectId: invitation.projectId,
+          role: invitation.role,
+          expiresAt: invitation.expiresAt,
+          isAccepted: invitation.isAccepted,
           isExpired: new Date() > invitation.expiresAt
         },
         project: project ? {
@@ -8311,116 +8383,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Accept an invitation
   app.post("/api/invite/:token/accept", isAuthenticated, async (req, res, next) => {
     try {
-      const { token } = req.params;
-      console.log(`Processing invitation acceptance for token: ${token} by user: ${req.user.email} (ID: ${req.user.id})`);
-      
-      // Find the invitation
-      const invitation = await storage.getInvitationByToken(token);
-      
-      if (!invitation) {
-        console.log(`Accept invitation error: Invitation with token "${token}" not found`);
-        return res.status(404).json({ message: "Invitation not found or invalid link" });
+      const accepted = await acceptInvitationTransaction({
+        token: req.params.token,
+        userId: req.user.id,
+        userEmail: req.user.email,
+      });
+      if (!accepted.ok) {
+        return res.status(accepted.status).json({ message: accepted.message });
       }
-      
-      console.log(`Found invitation ${invitation.id} for project ${invitation.projectId}, email: ${invitation.email}`);
-      
-      // Check if the invitation has expired
-      const now = new Date();
-      const isExpired = now > invitation.expiresAt;
-      console.log(`Invitation expiry check: now=${now.toISOString()}, expiresAt=${invitation.expiresAt}, isExpired=${isExpired}`);
-      
-      if (isExpired) {
-        console.log(`Accept invitation error: Invitation has expired (expired at ${invitation.expiresAt})`);
-        return res.status(400).json({ message: "Invitation has expired" });
-      }
-      
-      // Check if the invitation has already been accepted
-      if (invitation.isAccepted) {
-        console.log(`Accept invitation error: Invitation has already been accepted`);
-        return res.status(400).json({ message: "Invitation has already been accepted" });
-      }
-      
-      // Check if the current user's email matches the invitation email
-      if (req.user.email !== invitation.email) {
-        console.log(`Accept invitation error: Email mismatch. Invitation for ${invitation.email}, but user is ${req.user.email}`);
-        return res.status(403).json({ message: "This invitation is for a different email address" });
-      }
-      
-      console.log(`Invitation validation passed, adding user ${req.user.id} to project ${invitation.projectId} with role ${invitation.role}`);
-      
+
       try {
-        // Check if this is a system-wide invitation (null projectId) or project-specific
-        const isSystemInvite = invitation.projectId === null;
-        
-        if (isSystemInvite) {
-          // This is a system-wide invitation for a role like "admin" or "user"
-          console.log(`Processing system invitation for user ${req.user.id} with role ${invitation.role}`);
-          
-          // Update the user's role in the system
-          await storage.updateUser(req.user.id, { role: invitation.role });
-          console.log(`User role updated to ${invitation.role}`);
-          
-          // Mark the invitation as accepted
-          const updatedInvitation = await storage.updateInvitation(invitation.id, { isAccepted: true });
-          console.log(`System invitation marked as accepted: ${JSON.stringify(updatedInvitation)}`);
-          
-          // Log activity
-          await storage.logActivity({
-            userId: req.user.id,
-            action: "accepted_system_role",
-            entityType: "system",
-            entityId: invitation.id, // Use invitation ID as the entity ID
-            metadata: { 
-              invitationId: invitation.id,
-              role: invitation.role
-            }
-          });
-          
-          res.status(200).json({ 
-            message: `Successfully accepted system role: ${invitation.role}`,
-            systemRole: invitation.role
-          });
-        } else {
-          // This is a project-specific invitation
-          // Add the user to the project
-          const projectUser = await storage.addUserToProject({
-            projectId: invitation.projectId,
-            userId: req.user.id,
-            role: invitation.role
-          });
-          
-          console.log(`User successfully added to project: ${JSON.stringify(projectUser)}`);
-          
-          // Mark the invitation as accepted
-          const updatedInvitation = await storage.updateInvitation(invitation.id, { isAccepted: true });
-          console.log(`Project invitation marked as accepted: ${JSON.stringify(updatedInvitation)}`);
-          
-          // Log activity
-          await storage.logActivity({
-            userId: req.user.id,
-            action: "joined_project",
-            entityType: "project",
-            entityId: invitation.projectId,
-            metadata: { invitationId: invitation.id }
-          });
-          
-          // Get project details to include in response
-          const project = await storage.getProject(invitation.projectId);
-          
-          res.status(200).json({ 
-            message: "Successfully joined project",
-            project: project || { name: "Unknown Project" }
-          });
-        }
-      } catch (processingError) {
-        console.error(`Error processing invitation acceptance:`, processingError);
-        return res.status(500).json({ 
-          message: "Error adding you to the project. Please try again or contact support.",
-          error: processingError.message
+        await storage.logActivity({
+          userId: req.user.id,
+          action: accepted.projectId === null ? "accepted_system_role" : "joined_project",
+          entityType: accepted.projectId === null ? "system" : "project",
+          entityId: accepted.projectId ?? accepted.invitationId,
+          metadata: {
+            invitationId: accepted.invitationId,
+            ...(accepted.projectId === null ? { role: accepted.role } : {}),
+          },
+        });
+      } catch (activityError) {
+        console.error("Invitation was accepted, but activity logging failed:", activityError);
+      }
+
+      if (accepted.projectId === null) {
+        return res.status(200).json({
+          message: `Successfully accepted system role: ${accepted.role}`,
+          systemRole: accepted.role,
         });
       }
+
+      const project = await storage.getProject(accepted.projectId);
+      return res.status(200).json({
+        message: "Successfully joined project",
+        project: project || { name: "Unknown Project" },
+      });
     } catch (error) {
-      console.error(`Unexpected error in invitation acceptance:`, error);
+      console.error("Unexpected error in invitation acceptance:", error);
       next(error);
     }
   });
@@ -8489,8 +8489,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("POST /api/invite/:id/resend - Starting invitation resend process");
       console.log("Request params:", req.params);
-      console.log("Request body:", JSON.stringify(req.body));
-      
       if (!req.user) {
         console.error("POST /api/invite/:id/resend - No authenticated user found");
         return res.status(401).json({ message: "Authentication required" });
@@ -8498,15 +8496,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const invitationId = parseInt(req.params.id);
       console.log(`Processing resend for invitation ID: ${invitationId}`);
-      
-      const { appUrl } = req.body; // Get client app URL from request body
-      
-      // Log the client app URL if provided
-      if (appUrl) {
-        console.log(`Client URL provided for resending invitation: ${appUrl}`);
-      } else {
-        console.warn("No client URL provided for resending invitation - using default domain");
-      }
       
       // Get the invitation
       console.log(`Retrieving invitation with ID: ${invitationId}`);
@@ -8516,8 +8505,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`Invitation with ID ${invitationId} not found`);
         return res.status(404).json({ message: "Invitation not found" });
       }
-      
-      console.log(`Found invitation: ${JSON.stringify(invitation)}`);
       
       // Check if the user has permission to resend the invitation
       if (req.user.role !== "admin") {
@@ -8547,7 +8534,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If SendGrid API key is available, send the email
       let emailSent = false;
       console.log(`Attempting to resend invitation email to ${invitation.email}`);
-      console.log(`API Key: SENDGRID_API_KEY ${process.env.SENDGRID_API_KEY ? 'is set' : 'is NOT set'}`);
       
       if (process.env.SENDGRID_API_KEY) {
         console.log(`SendGrid API key is available, preparing to resend invitation email`);
@@ -8566,7 +8552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 inviter.name,
                 invitation.role,
                 invitation.token,
-                appUrl // Pass the client app URL (undefined if not provided)
+                undefined
               );
               
               if (emailSent) {
@@ -8598,7 +8584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   project.name,
                   invitation.role,
                   invitation.token,
-                  appUrl // Pass the client app URL (undefined if not provided)
+                  undefined
                 );
                 
                 if (emailSent) {
@@ -8655,13 +8641,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const responseData = { 
         success: true, 
         emailSent, 
-        invitation: {
-          ...invitation,
-          emailSent
-        }
+        invitationId: invitation.id,
       };
-      
-      console.log(`Resend invitation response data:`, JSON.stringify(responseData));
       
       // Return the success response
       console.log(`Sending 200 response with resend data`);
@@ -8686,31 +8667,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all project users for this project using the storage interface
       const projectUsers = await storage.getProjectUsers(projectId);
       
-      console.log("Project users:", projectUsers);
-      
       // Get user details for each project user
       const teamMembers = await Promise.all(
         projectUsers.map(async (projectUser) => {
           const user = await storage.getUser(projectUser.userId);
-          
-          console.log("Project user ID:", projectUser.userId, "User:", user);
-          
           if (!user) return null;
           
-          // Remove password from user object
-          const { password, ...userWithoutPassword } = user;
+          // Never expose credential material through member-list responses.
+          const { password, apiToken, ...safeUser } = user;
           
           return {
             ...projectUser,
-            user: userWithoutPassword,
+            user: safeUser,
           };
         })
       );
       
       // Filter out any null values
       const validTeamMembers = teamMembers.filter(member => member !== null);
-      
-      console.log("Valid team members:", validTeamMembers);
       
       res.json(validTeamMembers);
     } catch (error) {
@@ -8731,15 +8705,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const invitationsWithCreators = await Promise.all(
         pendingInvitations.map(async (invitation) => {
           const creator = await storage.getUser(invitation.createdById);
-          
-          if (!creator) return invitation;
-          
-          // Remove password from creator object
-          const { password, ...creatorWithoutPassword } = creator;
-          
+
+          let safeCreator = null;
+          if (creator) {
+            const { password, apiToken, ...creatorWithoutCredentials } = creator;
+            safeCreator = creatorWithoutCredentials;
+          }
+
           return {
-            ...invitation,
-            creator: creatorWithoutPassword,
+            id: invitation.id,
+            email: invitation.email,
+            projectId: invitation.projectId,
+            role: invitation.role,
+            expiresAt: invitation.expiresAt,
+            isAccepted: invitation.isAccepted,
+            emailSent: invitation.emailSent,
+            createdById: invitation.createdById,
+            createdAt: invitation.createdAt,
+            creator: safeCreator,
           };
         })
       );

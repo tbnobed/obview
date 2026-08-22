@@ -9,6 +9,7 @@ import { User as SelectUser, InsertUser } from "@shared/schema";
 import crypto from "crypto";
 import { pool, db } from "./db";
 import connectPg from "connect-pg-simple";
+import { z } from "zod";
 
 declare global {
   namespace Express {
@@ -21,6 +22,14 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 
+const registrationSchema = z.object({
+  username: z.string().trim().min(3).max(64).regex(/^[A-Za-z0-9_.-]+$/),
+  password: z.string().min(8).max(256),
+  email: z.string().trim().email().max(254),
+  name: z.string().trim().min(1).max(120),
+  invitationToken: z.string().trim().min(32).max(256).optional(),
+});
+
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
@@ -32,6 +41,11 @@ export async function comparePasswords(supplied: string, stored: string) {
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
+function toSafeUser(user: SelectUser) {
+  const { password, apiToken, ...safeUser } = user;
+  return safeUser;
 }
 
 export function generateToken(length = 32): string {
@@ -72,8 +86,8 @@ export async function apiAuth(req: any, res: any, next: any) {
           (await storage.getUserByApiSessionToken(tokenHash)) ||
           (await storage.getUserByApiTokenHash(tokenHash));
         if (user && !user.deactivatedAt) {
-          const { password, ...userWithoutPassword } = user;
-          req.user = userWithoutPassword as SelectUser;
+          const safeUser = toSafeUser(user);
+          req.user = safeUser as SelectUser;
           return next();
         }
       }
@@ -110,9 +124,13 @@ export function setupAuth(app: Express) {
   // SESSION_COOKIE_DOMAIN unset in dev / replit preview so the cookie
   // stays host-only.
   const cookieDomain = process.env.SESSION_COOKIE_DOMAIN?.trim() || undefined;
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret || sessionSecret.length < 32) {
+    throw new Error("SESSION_SECRET must be configured with at least 32 characters");
+  }
 
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'obviu-secret',
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     ...(sessionStore && { store: sessionStore }),
@@ -162,8 +180,7 @@ export function setupAuth(app: Express) {
       // mid-session is treated as logged out so the block takes effect on
       // their next request, not just at next login.
       if (user && !user.deactivatedAt) {
-        const { password, ...userWithoutPassword } = user;
-        done(null, userWithoutPassword as any);
+        done(null, toSafeUser(user) as any);
       } else {
         done(null, null);
       }
@@ -172,13 +189,52 @@ export function setupAuth(app: Express) {
     }
   });
 
+  const registrationAttempts = new Map<string, { count: number; resetAt: number }>();
+  const allowRegistrationAttempt = (ip: string): boolean => {
+    const now = Date.now();
+    if (registrationAttempts.size > 1_000) {
+      registrationAttempts.forEach((attempt, key) => {
+        if (attempt.resetAt <= now) registrationAttempts.delete(key);
+      });
+    }
+    const current = registrationAttempts.get(ip);
+    if (!current || current.resetAt <= now) {
+      registrationAttempts.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 });
+      return true;
+    }
+    current.count += 1;
+    return current.count <= 10;
+  };
+
   app.post("/api/register", async (req, res, next) => {
     try {
-      // Validate the input
-      const { username, password, email, name, role } = req.body;
-      
-      if (!username || !password || !email || !name) {
-        return res.status(400).json({ message: "Missing required fields" });
+      const requestIp = (req.ip || req.socket.remoteAddress || "unknown").slice(0, 128);
+      if (!allowRegistrationAttempt(requestIp)) {
+        return res.status(429).json({ message: "Too many registration attempts. Try again later." });
+      }
+
+      const parsed = registrationSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid registration details" });
+      }
+      const { username, password, email, name, invitationToken } = parsed.data;
+
+      // Registration is closed by default. A valid invitation is always
+      // accepted; intentionally opening public signup requires an explicit
+      // server-side opt-in rather than a client-only build flag.
+      let invitation = null;
+      if (invitationToken) {
+        invitation = await storage.getInvitationByToken(invitationToken);
+        const invalidInvitation =
+          !invitation ||
+          invitation.isAccepted ||
+          invitation.expiresAt <= new Date() ||
+          invitation.email.trim().toLowerCase() !== email.toLowerCase();
+        if (invalidInvitation) {
+          return res.status(403).json({ message: "Invalid or expired invitation" });
+        }
+      } else if (process.env.ALLOW_PUBLIC_REGISTRATION !== "true") {
+        return res.status(403).json({ message: "Registration is invitation-only" });
       }
 
       // Check if username or email already exists
@@ -200,13 +256,13 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
         email,
         name,
-        role: role || "viewer", // Default role
+        // Never accept a role from an unauthenticated request. Invitation
+        // roles are applied only by the authenticated invitation-accept route.
+        role: "viewer",
         themePreference: "system", // Default theme preference
       });
 
-      // Remove sensitive data before returning
-      const userResponse = { ...user };
-      delete userResponse.password;
+      const userResponse = toSafeUser(user);
 
       // Log activity
       await storage.logActivity({
@@ -214,7 +270,13 @@ export function setupAuth(app: Express) {
         entityType: "user",
         entityId: user.id,
         userId: user.id,
-        metadata: { username: user.username },
+        metadata: {
+          username: user.username,
+          source: invitation ? "invitation" : "public_registration",
+          invitationId: invitation?.id ?? null,
+          ipAddress: requestIp,
+          userAgent: String(req.get("user-agent") || "").slice(0, 512),
+        },
       });
 
       // Log the user in
@@ -227,8 +289,14 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Explicitly retire the legacy unauthenticated acceptance endpoint. Keeping
+  // a JSON rejection prevents the Vite SPA fallback from returning HTTP 200.
+  app.all("/api/accept-invitation/:token", (_req, res) => {
+    res.status(410).json({ message: "This invitation endpoint is no longer available" });
+  });
+
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: unknown, user: SelectUser | false, info?: { message?: string }) => {
       if (err) return next(err);
       
       if (!user) {
@@ -258,9 +326,7 @@ export function setupAuth(app: Express) {
           req.session.save((err) => {
             if (err) return next(err);
             
-            // Remove sensitive data before returning
-            const userResponse = { ...user };
-            delete userResponse.password;
+            const userResponse = toSafeUser(user);
             
             // Ensure themePreference field exists
             if (userResponse.themePreference === undefined) {
@@ -284,9 +350,7 @@ export function setupAuth(app: Express) {
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
-    // Remove sensitive data before returning
-    const userResponse = { ...req.user };
-    delete userResponse.password;
+    const userResponse = toSafeUser(req.user);
     
     // Ensure themePreference field exists
     if (userResponse.themePreference === undefined) {
@@ -294,84 +358,6 @@ export function setupAuth(app: Express) {
     }
     
     res.json(userResponse);
-  });
-
-  app.post("/api/invite", async (req, res, next) => {
-    try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-      
-      const { email, projectId, role } = req.body;
-      
-      if (!email) {
-        return res.status(400).json({ message: "Email is required" });
-      }
-      
-      // Check if user with email already exists
-      const existingUser = await storage.getUserByEmail(email);
-      
-      // Generate a token
-      const token = generateToken();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 1 week expiration
-      
-      // Create invitation
-      const invitation = await storage.createInvitation({
-        email,
-        projectId: projectId || null,
-        role: role || "viewer",
-        token,
-        expiresAt,
-        isAccepted: false,
-        createdById: req.user.id,
-      });
-      
-      // In a real app, we would send an email here
-      // For now, just return the invitation
-      res.status(201).json({
-        invitationId: invitation.id,
-        token: invitation.token,
-        email: invitation.email,
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.get("/api/accept-invitation/:token", async (req, res, next) => {
-    try {
-      const { token } = req.params;
-      
-      if (!token) {
-        return res.status(400).json({ message: "Token is required" });
-      }
-      
-      // Find invitation by token
-      const invitation = await storage.getInvitationByToken(token);
-      
-      if (!invitation) {
-        return res.status(404).json({ message: "Invitation not found" });
-      }
-      
-      if (invitation.isAccepted) {
-        return res.status(400).json({ message: "Invitation already accepted" });
-      }
-      
-      if (invitation.expiresAt < new Date()) {
-        return res.status(400).json({ message: "Invitation expired" });
-      }
-      
-      // Mark invitation as accepted
-      await storage.updateInvitation(invitation.id, { isAccepted: true });
-      
-      // Return the invitation data to be used for account creation/project access
-      res.status(200).json({
-        email: invitation.email,
-        projectId: invitation.projectId,
-        role: invitation.role,
-      });
-    } catch (error) {
-      next(error);
-    }
   });
 
   app.post("/api/reset-password-request", async (req, res, next) => {

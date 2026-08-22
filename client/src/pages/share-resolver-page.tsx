@@ -11,9 +11,16 @@ type Resolved = "multi" | "legacy" | "notfound" | "loading" | "redirecting";
 // (t.obviu.io) onto the main app, since the short-link host's nginx may
 // not proxy /api/user or the authenticated app routes. Empty string ->
 // stay on current host (dev / replit / single-host setups).
-const APP_BASE = (import.meta.env.VITE_APP_BASE_URL as string | undefined)
-  ?.trim()
-  .replace(/\/+$/, "") ?? "";
+const APP_BASE = (() => {
+  const configured = (import.meta.env.VITE_APP_BASE_URL as string | undefined)?.trim();
+  if (!configured) return "";
+  try {
+    const parsed = new URL(configured);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.origin : "";
+  } catch {
+    return "";
+  }
+})();
 
 function buildAuthedTarget(info: {
   scopeType: "project" | "folder" | "file";

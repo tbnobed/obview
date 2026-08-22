@@ -9,13 +9,17 @@ import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
+type RegistrationData = InsertUser & {
+  invitationToken?: string;
+};
+
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  registerMutation: UseMutationResult<SelectUser, Error, RegistrationData>;
   resetPasswordRequestMutation: UseMutationResult<void, Error, { email: string }>;
 };
 
@@ -79,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (credentials: InsertUser) => {
+    mutationFn: async (credentials: RegistrationData) => {
       const res = await apiRequest("POST", "/api/register", credentials);
       // The API may already return JSON, check to avoid double parsing
       return typeof res === 'object' ? res : await res.json();

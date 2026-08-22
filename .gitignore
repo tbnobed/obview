@@ -12,3 +12,7 @@ ai-worker/venv/
 spark/venv/
 __pycache__/
 *.gguf
+
+# Runtime logs can contain email addresses, request details, and bearer links.
+server/logs/*.log
+logs/*.log

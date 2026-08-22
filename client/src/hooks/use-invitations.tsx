@@ -8,7 +8,6 @@ interface Invitation {
   email: string;
   role: string;
   projectId: number | null;
-  token: string;
   expiresAt: string;
   isAccepted: boolean;
   emailSent: boolean;

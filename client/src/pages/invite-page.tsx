@@ -237,7 +237,11 @@ export default function InvitePage() {
               <Link href={`/auth?returnTo=/invite/${token}`}>Sign in to Accept</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href={`/auth?email=${encodeURIComponent(invitationEmail)}&role=${invitationRole}&returnTo=/invite/${token}`}>Sign up</Link>
+              <Link
+                href={`/auth?token=${encodeURIComponent(token || "")}&signup=true&email=${encodeURIComponent(invitationEmail)}&returnTo=${encodeURIComponent(`/invite/${token || ""}`)}`}
+              >
+                Sign up
+              </Link>
             </Button>
           </CardFooter>
         </Card>

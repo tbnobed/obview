@@ -1,15 +1,10 @@
 import { MailService } from '@sendgrid/mail';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { config } from './config';
 
-// In ES modules, __dirname is not defined, so we need to create it
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 // Setup logging
-const logDir = path.join(__dirname, '../logs');
+const logDir = process.env.EMAIL_LOG_DIR?.trim() || path.join(process.cwd(), 'logs');
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
@@ -490,14 +485,11 @@ export async function sendInvitationEmail(
 ): Promise<boolean> {
   try {
     logToFile(`Preparing invitation email to ${to} for project "${projectName}" from "${inviterName}" with role "${role}"`);
-    logToFile(`Token: ${token}`);
     
-    // Use the client-provided URL if available, otherwise fall back to config
-    const baseUrl = appUrl || config.appDomain;
+    const baseUrl = config.appDomain;
     logToFile(`Using base URL for invitation: ${baseUrl}`);
     
     const signupUrl = `${baseUrl}/auth?signup=true&token=${token}`;
-    logToFile(`Generated signup URL: ${signupUrl}`);
     
     const subject = `${inviterName} invited you to collaborate on ${projectName}`;
     
@@ -580,14 +572,11 @@ export async function sendPasswordResetEmail(
 ): Promise<boolean> {
   try {
     logToFile(`Preparing password reset email to ${to}`);
-    logToFile(`Token: ${token}, UserId: ${userId}`);
     
-    // Use the client-provided URL if available, otherwise fall back to config
-    const baseUrl = appUrl || config.appDomain;
+    const baseUrl = config.appDomain;
     logToFile(`Using base URL for password reset: ${baseUrl}`);
     
     const resetUrl = `${baseUrl}/reset-password/${token}/${userId}`;
-    logToFile(`Generated reset URL: ${resetUrl}`);
     
     // Keep subject simple to avoid spam filters
     const subject = `Reset your Obviu.io password`;
@@ -662,14 +651,11 @@ export async function sendSystemInvitationEmail(
 ): Promise<boolean> {
   try {
     logToFile(`Preparing system invitation email to ${to} from "${inviterName}" with role "${role}"`);
-    logToFile(`Token: ${token}`);
     
-    // Use the client-provided URL if available, otherwise fall back to config
-    const baseUrl = appUrl || config.appDomain;
+    const baseUrl = config.appDomain;
     logToFile(`Using base URL for invitation: ${baseUrl}`);
     
     const signupUrl = `${baseUrl}/auth?signup=true&token=${token}`;
-    logToFile(`Generated signup URL: ${signupUrl}`);
     
     const subject = `${inviterName} invited you to join Obviu.io`;
     

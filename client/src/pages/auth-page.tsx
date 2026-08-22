@@ -22,7 +22,7 @@ const loginSchema = z.object({
 });
 
 const registerSchema = insertUserSchema.extend({
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
@@ -47,7 +47,9 @@ export default function AuthPage() {
   const [_, setLocation] = useLocation();
   
   // Check if registration is disabled via environment variable
-  const isRegistrationDisabled = import.meta.env.VITE_DISABLE_REGISTRATION === 'true';
+  // Closed by default. Opening the UI requires an explicit build-time opt-in;
+  // the server independently enforces invitation-only registration.
+  const isRegistrationDisabled = import.meta.env.VITE_DISABLE_REGISTRATION !== 'false';
   
   // Extract invitation information from URL if coming from invitation page
   const searchParams = new URLSearchParams(window.location.search);
@@ -163,8 +165,11 @@ export default function AuthPage() {
   };
 
   const onRegisterSubmit = async (data: RegisterFormValues) => {
-    const { confirmPassword, ...registerData } = data;
-    registerMutation.mutate(registerData, {
+    const { confirmPassword, role: _ignoredRole, ...registerData } = data;
+    registerMutation.mutate({
+      ...registerData,
+      invitationToken: inviteToken || undefined,
+    }, {
       onSuccess: async () => {
         // If there's an invite token and no invitation error, accept the invitation after successful registration
         if (inviteToken && !invitationError) {

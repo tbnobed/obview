@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - VITE_DISABLE_REGISTRATION=${VITE_DISABLE_REGISTRATION:-false}
+        - VITE_DISABLE_REGISTRATION=${VITE_DISABLE_REGISTRATION:-true}
         # Short-link domain baked into the client bundle at build time.
         # e.g. SHORT_LINK_BASE_URL=https://t.obviu.io in your .env
         - VITE_SHORT_LINK_BASE_URL=${SHORT_LINK_BASE_URL:-}
@@ -35,6 +35,9 @@ services:
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/obview
       - SESSION_SECRET=${SESSION_SECRET}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      # Public self-registration is blocked server-side by default. Leave
+      # false for invitation-only account creation.
+      - ALLOW_PUBLIC_REGISTRATION=${ALLOW_PUBLIC_REGISTRATION:-false}
       # Canonical authenticated app host used for links in server-generated
       # emails. Reuse the same APP_BASE_URL that is baked into the client.
       - APP_URL=${APP_BASE_URL:-}

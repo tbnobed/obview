@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, bigint, boolean, timestamp, json, jsonb, uuid, primaryKey, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, bigint, boolean, timestamp, json, jsonb, uuid, primaryKey, doublePrecision, uniqueIndex, check } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
 // USER SCHEMA
 export const users = pgTable("users", {
@@ -254,7 +255,10 @@ export const projectUsers = pgTable("project_users", {
   userId: integer("user_id").notNull().references(() => users.id),
   role: text("role").notNull().default("viewer"), // "editor", "viewer"
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  projectUserUnique: uniqueIndex("project_users_project_user_unique").on(table.projectId, table.userId),
+  roleCheck: check("project_users_role_check", sql`${table.role} IN ('editor', 'viewer')`),
+}));
 
 export const insertProjectUserSchema = createInsertSchema(projectUsers)
   .omit({ id: true, createdAt: true });
