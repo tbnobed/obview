@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useLocation, Link } from "wouter";
+import { formatTimeAgo } from "@/lib/utils/formatters";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -112,14 +113,23 @@ function SubfolderDropCard({ sf }: { sf: Folder }) {
         else if (p!.type === "folder") moveFolder.mutate({ folderId: p!.id, parentFolderId: sf.id });
       }}
     >
-      {sf.isGlobal ? (
-        <Globe className="h-5 w-5 shrink-0 text-sky-600 dark:text-sky-400" />
-      ) : (
-        <FolderIcon className="h-5 w-5 shrink-0 text-primary-600 dark:text-[#10a37f]" />
-      )}
-      <span className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
-        {sf.name}
-      </span>
+      <div className="flex items-start gap-2 min-w-0">
+        {sf.isGlobal ? (
+          <Globe className="h-5 w-5 shrink-0 mt-0.5 text-sky-600 dark:text-sky-400" />
+        ) : (
+          <FolderIcon className="h-5 w-5 shrink-0 mt-0.5 text-primary-600 dark:text-[#10a37f]" />
+        )}
+        <div className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
+            {sf.name}
+          </span>
+          <div className="flex items-center gap-2 mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+            <span>{(sf as any).fileCount ?? 0} file{((sf as any).fileCount ?? 0) !== 1 ? "s" : ""}</span>
+            <span>·</span>
+            <span>{formatTimeAgo(new Date((sf as any).lastActivityAt ?? sf.updatedAt))}</span>
+          </div>
+        </div>
+      </div>
     </Link>
   );
 }

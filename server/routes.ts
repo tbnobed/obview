@@ -2069,9 +2069,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // For admins, enrich each folder with the creator's username so the UI
-      // can disambiguate folders that different users named the same thing
-      // (e.g., multiple "Praise" folders).
+      // Batch stats: file count and latest file activity per folder.
+      // One query — join projects → files, grouped by folder_id.
+      const folderIds = folders.map((f) => f.id);
+      const statsRows = folderIds.length > 0
+        ? await db
+            .select({
+              folderId: projectsTable.folderId,
+              fileCount: sql<number>`count(${filesTable.id})::int`,
+              latestFileAt: sql<string | null>`max(${filesTable.createdAt})`,
+            })
+            .from(projectsTable)
+            .leftJoin(
+              filesTable,
+              and(
+                eq(filesTable.projectId, projectsTable.id),
+                isNull(filesTable.deletedAt),
+              ),
+            )
+            .where(
+              and(
+                isNull(projectsTable.deletedAt),
+                inArray(projectsTable.folderId, folderIds),
+              ),
+            )
+            .groupBy(projectsTable.folderId)
+        : [];
+
+      const statsByFolder = new Map(
+        statsRows
+          .filter((r) => r.folderId != null)
+          .map((r) => [r.folderId as number, r]),
+      );
+
+      const withStats = (f: (typeof folders)[number]) => {
+        const st = statsByFolder.get(f.id);
+        const latestFileAt = st?.latestFileAt ? new Date(st.latestFileAt) : null;
+        const folderUpdatedAt = new Date(f.updatedAt);
+        const lastActivityAt =
+          latestFileAt && latestFileAt > folderUpdatedAt
+            ? latestFileAt
+            : folderUpdatedAt;
+        return {
+          ...f,
+          fileCount: st?.fileCount ?? 0,
+          lastActivityAt,
+        };
+      };
+
+      // For admins, also enrich with the creator's username.
       if (isAdmin && folders.length > 0) {
         const creatorIds = Array.from(
           new Set(folders.map((f) => f.createdById).filter((id): id is number => typeof id === "number"))
@@ -2083,14 +2129,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .where(inArray(usersTable.id, creatorIds))
           : [];
         const usernameById = new Map(creators.map((u) => [u.id, u.username]));
-        const enriched = folders.map((f) => ({
-          ...f,
-          createdByUsername: usernameById.get(f.createdById) ?? null,
-        }));
-        return res.json(enriched);
+        return res.json(
+          folders.map((f) => ({
+            ...withStats(f),
+            createdByUsername: usernameById.get(f.createdById) ?? null,
+          })),
+        );
       }
 
-      res.json(folders);
+      res.json(folders.map(withStats));
     } catch (error) {
       next(error);
     }
