@@ -76,19 +76,23 @@ RUN make -j$(nproc) && \
 FROM node:20-bookworm-slim AS production
 
 # Runtime deps:
-#   postgresql-client → migration / health-check psql + pg_dump
-#   curl              → health checks + downloading the ffmpeg tarball
-#   xz-utils          → extracting the BtbN ffmpeg tarball
-#   busybox           → provides crond applet for the daily backup scheduler
-#   ca-certificates   → HTTPS to GitHub releases / SendGrid / etc.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        postgresql-client \
-        curl \
-        ca-certificates \
+#   postgresql-client-16 → pg_dump/psql matching the production PG 16 server
+#   curl                 → health checks + downloading the ffmpeg tarball
+#   xz-utils             → extracting the BtbN ffmpeg tarball
+#   cron                 → crond for the daily backup scheduler
+#   ca-certificates      → HTTPS to GitHub releases / SendGrid / etc.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gnupg curl ca-certificates && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        | gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] \
+        https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        postgresql-client-16 \
         xz-utils \
-        busybox \
-    && rm -rf /var/lib/apt/lists/* && \
-    ln -sf /usr/bin/busybox /usr/local/bin/crond
+        cron \
+    && rm -rf /var/lib/apt/lists/*
 
 # Static ffmpeg + ffprobe with NVENC, NVDEC, CUDA filters, libplacebo, vaapi,
 # vulkan etc. baked in. BtbN's GPL builds are the de facto standard for a
@@ -147,9 +151,13 @@ COPY --from=builder /app/.env* ./
 RUN chmod +x ./scripts/*.sh
 
 # Install daily backup crontab. Runs at 03:00 server time.
-# DATABASE_URL must be exported by the entrypoint before crond starts so the
-# job inherits it (busybox crond reads /var/spool/cron/crontabs/root).
-RUN mkdir -p /var/spool/cron/crontabs && \
+# DATABASE_URL is exported by the entrypoint before crond starts so the
+# job inherits it. Debian cron reads /var/spool/cron/crontabs/root.
+# A thin wrapper lets the entrypoint call "crond -b -L <log>" without
+# caring which cron implementation is installed.
+RUN printf '#!/bin/sh\nexec /usr/sbin/cron "$@"\n' > /usr/local/bin/crond && \
+    chmod +x /usr/local/bin/crond && \
+    mkdir -p /var/spool/cron/crontabs && \
     printf '0 3 * * * /app/scripts/backup-cron.sh >> /var/log/backup-cron.log 2>&1\n' \
       > /var/spool/cron/crontabs/root && \
     chmod 600 /var/spool/cron/crontabs/root && \
