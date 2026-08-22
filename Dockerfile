@@ -11,7 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+# Vite, esbuild, and TypeScript are dev dependencies but are required to build
+# the production bundle. Explicitly include them so a hosting environment's
+# NODE_ENV/NPM_CONFIG_OMIT setting cannot leave the builder without `vite`.
+RUN npm ci --include=dev
 
 COPY . .
 
@@ -81,9 +84,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # fully-loaded ffmpeg binary. The host's NVIDIA driver + Container Toolkit
 # injects libnvidia-encode.so.1 / libcuda.so.1 at runtime, so the binary
 # resolves NVENC dynamically.
-ARG FFMPEG_RELEASE=n7.1-latest-linux64-gpl-7.1
-RUN curl -fsSL -o /tmp/ff.tar.xz \
-      "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-${FFMPEG_RELEASE}.tar.xz" && \
+ARG FFMPEG_RELEASE=n8.1-latest-linux64-gpl-8.1
+RUN curl --retry 3 --retry-delay 2 -fsSL -o /tmp/ff.tar.xz \
+      "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-${FFMPEG_RELEASE}.tar.xz" || \
+      curl --retry 3 --retry-delay 2 -fsSL -o /tmp/ff.tar.xz \
+      "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz"; \
     mkdir -p /tmp/ff && \
     tar -xJf /tmp/ff.tar.xz -C /tmp/ff --strip-components=1 && \
     install -m 0755 /tmp/ff/bin/ffmpeg  /usr/local/bin/ffmpeg && \
