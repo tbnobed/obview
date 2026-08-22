@@ -49,6 +49,7 @@ import {
   users as usersTable,
   projects as projectsTable,
   folders as foldersTable,
+  type CommentMention,
 } from "@shared/schema";
 import { db } from "./db";
 import { sql, inArray, eq, and, isNull } from "drizzle-orm";
@@ -426,6 +427,103 @@ async function userHasProjectEditAccess(
     }
   }
   return false;
+}
+
+const submittedMentionIdsSchema = z.array(z.number().int().positive()).max(50);
+
+function getSubmittedMentionIds(body: unknown): number[] {
+  if (!body || typeof body !== "object") return [];
+  const parsed = submittedMentionIdsSchema.safeParse((body as Record<string, unknown>).mentionedUserIds);
+  return parsed.success ? Array.from(new Set(parsed.data)) : [];
+}
+
+function isMentionableUsername(username: string): boolean {
+  return /^[A-Za-z0-9_.-]+$/.test(username);
+}
+
+function commentContainsMention(content: string, username: string): boolean {
+  if (!isMentionableUsername(username)) return false;
+  const escaped = username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^A-Za-z0-9_.-])@${escaped}(?=$|[^A-Za-z0-9_.-])`).test(content);
+}
+
+type MentionEmailRecipient = {
+  id: number;
+  username: string;
+  name: string;
+  email: string;
+};
+
+async function resolveCommentMentions(args: {
+  projectId: number;
+  authorId: number;
+  content: string;
+  submittedUserIds: number[];
+}): Promise<{ mentions: CommentMention[]; recipients: MentionEmailRecipient[] }> {
+  if (args.submittedUserIds.length === 0) return { mentions: [], recipients: [] };
+
+  const projectUsers = await storage.getProjectUsers(args.projectId);
+  const memberIds = new Set(projectUsers.map((projectUser) => projectUser.userId));
+  const candidateIds = args.submittedUserIds.filter(
+    (userId) => userId !== args.authorId && memberIds.has(userId),
+  );
+
+  const users = await Promise.all(candidateIds.map((userId) => storage.getUser(userId)));
+  const recipients = users.flatMap((user): MentionEmailRecipient[] => {
+    if (!user || user.deactivatedAt || !commentContainsMention(args.content, user.username)) {
+      return [];
+    }
+    return [{
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+    }];
+  });
+  const mentions = recipients.map(({ id, name, username }) => ({
+    userId: id,
+    name,
+    username,
+  }));
+
+  return { mentions, recipients };
+}
+
+async function sendCommentMentionEmails(args: {
+  recipients: MentionEmailRecipient[];
+  actorName: string;
+  projectId: number;
+  fileId: number;
+  fileName: string;
+  commentText: string;
+}): Promise<void> {
+  if (args.recipients.length === 0) return;
+  try {
+    const project = await storage.getProject(args.projectId);
+    if (!project) return;
+    const { sendCommentMentionEmail } = await import("./utils/sendgrid");
+    await Promise.all(
+      args.recipients.map(async (recipient) => {
+        try {
+          await sendCommentMentionEmail({
+            to: recipient.email,
+            actorName: args.actorName,
+            recipientName: recipient.name,
+            projectName: project.name,
+            fileName: args.fileName,
+            commentText: args.commentText,
+            projectId: args.projectId,
+            fileId: args.fileId,
+          });
+        } catch (error) {
+          console.error(`[comment-mention] Email failed for user ${recipient.id}:`, error);
+        }
+      }),
+    );
+  } catch (error) {
+    // Notification delivery must never roll back or fail an already-persisted comment.
+    console.error("[comment-mention] Failed to prepare mention notifications:", error);
+  }
 }
 
 // Middleware to check if user has edit access to a project
@@ -1079,26 +1177,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
       const file = await storage.getFile(fileId);
       if (!file) return res.status(404).json({ message: "File not found" });
+      const actor = req.user!;
 
+      const body = req.body && typeof req.body === "object" ? req.body : {};
+      const { mentionedUserIds: _mentionedUserIds, mentions: _untrustedMentions, ...commentBody } = body;
       const validationResult = insertCommentsUnifiedSchema.safeParse({
-        ...req.body,
+        ...commentBody,
         fileId,
-        userId: req.user.id,
+        userId: actor.id,
         isPublic: false,
-        authorName: req.user.name || req.user.username,
-        authorEmail: req.user.email,
+        authorName: actor.name || actor.username,
+        authorEmail: actor.email,
+        mentions: [],
       });
       if (!validationResult.success) {
         return res.status(400).json({ message: "Invalid comment data", errors: validationResult.error.errors });
       }
 
-      const comment = await storage.createUnifiedComment(validationResult.data);
+      const resolvedMentions = await resolveCommentMentions({
+        projectId: file.projectId,
+        authorId: actor.id,
+        content: validationResult.data.content,
+        submittedUserIds: getSubmittedMentionIds(req.body),
+      });
+      const comment = await storage.createUnifiedComment({
+        ...validationResult.data,
+        mentions: resolvedMentions.mentions,
+      });
       await storage.logActivity({
         action: "comment",
         entityType: "file",
         entityId: fileId,
-        userId: req.user.id,
-        metadata: { projectId: file.projectId, commentId: comment.id, isReply: !!validationResult.data.parentId },
+        userId: actor.id,
+        metadata: {
+          projectId: file.projectId,
+          commentId: comment.id,
+          isReply: !!validationResult.data.parentId,
+          mentionedUserIds: resolvedMentions.mentions.map((mention) => mention.userId),
+        },
+      });
+      await sendCommentMentionEmails({
+        recipients: resolvedMentions.recipients,
+        actorName: actor.name || actor.username,
+        projectId: file.projectId,
+        fileId,
+        fileName: file.filename,
+        commentText: comment.content,
       });
       res.status(201).json({
         id: comment.id,
@@ -1109,6 +1233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         outPoint: comment.outPoint ?? null,
         resolved: comment.isResolved ?? false,
         authorName: comment.authorName ?? null,
+        mentions: comment.mentions,
         createdAt: comment.createdAt ?? null,
       });
     } catch (error) {
@@ -4587,9 +4712,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get unified comments (both regular and public comments)
       const comments = await storage.getUnifiedCommentsByFileV2(file.id);
-      // Strip creatorToken from response for security
+      // Strip private author tokens and canonical teammate metadata from the
+      // anonymous response. The visible @username remains in comment content,
+      // but public viewers cannot use this route as a member directory.
       const sanitizedComments = comments.map(comment => {
-        const { creatorToken, ...sanitizedComment } = comment;
+        const { creatorToken, mentions, ...sanitizedComment } = comment;
         return sanitizedComment;
       });
       res.json(sanitizedComments);
@@ -4634,7 +4761,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPublic: true,
         userId: null, // Public comments have no userId
         authorName: req.body.displayName || req.body.authorName || "Anonymous", // Map displayName to authorName
-        authorEmail: req.body.authorEmail || req.body.email // Include email if provided
+        authorEmail: req.body.authorEmail || req.body.email, // Include email if provided
+        mentions: [],
       });
       
       if (!validationResult.success) {
@@ -5581,11 +5709,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Safe, file-scoped teammate lookup for the authenticated comment composer.
+  // Public share pages never call or expose this endpoint.
+  app.get("/api/files/:fileId/mentionable-users", isAuthenticated, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      if (isNaN(fileId)) return res.status(400).json({ message: "Invalid file ID" });
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+      const actor = req.user!;
+
+      const projectUsers = await storage.getProjectUsers(file.projectId);
+      const users = await Promise.all(projectUsers.map((projectUser) => storage.getUser(projectUser.userId)));
+      res.json(
+        users
+          .filter((user) =>
+            !!user &&
+            !user.deactivatedAt &&
+            user.id !== actor.id &&
+            isMentionableUsername(user.username),
+          )
+          .map((user) => ({
+            id: user!.id,
+            name: user!.name,
+            username: user!.username,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Add a comment to a file
   app.post("/api/files/:fileId/comments", isAuthenticated, async (req, res, next) => {
     try {
+      const actor = req.user!;
       const fileId = parseInt(req.params.fileId);
-      console.log(`🔍 [COMMENT API] POST /api/files/${fileId}/comments requested by user ${req.user.id}`);
+      console.log(`🔍 [COMMENT API] POST /api/files/${fileId}/comments requested by user ${actor.id}`);
       console.log(`🔍 [COMMENT API] Request body:`, JSON.stringify(req.body));
       
       const file = await storage.getFile(fileId);
@@ -5594,19 +5755,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🔍 [COMMENT API] File ${fileId} not found for comment creation`);
         return res.status(404).json({ message: "File not found" });
       }
-      
       // Any authenticated user may comment (Frame.io-style collaboration).
       
-      console.log(`🔍 [COMMENT API] User ${req.user.id} authorized for file ${fileId}, validating comment data...`);
+      console.log(`🔍 [COMMENT API] User ${actor.id} authorized for file ${fileId}, validating comment data...`);
       
+      const body = req.body && typeof req.body === "object" ? req.body : {};
+      const { mentionedUserIds: _mentionedUserIds, mentions: _untrustedMentions, ...commentBody } = body;
+
       // Validate unified comment data for authenticated comment
       const validationResult = insertCommentsUnifiedSchema.safeParse({
-        ...req.body,
+        ...commentBody,
         fileId,
-        userId: req.user.id,
+        userId: actor.id,
         isPublic: false, // Authenticated comments are not public
-        authorName: req.user.name || req.user.username, // Use user's name or username
-        authorEmail: req.user.email // Include user's email
+        authorName: actor.name || actor.username, // Use user's name or username
+        authorEmail: actor.email, // Include user's email
+        mentions: [],
       });
       
       if (!validationResult.success) {
@@ -5619,11 +5783,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 [COMMENT API] Validation passed, comment data:`, JSON.stringify(validationResult.data));
       
+      const resolvedMentions = await resolveCommentMentions({
+        projectId: file.projectId,
+        authorId: actor.id,
+        content: validationResult.data.content,
+        submittedUserIds: getSubmittedMentionIds(req.body),
+      });
+
       // Create the unified comment (parentId validation handled automatically by storage layer)
-      const comment = await storage.createUnifiedComment(validationResult.data);
+      const comment = await storage.createUnifiedComment({
+        ...validationResult.data,
+        mentions: resolvedMentions.mentions,
+      });
       
       // Get user details
-      const { password, ...userWithoutPassword } = req.user;
+      const { password, ...userWithoutPassword } = actor;
       
       // Include user in response
       const commentWithUser = {
@@ -5636,12 +5810,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: "comment",
         entityType: "file",
         entityId: fileId,
-        userId: req.user.id,
+        userId: actor.id,
         metadata: { 
           projectId: file.projectId,
           commentId: comment.id,
           isReply: !!validationResult.data.parentId,
+          mentionedUserIds: resolvedMentions.mentions.map((mention) => mention.userId),
         },
+      });
+
+      await sendCommentMentionEmails({
+        recipients: resolvedMentions.recipients,
+        actorName: actor.name || actor.username,
+        projectId: file.projectId,
+        fileId,
+        fileName: file.filename,
+        commentText: comment.content,
       });
       
       res.status(201).json(commentWithUser);
@@ -5720,6 +5904,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "Only the author can edit a comment's content" });
         }
         updates.content = updates.content.trim();
+        const existingMentionIds = Array.isArray(comment.mentions)
+          ? comment.mentions
+              .map((mention) => mention.userId)
+              .filter((userId): userId is number => Number.isInteger(userId) && userId > 0)
+          : [];
+        const revalidatedMentions = await resolveCommentMentions({
+          projectId: file.projectId,
+          authorId: comment.userId ?? req.user.id,
+          content: updates.content,
+          submittedUserIds: existingMentionIds,
+        });
+        // Edits never trigger new mail. They only keep still-valid original
+        // mentions or remove stale tokens/recipients from canonical metadata.
+        updates.mentions = revalidatedMentions.mentions;
       }
       
       // Update the unified comment

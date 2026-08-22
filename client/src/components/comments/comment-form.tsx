@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,33 @@ import type { Annotation } from "@/components/media/annotation-canvas";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+
+type MentionableUser = {
+  id: number;
+  name: string;
+  username: string;
+};
+
+type MentionSearch = {
+  start: number;
+  end: number;
+  query: string;
+};
+
+function findMentionSearch(value: string, cursor: number): MentionSearch | null {
+  const beforeCursor = value.slice(0, cursor);
+  const start = beforeCursor.lastIndexOf("@");
+  if (start < 0) return null;
+  if (start > 0 && /[A-Za-z0-9_.-]/.test(beforeCursor[start - 1])) return null;
+  const query = beforeCursor.slice(start + 1);
+  if (query.length > 50 || !/^[A-Za-z0-9_.-]*$/.test(query)) return null;
+  return { start, end: cursor, query };
+}
+
+function containsMentionToken(content: string, username: string): boolean {
+  const escaped = username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^A-Za-z0-9_.-])@${escaped}(?=$|[^A-Za-z0-9_.-])`).test(content);
+}
 
 interface CommentFormProps {
   fileId: number;
@@ -47,12 +74,68 @@ export default function CommentForm({
   const { user } = useAuth();
   const { toast } = useToast();
   const [content, setContent] = useState("");
+  const [mentionedUserIds, setMentionedUserIds] = useState<number[]>([]);
+  const [mentionSearch, setMentionSearch] = useState<MentionSearch | null>(null);
+  const [activeMentionIndex, setActiveMentionIndex] = useState(0);
   const [includeTimestamp, setIncludeTimestamp] = useState(currentTime !== undefined && !parentId);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+  const mentionableUsers = useQuery<MentionableUser[]>({
+    queryKey: ["/api/files", fileId, "mentionable-users"],
+    queryFn: async () => {
+      const response = await fetch(`/api/files/${fileId}/mentionable-users`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to load teammates");
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  const filteredMentionUsers = useMemo(() => {
+    const query = mentionSearch?.query.toLowerCase() ?? "";
+    return (Array.isArray(mentionableUsers.data) ? mentionableUsers.data : [])
+      .filter((member) =>
+        member.username.toLowerCase().includes(query) ||
+        member.name.toLowerCase().includes(query),
+      )
+      .slice(0, 8);
+  }, [mentionSearch?.query, mentionableUsers.data]);
+
+  const mentionListId = `mention-list-${fileId}-${parentId ?? "root"}`;
+
+  const validMentionedUserIds = () =>
+    mentionedUserIds.filter((userId) => {
+      const member = mentionableUsers.data?.find((candidate) => candidate.id === userId);
+      return !!member && containsMentionToken(content, member.username);
+    });
+
+  const selectMention = (member: MentionableUser) => {
+    if (!mentionSearch) return;
+    const token = `@${member.username}`;
+    const nextContent =
+      content.slice(0, mentionSearch.start) +
+      token +
+      " " +
+      content.slice(mentionSearch.end);
+    const nextCursor = mentionSearch.start + token.length + 1;
+    setContent(nextContent);
+    setMentionedUserIds((current) =>
+      current.includes(member.id) ? current : [...current, member.id],
+    );
+    setMentionSearch(null);
+    setActiveMentionIndex(0);
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+      textareaRef.current?.setSelectionRange(nextCursor, nextCursor);
+    });
+  };
   
   // Format time (seconds to MM:SS)
   const formatTime = (time: number) => {
@@ -124,12 +207,15 @@ export default function CommentForm({
       if (pendingAnnotations && pendingAnnotations.length > 0) {
         commentData.annotations = JSON.stringify(pendingAnnotations);
       }
+      commentData.mentionedUserIds = validMentionedUserIds();
       
       console.log("Submitting comment:", commentData);
       return apiRequest("POST", `/api/files/${fileId}/comments`, commentData);
     },
     onSuccess: (data) => {
       setContent("");
+      setMentionedUserIds([]);
+      setMentionSearch(null);
       if (textareaRef.current) {
         textareaRef.current.value = "";
       }
@@ -359,45 +445,139 @@ export default function CommentForm({
             )}
           </div>
         )}
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onClick={() => {
-            // Pause video when clicking on textarea
-            const videoElement = document.querySelector('video');
-            const audioElement = document.querySelector('audio');
-            if (videoElement && !videoElement.paused) {
-              videoElement.pause();
-            } else if (audioElement && !audioElement.paused) {
-              audioElement.pause();
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={content}
+            onChange={(e) => {
+              const nextContent = e.target.value;
+              const cursor = e.target.selectionStart ?? nextContent.length;
+              setContent(nextContent);
+              setMentionSearch(findMentionSearch(nextContent, cursor));
+              setActiveMentionIndex(0);
+              setMentionedUserIds((current) =>
+                current.filter((userId) => {
+                  const member = mentionableUsers.data?.find((candidate) => candidate.id === userId);
+                  return !!member && containsMentionToken(nextContent, member.username);
+                }),
+              );
+            }}
+            onClick={(e) => {
+              // Pause video when clicking on textarea
+              const videoElement = document.querySelector('video');
+              const audioElement = document.querySelector('audio');
+              if (videoElement && !videoElement.paused) {
+                videoElement.pause();
+              } else if (audioElement && !audioElement.paused) {
+                audioElement.pause();
+              }
+              setMentionSearch(findMentionSearch(e.currentTarget.value, e.currentTarget.selectionStart));
+            }}
+            onBlur={() => window.setTimeout(() => setMentionSearch(null), 100)}
+            onKeyDown={(e) => {
+              if (mentionSearch) {
+                if (e.key === "ArrowDown" && filteredMentionUsers.length > 0) {
+                  e.preventDefault();
+                  setActiveMentionIndex((current) => (current + 1) % filteredMentionUsers.length);
+                  return;
+                }
+                if (e.key === "ArrowUp" && filteredMentionUsers.length > 0) {
+                  e.preventDefault();
+                  setActiveMentionIndex(
+                    (current) => (current - 1 + filteredMentionUsers.length) % filteredMentionUsers.length,
+                  );
+                  return;
+                }
+                if ((e.key === "Enter" || e.key === "Tab") && filteredMentionUsers.length > 0) {
+                  e.preventDefault();
+                  selectMention(filteredMentionUsers[activeMentionIndex] ?? filteredMentionUsers[0]);
+                  return;
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setMentionSearch(null);
+                  return;
+                }
+              }
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+              }
+              // Prevent spacebar from triggering video controls
+              if (e.key === ' ' || e.key === 'k') {
+                e.stopPropagation();
+              }
+            }}
+            placeholder={
+              parentId
+                ? "Write a reply..."
+                : includeTimestamp && currentTime !== undefined
+                  ? `Add a comment at ${formatTime(currentTime)}...`
+                  : "Leave your comment..."
             }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit();
+            className="w-full resize-none bg-transparent text-xs text-zinc-800 placeholder-zinc-400 dark:text-zinc-200 dark:placeholder-zinc-500 border-none outline-none focus:outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
+            style={{
+              fontFamily: 'inherit',
+              resize: 'none'
+            }}
+            data-testid="textarea-comment"
+            aria-autocomplete="list"
+            aria-expanded={mentionSearch !== null}
+            aria-controls={mentionSearch ? mentionListId : undefined}
+            aria-activedescendant={
+              mentionSearch && filteredMentionUsers[activeMentionIndex]
+                ? `${mentionListId}-option-${filteredMentionUsers[activeMentionIndex].id}`
+                : undefined
             }
-            // Prevent spacebar from triggering video controls
-            if (e.key === ' ' || e.key === 'k') {
-              e.stopPropagation();
-            }
-          }}
-          placeholder={
-            parentId 
-              ? "Write a reply..." 
-              : includeTimestamp && currentTime !== undefined
-                ? `Add a comment at ${formatTime(currentTime)}...`
-                : "Leave your comment..."
-          }
-          className="w-full resize-none bg-transparent text-xs text-zinc-800 placeholder-zinc-400 dark:text-zinc-200 dark:placeholder-zinc-500 border-none outline-none focus:outline-none min-h-[2rem] leading-relaxed lg:min-h-[2.5rem]"
-          style={{ 
-            fontFamily: 'inherit',
-            resize: 'none'
-          }}
-          data-testid="textarea-comment"
-          required
-        />
+            required
+          />
+
+          {mentionSearch && (
+            <div
+              id={mentionListId}
+              role="listbox"
+              aria-label="Mention a teammate"
+              className="absolute z-50 bottom-full left-0 right-0 mb-2 max-h-56 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+              data-testid="mention-suggestions"
+            >
+              {mentionableUsers.isLoading ? (
+                <div className="px-3 py-2 text-xs text-muted-foreground">Loading teammates…</div>
+              ) : filteredMentionUsers.length === 0 ? (
+                <div className="px-3 py-2 text-xs text-muted-foreground">No teammates found</div>
+              ) : (
+                filteredMentionUsers.map((member, index) => (
+                  <button
+                    key={member.id}
+                    id={`${mentionListId}-option-${member.id}`}
+                    type="button"
+                    role="option"
+                    aria-selected={index === activeMentionIndex}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left",
+                      index === activeMentionIndex
+                        ? "bg-accent text-accent-foreground"
+                        : "hover:bg-accent/60",
+                    )}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      selectMention(member);
+                    }}
+                    onMouseEnter={() => setActiveMentionIndex(index)}
+                    data-testid={`mention-option-${member.id}`}
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-500/15 text-xs font-semibold text-cyan-700 dark:text-cyan-300">
+                      {(member.name || member.username).slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium">{member.name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">@{member.username}</span>
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         
         <div className="flex items-end justify-between gap-2">
           {!parentId && currentTime !== undefined ? (

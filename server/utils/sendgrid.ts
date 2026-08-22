@@ -318,6 +318,18 @@ interface ReviewEmailCtx {
   fileId?: number;
 }
 
+interface CommentMentionEmailCtx {
+  to: string;
+  actorName: string;
+  recipientName?: string;
+  projectName: string;
+  fileName: string;
+  commentText: string;
+  appUrl?: string;
+  projectId: number;
+  fileId: number;
+}
+
 // Minimal HTML entity escape for any user-controlled string (file name,
 // reviewer feedback, project name, person names) before it's rendered into
 // an email HTML body. Without this a reviewer could inject <script> or
@@ -342,6 +354,39 @@ function reviewButton(href: string, label: string): string {
   return `<div style="text-align: center; margin: 30px 0;">
     <a href="${href}" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">${label}</a>
   </div>`;
+}
+
+/** A teammate was explicitly tagged in a newly-created authenticated comment. */
+export async function sendCommentMentionEmail(ctx: CommentMentionEmailCtx): Promise<boolean> {
+  try {
+    const baseUrl = ctx.appUrl || config.appDomain;
+    const link = `${baseUrl}/projects/${ctx.projectId}?media=${ctx.fileId}`;
+    const subject = `${ctx.actorName} mentioned you on "${ctx.fileName}"`;
+    const greeting = ctx.recipientName ? `Hi ${esc(ctx.recipientName)},` : "Hello,";
+    const safeComment = esc(ctx.commentText).replace(/\r?\n/g, "<br/>");
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #0891b2; color: white; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 22px;">YOU WERE MENTIONED</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none;">
+          <p>${greeting}</p>
+          <p><strong>${esc(ctx.actorName)}</strong> mentioned you on
+          <strong>${esc(ctx.fileName)}</strong> in project <strong>${esc(ctx.projectName)}</strong>.</p>
+          <div style="background:#f1f5f9;border-left:4px solid #0891b2;padding:12px 14px;margin:18px 0;color:#0f172a;">
+            ${safeComment}
+          </div>
+          ${reviewButton(link, "View Comment")}
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="color: #64748b; font-size: 12px;">This is an automated notification from Obviu.io.</p>
+        </div>
+      </div>`;
+    const text = `${ctx.actorName} mentioned you on ${ctx.fileName} in project ${ctx.projectName}.\n\n${ctx.commentText}\n\nView comment: ${link}`;
+    return await sendEmail({ to: ctx.to, from: config.emailFrom, subject, html, text });
+  } catch (error) {
+    logToFile(`Error preparing comment-mention email to ${ctx.to}: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
 }
 
 /** Reviewer asked for changes -> ping the uploader (editor) only. */

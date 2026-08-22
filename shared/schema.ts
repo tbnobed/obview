@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, bigint, boolean, timestamp, json, uuid, primaryKey, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, bigint, boolean, timestamp, json, jsonb, uuid, primaryKey, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -193,6 +193,12 @@ export const insertPublicCommentSchema = createInsertSchema(publicComments)
     creatorToken: z.string().min(1, "Creator token is required").optional()
   });
 
+export type CommentMention = {
+  userId: number;
+  name: string;
+  username: string;
+};
+
 // UNIFIED COMMENT SCHEMA (replacement for comments + publicComments with UUID)
 export const commentsUnified = pgTable("comments_unified", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -216,6 +222,10 @@ export const commentsUnified = pgTable("comments_unified", {
   inPoint: doublePrecision("in_point"),
   outPoint: doublePrecision("out_point"),
   annotations: text("annotations"), // JSON string of drawing annotations on frame
+  // Canonical, server-validated mention metadata. The composer submits user
+  // IDs separately; the server only persists project members whose @username
+  // token is actually present in the comment.
+  mentions: jsonb("mentions").$type<CommentMention[]>().notNull().default([]),
   isResolved: boolean("is_resolved").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -230,6 +240,11 @@ export const insertCommentsUnifiedSchema = createInsertSchema(commentsUnified)
     inPoint: z.number().min(0).optional().nullable().transform(val => val === null ? undefined : val),
     outPoint: z.number().min(0).optional().nullable().transform(val => val === null ? undefined : val),
     parentId: z.string().uuid().optional().nullable().transform(val => val || undefined),
+    mentions: z.array(z.object({
+      userId: z.number().int().positive(),
+      name: z.string(),
+      username: z.string(),
+    })).max(50).optional().default([]),
   });
 
 // PROJECT USER SCHEMA (for permissions)

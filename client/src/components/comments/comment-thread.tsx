@@ -18,6 +18,7 @@ import ReactionPicker from "./reaction-picker";
 import ReactionsDisplay from "./reactions-display";
 import { useCommentReactionsWithUsers } from "@/hooks/use-reactions";
 import { markdownComponents300Light } from "@/lib/markdown-comment-components";
+import { linkifyCommentMentions } from "@/lib/comment-mentions";
 
 interface CommentThreadProps {
   comment: CommentUnified & { user?: any };
@@ -290,7 +291,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                 remarkPlugins={[remarkGfm]}
                 components={markdownComponents300Light}
               >
-                {comment.content}
+                {linkifyCommentMentions(comment.content, comment.mentions)}
               </ReactMarkdown>
             </div>
           )}
@@ -448,7 +449,7 @@ export default function CommentThread({ comment, comments, onTimeClick, isActive
                           remarkPlugins={[remarkGfm]}
                           components={markdownComponents300Light}
                         >
-                          {reply.content}
+                          {linkifyCommentMentions(reply.content, reply.mentions)}
                         </ReactMarkdown>
                       </div>
                     )}

@@ -990,9 +990,11 @@ export function registerShareLinkRoutes(
 
       // Show every comment on the file (matches /api/share/:token/comments
       // for single-file shares — reviewers expect to see the full thread,
-      // not just other reviewers' public posts). Strip creatorToken.
+      // not just other reviewers' public posts). Strip creatorToken and
+      // canonical mention metadata so this anonymous route cannot be used as
+      // a teammate directory.
       const visible = all.map((c: any) => {
-        const { creatorToken, ...rest } = c;
+        const { creatorToken, mentions, ...rest } = c;
         return rest;
       });
 
@@ -1144,6 +1146,7 @@ export function registerShareLinkRoutes(
         fileId: file.id,
         isPublic: true,
         authorName: req.body.displayName || req.body.authorName || "Anonymous",
+        mentions: [],
       };
       if (email) payload.authorEmail = email;
       if (req.body.timestamp != null) payload.timestamp = req.body.timestamp;

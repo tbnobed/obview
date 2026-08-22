@@ -21,6 +21,7 @@ import ReactionPicker from "@/components/comments/reaction-picker";
 import ReactionsDisplay from "@/components/comments/reactions-display";
 import { useToggleCommentResolution } from "@/hooks/use-comments";
 import { cn } from "@/lib/utils";
+import { linkifyCommentMentions } from "@/lib/comment-mentions";
 
 // True if the event target is (or sits inside) an editable element —
 // input, textarea, select, or contenteditable. Used to keep the
@@ -239,7 +240,7 @@ export default function TimelineComments({
                       remarkPlugins={[remarkGfm]}
                       components={markdownComponents200}
                     >
-                      {reply.content}
+                      {linkifyCommentMentions(reply.content, reply.mentions)}
                     </ReactMarkdown>
                   </div>
                 )}
@@ -568,7 +569,7 @@ export default function TimelineComments({
                             remarkPlugins={[remarkGfm]}
                             components={markdownComponents300}
                           >
-                            {comment.content}
+                            {linkifyCommentMentions(comment.content, comment.mentions)}
                           </ReactMarkdown>
                         </div>
                       )}

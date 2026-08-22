@@ -25,6 +25,18 @@ function makeImg(maxHeight: number, borderClass: string): Components["img"] {
 function makeAnchor(downloadClass = "text-primary font-medium"): Components["a"] {
   const Anchor: Components["a"] = ({ node, href, ...props }) => {
     const isFileDownload = !!href && href.startsWith("/api/files/") && href.includes("/content");
+    const isMention = !!href && href.startsWith("#mention-");
+    if (isMention) {
+      return (
+        <span
+          className="inline-flex rounded bg-cyan-500/15 px-1 font-semibold text-cyan-700 dark:text-cyan-300"
+          title="Mentioned teammate"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {props.children}
+        </span>
+      );
+    }
     return (
       <a
         href={href}
