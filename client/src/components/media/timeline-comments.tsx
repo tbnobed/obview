@@ -3,7 +3,7 @@ import { useComments, useUpdateCommentContent } from "@/hooks/use-comments";
 import CommentForm from "@/components/comments/comment-form";
 import CommentThread from "@/components/comments/comment-thread";
 import { markdownComponents200, markdownComponents300 } from "@/lib/markdown-comment-components";
-import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock, PenTool, Pencil, Reply } from "lucide-react";
+import { Loader2, MessageSquare, MoreHorizontal, Filter, Search, Trash2, Paperclip, Smile, Send, Check, Clock, PenTool, Pencil, Reply, ArrowUpDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import ReactionsDisplay from "@/components/comments/reactions-display";
 import { useToggleCommentResolution } from "@/hooks/use-comments";
 import { cn } from "@/lib/utils";
 import { linkifyCommentMentions } from "@/lib/comment-mentions";
+import { sortComments, type CommentSortOrder } from "@/lib/comment-sorting";
 
 // True if the event target is (or sits inside) an editable element —
 // input, textarea, select, or contenteditable. Used to keep the
@@ -72,6 +73,7 @@ export default function TimelineComments({
   const timelineRef = useRef<HTMLDivElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [commentSort, setCommentSort] = useState<CommentSortOrder>("timecode");
   const [markers, setMarkers] = useState<{ time: number, left: string, commentId: string }[]>([]);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -367,22 +369,10 @@ export default function TimelineComments({
     return true;
   });
 
-  // Group top-level comments (no parent) and sort by timestamp
-  const topLevelComments = filteredComments?.filter((c: any) => !c.parentId) || [];
-  
-  // Sort comments by timestamp (null timestamps at the end)
-  topLevelComments.sort((a: any, b: any) => {
-    // If both have timestamps, sort by timestamp
-    if (a.timestamp !== null && b.timestamp !== null) {
-      return a.timestamp - b.timestamp;
-    }
-    // If only a has timestamp, a comes first
-    if (a.timestamp !== null) return -1;
-    // If only b has timestamp, b comes first
-    if (b.timestamp !== null) return 1;
-    // If neither has timestamp, maintain original order
-    return 0;
-  });
+  const topLevelComments = sortComments(
+    filteredComments?.filter((c: any) => !c.parentId) || [],
+    commentSort,
+  );
 
   // Format time for timestamp display
   const formatTimeShort = (time: number) => {
@@ -424,6 +414,16 @@ export default function TimelineComments({
             {f}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => setCommentSort((current) => current === "timecode" ? "created" : "timecode")}
+          className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-zinc-200/70 px-2.5 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          title={commentSort === "timecode" ? "Currently sorted by timecode" : "Currently sorted by note creation order"}
+          data-testid="button-comment-sort"
+        >
+          <ArrowUpDown className="h-3 w-3" />
+          {commentSort === "timecode" ? "Timecode" : "Note order"}
+        </button>
       </div>
 
       {/* Comments List - Mobile: basic padding, Desktop: extended padding */}

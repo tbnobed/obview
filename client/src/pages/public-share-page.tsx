@@ -56,6 +56,7 @@ import {
   Filter,
   LogIn,
   MoreHorizontal,
+  ArrowUpDown,
 } from "lucide-react";
 
 const APP_BASE = (import.meta.env.VITE_APP_BASE_URL as string | undefined)
@@ -66,6 +67,7 @@ function signInHref(token: string): string {
   return `${APP_BASE}/auth?returnTo=${encodeURIComponent(returnTo)}`;
 }
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { sortComments, type CommentSortOrder } from "@/lib/comment-sorting";
 import {
   AnnotationCanvas,
   AnnotationOverlay,
@@ -679,6 +681,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [commentFilter, setCommentFilter] = useState<"all" | "unresolved" | "resolved">("all");
+  const [commentSort, setCommentSort] = useState<CommentSortOrder>("timecode");
 
   const post = useMutation({
     mutationFn: async () => {
@@ -1173,6 +1176,16 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                     {f}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => setCommentSort((current) => current === "timecode" ? "created" : "timecode")}
+                  className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-zinc-200/70 px-2.5 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  title={commentSort === "timecode" ? "Currently sorted by timecode" : "Currently sorted by note creation order"}
+                  data-testid="button-comment-sort"
+                >
+                  <ArrowUpDown className="h-3 w-3" />
+                  {commentSort === "timecode" ? "Timecode" : "Note order"}
+                </button>
               </div>
               <div
                 className="comments-panel flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3"
@@ -1207,7 +1220,10 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                     if (commentFilter === "resolved") return c.isResolved;
                     return true;
                   });
-                  const topLevel = all.filter((c) => !c.parentId);
+                  const topLevel = sortComments(
+                    all.filter((c) => !c.parentId),
+                    commentSort,
+                  );
                   const repliesByParent = new Map<string, PublicComment[]>();
                   for (const c of all) {
                     if (c.parentId) {

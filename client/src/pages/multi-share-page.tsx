@@ -46,6 +46,7 @@ import {
   Filter,
   Upload as UploadIcon,
   LogIn,
+  ArrowUpDown,
 } from "lucide-react";
 
 const APP_BASE = (import.meta.env.VITE_APP_BASE_URL as string | undefined)
@@ -56,6 +57,7 @@ function signInHref(token: string): string {
   return `${APP_BASE}/auth?returnTo=${encodeURIComponent(returnTo)}`;
 }
 import { queryClient } from "@/lib/queryClient";
+import { sortComments, type CommentSortOrder } from "@/lib/comment-sorting";
 import {
   AnnotationCanvas,
   AnnotationOverlay,
@@ -1295,6 +1297,7 @@ function FileViewer({
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [commentFilter, setCommentFilter] = useState<"all" | "unresolved" | "resolved">("all");
+  const [commentSort, setCommentSort] = useState<CommentSortOrder>("timecode");
 
   const post = useMutation({
     mutationFn: async () => {
@@ -1777,6 +1780,16 @@ function FileViewer({
                   {f}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setCommentSort((current) => current === "timecode" ? "created" : "timecode")}
+                className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-zinc-200/70 px-2.5 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                title={commentSort === "timecode" ? "Currently sorted by timecode" : "Currently sorted by note creation order"}
+                data-testid="button-comment-sort"
+              >
+                <ArrowUpDown className="h-3 w-3" />
+                {commentSort === "timecode" ? "Timecode" : "Note order"}
+              </button>
             </div>
             {/* Comments list (scrolls) */}
             <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-2.5">
@@ -1791,7 +1804,10 @@ function FileViewer({
                   if (commentFilter === "resolved") return c.isResolved;
                   return true;
                 });
-                const topLevel = all.filter((c) => !c.parentId);
+                const topLevel = sortComments(
+                  all.filter((c) => !c.parentId),
+                  commentSort,
+                );
                 if (topLevel.length === 0 && commentFilter !== "all" && commentsQ.data && commentsQ.data.length > 0) {
                   return (
                     <p className="px-4 py-6 text-xs text-neutral-500 dark:text-gray-400 text-center">
