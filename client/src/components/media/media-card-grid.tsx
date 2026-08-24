@@ -699,7 +699,6 @@ function MediaCard({
                   {/* Hidden image to detect sprite loading */}
                   <img
                     src={thumbnailSrc}
-                    loading="lazy"
                     className="hidden"
                     onLoad={() => {
                       debugLog(`🎬 [SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
