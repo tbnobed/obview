@@ -3244,21 +3244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/projects/:projectId/file-approvals", hasProjectAccess, async (req, res, next) => {
     try {
       const projectId = parseInt(req.params.projectId);
-      const files = await storage.getFilesByProject(projectId);
-      const result: Record<number, "approved" | "changes_requested" | null> = {};
-      await Promise.all(
-        files.map(async (f) => {
-          const approvals = await storage.getApprovalsByFile(f.id);
-          if (approvals.some((a) => a.status === "changes_requested" || a.status === "requested_changes")) {
-            result[f.id] = "changes_requested";
-          } else if (approvals.some((a) => a.status === "approved")) {
-            result[f.id] = "approved";
-          } else {
-            result[f.id] = null;
-          }
-        })
-      );
-      res.json(result);
+      res.json(await storage.getFileApprovalStatuses(projectId));
     } catch (error) {
       next(error);
     }

@@ -185,6 +185,9 @@ export interface IStorage {
   // Returns a map: projectId -> { totalFiles, approvedFiles, changesRequestedFiles }.
   // Used to derive each project's review status (in_progress / in_review / approved).
   getProjectApprovalSummaries(projectIds: number[]): Promise<Record<number, { totalFiles: number; approvedFiles: number; changesRequestedFiles: number }>>;
+  // Returns a map: fileId -> "approved" | "changes_requested" | null.
+  // Change requests take precedence over approvals for a file.
+  getFileApprovalStatuses(projectId: number): Promise<Record<number, "approved" | "changes_requested" | null>>;
 
   // Activity logging
   logActivity(activity: InsertActivityLog): Promise<ActivityLog>;
@@ -1070,6 +1073,27 @@ export class MemStorage implements IStorage {
   async touchRecentProject(_userId: number, _projectId: number): Promise<void> { /* noop in MemStorage */ }
   async getRecentProjectIds(_userId: number, _limit: number = 10): Promise<number[]> { return []; }
   async getProjectApprovalSummaries(_projectIds: number[]) { return {}; }
+  async getFileApprovalStatuses(projectId: number): Promise<Record<number, "approved" | "changes_requested" | null>> {
+    const result: Record<number, "approved" | "changes_requested" | null> = {};
+    const projectFiles = Array.from(this.files.values()).filter(
+      (file) => file.projectId === projectId && !(file as any).deletedAt
+    );
+
+    for (const file of projectFiles) {
+      const fileApprovals = Array.from(this.approvals.values()).filter(
+        (approval) => approval.fileId === file.id
+      );
+      result[file.id] = fileApprovals.some(
+        (approval) => approval.status === "changes_requested" || approval.status === "requested_changes"
+      )
+        ? "changes_requested"
+        : fileApprovals.some((approval) => approval.status === "approved")
+          ? "approved"
+          : null;
+    }
+
+    return result;
+  }
 
   async removeUserFromProject(projectId: number, userId: number): Promise<boolean> {
     const projectUser = Array.from(this.projectUsers.values()).find(
@@ -2539,6 +2563,35 @@ export class DatabaseStorage implements IStorage {
     // Ensure every requested project id has an entry, even when it has no files.
     for (const pid of projectIds) {
       if (!(pid in result)) result[pid] = { totalFiles: 0, approvedFiles: 0, changesRequestedFiles: 0 };
+    }
+    return result;
+  }
+
+  // Aggregates all approval rows for a project's files in one query. A change
+  // request takes precedence over an approval, matching the per-file endpoint.
+  async getFileApprovalStatuses(projectId: number): Promise<Record<number, "approved" | "changes_requested" | null>> {
+    const rows = await db.execute(sql`
+      SELECT
+        f.id AS file_id,
+        CASE
+          WHEN BOOL_OR(a.status IN ('changes_requested', 'requested_changes')) THEN 'changes_requested'
+          WHEN BOOL_OR(a.status = 'approved') THEN 'approved'
+          ELSE NULL
+        END AS status
+      FROM ${files} f
+      LEFT JOIN ${approvals} a ON a.file_id = f.id
+      WHERE f.project_id = ${projectId}
+        AND f.deleted_at IS NULL
+      GROUP BY f.id
+    `);
+
+    const result: Record<number, "approved" | "changes_requested" | null> = {};
+    const list: any[] = Array.isArray(rows) ? rows : (rows as any).rows ?? [];
+    for (const row of list) {
+      const status = row.status === "approved" || row.status === "changes_requested"
+        ? row.status
+        : null;
+      result[Number(row.file_id)] = status;
     }
     return result;
   }

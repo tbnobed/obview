@@ -1,5 +1,5 @@
 import { debugLog } from "@/lib/debug";
-import { useState, useRef, useEffect, Fragment } from "react";
+import { useState, useRef, useEffect, useMemo, Fragment } from "react";
 import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, CheckSquare, X, ArrowDownAZ, ArrowDownUp, RotateCw } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
@@ -61,7 +61,12 @@ const getFileIcon = (fileType: string) => {
 // the badge flips from "Processing" to "Ready" without the user refreshing,
 // and invalidates the parent file list on the pending→completed edge so
 // duration / poster / hasScrubVersion show up immediately.
-const getProcessingStatus = (fileId: number, projectId?: number, fileCreatedAt?: string | Date) => {
+const getProcessingStatus = (
+  fileId: number,
+  projectId?: number,
+  fileCreatedAt?: string | Date,
+  isNearViewport = false,
+) => {
   const queryClient = useQueryClient();
   const prevStatusRef = useRef<string | undefined>(undefined);
   // Only keep polling files uploaded within the last hour. A file whose job
@@ -80,12 +85,15 @@ const getProcessingStatus = (fileId: number, projectId?: number, fileCreatedAt?:
       if (!res.ok) throw new Error(`Failed to load processing status (${res.status})`);
       return res.json();
     },
-    enabled: !!fileId,
+    // Cards outside the viewport must stay inert. Starting a query for every
+    // media card on page entry caused a request burst and repeated polling on
+    // large projects before the user could interact with the grid.
+    enabled: !!fileId && isNearViewport,
     staleTime: 60000,
     retry: false,
     refetchInterval: (q) => {
       const s = (q.state.data as any)?.status;
-      return s === 'completed' || s === 'failed' || !fresh ? false : 3000;
+      return s === 'completed' || s === 'failed' || !fresh || !isNearViewport ? false : 3000;
     },
     refetchIntervalInBackground: false,
   });
@@ -158,6 +166,7 @@ function MediaCard({
   const [spriteLoaded, setSpriteLoaded] = useState(false);
   const [isVersionDropTarget, setIsVersionDropTarget] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const [isNearViewport, setIsNearViewport] = useState(false);
   const dragDepthRef = useRef(0);
   const scrubRafRef = useRef<number | null>(null);
   const { toast } = useToast();
@@ -179,6 +188,25 @@ function MediaCard({
   toastRef.current = toast;
   const canEditRef = useRef(canEdit);
   canEditRef.current = canEdit;
+
+  // Keep expensive media work close to the user's scroll position. The margin
+  // starts the request early enough that previews are normally ready as a card
+  // appears, without loading an entire project's media up front.
+  useEffect(() => {
+    const element = cardRef.current;
+    if (!element) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setIsNearViewport(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsNearViewport(entry.isIntersecting),
+      { rootMargin: "400px 0px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   const stackVersionMutation = useMutation({
     mutationFn: async ({ targetId, sourceFileId }: { targetId: number; sourceFileId: number }) => {
@@ -446,11 +474,20 @@ function MediaCard({
     setShareDialogOpen(true);
   };
   
-  const processing = getProcessingStatus(file.id, file.projectId, (file as any).createdAt);
+  const processing = getProcessingStatus(
+    file.id,
+    file.projectId,
+    (file as any).createdAt,
+    isNearViewport,
+  );
   
   // Load sprite metadata for video files
   useEffect(() => {
-    if (file.fileType === 'video' && (processing as any)?.status === 'completed') {
+    if (
+      isNearViewport &&
+      file.fileType === 'video' &&
+      (processing as any)?.status === 'completed'
+    ) {
       fetch(`/api/files/${file.id}/sprite-metadata`)
         .then(res => res.ok ? res.json() : null)
         .then(metadata => {
@@ -461,10 +498,12 @@ function MediaCard({
         })
         .catch(err => console.warn(`🎬 [SPRITE] Failed to load metadata for file ${file.id}:`, err));
     }
-  }, [file.id, file.fileType, (processing as any)?.status]);
+  }, [file.id, file.fileType, isNearViewport, (processing as any)?.status]);
   
   // Load sprite for video files, direct content for image files
-  const thumbnailSrc = file.fileType === 'video' 
+  const thumbnailSrc = !isNearViewport
+    ? null
+    : file.fileType === 'video'
     ? `/api/files/${file.id}/sprite` 
     : file.fileType === 'image' 
       ? `/api/files/${file.id}/content`
@@ -639,6 +678,7 @@ function MediaCard({
                 <>
                   <img
                     src={thumbnailSrc}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                     onLoad={handleThumbnailLoad}
                     onError={handleThumbnailError}
@@ -659,6 +699,7 @@ function MediaCard({
                   {/* Hidden image to detect sprite loading */}
                   <img
                     src={thumbnailSrc}
+                    loading="lazy"
                     className="hidden"
                     onLoad={() => {
                       debugLog(`🎬 [SPRITE] ✅ Sprite loaded for file ${file.id}: ${file.filename}`);
@@ -1078,7 +1119,7 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
     try { localStorage.setItem(FILE_SORT_STORAGE_KEY, JSON.stringify(sortState)); } catch {}
   }, [sortState]);
 
-  const latestFiles = (() => {
+  const latestFiles = useMemo(() => {
     const list = files.filter((f) => f.isLatestVersion);
     const dir = sortState.dir === "asc" ? 1 : -1;
     const get = (f: StorageFile): string | number => {
@@ -1094,7 +1135,7 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
       if (av > bv) return 1 * dir;
       return 0;
     });
-  })();
+  }, [files, sortState.dir, sortState.key]);
 
   const sortLabel = (() => {
     const base = sortState.key === "name" ? "Name" : sortState.key === "size" ? "Size" : "Date";
@@ -1115,10 +1156,10 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
   // banner doesn't stick around in "selection mode".
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<number | null>(null);
-  const visibleIdSet = new Set(latestFiles.map((f) => f.id));
+  const visibleIdSet = useMemo(() => new Set(latestFiles.map((f) => f.id)), [latestFiles]);
   // Identity-based signature, NOT count — moves can replace IDs without
   // changing the list length (e.g. one in, one out from a sibling folder).
-  const visibleIdSignature = latestFiles.map((f) => f.id).join(",");
+  const visibleIdSignature = useMemo(() => latestFiles.map((f) => f.id).join(","), [latestFiles]);
   useEffect(() => {
     setSelectedIds((prev) => {
       let changed = false;
@@ -1135,7 +1176,7 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visibleIdSignature]);
 
-  const orderedIds = latestFiles.map((f) => f.id);
+  const orderedIds = useMemo(() => latestFiles.map((f) => f.id), [latestFiles]);
   const onToggleSelect = (fileId: number, e: React.MouseEvent) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -1164,7 +1205,7 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
     setLastSelectedId(null);
   };
   const selectionActive = selectedIds.size > 0;
-  const selectedIdArray = Array.from(selectedIds);
+  const selectedIdArray = useMemo(() => Array.from(selectedIds), [selectedIds]);
   const allSelected = latestFiles.length > 0 && selectedIds.size === latestFiles.length;
 
   // Esc clears the selection — same affordance Finder/Drive use.
@@ -1177,24 +1218,33 @@ export default function MediaCardGrid({ files, onSelectFile, projectId, onMoveFi
     return () => window.removeEventListener("keydown", onKey);
   }, [selectionActive]);
 
-  const versionsByGroup = new Map<string, StorageFile[]>();
-  for (const f of files) {
-    const key = `${f.projectId}::${f.filename}`;
-    const list = versionsByGroup.get(key);
-    if (list) list.push(f);
-    else versionsByGroup.set(key, [f]);
-  }
-  versionsByGroup.forEach((list) => {
-    list.sort((a: StorageFile, b: StorageFile) => a.version - b.version);
-  });
+  const versionsByGroup = useMemo(() => {
+    const groups = new Map<string, StorageFile[]>();
+    for (const f of files) {
+      const key = `${f.projectId}::${f.filename}`;
+      const list = groups.get(key);
+      if (list) list.push(f);
+      else groups.set(key, [f]);
+    }
+    groups.forEach((list) => {
+      list.sort((a: StorageFile, b: StorageFile) => a.version - b.version);
+    });
+    return groups;
+  }, [files]);
 
   const { toast: gridToast } = useToast();
   const gridQueryClient = useQueryClient();
   const [bulkMoveFiles, setBulkMoveFiles] = useState<StorageFile[] | null>(null);
-  const filesById = new Map(files.map((f) => [f.id, f] as const));
-  const selectedFiles = selectedIdArray
-    .map((id) => filesById.get(id))
-    .filter((f): f is StorageFile => !!f);
+  const filesById = useMemo(
+    () => new Map(files.map((f) => [f.id, f] as const)),
+    [files],
+  );
+  const selectedFiles = useMemo(
+    () => selectedIdArray
+      .map((id) => filesById.get(id))
+      .filter((f): f is StorageFile => !!f),
+    [filesById, selectedIdArray],
+  );
   const bulkActive = selectedIds.size > 1;
 
   // Bulk download: anchor-based, same streaming pattern as per-file
