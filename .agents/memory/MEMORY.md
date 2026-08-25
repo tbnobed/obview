@@ -23,3 +23,4 @@
 - [UXP export needs a real .epr](uxp-export-presets.md) — exportSequence takes an .epr PATH only (no raw-settings API); bundle curated .epr in plugin presets/ (getPluginFolder is token-free) for the quality dropdown.
 - [Registration and invitation trust boundary](registration-invitation-trust.md) — client flags never authorize signup; enforce roles, token secrecy, and one-time acceptance on the server and database.
 - [Docker production builds](docker-production-builds.md) — make the builder toolchain non-optional, test the full image, and tolerate BtbN removing old FFmpeg assets.
+- [Retired obtv-ai server](retired-obtv-ai.md) — obtv-ai is the old, unused host; its diagnostics and storage are archival cleanup context, not current production state.
