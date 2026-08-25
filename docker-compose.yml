@@ -69,8 +69,13 @@ services:
       - VIDEO_SCRUB_CRF=${VIDEO_SCRUB_CRF:-28}
       - VIDEO_SCRUB_FPS=${VIDEO_SCRUB_FPS:-15}
       - VIDEO_SCRUB_SCALE=${VIDEO_SCRUB_SCALE:--2:180}
-      # GPU 0 is reserved for the AI worker; GPU 1 is the dedicated T4 NVENC card.
-      - VIDEO_NVENC_GPU=${VIDEO_NVENC_GPU:-1}
+      # Bound whole-file pipelines so CPU scaling, sprite extraction, and disk
+      # reads remain responsive during bursts of simultaneous uploads.
+      - VIDEO_PROCESSING_CONCURRENCY=${VIDEO_PROCESSING_CONCURRENCY:-2}
+      # Use both cards' dedicated NVENC engines. The AI worker remains pinned
+      # to GPU 0 for CUDA compute; NVENC is separate fixed-function hardware.
+      - VIDEO_NVENC_GPUS=${VIDEO_NVENC_GPUS:-0,1}
+      - VIDEO_NVENC_CONCURRENCY_PER_GPU=${VIDEO_NVENC_CONCURRENCY_PER_GPU:-1}
       # Local transcription (whisper.cpp) configuration
       - TRANSCRIPTION_ENABLED=${TRANSCRIPTION_ENABLED:-true}
       - WHISPER_MODEL=${WHISPER_MODEL:-base.en}

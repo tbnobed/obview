@@ -4,6 +4,7 @@ import os from 'os';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import { config } from './utils/config.js';
+import { NvencScheduler } from './utils/work-scheduler.js';
 
 export interface VideoProcessingOptions {
   inputPath: string;
@@ -27,6 +28,11 @@ interface VideoQuality {
   size: number;
   bitrate: string;
 }
+
+const nvencScheduler = new NvencScheduler(
+  config.video.nvenc.gpuIndices,
+  config.video.nvenc.concurrencyPerGpu,
+);
 
 export class VideoProcessor {
   // Single optimized quality for efficient processing and storage
@@ -436,35 +442,36 @@ export class VideoProcessor {
       //   2. scale_cuda doesn't auto-round to even dimensions, so a
       //      portrait or non-16:9 source can produce e.g. 405x720 which
       //      NVENC rejects (NV12 requires even width and height).
-      // CPU decode + GPU encode still puts the expensive work on the
-      // T4 (Test 4 measured ~2x realtime on a 1280x720 source) while
-      // accepting any input codec/aspect.
-      const gpuArgs = [
-        '-i', inputPath,
-        '-c:v', 'h264_nvenc',
-        '-gpu', config.video.nvenc.gpuIndex.toString(),
-        '-preset', config.video.nvenc.mainPreset,
-        '-rc', 'vbr',
-        '-cq', config.video.nvenc.mainCq,
-        '-profile:v', 'main',
-        // Match the libx264 path's even-dimension guarantee.
-        '-vf', `scale=${evenW}:${evenH}:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
-        '-b:v', quality.bitrate,
-        '-maxrate', quality.bitrate,
-        '-bufsize', `${parseInt(quality.bitrate) * 1.5}k`,
-        '-c:a', 'aac',
-        '-b:a', '96k',
-        '-ar', '44100',
-        '-movflags', '+faststart',
-        '-f', 'mp4',
-        '-y',
-        outputPath
-      ];
-
+      // CPU decode + GPU encode still puts the expensive encode work on
+      // the scheduler-selected NVENC engine while accepting any input
+      // codec/aspect.
       if (config.video.useNvenc) {
         try {
-          console.log(`[VideoProcessor] Generating ${quality.name} via NVENC...`);
-          await this.executeFFmpeg(gpuArgs, config.video.timeouts.quality);
+          await nvencScheduler.run(`${filename}:${quality.name}`, async (gpuIndex) => {
+            const gpuArgs = [
+              '-i', inputPath,
+              '-c:v', 'h264_nvenc',
+              '-gpu', gpuIndex.toString(),
+              '-preset', config.video.nvenc.mainPreset,
+              '-rc', 'vbr',
+              '-cq', config.video.nvenc.mainCq,
+              '-profile:v', 'main',
+              // Match the libx264 path's even-dimension guarantee.
+              '-vf', `scale=${evenW}:${evenH}:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2`,
+              '-b:v', quality.bitrate,
+              '-maxrate', quality.bitrate,
+              '-bufsize', `${parseInt(quality.bitrate) * 1.5}k`,
+              '-c:a', 'aac',
+              '-b:a', '96k',
+              '-ar', '44100',
+              '-movflags', '+faststart',
+              '-f', 'mp4',
+              '-y',
+              outputPath
+            ];
+            console.log(`[VideoProcessor] Generating ${quality.name} via NVENC on GPU ${gpuIndex}...`);
+            await this.executeFFmpeg(gpuArgs, config.video.timeouts.quality);
+          });
         } catch (gpuErr: any) {
           console.warn(`[VideoProcessor] NVENC encode failed for ${quality.name}, falling back to libx264:`, gpuErr?.message || gpuErr);
           await this.executeFFmpeg(cpuArgs, config.video.timeouts.quality);
@@ -530,31 +537,32 @@ export class VideoProcessor {
       // behaviour as libx264's I-frame-only output.
       // CPU decode → CPU scale → GPU encode (see generateQuality for the
       // full rationale). Same trade-off applies here — works for any
-      // input codec/aspect, encode still runs on the T4.
-      const gpuArgs = [
-        '-i', inputPath,
-        '-c:v', 'h264_nvenc',
-        '-gpu', config.video.nvenc.gpuIndex.toString(),
-        '-preset', config.video.nvenc.scrubPreset,
-        '-rc', 'vbr',
-        '-cq', config.video.nvenc.scrubCq,
-        '-profile:v', config.video.scrub.profile,
-        '-r', config.video.scrub.fps.toString(),
-        '-g', '1',
-        '-forced-idr', '1',
-        '-no-scenecut', '1',
-        '-vf', `scale=${config.video.scrub.scale},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
-        ...(config.video.scrub.disableAudio ? ['-an'] : []),
-        '-movflags', '+faststart',
-        '-f', 'mp4',
-        '-y',
-        outputPath
-      ];
-
+      // input codec/aspect, with the encode assigned by the GPU scheduler.
       if (config.video.useNvenc) {
         try {
-          console.log(`[VideoProcessor] Generating scrub version via NVENC...`);
-          await this.executeFFmpeg(gpuArgs, config.video.timeouts.scrub);
+          await nvencScheduler.run(`${filename}:scrub`, async (gpuIndex) => {
+            const gpuArgs = [
+              '-i', inputPath,
+              '-c:v', 'h264_nvenc',
+              '-gpu', gpuIndex.toString(),
+              '-preset', config.video.nvenc.scrubPreset,
+              '-rc', 'vbr',
+              '-cq', config.video.nvenc.scrubCq,
+              '-profile:v', config.video.scrub.profile,
+              '-r', config.video.scrub.fps.toString(),
+              '-g', '1',
+              '-forced-idr', '1',
+              '-no-scenecut', '1',
+              '-vf', `scale=${config.video.scrub.scale},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
+              ...(config.video.scrub.disableAudio ? ['-an'] : []),
+              '-movflags', '+faststart',
+              '-f', 'mp4',
+              '-y',
+              outputPath
+            ];
+            console.log(`[VideoProcessor] Generating scrub version via NVENC on GPU ${gpuIndex}...`);
+            await this.executeFFmpeg(gpuArgs, config.video.timeouts.scrub);
+          });
         } catch (gpuErr: any) {
           console.warn(`[VideoProcessor] NVENC scrub encode failed, falling back to libx264:`, gpuErr?.message || gpuErr);
           await this.executeFFmpeg(cpuArgs, config.video.timeouts.scrub);

@@ -1,6 +1,7 @@
 // Load environment configuration for the application
 
 import { execSync } from 'child_process';
+import { filterUsableGpuIndices } from './work-scheduler.js';
 
 // Detect whether the local ffmpeg has the h264_nvenc encoder compiled in
 // AND can actually open an NVENC session (i.e. there's a usable NVIDIA GPU
@@ -13,9 +14,19 @@ import { execSync } from 'child_process';
 // fast (<200ms) and gives us a definitive yes/no.
 // Returns { ok, reason } so the startup log can explain *why* NVENC was
 // rejected ('ffmpeg_missing' | 'encoder_missing' | 'nvenc_init_failed').
-function getNvencGpuIndex(): number {
-  const parsed = Number.parseInt(process.env.VIDEO_NVENC_GPU || '0', 10);
-  return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(value || '', 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function getNvencGpuIndices(): number[] {
+  const configured = process.env.VIDEO_NVENC_GPUS || process.env.VIDEO_NVENC_GPU || '0';
+  const indices = configured
+    .split(',')
+    .map((value) => Number.parseInt(value.trim(), 10))
+    .filter((value) => Number.isInteger(value) && value >= 0);
+  const uniqueIndices = Array.from(new Set(indices));
+  return uniqueIndices.length > 0 ? uniqueIndices : [0];
 }
 
 function detectNvenc(gpuIndex: number): { ok: boolean; reason?: string } {
@@ -44,29 +55,42 @@ function detectNvenc(gpuIndex: number): { ok: boolean; reason?: string } {
   }
 }
 
-// VIDEO_USE_NVENC: 'true' forces NVENC on, 'false' forces it off,
-// anything else (including unset) auto-detects. Auto-detect is the new
-// default so production hosts with a GPU don't need any config to
-// benefit, while CI / dev boxes without a GPU stay on libx264.
-function resolveUseNvenc(): boolean {
+// VIDEO_USE_NVENC: 'true' requests NVENC, 'false' forces it off, and anything
+// else auto-detects. Every configured GPU is probed before it enters the
+// scheduler so one unavailable card cannot turn half the work into slow CPU
+// retries. When none pass, the complete pipeline stays on libx264.
+function resolveNvenc(): { useNvenc: boolean; gpuIndices: number[] } {
   const explicit = (process.env.VIDEO_USE_NVENC || '').toLowerCase();
-  const gpuIndex = getNvencGpuIndex();
-  if (explicit === 'true' || explicit === '1') {
-    console.log(`[Video] NVENC: forced ON via VIDEO_USE_NVENC=true — using h264_nvenc on GPU ${gpuIndex}`);
-    return true;
-  }
+  const configuredGpuIndices = getNvencGpuIndices();
   if (explicit === 'false' || explicit === '0') {
     console.log('[Video] NVENC: forced OFF via VIDEO_USE_NVENC=false — using libx264');
-    return false;
+    return { useNvenc: false, gpuIndices: configuredGpuIndices };
   }
-  const { ok, reason } = detectNvenc(gpuIndex);
-  if (ok) {
-    console.log(`[Video] NVENC auto-detect: available — using h264_nvenc on GPU ${gpuIndex}`);
-  } else {
-    console.log(`[Video] NVENC auto-detect: unavailable (${reason}) — using libx264`);
+
+  const failures = new Map<number, string>();
+  const usableGpuIndices = filterUsableGpuIndices(configuredGpuIndices, (gpuIndex) => {
+    const result = detectNvenc(gpuIndex);
+    if (!result.ok) failures.set(gpuIndex, result.reason || 'unknown');
+    return result.ok;
+  });
+
+  for (const [gpuIndex, reason] of Array.from(failures.entries())) {
+    console.warn(`[Video] NVENC GPU ${gpuIndex} unavailable (${reason}) — excluded from scheduler`);
   }
-  return ok;
+
+  if (usableGpuIndices.length === 0) {
+    console.log('[Video] NVENC unavailable on all configured GPUs — using libx264');
+    return { useNvenc: false, gpuIndices: configuredGpuIndices };
+  }
+
+  const mode = explicit === 'true' || explicit === '1' ? 'requested' : 'auto-detected';
+  console.log(
+    `[Video] NVENC ${mode}: using h264_nvenc on validated GPUs ${usableGpuIndices.join(', ')}`,
+  );
+  return { useNvenc: true, gpuIndices: usableGpuIndices };
 }
+
+const resolvedNvenc = resolveNvenc();
 
 // Helper to determine the appropriate domain based on environment
 // This is only a fallback - client should send their actual domain with each request
@@ -102,15 +126,17 @@ export const config = {
 
   // Video encoding configuration
   video: {
+    processingConcurrency: parsePositiveInt(process.env.VIDEO_PROCESSING_CONCURRENCY, 1),
     // GPU encoding toggle. When true, generateQuality / generateScrubVersion
     // use NVIDIA NVENC (h264_nvenc) instead of libx264. Falls back to libx264
     // automatically if the NVENC encode fails (unsupported input codec, no
     // GPU access, etc.) so a misconfigured host can never block uploads.
-    useNvenc: resolveUseNvenc(),
+    useNvenc: resolvedNvenc.useNvenc,
     // NVENC quality knobs. Presets are p1 (fastest) → p7 (slowest/best).
     // p4 is the balanced "medium" equivalent. CQ 23 ≈ libx264 CRF 23.
     nvenc: {
-      gpuIndex: getNvencGpuIndex(),
+      gpuIndices: resolvedNvenc.gpuIndices,
+      concurrencyPerGpu: parsePositiveInt(process.env.VIDEO_NVENC_CONCURRENCY_PER_GPU, 1),
       mainPreset: process.env.VIDEO_NVENC_MAIN_PRESET || 'p4',
       mainCq: process.env.VIDEO_NVENC_MAIN_CQ || '23',
       scrubPreset: process.env.VIDEO_NVENC_SCRUB_PRESET || 'p1',

@@ -54,6 +54,8 @@ import {
 import { db, pool } from "./db";
 import { sql, inArray, eq, and, isNull } from "drizzle-orm";
 import { VideoProcessor } from "./video-processor";
+import { config } from "./utils/config";
+import { WorkQueue } from "./utils/work-scheduler";
 import { createTusServer, createMultipartFinalizer, createMultipartCanceller, HttpError as TusHttpError, TUS_USER_HEADER } from "./tus";
 import {
   transcribeFile,
@@ -215,6 +217,10 @@ export async function resumeStuckVideoProcessing() {
 // concurrent calls for the same file = N× ffmpeg processes thrashing
 // the GPU and clobbering each other's output files.
 const inFlightFileProcessing = new Map<number, Promise<void>>();
+const videoProcessingQueue = new WorkQueue(
+  config.video.processingConcurrency,
+  "Video Processing Queue",
+);
 
 // Background video processing function
 async function processVideoInBackground(file: any, processingId: number) {
@@ -240,7 +246,7 @@ async function processVideoInBackground(file: any, processingId: number) {
     return existing;
   }
 
-  const job = (async () => {
+  const job = videoProcessingQueue.run(`file ${file.id} (${file.filename})`, async () => {
     try {
       console.log(`[Video Processing] Starting processing for file: ${file.filename}`);
 
@@ -291,7 +297,7 @@ async function processVideoInBackground(file: any, processingId: number) {
       // requests for this file can proceed.
       inFlightFileProcessing.delete(file.id);
     }
-  })();
+  });
 
   inFlightFileProcessing.set(file.id, job);
   return job;
