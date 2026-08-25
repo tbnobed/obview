@@ -442,6 +442,7 @@ export class VideoProcessor {
       const gpuArgs = [
         '-i', inputPath,
         '-c:v', 'h264_nvenc',
+        '-gpu', config.video.nvenc.gpuIndex.toString(),
         '-preset', config.video.nvenc.mainPreset,
         '-rc', 'vbr',
         '-cq', config.video.nvenc.mainCq,
@@ -533,6 +534,7 @@ export class VideoProcessor {
       const gpuArgs = [
         '-i', inputPath,
         '-c:v', 'h264_nvenc',
+        '-gpu', config.video.nvenc.gpuIndex.toString(),
         '-preset', config.video.nvenc.scrubPreset,
         '-rc', 'vbr',
         '-cq', config.video.nvenc.scrubCq,

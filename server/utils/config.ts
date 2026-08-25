@@ -13,7 +13,12 @@ import { execSync } from 'child_process';
 // fast (<200ms) and gives us a definitive yes/no.
 // Returns { ok, reason } so the startup log can explain *why* NVENC was
 // rejected ('ffmpeg_missing' | 'encoder_missing' | 'nvenc_init_failed').
-function detectNvenc(): { ok: boolean; reason?: string } {
+function getNvencGpuIndex(): number {
+  const parsed = Number.parseInt(process.env.VIDEO_NVENC_GPU || '0', 10);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function detectNvenc(gpuIndex: number): { ok: boolean; reason?: string } {
   let encoders: string;
   try {
     encoders = execSync('ffmpeg -hide_banner -encoders 2>/dev/null', {
@@ -30,7 +35,7 @@ function detectNvenc(): { ok: boolean; reason?: string } {
       // (~145x49). 64x64 is rejected by Turing+ NVENC with
       // "Frame Dimension less than the minimum supported value".
       'ffmpeg -hide_banner -loglevel error -f lavfi -i color=size=256x256:duration=0.1 ' +
-        '-c:v h264_nvenc -f null - 2>&1',
+        `-c:v h264_nvenc -gpu ${gpuIndex} -f null - 2>&1`,
       { encoding: 'utf8', timeout: 2000, stdio: ['ignore', 'ignore', 'ignore'] }
     );
     return { ok: true };
@@ -45,17 +50,18 @@ function detectNvenc(): { ok: boolean; reason?: string } {
 // benefit, while CI / dev boxes without a GPU stay on libx264.
 function resolveUseNvenc(): boolean {
   const explicit = (process.env.VIDEO_USE_NVENC || '').toLowerCase();
+  const gpuIndex = getNvencGpuIndex();
   if (explicit === 'true' || explicit === '1') {
-    console.log('[Video] NVENC: forced ON via VIDEO_USE_NVENC=true — using h264_nvenc');
+    console.log(`[Video] NVENC: forced ON via VIDEO_USE_NVENC=true — using h264_nvenc on GPU ${gpuIndex}`);
     return true;
   }
   if (explicit === 'false' || explicit === '0') {
     console.log('[Video] NVENC: forced OFF via VIDEO_USE_NVENC=false — using libx264');
     return false;
   }
-  const { ok, reason } = detectNvenc();
+  const { ok, reason } = detectNvenc(gpuIndex);
   if (ok) {
-    console.log('[Video] NVENC auto-detect: available — using h264_nvenc');
+    console.log(`[Video] NVENC auto-detect: available — using h264_nvenc on GPU ${gpuIndex}`);
   } else {
     console.log(`[Video] NVENC auto-detect: unavailable (${reason}) — using libx264`);
   }
@@ -104,6 +110,7 @@ export const config = {
     // NVENC quality knobs. Presets are p1 (fastest) → p7 (slowest/best).
     // p4 is the balanced "medium" equivalent. CQ 23 ≈ libx264 CRF 23.
     nvenc: {
+      gpuIndex: getNvencGpuIndex(),
       mainPreset: process.env.VIDEO_NVENC_MAIN_PRESET || 'p4',
       mainCq: process.env.VIDEO_NVENC_MAIN_CQ || '23',
       scrubPreset: process.env.VIDEO_NVENC_SCRUB_PRESET || 'p1',
