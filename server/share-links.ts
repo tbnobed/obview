@@ -746,6 +746,11 @@ export function registerShareLinkRoutes(
           createdAt: f.createdAt,
           isAvailable: f.isAvailable !== false,
           hasCustomThumbnail: !!fileSystem.findCustomThumbnail(f.id),
+          hasShareCustomThumbnail:
+            link.scopeType === "file" &&
+            link.scopeId === f.id &&
+            !!link.customThumbnailPath &&
+            existsSync(link.customThumbnailPath),
         });
       }
       res.json({

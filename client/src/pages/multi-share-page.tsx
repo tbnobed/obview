@@ -112,6 +112,7 @@ type ManifestFile = {
   createdAt: string;
   isAvailable: boolean;
   hasCustomThumbnail?: boolean;
+  hasShareCustomThumbnail?: boolean;
 };
 
 type Manifest = {
@@ -739,16 +740,19 @@ function FileCard({
   const scrubRafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (kind !== "video" || file.hasCustomThumbnail) return;
+    if (kind !== "video" || file.hasShareCustomThumbnail || file.hasCustomThumbnail) return;
     let cancelled = false;
     fetch(`/api/public/share/${token}/files/${file.id}/sprite-metadata`)
       .then((r) => (r.ok ? r.json() : null))
       .then((m) => { if (!cancelled && m) setSpriteMetadata(m); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [file.hasCustomThumbnail, file.id, kind, token]);
+  }, [file.hasCustomThumbnail, file.hasShareCustomThumbnail, file.id, kind, token]);
 
   const spriteSrc = `/api/public/share/${token}/files/${file.id}/sprite`;
+  const customThumbnailSrc = file.hasShareCustomThumbnail
+    ? `/api/public/share/${token}/og-image`
+    : `/api/public/share/${token}/files/${file.id}/custom-thumbnail`;
   return (
     <button
       onClick={onClick}
@@ -764,12 +768,12 @@ function FileCard({
       <div
         className="relative aspect-video bg-neutral-100 dark:bg-gray-900 overflow-hidden"
         onMouseEnter={() => {
-          if (file.hasCustomThumbnail || kind !== "video" || !spriteMetadata) return;
+          if (file.hasShareCustomThumbnail || file.hasCustomThumbnail || kind !== "video" || !spriteMetadata) return;
           setIsScrubbing(true);
           setScrubPosition(0);
         }}
         onMouseMove={(e) => {
-          if (file.hasCustomThumbnail || kind !== "video" || !spriteMetadata) return;
+          if (file.hasShareCustomThumbnail || file.hasCustomThumbnail || kind !== "video" || !spriteMetadata) return;
           const rect = e.currentTarget.getBoundingClientRect();
           if (rect.width === 0) return;
           const clientX = e.clientX;
@@ -789,9 +793,9 @@ function FileCard({
           setScrubPosition(0);
         }}
       >
-        {file.hasCustomThumbnail && !customThumbnailError ? (
+        {(file.hasShareCustomThumbnail || file.hasCustomThumbnail) && !customThumbnailError ? (
           <img
-            src={`/api/public/share/${token}/files/${file.id}/custom-thumbnail`}
+            src={customThumbnailSrc}
             alt={file.filename}
             className="w-full h-full object-cover"
             onError={() => setCustomThumbnailError(true)}
@@ -1447,6 +1451,9 @@ function FileViewer({
 
   const mediaSrc = `/api/public/share/${token}/files/${file.id}/content`;
   const mediaSrc720 = `/api/public/share/${token}/files/${file.id}/qualities/720p`;
+  const customThumbnailSrc = file.hasShareCustomThumbnail
+    ? `/api/public/share/${token}/og-image`
+    : `/api/public/share/${token}/files/${file.id}/custom-thumbnail`;
   // Faststart stream-copy fallback served when the transcode failed, so the
   // original still plays on iPhones (see MediaPlayer for the full rationale).
   const mediaSrcSource = `/api/public/share/${token}/files/${file.id}/qualities/source`;
@@ -1500,7 +1507,11 @@ function FileViewer({
               controls={false}
               playsInline
               preload="metadata"
-              poster={file.hasCustomThumbnail ? `/api/public/share/${token}/files/${file.id}/custom-thumbnail` : undefined}
+              poster={
+                file.hasShareCustomThumbnail || file.hasCustomThumbnail
+                  ? customThumbnailSrc
+                  : undefined
+              }
               controlsList="nodownload"
               disablePictureInPicture
               onContextMenu={watermarkLabel ? (e) => e.preventDefault() : undefined}
