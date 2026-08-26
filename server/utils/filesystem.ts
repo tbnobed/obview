@@ -170,6 +170,18 @@ async function getFilesRecursively(dir: string): Promise<string[]> {
 const UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
 const PROCESSED_DIR = path.resolve(UPLOADS_DIR, 'processed');
 
+export function findCustomThumbnail(fileId: number): string | null {
+  const dir = path.join(UPLOADS_DIR, 'file-thumbs');
+  try {
+    const name = fs.readdirSync(dir)
+      .filter((entry) => entry.startsWith(`${fileId}-`))
+      .sort((a, b) => b.localeCompare(a))[0];
+    return name ? path.join(dir, name) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Safely remove a file or directory, ensuring it's within the allowed uploads directory
  */

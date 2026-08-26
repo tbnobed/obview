@@ -601,6 +601,14 @@ export function registerShareLinkRoutes(
       if (link.passwordHash || link.requireEmail) return res.status(404).send("Not found");
 
       const files = await gatherScopeFiles(link);
+      const customFileThumbnail = files
+        .filter((f) => f.isAvailable !== false)
+        .map((f) => fileSystem.findCustomThumbnail(f.id))
+        .find((thumbnail): thumbnail is string => !!thumbnail && existsSync(thumbnail));
+      if (customFileThumbnail) {
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        return res.sendFile(path.resolve(customFileThumbnail));
+      }
       const video = files.find((f) => f.fileType === "video" && f.isAvailable !== false);
       if (!video) return res.status(404).send("No preview available");
       const processing = await storage.getVideoProcessing(video.id);
@@ -737,6 +745,7 @@ export function registerShareLinkRoutes(
           version: f.version,
           createdAt: f.createdAt,
           isAvailable: f.isAvailable !== false,
+          hasCustomThumbnail: !!fileSystem.findCustomThumbnail(f.id),
         });
       }
       res.json({
@@ -773,6 +782,18 @@ export function registerShareLinkRoutes(
       const processing = await storage.getVideoProcessing(file.id);
       if (!processing) return res.status(404).json({ message: "No processing data" });
       res.json(processing);
+    } catch (e) { next(e); }
+  });
+
+  app.get("/api/public/share/:token/files/:fileId/custom-thumbnail", async (req, res, next) => {
+    try {
+      const gated = await loadGatedLink(req, res); if (!gated) return;
+      const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
+      if (!file || file.isAvailable === false) return res.status(404).send("Not found");
+      const thumbnail = fileSystem.findCustomThumbnail(file.id);
+      if (!thumbnail || !existsSync(thumbnail)) return res.status(404).send("Thumbnail not available");
+      res.setHeader("Cache-Control", "private, max-age=3600");
+      res.sendFile(path.resolve(thumbnail));
     } catch (e) { next(e); }
   });
 

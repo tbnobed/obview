@@ -4443,7 +4443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
   const findFileThumbnail = (fileId: number): string | null => {
-    return listFileThumbnails(fileId).sort((a, b) => b.localeCompare(a))[0] ?? null;
+    return fileSystem.findCustomThumbnail(fileId);
   };
   // ===== USER AVATAR =====
   const avatarDir = path.join(process.cwd(), "uploads", "avatars");
@@ -4864,11 +4864,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // round-trip to /api/user (which is unreliable on the short-link
         // host if its nginx doesn't proxy the auth route).
         viewerAuthenticated: !!(req.isAuthenticated && req.isAuthenticated() && req.user),
+        hasCustomThumbnail: !!fileSystem.findCustomThumbnail(fileWithProject.id),
       });
     } catch (error) {
       console.error("Error fetching shared file metadata:", error);
       res.status(500).json({ message: "Internal server error" });
     }
+  });
+
+  app.get("/api/share/:token/custom-thumbnail", async (req, res) => {
+    const file = await storage.getFileByShareToken(req.params.token);
+    const thumbnail = file ? fileSystem.findCustomThumbnail(file.id) : null;
+    if (!file || file.isAvailable === false || !thumbnail || !existsSync(thumbnail)) {
+      return res.status(404).send("Thumbnail not available");
+    }
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.sendFile(path.resolve(thumbnail));
   });
 
   // Get video processing data for shared files (no authentication required)

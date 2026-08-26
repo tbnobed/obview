@@ -135,6 +135,7 @@ interface SharedFile {
   projectId: number;
   projectName: string;
   createdAt: string;
+  hasCustomThumbnail?: boolean;
 }
 
 interface PublicComment {
@@ -961,6 +962,7 @@ function SingleFileViewer({ token, file }: { token: string; file: SharedFile }) 
                 controls={false}
                 playsInline
                 preload="metadata"
+                poster={file.hasCustomThumbnail ? `/api/share/${token}/custom-thumbnail` : undefined}
                 controlsList="nodownload"
                 disablePictureInPicture
                 onContextMenu={watermarkOn ? (e) => e.preventDefault() : undefined}

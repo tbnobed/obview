@@ -111,6 +111,7 @@ type ManifestFile = {
   version: number;
   createdAt: string;
   isAvailable: boolean;
+  hasCustomThumbnail?: boolean;
 };
 
 type Manifest = {
@@ -732,19 +733,20 @@ function FileCard({
   // shipping a `<video>` per card (10+ HD videos preloading metadata
   // would tank the share page on first paint).
   const [spriteMetadata, setSpriteMetadata] = useState<any>(null);
+  const [customThumbnailError, setCustomThumbnailError] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubPosition, setScrubPosition] = useState(0);
   const scrubRafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (kind !== "video") return;
+    if (kind !== "video" || file.hasCustomThumbnail) return;
     let cancelled = false;
     fetch(`/api/public/share/${token}/files/${file.id}/sprite-metadata`)
       .then((r) => (r.ok ? r.json() : null))
       .then((m) => { if (!cancelled && m) setSpriteMetadata(m); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [file.id, kind, token]);
+  }, [file.hasCustomThumbnail, file.id, kind, token]);
 
   const spriteSrc = `/api/public/share/${token}/files/${file.id}/sprite`;
   return (
@@ -762,12 +764,12 @@ function FileCard({
       <div
         className="relative aspect-video bg-neutral-100 dark:bg-gray-900 overflow-hidden"
         onMouseEnter={() => {
-          if (kind !== "video" || !spriteMetadata) return;
+          if (file.hasCustomThumbnail || kind !== "video" || !spriteMetadata) return;
           setIsScrubbing(true);
           setScrubPosition(0);
         }}
         onMouseMove={(e) => {
-          if (kind !== "video" || !spriteMetadata) return;
+          if (file.hasCustomThumbnail || kind !== "video" || !spriteMetadata) return;
           const rect = e.currentTarget.getBoundingClientRect();
           if (rect.width === 0) return;
           const clientX = e.clientX;
@@ -787,7 +789,14 @@ function FileCard({
           setScrubPosition(0);
         }}
       >
-        {kind === "video" ? (
+        {file.hasCustomThumbnail && !customThumbnailError ? (
+          <img
+            src={`/api/public/share/${token}/files/${file.id}/custom-thumbnail`}
+            alt={file.filename}
+            className="w-full h-full object-cover"
+            onError={() => setCustomThumbnailError(true)}
+          />
+        ) : kind === "video" ? (
           <>
             {spriteMetadata ? (
               <div className="absolute inset-0 flex items-center justify-center bg-black">
@@ -1491,6 +1500,7 @@ function FileViewer({
               controls={false}
               playsInline
               preload="metadata"
+              poster={file.hasCustomThumbnail ? `/api/public/share/${token}/files/${file.id}/custom-thumbnail` : undefined}
               controlsList="nodownload"
               disablePictureInPicture
               onContextMenu={watermarkLabel ? (e) => e.preventDefault() : undefined}
