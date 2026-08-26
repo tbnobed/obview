@@ -230,7 +230,23 @@ export async function removeOriginalFile(filePath: string): Promise<boolean> {
 export async function removeProcessedDirectory(fileId: number): Promise<boolean> {
   const processedDir = path.join(PROCESSED_DIR, fileId.toString());
   console.log(`[FILESYSTEM] Removing processed directory: ${processedDir}`);
-  return safeRemove(processedDir);
+  const fileThumbDir = path.join(UPLOADS_DIR, 'file-thumbs');
+  let thumbnailResult = true;
+  try {
+    const entries = await fsPromises.readdir(fileThumbDir);
+    const thumbnails = entries
+      .filter((entry) => entry.startsWith(`${fileId}-`))
+      .map((entry) => safeRemove(path.join(fileThumbDir, entry)));
+    const results = await Promise.all(thumbnails);
+    thumbnailResult = results.every(Boolean);
+  } catch (error: any) {
+    if (error?.code !== 'ENOENT') {
+      console.error(`[FILESYSTEM] Failed to remove custom thumbnails for file ${fileId}:`, error);
+      thumbnailResult = false;
+    }
+  }
+  const processedResult = await safeRemove(processedDir);
+  return processedResult && thumbnailResult;
 }
 
 /**

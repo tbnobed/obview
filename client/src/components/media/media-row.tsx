@@ -22,6 +22,7 @@ import {
   FileText,
   FileVideo,
   Image as ImageIcon,
+  ImagePlus,
   Layers,
   MoreHorizontal,
   RotateCw,
@@ -107,6 +108,11 @@ export default function MediaRow({
   const [isVersionDropTarget, setIsVersionDropTarget] = useState(false);
   const rowRef = useRef<HTMLDivElement | null>(null);
   const dragDepthRef = useRef(0);
+  const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
+  const customThumbnailPath = (file as StorageFile & { customThumbnailPath?: string | null }).customThumbnailPath;
+  const hasCustomThumbnail = !!customThumbnailPath;
+  const [customThumbnailError, setCustomThumbnailError] = useState(false);
+  useEffect(() => setCustomThumbnailError(false), [file.id, customThumbnailPath]);
 
   const canEdit = !!onMove;
   const fileRef = useRef(file);
@@ -117,6 +123,51 @@ export default function MediaRow({
   toastRef.current = toast;
   const canEditRef = useRef(canEdit);
   canEditRef.current = canEdit;
+
+  const invalidateFileLists = () => {
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}/files`] });
+    queryClient.invalidateQueries({ queryKey: ["/api/projects", file.projectId, "files"] });
+    queryClient.invalidateQueries({ queryKey: [`/api/files/${file.id}`] });
+  };
+
+  const handleCustomThumbnail = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const image = event.target.files?.[0];
+    event.target.value = "";
+    if (!image) return;
+    if (!/^image\/(png|jpe?g|webp|gif)$/i.test(image.type) || image.size > 10 * 1024 * 1024) {
+      toast({ title: "Invalid thumbnail", description: "Use PNG, JPEG, WebP, or GIF up to 10 MB.", variant: "destructive" });
+      return;
+    }
+    const body = new FormData();
+    body.append("thumbnail", image);
+    try {
+      const response = await fetch(`/api/files/${file.id}/custom-thumbnail`, {
+        method: "POST",
+        body,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error((await response.text()) || response.statusText);
+      invalidateFileLists();
+      toast({ title: "Thumbnail updated" });
+    } catch (error: any) {
+      toast({ title: "Upload failed", description: error?.message || "Try again.", variant: "destructive" });
+    }
+  };
+
+  const clearCustomThumbnail = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    try {
+      const response = await fetch(`/api/files/${file.id}/custom-thumbnail`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error((await response.text()) || response.statusText);
+      invalidateFileLists();
+      toast({ title: "Thumbnail removed" });
+    } catch (error: any) {
+      toast({ title: "Could not remove thumbnail", description: error?.message || "Try again.", variant: "destructive" });
+    }
+  };
 
   const stackVersionMutation = useMutation({
     mutationFn: async ({ targetId, sourceFileId }: { targetId: number; sourceFileId: number }) => {
@@ -378,8 +429,17 @@ export default function MediaRow({
             {isSelected && <Check className="h-3.5 w-3.5" />}
           </button>
         )}
-        <div className="h-9 w-9 shrink-0 rounded bg-muted flex items-center justify-center">
-          <Icon className="h-4 w-4 text-muted-foreground" />
+        <div className="h-9 w-12 shrink-0 rounded bg-muted flex items-center justify-center overflow-hidden">
+          {hasCustomThumbnail && !customThumbnailError ? (
+            <img
+              src={`/api/files/${file.id}/custom-thumbnail?v=${encodeURIComponent(customThumbnailPath || "")}`}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={() => setCustomThumbnailError(true)}
+            />
+          ) : (
+            <Icon className="h-4 w-4 text-muted-foreground" />
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -534,6 +594,26 @@ export default function MediaRow({
                 Share Link
               </DropdownMenuItem>
               {onMove && (
+                <>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      thumbnailInputRef.current?.click();
+                    }}
+                    data-testid={`set-file-thumbnail-row-${file.id}`}
+                  >
+                    <ImagePlus className="h-4 w-4 mr-2" />
+                    {hasCustomThumbnail ? "Replace thumbnail…" : "Set thumbnail…"}
+                  </DropdownMenuItem>
+                  {hasCustomThumbnail && (
+                    <DropdownMenuItem onClick={clearCustomThumbnail}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remove thumbnail
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+              {onMove && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -567,6 +647,13 @@ export default function MediaRow({
               </>)}
             </DropdownMenuContent>
           </DropdownMenu>
+          <input
+            ref={thumbnailInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="hidden"
+            onChange={handleCustomThumbnail}
+          />
         </div>
       </div>
 

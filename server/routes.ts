@@ -3235,7 +3235,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const files = await storage.getFilesByProject(projectId);
       console.log(`[DEBUG] Found ${files.length} files for project ID ${projectId}`);
 
-      res.json(files);
+      res.json(files.map((file) => ({
+        ...file,
+        customThumbnailPath: findFileThumbnail(file.id),
+      })));
     } catch (error) {
       console.error(`[ERROR] Failed to get files for project ${req.params.projectId}:`, error);
       next(error);
@@ -3644,7 +3647,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Read access is open to any authenticated user (see hasProjectAccess).
       
-      res.json(file);
+      res.json({
+        ...file,
+        customThumbnailPath: findFileThumbnail(file.id),
+      });
     } catch (error) {
       next(error);
     }
@@ -4425,6 +4431,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // video sprite when this is NULL.
   const thumbDir = path.join(uploadsDir, "project-thumbs");
   try { if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true }); } catch {}
+  const fileThumbDir = path.join(uploadsDir, "file-thumbs");
+  try { if (!fs.existsSync(fileThumbDir)) fs.mkdirSync(fileThumbDir, { recursive: true }); } catch {}
+  const listFileThumbnails = (fileId: number): string[] => {
+    try {
+      return fs.readdirSync(fileThumbDir)
+        .filter((entry) => entry.startsWith(`${fileId}-`))
+        .map((entry) => path.join(fileThumbDir, entry));
+    } catch {
+      return [];
+    }
+  };
+  const findFileThumbnail = (fileId: number): string | null => {
+    return listFileThumbnails(fileId).sort((a, b) => b.localeCompare(a))[0] ?? null;
+  };
   // ===== USER AVATAR =====
   const avatarDir = path.join(process.cwd(), "uploads", "avatars");
   fs.mkdirSync(avatarDir, { recursive: true });
@@ -4448,7 +4468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     avatarUpload.single("avatar"),
     handleMulterErrors,
-    async (req, res, next) => {
+    async (req: Request, res: Response, next: NextFunction) => {
       try {
         if (!req.file) return res.status(400).json({ message: "No file uploaded" });
         const me = await storage.getUser(req.user!.id);
@@ -4602,6 +4622,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  const fileThumbUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, fileThumbDir),
+      filename: (req, file, cb) => {
+        const ext = (path.extname(file.originalname) || ".jpg").toLowerCase();
+        cb(null, `${req.params.id}-${Date.now()}-${crypto.randomUUID()}${ext}`);
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      if (/^image\/(png|jpe?g|webp|gif)$/i.test(file.mimetype)) cb(null, true);
+      else cb(new Error("Only PNG, JPEG, WebP, or GIF images are allowed"));
+    },
+  });
+
+  app.post(
+    "/api/files/:id/custom-thumbnail",
+    hasFileEditAccess,
+    fileThumbUpload.single("thumbnail"),
+    handleMulterErrors,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const fileId = parseInt(req.params.id);
+        if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+        const file = await storage.getFile(fileId);
+        if (!file) {
+          try { fs.unlinkSync(req.file.path); } catch {}
+          return res.status(404).json({ message: "File not found" });
+        }
+        const currentThumbnail = findFileThumbnail(fileId);
+        for (const previousThumbnail of listFileThumbnails(fileId)) {
+          try {
+            const prev = path.isAbsolute(previousThumbnail)
+              ? previousThumbnail
+              : path.join(process.cwd(), previousThumbnail);
+            if (previousThumbnail !== currentThumbnail && fs.existsSync(prev)) fs.unlinkSync(prev);
+          } catch (e) {
+            console.warn("[file-thumb] failed to remove previous file:", e);
+          }
+        }
+        res.json({ ok: true, customThumbnailPath: currentThumbnail });
+      } catch (error) {
+        if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch {} }
+        next(error);
+      }
+    },
+  );
+
+  app.delete("/api/files/:id/custom-thumbnail", hasFileEditAccess, async (req, res, next) => {
+    try {
+      const fileId = parseInt(req.params.id);
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+      for (const currentThumbnail of listFileThumbnails(fileId)) {
+        try {
+          const prev = path.isAbsolute(currentThumbnail)
+            ? currentThumbnail
+            : path.join(process.cwd(), currentThumbnail);
+          if (fs.existsSync(prev)) fs.unlinkSync(prev);
+        } catch (e) {
+          console.warn("[file-thumb] failed to remove file:", e);
+        }
+      }
+      res.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/files/:id/custom-thumbnail", isAuthenticated, hasFileAccess, async (req, res) => {
+    try {
+      const file = await storage.getFile(parseInt(req.params.id));
+      const customThumbnailPath = file ? findFileThumbnail(file.id) : null;
+      if (!customThumbnailPath) {
+        return res.status(404).json({ message: "No custom thumbnail" });
+      }
+      const abs = path.isAbsolute(customThumbnailPath)
+        ? customThumbnailPath
+        : path.join(process.cwd(), customThumbnailPath);
+      if (!existsSync(abs)) {
+        return res.status(404).json({ message: "Thumbnail file missing on disk" });
+      }
+      res.setHeader("Cache-Control", "private, max-age=86400");
+      res.sendFile(path.resolve(abs));
+    } catch (error) {
+      console.error("[file-thumb] serve error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   // Serve a single-frame thumbnail (first tile cropped out of the
   // sprite sheet). Cached to disk next to the sprite so we only run

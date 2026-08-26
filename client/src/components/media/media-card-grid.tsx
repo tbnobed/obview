@@ -1,6 +1,6 @@
 import { debugLog } from "@/lib/debug";
 import { useState, useRef, useEffect, useMemo, Fragment } from "react";
-import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, CheckSquare, X, ArrowDownAZ, ArrowDownUp, RotateCw } from "lucide-react";
+import { Play, FileVideo, FileAudio, Image as ImageIcon, FileText, MoreHorizontal, Clock, Eye, Download, Share2, Trash2, Layers, Check, CheckSquare, X, ArrowDownAZ, ArrowDownUp, RotateCw, ImagePlus } from "lucide-react";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -169,6 +169,7 @@ function MediaCard({
   const [isNearViewport, setIsNearViewport] = useState(false);
   const dragDepthRef = useRef(0);
   const scrubRafRef = useRef<number | null>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -188,6 +189,51 @@ function MediaCard({
   toastRef.current = toast;
   const canEditRef = useRef(canEdit);
   canEditRef.current = canEdit;
+
+  const invalidateFileLists = () => {
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${file.projectId}/files`] });
+    queryClient.invalidateQueries({ queryKey: ["/api/projects", file.projectId, "files"] });
+    queryClient.invalidateQueries({ queryKey: [`/api/files/${file.id}`] });
+  };
+
+  const handleCustomThumbnail = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const image = event.target.files?.[0];
+    event.target.value = "";
+    if (!image) return;
+    if (!/^image\/(png|jpe?g|webp|gif)$/i.test(image.type) || image.size > 10 * 1024 * 1024) {
+      toast({ title: "Invalid thumbnail", description: "Use PNG, JPEG, WebP, or GIF up to 10 MB.", variant: "destructive" });
+      return;
+    }
+    const body = new FormData();
+    body.append("thumbnail", image);
+    try {
+      const response = await fetch(`/api/files/${file.id}/custom-thumbnail`, {
+        method: "POST",
+        body,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error((await response.text()) || response.statusText);
+      invalidateFileLists();
+      toast({ title: "Thumbnail updated" });
+    } catch (error: any) {
+      toast({ title: "Upload failed", description: error?.message || "Try again.", variant: "destructive" });
+    }
+  };
+
+  const clearCustomThumbnail = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    try {
+      const response = await fetch(`/api/files/${file.id}/custom-thumbnail`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error((await response.text()) || response.statusText);
+      invalidateFileLists();
+      toast({ title: "Thumbnail removed" });
+    } catch (error: any) {
+      toast({ title: "Could not remove thumbnail", description: error?.message || "Try again.", variant: "destructive" });
+    }
+  };
 
   // Keep expensive media work close to the user's scroll position. The margin
   // starts the request early enough that previews are normally ready as a card
@@ -501,8 +547,12 @@ function MediaCard({
   }, [file.id, file.fileType, isNearViewport, (processing as any)?.status]);
   
   // Load sprite for video files, direct content for image files
+  const customThumbnailPath = (file as StorageFile & { customThumbnailPath?: string | null }).customThumbnailPath;
+  const hasCustomThumbnail = !!customThumbnailPath;
   const thumbnailSrc = !isNearViewport
     ? null
+    : hasCustomThumbnail
+    ? `/api/files/${file.id}/custom-thumbnail?v=${encodeURIComponent(customThumbnailPath || "")}`
     : file.fileType === 'video'
     ? `/api/files/${file.id}/sprite` 
     : file.fileType === 'image' 
@@ -644,7 +694,7 @@ function MediaCard({
             cursor: `url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M8 5v10l8-5-8-5z' fill='%23ffffff'/%3e%3c/svg%3e") 10 10, pointer`
           }}
           onMouseMove={(e) => {
-            if (!spriteMetadata || file.fileType !== 'video') return;
+            if (hasCustomThumbnail || !spriteMetadata || file.fileType !== 'video') return;
             const rect = e.currentTarget.getBoundingClientRect();
             if (rect.width === 0) return;
             const clientX = e.clientX;
@@ -656,7 +706,7 @@ function MediaCard({
             });
           }}
           onMouseEnter={() => {
-            if (!spriteMetadata || file.fileType !== 'video') return;
+            if (hasCustomThumbnail || !spriteMetadata || file.fileType !== 'video') return;
             setIsScrubbing(true);
             setScrubPosition(0);
           }}
@@ -671,9 +721,9 @@ function MediaCard({
           onClick={handleCardClick}
           data-testid={`video-preview-container-${file.id}`}
         >
-          {(file.fileType === 'video' && thumbnailSrc && spriteMetadata) || (file.fileType === 'image' && thumbnailSrc) ? (
+          {thumbnailSrc && (hasCustomThumbnail || (file.fileType === 'video' && spriteMetadata) || file.fileType === 'image') ? (
             <>
-              {file.fileType === 'image' ? (
+              {hasCustomThumbnail || file.fileType === 'image' ? (
                 /* Image file rendering */
                 <>
                   <img
@@ -975,6 +1025,26 @@ function MediaCard({
                   Share Link
                 </DropdownMenuItem>
                 {onMove && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        thumbnailInputRef.current?.click();
+                      }}
+                      data-testid={`set-file-thumbnail-${file.id}`}
+                    >
+                      <ImagePlus className="h-4 w-4 mr-2" />
+                      {hasCustomThumbnail ? "Replace thumbnail…" : "Set thumbnail…"}
+                    </DropdownMenuItem>
+                    {hasCustomThumbnail && (
+                      <DropdownMenuItem onClick={clearCustomThumbnail}>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remove thumbnail
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+                {onMove && (
                   <DropdownMenuItem
                     onClick={(e) => { e.stopPropagation(); onMove(file); }}
                     data-testid={`move-file-${file.id}`}
@@ -1005,6 +1075,13 @@ function MediaCard({
                 </>)}
               </DropdownMenuContent>
             </DropdownMenu>
+            <input
+              ref={thumbnailInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="hidden"
+              onChange={handleCustomThumbnail}
+            />
           </div>
         </div>
 
