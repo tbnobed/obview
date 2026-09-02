@@ -912,6 +912,7 @@ function FileViewer({
       if (!r.ok) throw new Error("failed");
       return r.json();
     },
+    enabled: allowComments,
   });
 
   const [name, setName] = useState<string>(() => {
@@ -1675,7 +1676,7 @@ function FileViewer({
             isMuted={isMuted}
             inPoint={inPoint}
             outPoint={outPoint}
-            comments={(commentsQ.data || []).map((c) => ({
+            comments={(allowComments ? commentsQ.data || [] : []).map((c) => ({
               id: c.id,
               parentId: c.parentId ?? null,
               timestamp: c.timestamp ?? null,
@@ -1736,7 +1737,9 @@ function FileViewer({
         )}
       </div>
 
-      {/* Right side panel: Comments / Transcript / Synopsis */}
+      {/* Right side panel: hidden entirely for view-only files without
+          transcript/AI content; otherwise omit only the Comments tab. */}
+      {(allowComments || supportsTranscript) && (
       <aside
         className={cn(
           playerOnly && "hidden",
@@ -1747,27 +1750,31 @@ function FileViewer({
       >
         <Tabs
           defaultValue={(() => {
-            if (typeof window === "undefined") return "comments";
+            const fallback = allowComments ? "comments" : "transcript";
+            if (typeof window === "undefined") return fallback;
             const t = new URLSearchParams(window.location.search).get("tab");
-            const allowed = new Set<string>(["comments"]);
+            const allowed = new Set<string>();
+            if (allowComments) allowed.add("comments");
             if (supportsTranscript) {
               allowed.add("transcript");
               allowed.add("ai");
             }
-            return t && allowed.has(t) ? t : "comments";
+            return t && allowed.has(t) ? t : fallback;
           })()}
           className="flex-1 min-h-0 flex flex-col"
         >
           <div className="px-2 py-1 landscape:hidden lg:landscape:block">
             <TabsList className="h-7 bg-transparent p-0 gap-1">
-              <TabsTrigger value="comments" className="text-xs px-3">
-                Comments
-                {commentsQ.data && commentsQ.data.length > 0 && (
-                  <span className="ml-1.5 text-[10px] opacity-70">
-                    {commentsQ.data.length}
-                  </span>
-                )}
-              </TabsTrigger>
+              {allowComments && (
+                <TabsTrigger value="comments" className="text-xs px-3">
+                  Comments
+                  {commentsQ.data && commentsQ.data.length > 0 && (
+                    <span className="ml-1.5 text-[10px] opacity-70">
+                      {commentsQ.data.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              )}
               {supportsTranscript && (
                 <TabsTrigger value="transcript" className="text-xs px-3">
                   Transcript
@@ -1781,6 +1788,7 @@ function FileViewer({
             </TabsList>
           </div>
 
+          {allowComments && (
           <TabsContent
             value="comments"
             className="flex-1 min-h-0 m-0 data-[state=active]:flex flex-col overflow-hidden"
@@ -2060,16 +2068,7 @@ function FileViewer({
             </div>
 
             {/* Sticky comment input at bottom (matches main app) */}
-            {!allowComments ? (
-              <div className="border-t border-neutral-200 dark:border-[hsl(var(--comments-card-border))] p-3 shrink-0">
-                <Alert>
-                  <AlertDescription>
-                    Comments are disabled for this share link.
-                  </AlertDescription>
-                </Alert>
-              </div>
-            ) : (
-              <div className="p-3 space-y-2 shrink-0 bg-white dark:bg-zinc-950">
+            <div className="p-3 space-y-2 shrink-0 bg-white dark:bg-zinc-950">
                 <Input
                   placeholder="Your name"
                   value={name}
@@ -2228,8 +2227,8 @@ function FileViewer({
                   <span className="text-[10px] text-neutral-500 dark:text-gray-400">Drawing attached</span>
                 )}
               </div>
-            )}
           </TabsContent>
+          )}
 
           {supportsTranscript && (
             <TabsContent
@@ -2267,6 +2266,7 @@ function FileViewer({
           )}
         </Tabs>
       </aside>
+      )}
       {/* (Legacy scrub-preview portal removed — SharePlayerControls now
           owns the hover preview via its scrubSrc prop.) */}
       <Dialog open={nameDialogOpen} onOpenChange={setNameDialogOpen}>
