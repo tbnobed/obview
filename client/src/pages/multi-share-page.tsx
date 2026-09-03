@@ -1737,9 +1737,8 @@ function FileViewer({
         )}
       </div>
 
-      {/* Right side panel: hidden entirely for view-only files without
-          transcript/AI content; otherwise omit only the Comments tab. */}
-      {(allowComments || supportsTranscript) && (
+      {/* View-only links have no reviewer sidebar at all. */}
+      {allowComments && (
       <aside
         className={cn(
           playerOnly && "hidden",
