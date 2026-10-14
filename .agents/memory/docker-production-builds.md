@@ -15,6 +15,17 @@ The default `postgresql-client` in Debian bookworm is version 15. If the product
 
 For BtbN FFmpeg downloads, use a currently published stable asset with a master-build fallback. Old versioned assets are eventually removed from the upstream `latest` release.
 
+Keep large runtime dependencies before changing application content, and source
+them from a dependency-only stage. Do not move them below frontend/server copies.
+
+**Why:** A small UI change previously invalidated the runtime dependency layer,
+and image export alone took over 100 seconds. Stable dependency contents do not
+help if the parent image layers have already changed.
+
+**How to apply:** Check a changed application build, not just an identical repeat
+build, when testing Docker cache improvements. The large runtime dependency copy
+must stay cached while application compilation and final asset copies rerun.
+
 **Why:** npm installer is unreliable in Docker across versions and hosts; pnpm with a frozen lockfile is deterministic. busybox crond is not built into the Debian slim busybox package. pg_dump major version must match the server's PostgreSQL major version or pre-migration backups silently fail.
 
 **How to apply:** After Docker or dependency changes, build the complete final image (`docker build --no-cache`) with production build arguments, then verify inside the resulting image: server bundle, frontend assets, FFmpeg, ffprobe, whisper.cpp, `command -v crond`, and `pg_dump --version`.

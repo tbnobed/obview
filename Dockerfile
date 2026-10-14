@@ -1,8 +1,8 @@
-# ----- Application builder -----
+# ----- Stable application dependencies -----
 # Debian-based so the BtbN static-ffmpeg binary (glibc) and node-llama-cpp's
 # prebuilt linux-x64 native binding both work natively. No more musl/glibc
 # compat dance.
-FROM node:20-bookworm-slim AS builder
+FROM node:20-bookworm-slim AS dependencies
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 make g++ git cmake build-essential ca-certificates \
@@ -27,7 +27,13 @@ RUN pnpm install --frozen-lockfile --prod=false && \
     test -x node_modules/.bin/vite && \
     test -x node_modules/.bin/esbuild
 
-COPY . .
+# ----- Application builder -----
+# Source edits must not change the dependency stage used by the runtime image.
+FROM dependencies AS builder
+COPY client ./client
+COPY server ./server
+COPY shared ./shared
+COPY tsconfig.json vite.config.ts tailwind.config.ts postcss.config.js ./
 
 ARG VITE_DISABLE_REGISTRATION=true
 ENV VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION
@@ -44,8 +50,6 @@ ENV VITE_SHORT_LINK_BASE_URL=$VITE_SHORT_LINK_BASE_URL
 ARG VITE_APP_BASE_URL=
 ENV VITE_APP_BASE_URL=$VITE_APP_BASE_URL
 
-RUN ls -la && echo "Content of server directory:" && ls -la server/
-
 RUN echo "=== BUILDING APPLICATION ===" && \
     echo "VITE_DISABLE_REGISTRATION=$VITE_DISABLE_REGISTRATION" && \
     echo "VITE_SHORT_LINK_BASE_URL=$VITE_SHORT_LINK_BASE_URL" && \
@@ -55,7 +59,10 @@ RUN echo "=== BUILDING APPLICATION ===" && \
     ls -la dist/ && \
     echo "Building production server..." && \
     pnpm exec esbuild server/production.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/production.js && \
-    test -f dist/production.js && echo "✅ Production server built: dist/production.js" || (echo "❌ Production server build failed" && exit 1)
+    test -f dist/production.js && \
+    test -f dist/public/index.html && \
+    cp vite.config.ts vite.config.js && \
+    echo "✅ Production server and frontend built" || (echo "❌ Production build failed" && exit 1)
 
 # ----- whisper.cpp builder -----
 # Debian-based so the resulting whisper-cpp binary is glibc-linked and runs
@@ -116,39 +123,11 @@ WORKDIR /app
 # Copy the prebuilt whisper.cpp binary
 COPY --from=whisper-builder /usr/local/bin/whisper-cpp /usr/local/bin/whisper-cpp
 
-# Copy all server source files first (needed for proper operation)
-COPY --from=builder /app/server ./server
-
-# Copy built assets from builder - maintain the entire structure
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client ./client
-COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-
-# Copy dependencies and configuration files
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/pnpm-lock.yaml ./
-COPY --from=builder /app/drizzle.config.ts ./
-COPY --from=builder /app/vite.config.ts ./
-
-# Fix the vite.config import issue - tsx needs the file to be resolvable without extension
-RUN cp vite.config.ts vite.config.js
-
-# Copy frontend build files to where the production server expects them
-RUN mkdir -p /app/server/public && \
-    cp -r /app/dist/public/* /app/server/public/ && \
-    echo "✅ Frontend files copied to /app/server/public/" && \
-    ls -la /app/server/public/ && \
-    test -f dist/production.js && echo "✅ Production server ready" || (echo "❌ Production server missing" && exit 1)
-
-# Add database migration files and scripts
-COPY --from=builder /app/migrations ./migrations
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/.env* ./
-
-# Make scripts executable
-RUN chmod +x ./scripts/*.sh
+# Keep the large dependency layer BEFORE any source/build copies. Otherwise a
+# tiny source change invalidates this layer and makes Docker repack/unpack it.
+# Copy from the source-independent stage, not the application builder.
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY --from=dependencies /app/package.json /app/pnpm-lock.yaml ./
 
 # Install daily backup crontab. Runs at 03:00 server time.
 # DATABASE_URL is exported by the entrypoint before crond starts so the
@@ -185,6 +164,24 @@ ENV VIDEO_USE_NVENC=true
 RUN mkdir -p /app/uploads/processed /app/models && \
     chmod -R 755 /app/uploads /app/models && \
     chown -R node:node /app/uploads /app/models
+
+# Both production static serving and the share crawler look for the frontend.
+# Keep one set of compiled assets, with a compatibility symlink for server/public.
+RUN mkdir -p /app/server && ln -s ../dist/public /app/server/public
+
+# Small, independently cached runtime inputs. Environment variables are supplied
+# at container startup; do not copy .env files into the image.
+COPY --chmod=755 scripts/ ./scripts/
+COPY migrations/ ./migrations/
+COPY drizzle.config.ts ./
+
+# Changing application content belongs LAST, after dependencies/system setup.
+# Keep source/config paths needed by schema verification and Vite imports.
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/client ./client
+COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/tsconfig.json /app/vite.config.ts /app/vite.config.js ./
+COPY --from=builder /app/dist ./dist
 
 # Create volumes for uploads and downloaded whisper models
 VOLUME /app/uploads

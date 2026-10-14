@@ -4,6 +4,16 @@ node_modules
 # Build directories
 dist
 build
+server/public
+generated-artifacts
+
+# Agent tooling/caches are not application build inputs
+.local
+.agents
+.cache
+screenshots
+test-results
+playwright-report
 
 # Environment files
 .env
