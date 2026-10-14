@@ -13,9 +13,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2, Share2 } from "lucide-react";
+import { Folder as FolderIcon, FolderPlus, ChevronRight, Home, Trash2, Share2, Pencil } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils/formatters";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
+import RenameDialog from "@/components/rename-dialog";
 import { cn } from "@/lib/utils";
 import {
   getDragPayload,
@@ -69,6 +70,7 @@ export function ProjectFoldersStrip({
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
+  const [folderToRename, setFolderToRename] = useState<Folder | null>(null);
   // Folder targeted by the Share dialog. We open ShareLinksDialog with
   // scopeType="folder" so the link only grants access to files inside
   // this subfolder, not the whole project.
@@ -207,6 +209,10 @@ export function ProjectFoldersStrip({
 
   return (
     <div className="px-6 pt-6">
+      {folderToRename && (
+        <RenameDialog kind="folder" id={folderToRename.id} name={folderToRename.name}
+          open onOpenChange={(value) => { if (!value) setFolderToRename(null); }} />
+      )}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1 text-sm text-muted-foreground flex-wrap">
           <button
@@ -340,6 +346,18 @@ export function ProjectFoldersStrip({
                   data-testid={`delete-subfolder-${f.id}`}
                 >
                   <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setFolderToRename(f); }}
+                  className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
+                  aria-label={`Rename folder ${f.name}`}
+                  title="Rename folder"
+                  data-testid={`rename-subfolder-${f.id}`}
+                >
+                  <Pencil className="h-4 w-4" />
                 </button>
               )}
             </div>

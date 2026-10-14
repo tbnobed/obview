@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import ProjectCard from "@/components/projects/project-card";
 import ProjectRow from "@/components/projects/project-row";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
+import RenameDialog from "@/components/rename-dialog";
 import { useViewMode } from "@/hooks/use-view-mode";
 import ViewModeToggle from "@/components/ui/view-mode-toggle";
 import {
@@ -165,6 +166,7 @@ export default function FolderPage() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [shareOpen, setShareOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
   const [viewMode, setViewMode] = useViewMode("projects", "grid");
   // Sort preference for the main folder grid/list. Persisted per browser
   // so the user's choice survives reloads and navigation between folders.
@@ -402,6 +404,12 @@ export default function FolderPage() {
 
               <div className="flex flex-wrap gap-2 shrink-0">
                 {canShare && (
+                  <Button variant="outline" onClick={() => setRenameOpen(true)}
+                    data-testid="button-rename-folder">
+                    Rename folder
+                  </Button>
+                )}
+                {canShare && (
                   <Button
                     variant="outline"
                     onClick={() => setShareOpen(true)}
@@ -599,6 +607,8 @@ export default function FolderPage() {
                 scopeName={folder.name}
               />
             )}
+            <RenameDialog kind="folder" id={folder.id} name={folder.name}
+              open={renameOpen} onOpenChange={setRenameOpen} />
 
             <Dialog open={createSubOpen} onOpenChange={setCreateSubOpen}>
               <DialogContent>

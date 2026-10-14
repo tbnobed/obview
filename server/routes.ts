@@ -2352,6 +2352,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate input
+      if ("name" in incoming) {
+        const name = z.string().trim().min(1).max(50)
+          .refine((value) => !/[\\/\x00-\x1f\x7f]/.test(value) && value !== "." && value !== "..",
+            "Folder name cannot contain path separators or control characters")
+          .safeParse(incoming.name);
+        if (!name.success) return res.status(400).json({ message: name.error.issues[0].message });
+        incoming.name = name.data;
+      }
       const validatedData = insertFolderSchema.partial().parse(incoming);
 
       // Compute a real before/after diff so the activity log records WHAT
@@ -4001,6 +4009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         file: {
           id: file.id,
           filename: file.filename,
+          originalFilename: file.originalFilename,
           fileType: file.fileType,
           fileSize: file.fileSize,
           filePath: file.filePath,
@@ -7136,6 +7145,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //     must have edit access on BOTH the source and target projects.
   //     Cross-project moves clear folderId because folders are scoped to
   //     a single project, so any existing folder reference would dangle.
+  // Rename the selected version's display name, not the shared version-stack
+  // key or physical path. Token/id-based sharing remains unchanged.
+  app.patch("/api/files/:fileId/rename", isAuthenticated, async (req, res, next) => {
+    try {
+      if (!req.user) return res.status(401).json({ message: "Authentication required" });
+      const fileId = Number(req.params.fileId);
+      if (!Number.isInteger(fileId) || fileId <= 0) {
+        return res.status(400).json({ message: "Invalid file ID" });
+      }
+      const file = await storage.getFile(fileId);
+      if (!file) return res.status(404).json({ message: "File not found" });
+      if (!(await userHasProjectEditAccess(req.user, file.projectId))) {
+        return res.status(403).json({ message: "You don't have edit access to this project" });
+      }
+      const parsed = z.object({
+        name: z.string().trim().min(1).max(255)
+          .refine((name) => !/[\\/\x00-\x1f\x7f]/.test(name) && name !== "." && name !== "..",
+            "File name cannot contain path separators or control characters"),
+      }).safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.issues[0].message });
+      }
+      const name = parsed.data.name;
+      const previousName = file.originalFilename || file.filename;
+      if (path.extname(name).toLowerCase() !== path.extname(previousName).toLowerCase()) {
+        return res.status(400).json({ message: "Keep the existing file extension when renaming" });
+      }
+      const updated = await storage.updateFile(fileId, { originalFilename: name });
+      if (!updated) return res.status(404).json({ message: "File not found" });
+      await storage.logActivity({
+        action: "update",
+        entityType: "file",
+        entityId: fileId,
+        userId: req.user.id,
+        metadata: { projectId: file.projectId, changes: { name: { from: previousName, to: name } } },
+      });
+      res.json(updated);
+    } catch (error) { next(error); }
+  });
+
   app.patch("/api/files/:fileId/move", isAuthenticated, async (req, res, next) => {
     try {
       const fileId = parseInt(req.params.fileId);

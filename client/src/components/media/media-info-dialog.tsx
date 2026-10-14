@@ -14,6 +14,7 @@ interface MediaInfoResponse {
   file: {
     id: number;
     filename: string;
+    originalFilename?: string | null;
     fileType: string;
     fileSize: number;
     filePath: string;
@@ -131,7 +132,10 @@ export function MediaInfoBody({ fileId, enabled = true }: { fileId: number; enab
   return (
     <div className="space-y-4">
       <Section title="General" icon={<FileText className="h-4 w-4" />}>
-        <Row label="File name" value={data.file.filename} />
+        <Row label="File name" value={data.file.originalFilename || data.file.filename} />
+        {data.file.originalFilename && data.file.originalFilename !== data.file.filename && (
+          <Row label="Version stack" value={data.file.filename} />
+        )}
         <Row label="File type" value={data.file.fileType} />
         <Row label="Container" value={format?.format_long_name || format?.format_name || "—"} />
         <Row label="Size on disk" value={data.diskSize != null ? `${formatFileSize(data.diskSize)} (${data.diskSize.toLocaleString()} bytes)` : "—"} />

@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 import { File as StorageFile } from "@shared/schema";
 import MediaInfoDialog from "./media-info-dialog";
+import RenameDialog from "@/components/rename-dialog";
 import { setDragPayload, clearDragPayload, peekDragPayload, getDragPayload } from "@/lib/drag-drop";
 import { uploadService } from "@/lib/upload-service";
 import MediaRow from "./media-row";
@@ -181,6 +182,7 @@ function MediaCard({
   // doesn't get torn down on every render (which can race with an
   // in-flight drag).
   const canEdit = !!onMove;
+  const [renameOpen, setRenameOpen] = useState(false);
   const fileRef = useRef(file);
   fileRef.current = file;
   const versionCountRef = useRef(versionCount);
@@ -928,6 +930,14 @@ function MediaCard({
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
+                {canEdit && (
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); setRenameOpen(true); }}
+                    data-testid={`rename-file-${file.id}`}
+                  >
+                    <FileText className="h-4 w-4 mr-2" /> Rename file…
+                  </DropdownMenuItem>
+                )}
                 {(() => {
                   // For videos with completed processing, expose every encoded
                   // resolution alongside the original. For other file types
@@ -1155,8 +1165,10 @@ function MediaCard({
         open={mediaInfoOpen}
         onOpenChange={setMediaInfoOpen}
         fileId={file.id}
-        filename={file.filename}
+        filename={file.originalFilename || file.filename}
       />
+      <RenameDialog kind="file" id={file.id} name={file.originalFilename || file.filename}
+        open={renameOpen} onOpenChange={setRenameOpen} />
 
       <span onClick={(e) => e.stopPropagation()}>
         <ShareLinksDialog

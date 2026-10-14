@@ -664,7 +664,7 @@ export function registerShareLinkRoutes(
           folderProjectId = f?.projectId ?? null;
         } else if (link.scopeType === "file") {
           const f = await storage.getFile(link.scopeId);
-          scopeName = f?.filename ?? "";
+          scopeName = f?.originalFilename || f?.filename || "";
           fileProjectId = f?.projectId ?? null;
           fileFolderId = f?.folderId ?? null;
         }
@@ -739,7 +739,7 @@ export function registerShareLinkRoutes(
         }
         byProject.get(f.projectId)!.files.push({
           id: f.id,
-          filename: f.filename,
+          filename: f.originalFilename || f.filename,
           fileType: f.fileType,
           fileSize: f.fileSize,
           version: f.version,
@@ -773,7 +773,7 @@ export function registerShareLinkRoutes(
       const file = await fileBelongsToScope(gated.link, parseInt(req.params.fileId));
       if (!file) return res.status(404).json({ message: "Not found" });
       res.json({
-        id: file.id, filename: file.filename, fileType: file.fileType, fileSize: file.fileSize,
+        id: file.id, filename: file.originalFilename || file.filename, fileType: file.fileType, fileSize: file.fileSize,
         version: file.version, isAvailable: file.isAvailable !== false, createdAt: file.createdAt,
       });
     } catch (e) { next(e); }
@@ -1253,7 +1253,10 @@ const handleShareCrawler: RequestHandler = async (req, res, next) => {
     let scopeName = "";
     if (link.scopeType === "project") scopeName = (await storage.getProject(link.scopeId))?.name ?? "";
     else if (link.scopeType === "folder") scopeName = (await storage.getFolder(link.scopeId))?.name ?? "";
-    else if (link.scopeType === "file") scopeName = (await storage.getFile(link.scopeId))?.filename ?? "";
+    else if (link.scopeType === "file") {
+      const file = await storage.getFile(link.scopeId);
+      scopeName = file?.originalFilename || file?.filename || "";
+    }
 
     const title = escapeHtml(link.name || scopeName || "Shared on Obviu");
     const kindWord = link.scopeType === "file" ? "file" : link.scopeType;

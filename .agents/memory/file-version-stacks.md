@@ -19,4 +19,14 @@ description: How file version stacks are keyed vs. how storage.deleteFile cascad
 
 **Read-side stacks must also scope by folderId:** any code that BUILDS a version stack by listing a project's files and grouping must filter on `(filename, folderId)`, not filename alone. Filtering by filename only merges independent same-named lineages from different folders into one bogus stack — the visible symptom is a version picker showing several rows all reading "v1 (latest)" (each is genuinely v1/latest within its own folder). This bit the panel read API `GET /api/v1/files/:id` version-stack builder in `server/routes.ts`; it now mirrors the tus `(filename, folderId)` scoping.
 
+**Filename presentation:** Cards and technical details should display the same per-version name. When it differs from the stack's name, show the stack name separately as "Version stack".
+
+**Why:** The user explicitly confirmed this presentation after the card and technical details showed different names for the same version.
+
+**Rename scope:** Rename changes the selected version's visible name, not the stack identity or physical storage path.
+
+**Why:** Changing the shared grouping name for only one version would detach it from its stack. A display rename should not reorganize versions or invalidate ID/token-based sharing.
+
+**How to apply:** Keep filename presentation and display renames separate from version grouping, file moves, and physical media conversion.
+
 **Per-version display name vs. stack key:** `files.filename` is the SHARED stack key — every version in a stack carries the same value, and version upload OVERWRITES the new file's real name with the stack key (frontend passes the existing `file.filename` as `customFilename`). So `filename` can NEVER tell you which version you're viewing. The real per-version uploaded name lives in nullable `files.originalFilename` (DB `original_filename`), captured at upload in ALL FOUR row-creation paths: `server/tus.ts` single-stream (`meta.filename`), `server/tus.ts` multipart (`manifest.filename`), `server/routes.ts` multipart route (`req.file.originalname`), `server/share-links.ts` reviewer upload (`file.originalname`). **Rule:** any user-visible file name must render `originalFilename || filename`. Rows created before this column existed have NULL → intentionally fall back to the shared `filename` (their real names were already lost at upload and cannot be recovered). Downloads still use `filename` (stack key) on purpose.

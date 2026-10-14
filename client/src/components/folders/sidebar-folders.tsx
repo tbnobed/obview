@@ -90,6 +90,7 @@ import {
   Folder,
   FolderOpen,
   Share2,
+  Pencil,
   Globe,
   Loader2,
   Plus,
@@ -98,6 +99,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ShareLinksDialog from "@/components/sharing/share-links-dialog";
+import RenameDialog from "@/components/rename-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -510,6 +512,7 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
   const canShare = user && (isAdmin || isOwner);
   const canToggleGlobal = isAdmin || isOwner;
   const canDelete = isAdmin || isOwner;
+  const [renameOpen, setRenameOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const toggleGlobal = useToggleFolderGlobal();
   const deleteFolder = useDeleteFolder();
@@ -626,6 +629,18 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
             )}
           </span>
         </Link>
+        {canDelete && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setRenameOpen(true); }}
+            className="shrink-0 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-gray-800"
+            title="Rename folder"
+            aria-label={`Rename folder ${folder.name}`}
+            data-testid={`rename-sidebar-folder-${folder.id}`}
+          >
+            <Pencil className="h-3.5 w-3.5 text-neutral-500" />
+          </button>
+        )}
         {canToggleGlobal && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -767,6 +782,8 @@ function SidebarFolderItem({ folder, depth = 0 }: { folder: FolderNode; depth?: 
           scopeName={folder.name}
         />
       )}
+      <RenameDialog kind="folder" id={folder.id} name={folder.name}
+        open={renameOpen} onOpenChange={setRenameOpen} />
 
       {open && (
         <div className="ml-5 mt-0.5 mb-1 space-y-0.5 border-l border-neutral-200 dark:border-zinc-800/50 pl-2">

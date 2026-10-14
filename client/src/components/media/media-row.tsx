@@ -35,6 +35,7 @@ import { setDragPayload, clearDragPayload, peekDragPayload, getDragPayload } fro
 import { uploadService } from "@/lib/upload-service";
 import { formatFileSize, formatTimeAgo } from "@/lib/utils/formatters";
 import MediaInfoDialog from "./media-info-dialog";
+import RenameDialog from "@/components/rename-dialog";
 import { VersionDownloadSubmenu } from "./version-download-submenu";
 
 interface MediaRowProps {
@@ -115,6 +116,7 @@ export default function MediaRow({
   useEffect(() => setCustomThumbnailError(false), [file.id, customThumbnailPath]);
 
   const canEdit = !!onMove;
+  const [renameOpen, setRenameOpen] = useState(false);
   const fileRef = useRef(file);
   fileRef.current = file;
   const versionCountRef = useRef(versionCount);
@@ -546,6 +548,14 @@ export default function MediaRow({
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
+              {canEdit && (
+                <DropdownMenuItem
+                  onClick={(e) => { e.stopPropagation(); setRenameOpen(true); }}
+                  data-testid={`rename-file-row-${file.id}`}
+                >
+                  <FileText className="h-4 w-4 mr-2" /> Rename file…
+                </DropdownMenuItem>
+              )}
               {versions && versions.length > 1 ? (
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
@@ -661,8 +671,10 @@ export default function MediaRow({
         open={mediaInfoOpen}
         onOpenChange={setMediaInfoOpen}
         fileId={file.id}
-        filename={file.filename}
+        filename={file.originalFilename || file.filename}
       />
+      <RenameDialog kind="file" id={file.id} name={file.originalFilename || file.filename}
+        open={renameOpen} onOpenChange={setRenameOpen} />
 
       <span onClick={(e) => e.stopPropagation()}>
         <ShareLinksDialog
