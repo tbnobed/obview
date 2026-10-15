@@ -252,8 +252,17 @@ async function canManageProjectShares(req: Request, projectId: number): Promise<
   if (!req.user) return false;
   if (req.user.role === "admin") return true;
   const pu = await storage.getProjectUser(projectId, req.user.id);
-  if (!pu) return false;
-  return pu.role === "editor";
+  if (pu && (pu.role === "editor" || pu.role === "admin")) return true;
+  // Match project edit access and file/subfolder sharing. Global folders are a
+  // shared workspace for site editors; direct project membership is not needed.
+  if (req.user.role === "editor") {
+    const project = await storage.getProject(projectId);
+    if (project?.folderId != null) {
+      const folder = await storage.getFolder(project.folderId);
+      if (folder?.isGlobal) return true;
+    }
+  }
+  return false;
 }
 
 async function canManageFolderShares(req: Request, folderId: number): Promise<boolean> {
