@@ -739,16 +739,44 @@ export function registerShareLinkRoutes(
       if (!gated) return;
       const { link } = gated;
       const files = await gatherScopeFiles(link);
-      // Group by project for nicer rendering
-      const byProject = new Map<number, { id: number; name: string; files: any[] }>();
-      for (const f of files) {
-        if (!byProject.has(f.projectId)) {
-          const p = await storage.getProject(f.projectId);
-          byProject.set(f.projectId, { id: f.projectId, name: p?.name ?? "Project", files: [] });
+      // Include empty projects/folders too, rather than inferring the structure
+      // from files (which flattened the share and hid empty folders).
+      const byProject = new Map<number, {
+        id: number;
+        name: string;
+        files: any[];
+        folders: { id: number; name: string; parentId: number | null }[];
+        rootFolderId: number | null;
+      }>();
+      const addProject = async (projectId: number) => {
+        if (byProject.has(projectId)) return;
+        const project = await storage.getProject(projectId);
+        if (project) {
+          byProject.set(projectId, {
+            id: project.id, name: project.name, files: [], folders: [], rootFolderId: null,
+          });
         }
+      };
+      const sharedFolder = link.scopeType === "folder"
+        ? await storage.getFolder(link.scopeId)
+        : undefined;
+      if (link.scopeType === "project") {
+        await addProject(link.scopeId);
+      } else if (sharedFolder?.projectId != null) {
+        await addProject(sharedFolder.projectId);
+      } else if (sharedFolder) {
+        for (const project of await storage.getProjectsByFolder(sharedFolder.id)) {
+          await addProject(project.id);
+        }
+      }
+      for (const f of files) {
+        await addProject(f.projectId);
+        if (!byProject.has(f.projectId)) continue;
         byProject.get(f.projectId)!.files.push({
           id: f.id,
           filename: f.originalFilename || f.filename,
+          // File-only links must not disclose their containing folder tree.
+          folderId: link.scopeType === "file" ? null : f.folderId ?? null,
           fileType: f.fileType,
           fileSize: f.fileSize,
           version: f.version,
@@ -761,6 +789,24 @@ export function registerShareLinkRoutes(
             !!link.customThumbnailPath &&
             existsSync(link.customThumbnailPath),
         });
+      }
+      for (const project of byProject.values()) {
+        if (link.scopeType === "file") continue;
+        let folders = await storage.getProjectFolders(project.id);
+        if (sharedFolder?.projectId != null) {
+          const allowedIds = await getDescendantProjectFolderIds(project.id, sharedFolder.id);
+          folders = folders.filter(folder => allowedIds.has(folder.id));
+          project.rootFolderId = sharedFolder.id;
+        }
+        const visibleIds = new Set(folders.map(folder => folder.id));
+        project.folders = folders.map(folder => ({
+          id: folder.id,
+          name: folder.name,
+          // Never expose an ancestor outside a folder-only share.
+          parentId: folder.id !== project.rootFolderId &&
+            folder.parentFolderId != null && visibleIds.has(folder.parentFolderId)
+              ? folder.parentFolderId : null,
+        }));
       }
       res.json({
         scopeType: link.scopeType,

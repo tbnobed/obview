@@ -12,3 +12,18 @@ List endpoints are tighter than by-id reads: `GET /api/projects` (and `/api/v1/p
 **Why:** ~50-user internal collaboration tool; the product treats authenticated reads as shared-workspace reads. Adding per-resource membership gates on read paths would diverge from the web app's behavior and break legitimate cross-project review.
 
 **How to apply:** When adding new read endpoints (e.g. the `/api/v1` Premiere panel API), gate on authentication only and mirror existing read routes. Do NOT add membership checks to reads just because a generic review flags "IDOR" — that is a false positive here. Gate writes with the edit-access helpers.
+
+# Public-link browsing is not the authenticated open-read model
+
+Public project links should preserve the project's folder organization, including
+empty folders. A shared project subfolder is its own navigation root: its
+ancestors and siblings must not be exposed. A single-file share must not disclose
+the containing project's folder tree.
+
+**Why:** Reviewers need the creator's organization rather than a flattened media
+list, but a public bearer link grants only its selected scope, not the internal
+authenticated user's broad read access.
+
+**How to apply:** Keep folder metadata and breadcrumbs restricted to the public
+link's scope. Do not reuse authenticated folder-list endpoints for public
+navigation, or infer the folder tree solely from existing files.

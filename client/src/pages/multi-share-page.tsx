@@ -47,6 +47,8 @@ import {
   Upload as UploadIcon,
   LogIn,
   ArrowUpDown,
+  Folder,
+  ChevronRight,
 } from "lucide-react";
 
 const APP_BASE = (import.meta.env.VITE_APP_BASE_URL as string | undefined)
@@ -105,6 +107,7 @@ type ShareInfo = {
 
 type ManifestFile = {
   id: number;
+  folderId?: number | null;
   filename: string;
   fileType: string;
   fileSize: number;
@@ -124,7 +127,13 @@ type Manifest = {
   watermarkEnabled?: boolean;
   watermarkText?: string | null;
   watermarkLabel?: string | null;
-  projects: { id: number; name: string; files: ManifestFile[] }[];
+  projects: {
+    id: number;
+    name: string;
+    files: ManifestFile[];
+    folders?: { id: number; name: string; parentId: number | null }[];
+    rootFolderId?: number | null;
+  }[];
 };
 
 type Comment = {
@@ -288,6 +297,7 @@ export default function MultiSharePage() {
   });
 
   const [activeFile, setActiveFile] = useState<ManifestFile | null>(null);
+  const [folderLocations, setFolderLocations] = useState<Record<number, number | null>>({});
 
   useEffect(() => {
     if (!manifestQ.data) return;
@@ -474,8 +484,14 @@ export default function MultiSharePage() {
         <FileList
           manifest={manifestQ.data}
           loading={manifestQ.isLoading}
+          error={manifestQ.isError}
+          onRetry={() => manifestQ.refetch()}
           onPick={setActiveFile}
           token={token}
+          folderLocations={folderLocations}
+          onFolderLocationChange={(projectId, folderId) =>
+            setFolderLocations((current) => ({ ...current, [projectId]: folderId }))
+          }
         />
       </main>
     </div>
@@ -670,19 +686,37 @@ function ReviewerUpload({ token }: { token: string }) {
 function FileList({
   manifest,
   loading,
+  error,
+  onRetry,
   onPick,
   token,
+  folderLocations,
+  onFolderLocationChange,
 }: {
   manifest?: Manifest;
   loading: boolean;
+  error: boolean;
+  onRetry: () => void;
   onPick: (f: ManifestFile) => void;
   token: string;
+  folderLocations: Record<number, number | null>;
+  onFolderLocationChange: (projectId: number, folderId: number | null) => void;
 }) {
-  if (loading || !manifest) {
+  if (loading) {
     return (
       <p className="text-sm text-neutral-500 dark:text-gray-400">
         Loading files...
       </p>
+    );
+  }
+  if (error || !manifest) {
+    return (
+      <div className="rounded-lg border border-neutral-200 bg-white p-5 text-sm text-neutral-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+        <p>Files could not be loaded.</p>
+        <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
+          Try again
+        </Button>
+      </div>
     );
   }
   if (manifest.projects.length === 0) {
@@ -695,26 +729,162 @@ function FileList({
   return (
     <div className="space-y-8">
       {manifest.projects.map((p) => (
-        <section key={p.id} data-testid={`share-project-${p.id}`}>
-          <h2 className="text-sm font-semibold mb-3 text-neutral-700 dark:text-gray-200 uppercase tracking-wider">
-            {p.name}
-            <span className="ml-2 text-xs font-normal normal-case text-neutral-400 dark:text-gray-500">
-              {p.files.length} file{p.files.length === 1 ? "" : "s"}
-            </span>
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {p.files.map((f) => (
-              <FileCard
-                key={f.id}
-                file={f}
-                token={token}
-                onClick={() => onPick(f)}
-              />
-            ))}
-          </div>
-        </section>
+        <ProjectFileBrowser
+          key={p.id}
+          project={p}
+          folderLocation={
+            Object.prototype.hasOwnProperty.call(folderLocations, p.id)
+              ? folderLocations[p.id]
+              : p.rootFolderId ?? null
+          }
+          onFolderLocationChange={(folderId) =>
+            onFolderLocationChange(p.id, folderId)
+          }
+          token={token}
+          onPick={onPick}
+        />
       ))}
     </div>
+  );
+}
+
+function ProjectFileBrowser({
+  project,
+  folderLocation,
+  onFolderLocationChange,
+  token,
+  onPick,
+}: {
+  project: Manifest["projects"][number];
+  folderLocation: number | null;
+  onFolderLocationChange: (folderId: number | null) => void;
+  token: string;
+  onPick: (file: ManifestFile) => void;
+}) {
+  const folders = project.folders;
+  // Older manifests deliberately retain the original flat project list.
+  const supportsFolders = Array.isArray(folders);
+  const folderList = folders ?? [];
+  const knownFolderIds = new Set(folderList.map((folder) => folder.id));
+  const rootFolderId = project.rootFolderId ?? null;
+  const currentFolderId = supportsFolders
+    ? folderLocation !== null && knownFolderIds.has(folderLocation)
+      ? folderLocation
+      : rootFolderId
+    : null;
+  const currentFolder = folderList.find((folder) => folder.id === currentFolderId);
+
+  const visibleFolders = supportsFolders
+    ? folderList.filter((folder) => folder.parentId === currentFolderId)
+    : [];
+  const visibleFiles = project.files.filter((file) => {
+    if (!supportsFolders) return true;
+    const folderId = file.folderId ?? null;
+    if (folderId !== null && !knownFolderIds.has(folderId)) {
+      return currentFolderId === rootFolderId;
+    }
+    return folderId === currentFolderId;
+  });
+
+  const breadcrumbs: { id: number | null; name: string }[] = [];
+  if (supportsFolders) {
+    if (rootFolderId !== null) {
+      const rootFolder = folderList.find((folder) => folder.id === rootFolderId);
+      breadcrumbs.push({ id: rootFolderId, name: rootFolder?.name ?? project.name });
+    } else {
+      breadcrumbs.push({ id: null, name: project.name });
+    }
+
+    if (currentFolderId !== null && currentFolderId !== rootFolderId) {
+      const chain: typeof folderList = [];
+      const visited = new Set<number>();
+      let folder = currentFolder;
+      while (folder && folder.id !== rootFolderId && !visited.has(folder.id)) {
+        visited.add(folder.id);
+        chain.unshift(folder);
+        folder = folder.parentId === null
+          ? undefined
+          : folderList.find((item) => item.id === folder!.parentId);
+      }
+      for (const item of chain) breadcrumbs.push({ id: item.id, name: item.name });
+    }
+  }
+
+  const folderCount = supportsFolders
+    ? folderList.filter((folder) => folder.parentId === currentFolderId).length
+    : 0;
+  const shownCount = visibleFiles.length;
+
+  return (
+    <section key={project.id} data-testid={`share-project-${project.id}`}>
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-sm font-semibold text-neutral-700 dark:text-gray-200 uppercase tracking-wider">
+          {project.name}
+          <span className="ml-2 text-xs font-normal normal-case text-neutral-400 dark:text-gray-500">
+            {shownCount} file{shownCount === 1 ? "" : "s"}
+          </span>
+        </h2>
+        {supportsFolders && (
+          <nav
+            aria-label={`${project.name} folder path`}
+            className="flex min-w-0 flex-wrap items-center gap-y-1 text-xs text-neutral-500 dark:text-gray-400"
+            data-testid={`share-folder-breadcrumb-${project.id}`}
+          >
+            {breadcrumbs.map((crumb, index) => (
+              <span key={`${crumb.id ?? "root"}-${index}`} className="flex min-w-0 items-center">
+                {index > 0 && <ChevronRight className="mx-1 h-3 w-3 shrink-0" />}
+                <button
+                  type="button"
+                  disabled={index === breadcrumbs.length - 1}
+                  onClick={() => onFolderLocationChange(crumb.id)}
+                  className={cn(
+                    "max-w-[12rem] truncate rounded px-1 py-0.5 text-left hover:text-neutral-900 disabled:cursor-default disabled:font-medium disabled:text-neutral-700 dark:hover:text-white dark:disabled:text-gray-200 sm:max-w-[18rem]",
+                  )}
+                  title={crumb.name}
+                >
+                  {crumb.name}
+                </button>
+              </span>
+            ))}
+          </nav>
+        )}
+      </div>
+
+      {(visibleFolders.length > 0 || visibleFiles.length > 0) ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {visibleFolders.map((folder) => (
+            <button
+              key={`folder-${folder.id}`}
+              type="button"
+              onClick={() => onFolderLocationChange(folder.id)}
+              className="flex min-h-16 min-w-0 items-center gap-3 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-neutral-50 dark:border-gray-700 dark:bg-[#1a1f26] dark:hover:border-gray-600 dark:hover:bg-gray-800"
+              data-testid={`share-folder-${folder.id}`}
+              title={folder.name}
+            >
+              <Folder className="h-5 w-5 shrink-0 text-primary dark:text-[#10a37f]" />
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-800 dark:text-gray-100">
+                {folder.name}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400" />
+            </button>
+          ))}
+          {visibleFiles.map((file) => (
+            <FileCard
+              key={file.id}
+              file={file}
+              token={token}
+              onClick={() => onPick(file)}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-lg border border-dashed border-neutral-200 px-4 py-6 text-sm text-neutral-500 dark:border-gray-800 dark:text-gray-400">
+          {folderCount === 0 && currentFolderId !== rootFolderId
+            ? "This folder is empty."
+            : "No files or folders in this location."}
+        </p>
+      )}
+    </section>
   );
 }
 
